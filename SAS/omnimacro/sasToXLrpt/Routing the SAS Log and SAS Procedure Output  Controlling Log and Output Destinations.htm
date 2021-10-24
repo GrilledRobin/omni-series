@@ -1,0 +1,512 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0049)http://www.sfu.ca/sasdoc/sashtml/vms/zut-dest.htm -->
+<HTML><HEAD><TITLE>Routing the SAS Log and SAS Procedure Output : Controlling Log and Output Destinations</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=gb2312"><!-- This page produced Wed Jun 30 15:12:50 EDT 1999
+ --><!-- Used program version 1.118.1.2 from beta --><!-- <META http-equiv="Content-Type" content="text/html; charset="> -->
+<META content="MSHTML 6.00.2900.6470" name=GENERATOR></HEAD>
+<BODY bgColor=#ffffff><!-- navigation -->
+<TABLE cellSpacing=0 cellPadding=0>
+  <TBODY>
+  <TR vAlign=top>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/ztoutput.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/cont1.gif" 
+      border=0><BR><FONT size=-2>Chapter Contents</FONT></A></TD>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/z0315284.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/prev1.gif" 
+      border=0><BR><FONT size=-2>Previous</FONT></A></TD>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/zprtfile.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/next1.gif" 
+      border=0><BR><FONT size=-2>Next</FONT></A></TD></TR></TBODY></TABLE><!-- running head -->
+<TABLE cellPadding=4 width="100%">
+  <TBODY>
+  <TR vAlign=center>
+    <TD bgColor=#cccc99><I><FONT size=2>SAS Companion for the OpenVMS 
+      Operating Environment </FONT></I></TD></TR></TBODY></TABLE>
+<H1><FONT size=5><A name=zut-dest>Controlling Log and Output 
+Destinations</A></FONT></H1>
+<P><A name=z0772100>Each method of running the SAS System has a default 
+destination for the SAS log and procedure output files, but you can override 
+these defaults with either SAS system options (when you invoke the SAS System) 
+or the PRINTTO procedure (while you are running the SAS System).</A> 
+<P>Two system options control the destination of the SAS log: LOG= and ALTLOG=. 
+Two similar options control the destination of procedure output: PRINT= and 
+ALTPRINT=. The LOG= and PRINT= system options change the default destination of 
+the SAS log and procedure output; the output does not appear at the original 
+default destination. The ALTLOG= and ALTPRINT= system options send a <B>copy</B> 
+of the output to the new destination; the output also appears at the original 
+default destination. These options can only be specified when you invoke SAS or 
+a new SAS process. 
+<P>If you want to reroute the SAS log or the procedure output after you enter 
+your SAS session, you can use the PRINTTO procedure with the LOG= and PRINT= 
+statement options. Unlike the ALTLOG= and ALTPRINT= system options, the PRINTTO 
+procedure does not send the output to both the new and default destinations; 
+only the specified destination receives output. You must use the PROC PRINTTO 
+statement before the SAS log entries or procedure output you want to route are 
+generated. When you want the output to revert to the default destination, use a 
+PROC PRINTTO statement with no statement options. 
+<P>The following sections describe the default destinations for the SAS log and 
+procedure output file for each method of running the SAS System, and they 
+explain how to send these files to a display, printer, or disk file. 
+<P>
+<TABLE cellSpacing=0 cellPadding=0 width="100%">
+  <TBODY>
+  <TR vAlign=bottom>
+    <TD>
+      <HR>
+    </TD></TR>
+  <TR vAlign=top>
+    <TD><B><FONT size=5>Windowing Environment 
+Mode</FONT></B></TD></TR></TBODY></TABLE>
+<P><A name=z0772104>In the windowing environment, the SAS log is automatically 
+routed to the LOG window, and the procedure output is automatically routed to 
+the OUTPUT window. The LOG= and PRINT= system options are ignored in the 
+windowing environment.</A> <BR>
+<H3>Routing the Log to a Printer</H3>
+<P><A name=z0772105>To send the SAS log to a printer from the windowing 
+environment, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772106>PRINT</A> 
+  <DD>This command, issued from the LOG window command line, sends the contents 
+  of the LOG window to the default system printer (SYS$PRINT). 
+  <P>You can also use the PRTFILE command, which is described in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprtfile.htm">Using the PRTFILE 
+  Command</A>.
+  <P></P>
+  <DT><A name=z0772109>$ SAS/ALTLOG=SYS$PRINT</A> 
+  <DD>This SAS command sends a copy of the SAS log to the SYS$PRINT printer 
+  queue and to the default destination (LOG window). If you want to send the 
+  copy to a different printer, you must redefine the SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772111>PROC PRINTTO LOG=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends any following SAS log entries to the 
+  default system printer during a SAS session. You must have defined 
+  <I>fileref</I> in a FILENAME statement or function with the PRINTER 
+  device-type keyword. For more information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing the Log to a Disk File</H3>
+<P><A name=z0772113>To send the SAS log to a disk file from the windowing 
+environment, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772114>FILE <I>file-specification</I></A> 
+  <DD>This command, issued from the command line of the LOG window, sends a copy 
+  of the window's contents to the file associated with 
+  <I>file-specification</I>. 
+  <P>For more information about the FILE command, see <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zmd-file.htm">FILE</A>.
+  <P></P>
+  <DT><A name=z0772117>$ SAS/ALTLOG=<I>file-specification</I></A> 
+  <DD>This SAS command sends a copy of the SAS log to the disk file 
+  <I>file-specification</I>, as well as to the default destination (LOG window). 
+  The following is an example of this command: <PRE>$ SAS/ALTLOG=MYLOG.LOG</PRE>
+  <P></P>
+  <DT><A name=z0772119>PROC PRINTTO LOG=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following SAS log entries to the disk 
+  file associated with <I>file-specification</I> during a SAS session. The value 
+  for <I>file-specification</I> can be any valid external file specification 
+  discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Printer</H3>
+<P><A name=z0772121>To send the procedure output to a printer from the windowing 
+environment, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772122>PRINT</A> 
+  <DD>This command, issued from the OUTPUT window command line, sends the 
+  contents of the OUTPUT window to the default system printer (SYS$PRINT). See 
+  your system manager for the location of your default printer. 
+  <P>You can also use the PRTFILE command. For more information, see <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprtfile.htm">Using the PRTFILE 
+  Command</A>.
+  <P></P>
+  <DT><A name=z0772125>P selection-field command</A> 
+  <DD>When issued from the OUTPUT MANAGER window, this selection-field command 
+  sends the procedure output to the default system printer. Also, you can edit 
+  your output from the OUTPUT MANAGER EDIT window and then send the modified 
+  output to the printer. For more information about the OUTPUT MANAGER window, 
+  refer to the SAS online Help.
+  <P></P>
+  <DT><A name=z0772127>$ SAS/ALTPRINT=SYS$PRINT</A> 
+  <DD>This SAS command sends a copy of the procedure output to the SYS$PRINT 
+  printer queue and to the default destination (OUTPUT window). If you want to 
+  send the procedure output to a different printer, you must redefine the 
+  SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772129>PROC PRINTTO PRINT=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends any following procedure output to the 
+  default system printer during a SAS session. You must have defined 
+  <I>fileref</I> in a FILENAME statement or function with the PRINTER 
+  device-type keyword. For more information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Disk File</H3>
+<P><A name=z0772131>To send the procedure output to a disk file from the 
+windowing environment, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772132>FILE <I>file-specification</I></A> 
+  <DD>When issued from the command line of the OUTPUT window, this command sends 
+  a copy of the window's contents to the file associated with 
+  <I>file-specification</I>. For more information about the FILE command, see <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zmd-file.htm">FILE</A>.
+  <P></P>
+  <DT><A name=z0772134>F selection-field command</A> 
+  <DD>When issued from the OUTPUT MANAGER window, this selection-field command 
+  brings up a requestor window that asks for the filename and allows you to 
+  specify attributes such as REPLACE or APPEND. Also, you can edit your 
+  procedure output from the OUTPUT MANAGER EDIT window and then send the 
+  modified output to a file. For more information about the OUTPUT MANAGER 
+  window, refer to the SAS online Help.
+  <P></P>
+  <DT><A name=z0772136>$ SAS/ALTPRINT=<I>file-specification</I></A> 
+  <DD>This SAS command sends a copy of the procedure output to the disk file 
+  <I>file-specification</I> and to the default destination (OUTPUT window). The 
+  following is an example of this command: <PRE>$ SAS/ALTPRINT=MYPROG.LIS</PRE>
+  <P></P>
+  <DT><A name=z0772138>PROC PRINTTO PRINT=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following procedure output to the disk 
+  file associated with <I>file-specification</I> during a SAS session. The value 
+  for <I>file-specification</I> can be any valid external file specification 
+  discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL>
+<P>
+<TABLE cellSpacing=0 cellPadding=0 width="100%">
+  <TBODY>
+  <TR vAlign=bottom>
+    <TD>
+      <HR>
+    </TD></TR>
+  <TR vAlign=top>
+    <TD><B><FONT size=5>Interactive Line Mode</FONT></B></TD></TR></TBODY></TABLE>
+<P><A name=z0772140>If you run your SAS program in interactive line mode, the 
+SAS log and procedure output appear on the display by default. SAS statements 
+from your program, the SAS log, and procedure output (if the program produces 
+any) are interleaved on the display according to the order of DATA and PROC 
+steps in your program.</A> <BR>
+<H3>Routing the Log to a Printer</H3>
+<P><A name=z0772141>To send the SAS log to a printer in interactive line mode, 
+choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772142>$ SAS/NODMS/LOG=SYS$PRINT</A> 
+  <DD>This SAS command sends the SAS log to the SYS$PRINT printer queue instead 
+  of the default destination (the display). If you want to send the log to a 
+  different printer, you must redefine the SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772144>$ SAS/NODMS/ALTLOG=SYS$PRINT</A> 
+  <DD>This SAS command sends a copy of the SAS log to the SYS$PRINT printer 
+  queue and to the default destination (the display). If you want to send the 
+  log to a different printer, you must redefine the SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772146>PROC PRINTTO LOG=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends any following SAS log entries to the 
+  default system printer during a SAS session. You must have defined 
+  <I>fileref</I> in a FILENAME statement or function with the PRINTER 
+  device-type keyword. For more information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing the Log to a Disk File</H3>
+<P><A name=z0772148>To send the SAS log to a disk file in interactive line mode, 
+choose one of the following methods: </A>
+<DL>
+  <DT><A name=z0772149>$ SAS/NODMS/LOG=<I>file-specification</I></A> 
+  <DD>This SAS command sends the SAS log to the disk file 
+  <I>file-specification</I> instead of the default destination (the display). 
+  The following is an example of this command: <PRE>$ SAS/NODMS/LOG=MYLOG.LOG</PRE>
+  <P></P>
+  <DT><A name=z0772151>$ SAS/NODMS/ALTLOG=<I>file-specification</I></A> 
+  <DD>This SAS command sends a copy of the SAS log to the disk file 
+  <I>file-specification</I> and to the default destination (the display). The 
+  following is an example of this command: <PRE>$ SAS/NODMS/ALTLOG=MYLOG.LOG</PRE>
+  <P></P>
+  <DT><A name=z0772153>PROC PRINTTO LOG=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following SAS log entries to the disk 
+  file associated with <I>file-specification</I> during a SAS session. The value 
+  for <I>file-specification</I> can be any valid external file specification 
+  discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Printer</H3>
+<P><A name=z0772155>To send the procedure output to a printer in interactive 
+line mode, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772156>$ SAS/NODMS/PRINT=SYS$PRINT</A> 
+  <DD>This SAS command sends the procedure output to the SYS$PRINT printer queue 
+  instead of to the default destination (the display). If you want to send the 
+  procedure output to a different printer, you must redefine the SYS$PRINT 
+  logical name.
+  <P></P>
+  <DT><A name=z0772158>$ SAS/NODMS/ALTPRINT=SYS$PRINT</A> 
+  <DD>This SAS command sends a copy of the procedure output to the SYS$PRINT 
+  printer queue and to the default destination (the display). If you want to 
+  send the procedure output to a different printer, you must redefine the 
+  SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772160>PROC PRINTTO PRINT=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends any following procedure output to the 
+  default system printer during a SAS session. You must have defined 
+  <I>fileref</I> in a FILENAME statement or function with the PRINTER 
+  device-type keyword. For more information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Disk File</H3>
+<P><A name=z0772162>To send the procedure output to a disk file in interactive 
+line mode, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772163>$ SAS/NODMS/PRINT=<I>file-specification</I></A> 
+  <DD>This SAS command sends the procedure output to the disk file 
+  <I>file-specification</I> instead of to the default destination (the display). 
+  The following is an example of this command: <PRE>$ SAS/NODMS/PRINT=MYPROG.LIS</PRE>
+  <P></P>
+  <DT><A name=z0772165>$ SAS/NODMS/ALTPRINT=<I>file-specification</I></A> 
+  <DD>This SAS command sends a copy of the procedure output to the disk file 
+  <I>file-specification</I> and to the default destination (the display). The 
+  following is an example: <PRE>$ SAS/NODMS/ALTPRINT=MYPROG.LIS</PRE>
+  <P></P>
+  <DT><A name=z0772167>PROC PRINTTO PRINT=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following procedure output to the disk 
+  file associated with <I>file-specification</I> during a SAS session. The value 
+  for <I>file-specification</I> can be any valid external file specification 
+  discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL>
+<P>
+<TABLE cellSpacing=0 cellPadding=0 width="100%">
+  <TBODY>
+  <TR vAlign=bottom>
+    <TD>
+      <HR>
+    </TD></TR>
+  <TR vAlign=top>
+    <TD><B><FONT size=5>Noninteractive Mode</FONT></B></TD></TR></TBODY></TABLE>
+<P><A name=z0772169>In noninteractive mode, the default destination for the log 
+is the disk file <I>program-name</I>.LOG, where <I>program-name</I> is the name 
+of the file that contains the submitted SAS statements. The default destination 
+for the procedure output is a disk file named <I>program-name</I>.LIS. For 
+example, if you run your SAS program in noninteractive mode using the following 
+command, the SAS log is automatically directed to a file named PROGNAME.LOG and 
+the procedure output is written to a file named PROGNAME.LIS: </A><PRE>$ SAS PROGNAME</PRE>
+<P>Both files are written in the default directory. <BR>
+<H3>Routing the Log to a Display</H3>
+<P><A name=z0772171>To send the SAS log to a display in noninteractive mode, 
+choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772172>$ SAS/LOG=SYS$OUTPUT <I>program-name</I></A> 
+  <DD>This SAS command sends the SAS log to your display instead of the default 
+  destination (<I>program-name</I>.LOG file).
+  <P></P>
+  <DT><A name=z0772174>$ SAS/ALTLOG=SYS$OUTPUT <I>program-name</I></A> 
+  <DD>This SAS command sends a copy of the SAS log to your display and to the 
+  default destination (<I>program-name</I>.LOG file).
+  <P></P>
+  <DT><A name=z0772176>PROC PRINTTO LOG=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends the SAS log to your display during a 
+  noninteractive job. You must have defined <I>fileref</I> in a FILENAME 
+  statement or function with the TERMINAL device-type keyword. For more 
+  information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing the Log to a Printer</H3>
+<P><A name=z0772178>To send the SAS log to a printer in noninteractive mode, 
+choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772179>$ SAS/LOG=SYS$PRINT <I>program-name</I></A> 
+  <DD>This SAS command sends the SAS log to the SYS$PRINT printer queue instead 
+  of the default destination (<I>program-name</I>.LOG file). If you want to send 
+  the log to a different printer, you must redefine the SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772181>$ SAS/ALTLOG=SYS$PRINT <I>program-name</I></A> 
+  <DD>This SAS command sends a copy of the SAS log to the SYS$PRINT printer 
+  queue and to the default destination (<I>program-name</I>.LOG file). If you 
+  want to send the log to a different printer, you must redefine the SYS$PRINT 
+  logical name.
+  <P></P>
+  <DT><A name=z0772183>PROC PRINTTO LOG=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends the SAS log to a printer during a 
+  noninteractive job. You must have defined <I>fileref</I> in a FILENAME 
+  statement or function with the PRINTER device-type keyword. For more 
+  information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL>
+<P><A name=z0772185>You can also use the DCL PRINT command to send the 
+<I>program-name</I>.LOG file to the printer after a noninteractive job 
+finishes.</A> <BR>
+<H3>Routing the Log to a Disk File</H3>
+<P><A name=z0772186>To send the SAS log to a disk file in noninteractive mode, 
+choose one of the following methods: </A>
+<DL>
+  <DT><A name=z0772187>$ SAS/LOG=<I>file-specification program-name</I></A> 
+  <DD>This SAS command sends the SAS log to the file <I>file-specification</I> 
+  instead of the default destination (<I>program-name</I>.LOG file). The 
+  following is an example of this command: <PRE>$ SAS/LOG=MYLOG.LOG PROG1</PRE>
+  <P></P>
+  <DT><A name=z0772189>$ SAS/ALTLOG=<I>file-specification program-name</I></A> 
+  <DD>This SAS command sends a copy of the SAS log to the disk file 
+  <I>file-specification</I> and to the default destination 
+  (<I>program-name</I>.LOG file). The following is an example of this command: <PRE>$ SAS/ALTLOG=MYLOG.LOG PROG1</PRE>
+  <P></P>
+  <DT><A name=z0772191>PROC PRINTTO LOG=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following SAS log entries to the disk 
+  file associated with <I>file-specification</I> during a noninteractive job. 
+  The value for <I>file-specification</I> can be any valid external file 
+  specification, as discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Display</H3>
+<P><A name=z0772193>To send the procedure output to a display in noninteractive 
+mode, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772194>$ SAS/PRINT=SYS$OUTPUT <I>program-name</I></A> 
+  <DD>This SAS command sends the procedure output to your display instead of the 
+  default destination (<I>program-name</I>.LIS file).
+  <P></P>
+  <DT><A name=z0772196>$ SAS/ALTPRINT=SYS$OUTPUT <I>program-name</I></A> 
+  <DD>This SAS command sends a copy of the procedure output to your display and 
+  to the default destination (<I>program-name</I>.LIS file).
+  <P></P>
+  <DT><A name=z0772198>PROC PRINTTO PRINT=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends the procedure output to your display during 
+  a noninteractive job. You must have defined <I>fileref</I> in a FILENAME 
+  statement or function with the TERMINAL device-type keyword. For more 
+  information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL><BR>
+<H3>Routing Procedure Output to a Printer</H3>
+<P><A name=z0772200>To send the procedure output to a printer in noninteractive 
+mode, choose from the following methods: </A>
+<DL>
+  <DT><A name=z0772201>$ SAS/PRINT=SYS$PRINT <I>program-name</I></A> 
+  <DD>This SAS command sends the procedure output to the SYS$PRINT printer queue 
+  instead of the default destination (<I>program-name</I>.LIS file). If you want 
+  to send the procedure output to a different printer, you must redefine the 
+  SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772203>$ SAS/ALTPRINT=SYS$PRINT <I>program-name</I></A> 
+  <DD>This SAS command sends a copy of the procedure output to the SYS$PRINT 
+  printer queue and to the default destination (<I>program-name</I>.LIS file). 
+  If you want to send the procedure output to a different printer, you must 
+  redefine the SYS$PRINT logical name.
+  <P></P>
+  <DT><A name=z0772205>PROC PRINTTO PRINT=<I>fileref</I>;</A> 
+  <DD>This procedure statement sends the procedure output to a printer during a 
+  noninteractive job. You must have defined <I>fileref</I> in a FILENAME 
+  statement or function with the PRINTER device-type keyword. For more 
+  information, see the procedure <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/zprintto.htm">PRINTTO</A> and <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z1main.htm#zdevtype">Device-Type 
+  Keywords</A> in the FILENAME statement.
+  <P></P></DD></DL>
+<P><A name=z0772207>You can also use the DCL PRINT command to send the 
+<I>program-name</I>.LIS file to the printer after a noninteractive job 
+finishes.</A> <BR>
+<H3>Routing Procedure Output to a Disk File</H3>
+<P><A name=z0772208>To send the procedure output to a disk file in 
+noninteractive mode, choose one of the following methods: </A>
+<DL>
+  <DT><A name=z0772209>$ SAS/PRINT=<I>file-specification program-name</I></A> 
+  <DD>This SAS command sends the procedure output to the disk file 
+  <I>file-specification</I> instead of the default destination 
+  (<I>program-name</I>.LIS file). The following is an example of this command: <PRE>$ SAS/PRINT=MYPROG.LIS PROG1</PRE>
+  <P></P>
+  <DT><A name=z0772211>$ SAS/ALTPRINT=<I>file-specification program-name</I></A> 
+
+  <DD>This SAS command sends a copy of the procedure output to the file 
+  <I>file-specification</I> and to the default destination 
+  (<I>program-name</I>.LIS file). The following is an example of this command: <PRE>$ SAS/ALTPRINT=MYPROG.LIS PROG1</PRE>
+  <P></P>
+  <DT><A name=z0772213>PROC PRINTTO PRINT=<I>file-specification</I>;</A> 
+  <DD>This procedure statement sends any following procedure output to the disk 
+  file associated with <I>file-specification</I> during a noninteractive job. 
+  The value for <I>file-specification</I> can be any valid external file 
+  specification discussed in <A 
+  href="http://www.sfu.ca/sasdoc/sashtml/vms/z-access.htm">Identifying External 
+  Files to the SAS System</A>.
+  <P></P></DD></DL>
+<P>
+<TABLE cellSpacing=0 cellPadding=0 width="100%">
+  <TBODY>
+  <TR vAlign=bottom>
+    <TD>
+      <HR>
+    </TD></TR>
+  <TR vAlign=top>
+    <TD><B><FONT size=5>Batch Mode</FONT></B></TD></TR></TBODY></TABLE>
+<P><A name=z0772215>The default for handling output in batch mode is similar to 
+noninteractive mode. When you invoke SAS in batch mode, the SAS log is written 
+to a file with OpenVMS file type .LOG, and the procedure output is written to a 
+file with OpenVMS file type .LIS in the default directory of the command 
+procedure within which SAS was invoked. Typically, the default directory for a 
+batch job is the SYS$LOGIN directory. You can change the default by using a SET 
+DEFAULT command in the BATCH command file. The filename for the .LOG and .LIS 
+files is the name of the SAS program file that you specified in the SAS 
+command.</A> 
+<P>In addition to the .LOG and .LIS files that are created for SAS output, the 
+OpenVMS system also creates an OpenVMS log file in batch mode. The OpenVMS batch 
+log is named <I>command-file</I>.LOG, where <I>command-file</I> is the command 
+procedure that you submitted for execution. Do not confuse the OpenVMS log with 
+the SAS log. Both have the OpenVMS file type .LOG, but the OpenVMS log contains 
+commands and messages that are generated by OpenVMS when it processes any batch 
+job, including a SAS batch job. The SAS log contains statements and messages 
+that are generated by the SAS System. 
+<DL>
+  <DT><B><FONT color=#ff0070>CAUTION:</FONT></B>
+  <DD><B>Do not give your SAS program and the command procedure the same 
+  name.</B> This causes confusion when the OpenVMS and SAS logs are created. If 
+  this does occur, the OpenVMS log is created first (for example MYPROG.LOG;1) 
+  and the SAS log is created second (MYPROG.LOG;2). If you cannot keep more than 
+  one version of a file, the OpenVMS batch log is overwritten with the SAS 
+  log.&nbsp;&nbsp;<IMG alt=[cautionend] 
+  src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/cautend.gif" 
+  align=bottom border=0></DD></DL>
+<P>You can send the SAS log and procedure output to a printer instead of to the 
+default .LOG and .LIS files. To redirect the SAS log and procedure output to the 
+system printer, use SYS$PRINT as the value for the LOG=, ALTLOG=, PRINT=, and 
+ALTPRINT= system options, where appropriate. You can also use the DCL PRINT 
+command to send the .LOG and .LIS files to the printer after a batch job has 
+finished. 
+<P><!-- navigation -->
+<P>
+<TABLE cellSpacing=0 cellPadding=0>
+  <TBODY>
+  <TR vAlign=top>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/ztoutput.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/cont1.gif" 
+      border=0><BR><FONT size=-2>Chapter Contents</FONT></A></TD>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/z0315284.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/prev1.gif" 
+      border=0><BR><FONT size=-2>Previous</FONT></A></TD>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/zprtfile.htm"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/next1.gif" 
+      border=0><BR><FONT size=-2>Next</FONT></A></TD>
+    <TD align=middle><A 
+      href="http://www.sfu.ca/sasdoc/sashtml/vms/zut-dest.htm#zut-dest"><IMG 
+      src="Routing the SAS Log and SAS Procedure Output  Controlling Log and Output Destinations_files/top1.gif" 
+      border=0><BR><FONT size=-2>Top of Page</FONT></A></TD></TR></TBODY></TABLE>
+<P><FONT size=1><A 
+href="http://www.sfu.ca/sasdoc/sashtml/common/images/copyrite.htm">Copyright 
+1999 by SAS Institute Inc., Cary, NC, USA. All rights reserved.</A></FONT> 
+</P></BODY></HTML>

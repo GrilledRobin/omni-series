@@ -1,0 +1,153 @@
+---
+title: 'Data Explorer'
+author:
+  name: 'Robin'
+  email: 'r.b.lucas@hotmail.com'
+date: '`r Sys.Date()`'
+output:
+  rmdformats::material:
+    highlight: kate
+    mathjax: NULL
+    # mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML.js'
+    self_contained: TRUE
+params:
+  ref: NULL
+  flt: NULL
+  rpt: NULL
+---
+
+```{r setup, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+library(DT)
+library(echarts4r)
+
+## Global options
+# options(max.print='75')
+knitr::opts_chunk$set(
+	echo=FALSE,
+	cache=FALSE,
+	prompt=FALSE,
+	tidy=FALSE,
+	message=FALSE,
+	warning=FALSE
+)
+# knitr::opts_knit$set(width=75)
+```
+
+```{r check, eval=TRUE, include=FALSE, results='asis'}
+#IMPORTANT!!! We always have to execute this chunk, for it can successfuly embed the necessary JS libraries
+#              which are required, to enable the correct display of the charts within [for] loops!
+cat('\n')
+cat('# [Check]\n')
+cat('\n')
+cat('\n')
+params$rpt[[1]]$CHARTS[[1]]$OBJ
+cat('\n')
+cat('\n')
+params$rpt[[1]]$CHARTS[[2]]$OBJ
+cat('\n')
+```
+
+```{r reports, results='asis'}
+#100. Create the section of data reference if any
+cat('\n')
+if (!is.null(params$ref)) if (length(params$ref) > 0){
+	#001. Create the header level 1
+	cat('# Data Info.\n\n')
+
+	#100. Create the section to show data details
+	cat('## Attributes of the data for analysis in this pack are listed as below:\n\n')
+
+	#110. Initialize a table with certain formats
+	cat('|   Attributes  |        Values |\n')
+	cat('|:--------------|--------------:|\n')
+
+	#150. Fill above table with available attributes
+	for (i in 1:length(params$ref)){
+		txt <- gsub('\\\\' , '\\\\\\\\' , params$ref[[i]] , perl = TRUE)
+		cat('|',names(params$ref)[[i]],'|',txt,'|\n')
+	}
+}
+
+#400. Global filtration conditions over the captioned data conducted within module: [UM_SingleVarStats]
+cat('\n\n')
+if (!is.null(params$flt)) if (length(params$flt) > 0){
+	#100. Create the section to show data details in the same level-1 paragraph as above
+	cat('## Filters that are applied to the entire input data ___before___ chart analysis are listed as below:\n\n')
+
+	#110. Initialize a table with certain formats
+	cat('|  Variable Name  |   Filter Type   |        Filtered Values        |\n')
+	cat('|:----------------|:---------------:|------------------------------:|\n')
+
+	#150. Fill above table with available attributes
+	for (i in 1:length(params$flt)){
+		cat('| ',params$flt[[i]]$NAME,' | ',params$flt[[i]]$TYPE,' | ',params$flt[[i]]$VALUE,' |\n')
+	}
+}
+
+#500. Create separate reports for each variable in the data under analysis
+cat('\n\n')
+#[Quote: https://stackoverflow.com/questions/33269675/loop-in-r-markdown ]
+for (i in 1:length(params$rpt)){
+	#001. Create the header level 1
+	cat('# [',names(params$rpt)[[i]],']\n\n')
+
+	#100. Declare the user filters upon the data if any
+	if (!is.null(params$rpt[[i]]$INPUTS)) if (length(params$rpt[[i]]$INPUTS) > 0){
+		#100. Create the title of current section
+		cat('## There are a few filtrations made upon the captioned variable to take the snapshot of the charts.\n\n')
+
+		#300. Initialize a table with certain formats
+		cat('| Filter     |   Values   |\n')
+		cat('|:-----------|-----------:|\n')
+
+		#500. List down the filtration conditions
+		for (j in 1:length(params$rpt[[i]]$INPUTS)){
+			cat('|',names(params$rpt[[i]]$INPUTS)[[j]],'|',params$rpt[[i]]$INPUTS[[j]],'|\n')
+		}
+	}
+
+	#500. Print the charts together with their respective bookmarks if any
+	for (j in 1:length(params$rpt[[i]]$CHARTS)){
+		#100. Title of current chart
+		cat('\n\n')
+		cat('## ',params$rpt[[i]]$CHARTS[[j]]$NAME,'\n\n')
+
+		#300. Print the bookmark contents if any
+		if (!is.null(params$rpt[[i]]$CHARTS[[j]]$TXT)){
+			#100. Create the title of current section
+			cat('\n')
+			cat('### Observations from the captioned chart are as below:\n\n')
+	
+			#300. Print the bookmark contents
+			cat(params$rpt[[i]]$CHARTS[[j]]$TXT,'\n\n')
+		}
+
+		#500. Create the chart
+		if (!is.null(params$rpt[[i]]$CHARTS[[j]]$OBJ)){
+			cat('\n\n')
+			#We can only [print] the HTML tags instead of putting them directly like the open code outside [for] loop
+			#IMPORTANT: We have to enclose the object by [tagList] or [div], otherwise it cannot be printed!
+			#[Quote: https://github.com/ramnathv/htmlwidgets/pull/110 ]
+			tags_print <- shiny::tagList(params$rpt[[i]]$CHARTS[[j]]$OBJ)
+			if (!is.null(params$rpt[[i]]$CHARTS[[j]]$OBJS)){
+				#This is to compromise the [CLOCK] charts, which cannot be placed in-line,
+				# for they cannot be recognized by [knitr].
+				for (k in 1:length(params$rpt[[i]]$CHARTS[[j]]$OBJS)){
+					print(shiny::tags$div(params$rpt[[i]]$CHARTS[[j]]$OBJS[[k]]))
+				}
+				# print(shiny::tags$div(params$rpt[[i]]$CHARTS[[j]]$OBJS[[1]]))
+				# print(shiny::tags$div(params$rpt[[i]]$CHARTS[[j]]$OBJS[[2]]))
+			} else {
+				print(tags_print)
+			}
+			# print(tags_print)
+			cat('\n\n')
+		}
+		cat('\n\n')
+	}
+	cat('\n\n')
+}
+```
+

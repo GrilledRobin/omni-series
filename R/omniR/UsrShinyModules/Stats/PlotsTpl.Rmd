@@ -1,0 +1,32 @@
+---
+title: "PlotsCollection"
+author: "Robin Lu"
+date: '`r strftime(Sys.Date(), "%Y-%m-%d")`'
+output:
+  html_document:
+    self_contained: TRUE
+params:
+  module: NULL
+  dat: NULL
+  x: NULL
+  y: NULL
+  charts: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Snapshot of Plots
+
+This is a collection of snapshots that are created by the user from the module: [`r params$module`] in one single Shiny App session.
+
+Dataset: [`r params$dat`]  
+Evaluation variables:  
+x: [`r params$x`]  
+y: [`r params$y`]
+
+```{r charts, echo=FALSE}
+params$charts
+```
+

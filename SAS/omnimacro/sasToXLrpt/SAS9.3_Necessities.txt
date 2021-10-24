@@ -1,0 +1,11 @@
+Access database engine
+http://www.microsoft.com/zh-cn/download/details.aspx?id=13255
+
+SAS9.3 64位软件不能导入Excel文件的原因是，SAS软件导入像Microsoft Office软件下的Excel和Access文件时，是借用Microsoft公司提供的数据接口引擎（Access database engine)，如果安装了Office软件，数据接口引擎也会同时被安装，但是一般是安装了32位的数据接口引擎，所以SAS软件为64位时，则Proc import程序无法借用Office的32位数据接口引擎，故无法导入Excel和Access文件，出现下列错误：
+
+Error: Connect: Class not registered
+Error: Error in the Libname statement
+
+解决办法就是先下载Microsoft提供的Accessdatabaseengine_x64.exe程序
+
+下载后如果不能安装，则是因为本机已经安装了32位Accessdatabaseengine，安装之前应该先卸载掉。

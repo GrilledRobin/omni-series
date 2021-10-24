@@ -1,0 +1,180 @@
+---
+#[Quote: [pagetitle] determines the tabname of the report in the web explorer]
+pagetitle: "PIE"
+# title: "PIE"
+# author: "Robin Lu"
+# date: '`r strftime(Sys.Date(), "%Y-%m-%d")`'
+output:
+  html_document:
+    self_contained: TRUE
+    #[Quote: https://stackoverflow.com/questions/44343824/how-to-add-multiple-css-files-to-a-revealjs-presentation-in-r-markdown ]
+    css: ['D:\\R\\omniR\\UsrShinyModules\\Ops\\AdminLTE.min.css','D:\\R\\omniR\\Styles\\rmd_CustPortMgmt.css']
+params:
+  lang_cfg: NULL
+  lang_disp: NULL
+  uDiv_Rpt_Title: NULL
+  print_Profile: NULL
+  uDiv_Rpt_ProdType: NULL
+  print_ProdType: NULL
+  uDiv_Rpt_DashTables: NULL
+  print_span_AllPnL: NULL
+  print_dt_Prods_hdr: NULL
+  print_dt_Prods: NULL
+  uDiv_Rpt_CTT: NULL
+  print_CTT: NULL
+  uDiv_Rpt_FundExplorer: NULL
+  print_CostPnL: NULL
+  print_FundPrice: NULL
+  print_FundPnL: NULL
+  uDiv_Rpt_AUMadj: NULL
+  print_AUM_adj: NULL
+  print_ch_BalAdj: NULL
+  uDiv_Rpt_PnLComp: NULL
+  print_dt_PnL: NULL
+  print_txt_Advisory: NULL
+---
+
+```{r setup, echo=FALSE, cache=FALSE}
+library(knitr)
+## Global options
+# options(max.print='75')
+knitr::opts_chunk$set(
+	echo=FALSE,
+	cache=FALSE,
+	prompt=FALSE,
+	tidy=FALSE,
+	message=FALSE,
+	warning=FALSE
+)
+suppressPackageStartupMessages(
+	suppressWarnings({
+		library(rmdformats)
+		library(DT)
+		library(echarts4r)
+		library(shiny)
+		library(shinydashboard)
+		library(shinydashboardPlus)
+	})
+)
+# knitr::opts_knit$set(width=75)
+```
+
+```{r loadDTjs, eval=TRUE, include=FALSE, results='asis'}
+#IMPORTANT!!! We always have to execute this chunk, for it can successfuly embed the necessary JS libraries
+#              which are required, to enable the correct display of the charts within [for] loops!
+cat('\n\n')
+if (!is.null(params$print_dt_Prods)) params$print_dt_Prods[[1]]
+cat('\n\n')
+# if (!is.null(params$print_ch_BalAdj)) params$print_ch_BalAdj
+cat('\n\n')
+```
+
+```{r RptTitle, eval=TRUE}
+params$uDiv_Rpt_Title
+```
+
+```{r Profile, eval=TRUE}
+params$print_Profile
+```
+
+```{r ProdTypeTitle, eval=TRUE}
+params$uDiv_Rpt_ProdType
+```
+
+```{r ProdType, eval=TRUE}
+params$print_ProdType
+```
+
+```{r DashTablesTitle, eval=TRUE}
+params$uDiv_Rpt_DashTables
+```
+
+```{r Gain_All, eval=TRUE}
+shiny::tags$div(
+	class = 'pull-right'
+	,style = paste0(''
+		,'padding-right: 5px;'
+	)
+	,params$print_span_AllPnL
+)
+```
+
+```{r dt_Prods, results='asis'}
+if (!is.null(params$print_dt_Prods)) for (i in seq_along(params$print_dt_Prods)){
+	cat('###### ',params$lang_cfg[[params$lang_disp]][['tblnames']][[params$print_dt_Prods_hdr[[i]]]],'\n\n')
+	print(shiny::tagList(params$print_dt_Prods[[i]]))
+}
+```
+
+```{r CTTTitle, eval=TRUE}
+params$uDiv_Rpt_CTT
+```
+
+```{r CTT, eval=TRUE}
+params$print_CTT
+```
+
+```{r FundExp, results='asis'}
+params$uDiv_Rpt_FundExplorer
+if (!is.null(params$print_CostPnL)) for (i in seq_along(params$print_CostPnL)){
+	print(shiny::tagList(params$print_CostPnL[[i]]))
+}
+if (!is.null(params$print_FundPrice)){
+	shiny::tagList(params$print_FundPrice)
+}
+if (!is.null(params$print_FundPnL)) for (i in seq_along(params$print_FundPnL)){
+	# cat('###### ',params$lang_cfg[[params$lang_disp]][['tblnames']][[names(params$print_FundPnL)[[i]]]],'\n\n')
+	print(shiny::tagList(params$print_FundPnL[[i]]))
+}
+```
+
+```{r AUMadjTitle, eval=TRUE}
+params$uDiv_Rpt_AUMadj
+```
+
+```{r AUMadj, eval=TRUE}
+params$print_AUM_adj
+```
+
+```{r BalAdj, eval=TRUE}
+params$print_ch_BalAdj
+```
+
+```{r PnLCompTitle, eval=TRUE}
+params$uDiv_Rpt_PnLComp
+```
+
+```{r PnLComp, eval=TRUE}
+params$print_dt_PnL
+```
+
+```{r Advisory, eval=TRUE}
+params$print_txt_Advisory
+```
+
+```{r check, eval=FALSE, include=FALSE, results='asis'}
+cat('\n')
+cat('# [UOBC]\n')
+cat('\n')
+cat('\n')
+cat('## Below is the profile and the overall risk position of the customer.\n')
+cat('\n')
+cat('\n')
+# shiny::tags$div(params$print_Profile)
+params$print_Profile
+cat('\n')
+cat('\n')
+cat('## Below is the product holding by product types as well as the drilldown of fund holding of the customer.\n')
+cat('\n')
+cat('\n')
+# shiny::tags$div(params$print_ProdType)
+params$print_ProdType
+cat('\n')
+cat('\n')
+cat('## Below is the strategy to adjust the customer portfolio.\n')
+cat('\n')
+cat('\n')
+# shiny::tags$div(params$print_CTT)
+params$print_CTT
+cat('\n')
+```

@@ -1,0 +1,11 @@
+/*
+Overall control of the styles used for printed RMarkdown reports
+*/
+
+body {
+	font-size: 10px;
+	font-family: "Microsoft YaHei", Helvetica, "sans-serif", Arial, "宋体";
+}
+h1, h2, h3, h4, h5, h6 {
+	font-family: "Microsoft YaHei", Helvetica, "sans-serif", Arial, "宋体";
+}

@@ -1,0 +1,176 @@
+/*
+Overall control of the styles used for the module of Customer Portfolio Management
+https://less.bootcss.com/#%E6%A6%82%E8%A7%88
+*/
+@FontSize_Title: 14px;
+@FontSize_Item: 10px;
+
+// uobc_white$p[[1]]
+@color_UsrTitle: #FBFAF9;
+// uobc_red$d
+@color_Advise: #E1091D;
+// uobc_blue$d
+@color_CustAct: #002469;
+// uobc_blue$p[[3]]
+@color_UsrBox: #7F91B4;
+// uobc_red$p[[3]]
+@color_AdvBtnHover: #F0848E;
+// [green] from within the default color set of [MS PowerBI]
+@color_CustNew: #01B8AA;
+// [green] from within the default color set of [MS PowerBI]
+@color_Positive: #01B8AA;
+// [red] from within the default color set of [MS PowerBI]
+@color_Negative: #FD625E;
+// uobc_white$p[[3]]
+@color_ech_dz_AreaBg: #EBE8E4;
+
+@color_DTHeaderTxt: @color_UsrTitle;
+@color_DTHeaderBg: @color_UsrBox;
+@color_ActBtnHover: @color_UsrBox;
+@color_tabBox: @color_CustAct;
+@color_ech_dz_Border: @color_UsrTitle;
+@color_ech_dz_Handle: @color_UsrBox;
+
+body {
+	font-size: @FontSize_Item;
+	font-family: "Microsoft YaHei", Helvetica, "sans-serif", Arial, "宋体";
+}
+h1, h2, h3, h4, h5, h6 {
+	font-family: "Microsoft YaHei", Helvetica, "sans-serif", Arial, "宋体";
+}
+
+// Report Title
+.uDiv-title {
+	padding-left: 16px;
+	margin-top: 4px;
+	margin-bottom: 4px;
+}
+
+// Report Section Header
+.uDiv-section {
+	font-size: @FontSize_Title;
+	font-weight: bold;
+	padding-left: 8px;
+	margin-top: 8px;
+	margin-bottom: 0px;
+}
+
+// Copyright
+.uDiv-copyright {
+	padding-left: 16px;
+	margin-top: 0px;
+	margin-bottom: 4px;
+}
+
+// Date of Data Update
+.uDiv-d-update {
+	margin-top: 0px;
+	margin-bottom: 4px;
+}
+
+// Powered By
+.uDiv-poweredby {
+	.uDiv-d-update();
+	padding-right: 8px;
+}
+
+// Button-Small in the style of main theme
+.uAB-theme-s {
+	text-align: center;
+	padding: 2px 4px;
+	margin: 0;
+	border: none;
+	border-radius: 2px;
+	color: @color_UsrTitle;
+	background-color: @color_CustAct;
+
+	.hover, &:focus, &:hover {
+		color: @color_UsrTitle;
+		background-color: @color_ActBtnHover;
+	}
+}
+
+// Button-Extra-Small in the style of main theme
+.uAB-theme-xs {
+	.uAB-theme-s();
+	padding: 0px 4px;
+}
+
+// Button-Medium in the style of main theme
+.uAB-theme-m {
+	.uAB-theme-s();
+	padding: 4px 4px;
+}
+
+// Button-Medium in the style of main theme
+.uAB-theme-l {
+	.uAB-theme-s();
+	padding: 6px 6px;
+}
+
+// Button-Medium in the style of main theme
+.uAB-theme-xl {
+	.uAB-theme-s();
+	padding: 8px 8px;
+}
+
+// Button-Small in the style of main theme as alert or advisory
+.uAB-alert-s {
+	text-align: center;
+	padding: 2px 4px;
+	margin: 0;
+	border: none;
+	border-radius: 2px;
+	color: @color_UsrTitle;
+	background-color: @color_Advise;
+
+	.hover, &:focus, &:hover {
+		color: @color_UsrTitle;
+		background-color: @color_AdvBtnHover;
+	}
+}
+
+// Button-Extra-Small in the style of main theme as alert or advisory
+.uAB-alert-xs {
+	.uAB-alert-s();
+	padding: 0px 4px;
+}
+
+// Button-Medium in the style of main theme as alert or advisory
+.uAB-alert-m {
+	.uAB-alert-s();
+	padding: 4px 4px;
+}
+
+// Button-Medium in the style of main theme as alert or advisory
+.uAB-alert-l {
+	.uAB-alert-s();
+	padding: 6px 6px;
+}
+
+// Button-Medium in the style of main theme as alert or advisory
+.uAB-alert-xl {
+	.uAB-alert-s();
+	padding: 8px 8px;
+}
+
+// Button-Small in the DT(datatable) as navigator
+.uAB-nav-s {
+	text-align: center;
+	padding: 2px 4px;
+	margin: 0;
+	border: none;
+	border-radius: 2px;
+	background-color: rgba(0,0,0,0);
+
+	.hover, &:focus, &:hover {
+		color: @color_UsrTitle;
+		background-color: @color_ActBtnHover;
+	}
+}
+
+// Button-Extra-Small in the DT(datatable) as navigator
+.uAB-nav-xs {
+	.uAB-nav-s();
+	padding: 0px 4px;
+}

@@ -1,0 +1,13 @@
+%macro sqlAddCOL(tblnm=,colnm=,intp=,inlen=);
+	%if	"&intp"	=	"nvarchar"	%then %do;
+		%let	inlen	=	%str(%(&inlen.%));
+	%end;
+	%else %do;
+		%let	inlen	=;
+	%end;
+	PUT	"if not exists (select 1 from sys.columns where object_id = object_id('&tblnm.') and name = '&colnm.')";
+	PUT	"begin";
+	PUT	"	ALTER TABLE &tblnm.";
+	PUT	"	ADD &colnm. &intp.&inlen. NULL";
+	PUT	"end";
+%mend;

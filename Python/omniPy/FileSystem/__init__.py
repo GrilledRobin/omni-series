@@ -8,11 +8,15 @@
 #100.   Import the local modules.
 from .getMemberByStrPattern import getMemberByStrPattern
 from .MSExcelSaveAs import MSExcelSaveAs
+from .getMSDNKnownFolderIDDoc import getMSDNKnownFolderIDDoc
+from .winKnownFolders import winKnownFolders
 from .winUserShellFolders import winUserShellFolders
 
 #200.   Define available resources.
 __all__ = [
     'getMemberByStrPattern'
     ,'MSExcelSaveAs'
+    ,'getMSDNKnownFolderIDDoc'
+    ,'winKnownFolders'
     ,'winUserShellFolders'
 ]

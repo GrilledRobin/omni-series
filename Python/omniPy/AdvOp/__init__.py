@@ -19,10 +19,12 @@ from .modifyDict import modifyDict
 from .selCatVar import selCatVar
 from .selNumVar import selNumVar
 from .trimCatVar import trimCatVar
+from .getWinUILanguage import getWinUILanguage
 
 #200.   Define available resources.
 __all__ = [
     'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
     , 'modifyDict'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
+    , 'getWinUILanguage'
 ]

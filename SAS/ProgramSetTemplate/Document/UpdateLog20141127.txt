@@ -1,0 +1,37 @@
+|--------------------------<V20141127 >--------------------------|
+|--------------------------<  Start   >--------------------------|
+|Title         |Enable multi-layer manager calculation           |
+|Start Date    |2014-11-27                                       |
+|End Date      |2014-12-05                                       |
+|Updater       |Lu Robin Bin                                     |
+|Updater PSID  |1298609                                          |
+|Department    |China SBIM                                       |
+|--------------|-------------------------------------------------|
+|Description   |Enhance the Platform so that the calculation of  |
+|              |managers at higher levels than Team Manager can  |
+|              |be facilitated.                                  |
+|--------------|-------------------------------------------------|
+|Changes       |1. Add new levels of calculation.                |
+|--------------|-------------------------------------------------|
+|Plan to Do    |Replace "L_mcrLABEL" with automatic system       |
+|              |variable in 010Proc.                             |
+|--------------|-------------------------------------------------|
+|Effect        |As long as there are new levels of managers in   |
+|              |the FLIP scheme, configurations of the Platform  |
+|              |can be extended to adapt the calculation for them|
+|              |.                                                |
+|--------------|-------------------------------------------------|
+|----------------------| Modified Files   |----------------------|
+PGM\0001CmnConfig\001_Create_MappingTable.sas
+PGM\1300ARMSCCreateDB\010_GetFlag.sas
+PGM\1300ARMSCCreateDB\900_CreateDB.sas
+PGM\1600ARMPOCreateDB\010_GetFlag.sas
+PGM\1600ARMPOCreateDB\900_CreateDB.sas
+PGM\2300MGRSCCreateDB\010_GetFlag.sas
+PGM\2300MGRSCCreateDB\900_CreateDB.sas
+PGM\2600MGRPOCreateDB\010_GetFlag.sas
+PGM\2600MGRPOCreateDB\900_CreateDB.sas
+PGM\macros\010Biz\getARMcond_MGR.sas
+|----------------------| Added Files      |----------------------|
+|----------------------| Deleted Files    |----------------------|
+|--------------------------<   End    >--------------------------|

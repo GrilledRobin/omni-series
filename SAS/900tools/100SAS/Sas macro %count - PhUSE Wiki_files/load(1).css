@@ -1,0 +1,147 @@
+H1 {
+	BORDER-RIGHT: 1px solid; PADDING-RIGHT: 10px; BORDER-TOP: 1px solid; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 125%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px solid; COLOR: white; PADDING-TOP: 10px; BORDER-BOTTOM: 1px solid; BACKGROUND-COLOR: orange! important; border-radius: 10px
+}
+H2 {
+	BORDER-RIGHT: 1px solid; PADDING-RIGHT: 10px; BORDER-TOP: 1px solid; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 115%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px solid; COLOR: #0097ff; PADDING-TOP: 10px; BORDER-BOTTOM: 1px solid; border-radius: 10px
+}
+H3 {
+	BORDER-RIGHT: 1px dashed; PADDING-RIGHT: 10px; BORDER-TOP: 1px dashed; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 100%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px dashed; COLOR: #009933; PADDING-TOP: 10px; BORDER-BOTTOM: 1px dashed; border-radius: 10px
+}
+H4 {
+	BORDER-RIGHT: 1px dashed; PADDING-RIGHT: 10px; BORDER-TOP: 1px dashed; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 90%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px dashed; COLOR: #996633; PADDING-TOP: 10px; BORDER-BOTTOM: 1px dashed; border-radius: 10px
+}
+H5 {
+	BORDER-RIGHT: 1px dashed; PADDING-RIGHT: 10px; BORDER-TOP: 1px dashed; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 80%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px dashed; COLOR: black; PADDING-TOP: 10px; BORDER-BOTTOM: 1px dashed; border-radius: 10px
+}
+H6 {
+	BORDER-RIGHT: 1px dashed; PADDING-RIGHT: 10px; BORDER-TOP: 1px dashed; PADDING-LEFT: 10px; FONT-SIZE: 80%; PADDING-BOTTOM: 10px; BORDER-LEFT: 1px dashed; COLOR: black; PADDING-TOP: 10px; BORDER-BOTTOM: 1px dashed; border-radius: 10px
+}
+BODY {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+SELECT {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+P {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+INPUT {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+TEXTAREA {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+OL {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+LI {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+TD {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+TH {
+	FONT-SIZE: 100%; FONT-FAMILY: verdana,sans serif
+}
+TD {
+	FONT-SIZE: 90%; FONT-FAMILY: verdana,sans serif
+}
+TH {
+	FONT-SIZE: 90%; FONT-FAMILY: verdana,sans serif
+}
+DIV#bodyContent {
+	WIDTH: 90%; LINE-HEIGHT: 105%
+}
+DIV.portal DIV.body UL LI {
+	FONT-SIZE: 0.9em! important; COLOR: #0097ff
+}
+TABLE.wikitable TD {
+	BORDER-RIGHT: orange 2px solid; BORDER-TOP: orange 2px solid; BORDER-LEFT: orange 2px solid; BORDER-BOTTOM: orange 2px solid
+}
+.wikitable TH {
+	BORDER-RIGHT: orange 2px solid; BORDER-TOP: orange 2px solid; BORDER-LEFT: orange 2px solid; BORDER-BOTTOM: orange 2px solid
+}
+.wikitable TR {
+	BORDER-RIGHT: orange 2px solid; BORDER-TOP: orange 2px solid; BORDER-LEFT: orange 2px solid; BORDER-BOTTOM: orange 2px solid
+}
+.wikitable TH {
+	BORDER-LEFT-COLOR: black; BORDER-BOTTOM-COLOR: black; COLOR: white; BORDER-TOP-COLOR: black; BACKGROUND-COLOR: orange; BORDER-RIGHT-COLOR: black
+}
+.wikitable TD.hl3 {
+	BORDER-LEFT-COLOR: black; BORDER-BOTTOM-COLOR: black; COLOR: white; BORDER-TOP-COLOR: black; BACKGROUND-COLOR: orange; BORDER-RIGHT-COLOR: black
+}
+.wikitable TH.hl3 {
+	BORDER-LEFT-COLOR: black; BORDER-BOTTOM-COLOR: black; COLOR: white; BORDER-TOP-COLOR: black; BACKGROUND-COLOR: orange; BORDER-RIGHT-COLOR: black
+}
+.wikitable TD.hl1 {
+	BACKGROUND: #c5d8fc
+}
+.wikitable TH.hl1 {
+	BACKGROUND: #c5d8fc
+}
+.wikitable TD.hl2 {
+	BACKGROUND: #a7c1f2
+}
+.wikitable TH.hl2 {
+	BACKGROUND: #a7c1f2
+}
+#toc {
+	PADDING-RIGHT: 10px; PADDING-LEFT: 10px; PADDING-BOTTOM: 10px; MARGIN: 1em 0px; PADDING-TOP: 10px; BACKGROUND-COLOR: orange; border-radius: 10px
+}
+DIV.mw-geshi {
+	BORDER-RIGHT: orange 2px dotted; PADDING-RIGHT: 1em; BORDER-TOP: orange 2px dotted; PADDING-LEFT: 1em; FONT-SIZE: 1.2em; PADDING-BOTTOM: 1em; MARGIN: 1em 0px; BORDER-LEFT: orange 2px dotted; PADDING-TOP: 1em; BORDER-BOTTOM: orange 2px dotted; BACKGROUND-COLOR: #fbfcf1; border-radius: 25px
+}
+BODY.page-PhUSE_Wiki LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0002 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0006 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0007 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0026 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0029 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0031 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0035 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0063 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0070 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0080 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0081 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0087 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_SD0088 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_CT0027 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_CT0037 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_DD0010 LI#ca-talk {
+	DISPLAY: none! important
+}
+BODY.page-Validation_Rule_DD0024 LI#ca-talk {
+	DISPLAY: none! important
+}

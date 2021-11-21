@@ -1,0 +1,32 @@
+1                                                      SAS 系统                   2021年 7月18日星期日 下午04时59分20秒
+
+NOTE: Copyright (c) 2002-2012 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) Proprietary Software 9.4 (TS1M2 DBCS3170) 
+      Licensed to CNAM LICENCE CAMPUS, Site 70159246.
+NOTE: 该会话正在平台 X64_7PRO  上执行。
+
+
+
+NOTE: Updated analytical products:
+      
+      SAS/STAT 13.2
+      SAS/ETS 13.2
+      SAS/OR 13.2
+      SAS/IML 13.2
+      SAS/QC 13.2
+
+NOTE: Additional host information:
+
+ X64_7PRO WIN 6.1.7601 Service Pack 1 Workstation
+
+NOTE: “SAS 初始化”所用时间:
+      实际时间          0.57 秒
+      CPU 时间          0.12 秒
+      
+1          %put %sysfunc(today());
+22479
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: “SAS 系统”所用时间:
+      实际时间          0.65 秒
+      CPU 时间          0.12 秒
+      

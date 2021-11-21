@@ -80,7 +80,7 @@ def intck(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<various>   :   The return value depends on the input arguments                                                                    #
+#   |<various>   :   The return type depends on the input arguments, while each returned value is [float], for [np.nan] could exist     #
 #   |                [1] For case of pairs as (M,1):                                                                                    #
 #   |                    [1] If [M] is pd.DataFrame or pd.Series, return the same type as [M]                                           #
 #   |                    [2] When [M] is provided a [str], return a single integer, or np.NaN where applicable                          #
@@ -104,6 +104,11 @@ def intck(
 #   | Date |    20210927        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Re-launch the full calendar so that this function covers all special scenarios for work/trade/week days                 #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211120        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -518,7 +523,7 @@ def intck(
         )
 
         #150. Increment by different scenarios of [time]
-        dtt_ntvl = re.sub(r'^dt', '', dict_attr['name'])
+        dtt_ntvl = re.sub(r'^dt', '', interval)
         dtt_rst_time = intck(
             interval = dtt_ntvl
             ,date_bgn = dtt_Mtime
@@ -581,7 +586,15 @@ def intck(
 
         #700. Transform the [date] part into the same [span] as [time] part, and combine both
         dtt_rst = df_M[[col_idxrow, col_idxcol]].copy(deep = True)
-        dtt_rst[col_rst] = dtt_rst_date.copy(deep=True).mul(86400).div(dict_attr['span']).add(dtt_rst_time)
+        dtt_rst[col_rst] = (
+            dtt_rst_date
+            .copy(deep=True)
+            .mul(86400)
+            #[IMPORTANT] We have to add the [time part] before dividing it!
+            .add(dtt_rst_time)
+            .div(dict_attr['span'])
+            .floordiv(dict_attr['multiple'])
+        )
 
         #990. Return the final result
         return(h_rst(dtt_rst, col_rst))

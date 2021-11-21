@@ -1,0 +1,1072 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3c.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!-- saved from url=(0064)http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count -->
+<HTML class=client-nojs lang=en dir=ltr><HEAD><TITLE>Sas macro %count - PhUSE Wiki</TITLE>
+<META charset=UTF-8>
+<META content="MSHTML 6.00.2900.6575" name=GENERATOR><LINK href="/favicon.ico" 
+rel="shortcut icon"><LINK title="PhUSE Wiki (en)" 
+href="/wiki/opensearch_desc.php" type=application/opensearchdescription+xml 
+rel=search><LINK href="http://www.phusewiki.org/wiki/api.php?action=rsd" 
+type=application/rsd+xml rel=EditURI><LINK title="PhUSE Wiki Atom feed" 
+href="/wiki/index.php?title=Special:RecentChanges&amp;feed=atom" 
+type=application/atom+xml rel=alternate><LINK 
+href="Sas macro %count - PhUSE Wiki_files/load.css" rel=stylesheet><LINK 
+href="Sas macro %count - PhUSE Wiki_files/BreadCrumbs.css" rel=stylesheet>
+<META content="" name=ResourceLoaderDynamicStyles><LINK 
+href="C:\www\AutoReports\900tools\100SAS\Sas macro %count - PhUSE Wiki_files\load(1).css" 
+rel=stylesheet>
+<STYLE>UNKNOWN {
+	TEXT-DECORATION: none
+}
+</STYLE>
+
+<SCRIPT src="Sas macro %count - PhUSE Wiki_files/load.php"></SCRIPT>
+
+<SCRIPT>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Sas_macro_%count","wgTitle":"Sas macro %count","wgCurRevisionId":5301,"wgArticleId":765,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Coders Corner"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgMonthNamesShort":["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"wgRelevantPageName":"Sas_macro_%count","wgRestrictionEdit":[],"wgRestrictionMove":[],"wgWikiEditorEnabledModules":{"toolbar":true,"dialogs":true,"hidesig":true,"templateEditor":false,"templates":false,"preview":true,"previewDialog":false,"publish":false,"toc":false},"wgVectorEnabledModules":{"collapsiblenav":true,"collapsibletabs":true,"editwarning":false,"expandablesearch":false,"footercleanup":false,"sectioneditlinks":false,"experiments":true},"wgJSBreadCrumbsMaxCrumbs":5,"wgJSBreadCrumbsSeparator":"»","wgJSBreadCrumbsCookiePath":"/","wgJSBreadCrumbsLeadingDescription":"Navigation trail","wgJSBreadCrumbsShowSiteName":false});
+}</SCRIPT>
+
+<SCRIPT>if(window.mw){
+mw.loader.implement("user.options",function(){mw.user.options.set({"ccmeonemails":0,"cols":80,"date":"default","diffonly":0,"disablemail":0,"disablesuggest":0,"editfont":"default","editondblclick":0,"editsection":1,"editsectiononrightclick":0,"enotifminoredits":0,"enotifrevealaddr":0,"enotifusertalkpages":1,"enotifwatchlistpages":0,"extendwatchlist":0,"externaldiff":0,"externaleditor":0,"fancysig":0,"forceeditsummary":0,"gender":"unknown","hideminor":0,"hidepatrolled":0,"imagesize":2,"justify":0,"math":1,"minordefault":0,"newpageshidepatrolled":0,"nocache":0,"noconvertlink":0,"norollbackdiff":0,"numberheadings":0,"previewonfirst":0,"previewontop":1,"quickbar":5,"rcdays":7,"rclimit":50,"rememberpassword":0,"rows":25,"searchlimit":20,"showhiddencats":0,"showjumplinks":1,"shownumberswatching":1,"showtoc":1,"showtoolbar":1,"skin":"vector","stubthreshold":0,"thumbsize":2,"underline":2,"uselivepreview":0,"usenewrc":0,"watchcreations":0,"watchdefault":0,"watchdeletion":0,"watchlistdays":3,
+"watchlisthideanons":0,"watchlisthidebots":0,"watchlisthideliu":0,"watchlisthideminor":0,"watchlisthideown":0,"watchlisthidepatrolled":0,"watchmoves":0,"wllimit":250,"usebetatoolbar":1,"usebetatoolbar-cgd":1,"wikieditor-preview":1,"vector-simplesearch":1,"jsbreadcrumbs-showcrumbs":true,"jsbreadcrumbs-showsite":false,"jsbreadcrumbs-numberofcrumbs":5,"variant":"en","language":"en","searchNs0":true,"searchNs1":false,"searchNs2":false,"searchNs3":false,"searchNs4":false,"searchNs5":false,"searchNs6":false,"searchNs7":false,"searchNs8":false,"searchNs9":false,"searchNs10":false,"searchNs11":false,"searchNs12":false,"searchNs13":false,"searchNs14":false,"searchNs15":false,"searchNs274":false,"searchNs275":false});;},{},{});mw.loader.implement("user.tokens",function(){mw.user.tokens.set({"editToken":"+\\","watchToken":false});;},{},{});
+/* cache key: phusewik_wiki3:resourceloader:filter:minify-js:7:6f91825ff8d99fd9d94a18b10f5c8aac */
+}</SCRIPT>
+
+<SCRIPT>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax"]);
+}</SCRIPT>
+
+<STYLE type=text/css>.source-sas {
+	LINE-HEIGHT: normal
+}
+.source-sas LI {
+	BORDER-RIGHT: white 0px; BORDER-TOP: white 0px; BORDER-LEFT: white 0px; LINE-HEIGHT: normal; BORDER-BOTTOM: white 0px
+}
+.source-sas PRE {
+	BORDER-RIGHT: white 0px; BORDER-TOP: white 0px; BORDER-LEFT: white 0px; LINE-HEIGHT: normal; BORDER-BOTTOM: white 0px
+}
+.source-sas .de1 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; BACKGROUND: none transparent scroll repeat 0% 0%; PADDING-BOTTOM: 0px; MARGIN: 0px; FONT: 1em/1.2em monospace; VERTICAL-ALIGN: top; PADDING-TOP: 0px
+}
+.source-sas .de2 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; BACKGROUND: none transparent scroll repeat 0% 0%; PADDING-BOTTOM: 0px; MARGIN: 0px; FONT: 1em/1.2em monospace; VERTICAL-ALIGN: top; PADDING-TOP: 0px
+}
+.source-sas {
+	FONT-FAMILY: monospace
+}
+.source-sas .imp {
+	FONT-WEIGHT: bold; COLOR: red
+}
+.source-sas LI {
+	FONT-WEIGHT: normal; VERTICAL-ALIGN: top
+}
+.source-sas .li1 {
+	FONT-WEIGHT: normal; VERTICAL-ALIGN: top
+}
+.source-sas .ln {
+	PADDING-RIGHT: 2px; PADDING-LEFT: 2px; PADDING-BOTTOM: 0px; MARGIN: 0px; VERTICAL-ALIGN: top; WIDTH: 1px; PADDING-TOP: 0px; TEXT-ALIGN: right
+}
+.source-sas .li2 {
+	FONT-WEIGHT: bold; VERTICAL-ALIGN: top
+}
+.source-sas .kw1 {
+	COLOR: #0000ff
+}
+.source-sas .kw2 {
+	COLOR: #0000ff
+}
+.source-sas .kw3 {
+	COLOR: #0000ff
+}
+.source-sas .kw4 {
+	COLOR: #0000ff
+}
+.source-sas .kw5 {
+	COLOR: #0000ff
+}
+.source-sas .kw6 {
+	FONT-WEIGHT: bold; COLOR: #000080
+}
+.source-sas .kw7 {
+	COLOR: #ff0000
+}
+.source-sas .kw8 {
+	COLOR: #00ff00
+}
+.source-sas .kw9 {
+	COLOR: #0000ff
+}
+.source-sas .coMULTI {
+	COLOR: #006400; FONT-STYLE: italic
+}
+.source-sas .es0 {
+	FONT-WEIGHT: bold; COLOR: #000099
+}
+.source-sas .br0 {
+	COLOR: #66cc66
+}
+.source-sas .sy0 {
+	COLOR: #66cc66
+}
+.source-sas .st0 {
+	COLOR: #a020f0
+}
+.source-sas .nu0 {
+	FONT-WEIGHT: bold; COLOR: #2e8b57
+}
+.source-sas .re0 {
+	FONT-WEIGHT: bold; COLOR: #0000ff
+}
+.source-sas .re1 {
+	FONT-WEIGHT: bold; COLOR: #000080
+}
+.source-sas .re2 {
+	COLOR: #006400; FONT-STYLE: italic
+}
+.source-sas .re3 {
+	COLOR: #006400; FONT-STYLE: italic
+}
+.source-sas .re4 {
+	COLOR: #006400; FONT-STYLE: italic
+}
+.source-sas .re5 {
+	FONT-WEIGHT: bold; COLOR: #ff0000
+}
+.source-sas .re6 {
+	COLOR: #00ff00; FONT-STYLE: italic
+}
+.source-sas .re7 {
+	COLOR: #0000ff; FONT-STYLE: normal
+}
+.source-sas .re8 {
+	FONT-WEIGHT: bold; COLOR: #b218b2
+}
+.source-sas .re9 {
+	FONT-WEIGHT: bold; COLOR: #b218b2
+}
+.source-sas .ln-xtra {
+	BACKGROUND-COLOR: #ffc
+}
+.source-sas LI.ln-xtra {
+	BACKGROUND-COLOR: #ffc
+}
+.source-sas DIV.ln-xtra {
+	BACKGROUND-COLOR: #ffc
+}
+.source-sas SPAN.xtra {
+	DISPLAY: block
+}
+</STYLE>
+
+<STYLE type=text/css>@import url( /wiki/index.php?title=MediaWiki:Geshi.css&usemsgcache=yes&action=raw&ctype=text/css&smaxage=18000 );
+</STYLE>
+<LINK href="Sas macro %count - PhUSE Wiki_files/w4g_rb.css" type=text/css 
+rel=stylesheet>
+<SCRIPT src="Sas macro %count - PhUSE Wiki_files/w4g_rb.js" 
+type=text/javascript></SCRIPT>
+<!--[if lt IE 7]>
+<STYLE type=text/css>BODY {
+	BEHAVIOR: url("/wiki/skins/vector/csshover.min.htc")
+}
+</STYLE>
+<![endif]--></HEAD>
+<BODY 
+class="mediawiki ltr sitedir-ltr ns-0 ns-subject page-Sas_macro_count skin-vector action-view vector-animateLayout">
+<DIV class=noprint id=mw-page-base></DIV>
+<DIV class=noprint id=mw-head-base></DIV><!-- content -->
+<DIV class=mw-body id=content><A id=top></A>
+<DIV id=mw-js-message style="DISPLAY: none"></DIV><!-- firstHeading -->
+<H1 class=firstHeading id=firstHeading><SPAN dir=auto>Sas macro 
+%count</SPAN></H1><!-- /firstHeading --><!-- bodyContent -->
+<DIV id=bodyContent><!-- tagline -->
+<DIV id=siteSub>From PhUSE Wiki</DIV><!-- /tagline --><!-- subtitle -->
+<DIV id=contentSub></DIV><!-- /subtitle --><!-- jumpto -->
+<DIV class=mw-jump id=jump-to-nav>Jump to: <A 
+href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#mw-head">navigation</A>, 
+<A 
+href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#p-search">search</A> 
+</DIV><!-- /jumpto --><!-- bodycontent -->
+<DIV class=mw-content-ltr lang=en id=mw-content-text dir=ltr>
+<SCRIPT type=text/javascript>
+        var disqus_config = function() {
+            this.page.remote_auth_s3 = 'eyJpZCI6MCwidXNlcm5hbWUiOiIyMTAuMTMuMTIxLjEwMCIsImVtYWlsIjoiIn0= d95d0e60a5cf0ff823062804b86d060f48dbfe98 1415861624' ;
+            this.page.api_key = 'SioW0bP1rvCW9mzZDv49FxkPnCTC9J3KhWfkJqM4DqOGQkfCTiQ7TBEYFKjMqvRb';
+        }
+    </SCRIPT>
+
+<P><BR><A class="external text" href="mailto:sasquestions@ocs-consulting.com" 
+rel=nofollow>Jim Groeneveld</A>, <A class="external text" 
+href="http://www.ocs-consulting.nl/" rel=nofollow>OCS Consulting</A>, the 
+Netherlands - PhUSE 2008 </P>
+<P><BR></P>
+<TABLE class=toc id=toc>
+  <TBODY>
+  <TR>
+    <TD>
+      <DIV id=toctitle>
+      <H2>Contents</H2></DIV>
+      <UL>
+        <LI class="toclevel-1 tocsection-1"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#ABSTRACT"><SPAN 
+        class=tocnumber>1</SPAN> <SPAN class=toctext>ABSTRACT</SPAN></A> 
+        <LI class="toclevel-1 tocsection-2"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#INTRODUCTION"><SPAN 
+        class=tocnumber>2</SPAN> <SPAN class=toctext>INTRODUCTION</SPAN></A> 
+        <LI class="toclevel-1 tocsection-3"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#.25COUNT"><SPAN 
+        class=tocnumber>3</SPAN> <SPAN class=toctext>%COUNT</SPAN></A> 
+        <LI class="toclevel-1 tocsection-4"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#FEATURES"><SPAN 
+        class=tocnumber>4</SPAN> <SPAN class=toctext>FEATURES</SPAN></A> 
+        <LI class="toclevel-1 tocsection-5"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#3._EXAMPLES"><SPAN 
+        class=tocnumber>5</SPAN> <SPAN class=toctext>3. EXAMPLES</SPAN></A> 
+        <LI class="toclevel-1 tocsection-6"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#PROGRAMMING_STRATEGY_OF_IMPLIED.2C_CONSECUTIVE.2C_SAME_TYPE_VARIABLE_LISTS_.28SPSS_TO-CONVENTION.29"><SPAN 
+        class=tocnumber>6</SPAN> <SPAN class=toctext>PROGRAMMING STRATEGY OF 
+        IMPLIED, CONSECUTIVE, SAME TYPE VARIABLE LISTS (SPSS 
+        TO-CONVENTION)</SPAN></A> 
+        <LI class="toclevel-1 tocsection-7"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#CONVERSION_DEMONSTRATION"><SPAN 
+        class=tocnumber>7</SPAN> <SPAN class=toctext>CONVERSION 
+        DEMONSTRATION</SPAN></A> 
+        <LI class="toclevel-1 tocsection-8"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#CONCLUSION"><SPAN 
+        class=tocnumber>8</SPAN> <SPAN class=toctext>CONCLUSION</SPAN></A> 
+        <LI class="toclevel-1 tocsection-9"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#CONCLUSION_2"><SPAN 
+        class=tocnumber>9</SPAN> <SPAN class=toctext>CONCLUSION</SPAN></A> 
+        <LI class="toclevel-1 tocsection-10"><A 
+        href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#REFERENCES"><SPAN 
+        class=tocnumber>10</SPAN> <SPAN class=toctext>REFERENCES</SPAN></A> 
+      </LI></UL></TD></TR></TBODY></TABLE>
+<H1><SPAN class=mw-headline id=ABSTRACT>ABSTRACT</SPAN></H1>
+<P>To count the occurrence of specific distinct values of a number of specified 
+variables within records (cases) the statistical software package SPSS® uses the 
+command COUNT. Such user friendly functionality always has been lacking in SAS®. 
+A similar result can only be obtained by complex coding in the data step. In 
+this paper a macro is presented that converts the SPSS COUNT syntax into SAS 
+code. It counts the occurrence of specific values (value lists) in specified 
+variables (variable lists) within records. Results (per record) are stored in 
+user specified variables. The macro&nbsp;%_Count_ supports the full syntax and 
+identical functionality of the SPSS command. It even supports syntax and 
+functionality beyond the SPSS COUNT command. Its main features are: constant 
+character values with any content, missing value support with the _SYSMIS_ 
+keyword, _TO_-convention for implied variable lists, _THRU_-convention for value 
+ranges, including infinite _LO_ and _HI_ keywords, lexicographic comparison, 
+variable specification instead of values, specification of array elements and 
+SAS name literals. </P>
+<H1><SPAN class=mw-headline id=INTRODUCTION>INTRODUCTION</SPAN></H1>
+<P>At least since the seventies the statistical software package SPSS 
+(originally Statistical Package for the Social Sciences) contains a command 
+COUNT that counts the occurrence of a list of specified values in a list of 
+specified variables within records. Its syntax is in its simple form: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>COUNT Countvar = var_a var_b var_c var_d <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> <SPAN class=br0>(</SPAN>value_1, value_2, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN>.</PRE></DIV></DIV>
+<P>and in its more complex, general form: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>COUNT Cntvar1 = var_a <SPAN class=br0>(</SPAN>value_1, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> var_b <SPAN class=br0>(</SPAN>value_2 THRU value_5, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / 
+Cntvar2 = var_c var_d TO var_f <SPAN class=br0>(</SPAN>value_6 value_7, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>.</PRE></DIV></DIV>
+<P>in which [...] denotes similar continuations. The THRU keyword indicates 
+value ranges. It is a powerful command. SPSS missing values, which may be any 
+values defined as such, may also be counted, both individually and together. If 
+counting all missing values at once the value(s) may be specified as MISSING and 
+SYSMIS with SPSS. </P>
+<P><BR>SAS has always been lacking similar functionality. To obtain the same 
+results in SAS several lines of code have to be written using many IF statements 
+and the like. As an example we could have: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>Countvar = <SPAN class=br0>(</SPAN>Var_a = Value_1<SPAN class=br0>)</SPAN> + <SPAN class=br0>(</SPAN>Var_a = Value_2<SPAN class=br0>)</SPAN> + <SPAN class=br0>(</SPAN>Var_b = Value_3<SPAN class=br0>)</SPAN> + <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>;      <SPAN class=kw4>or</SPAN>:
+Countvar = <SPAN class=br0>(</SPAN>Var_a <SPAN class=kw4>IN</SPAN> <SPAN class=br0>(</SPAN><SPAN class=st0>' Value_1 '</SPAN>, <SPAN class=st0>' Value_2 '</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> + <SPAN class=br0>(</SPAN>Var_b <SPAN class=kw4>IN</SPAN> <SPAN class=br0>(</SPAN><SPAN class=st0>' Value_3 '</SPAN><SPAN class=br0>)</SPAN> + <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>;</PRE></DIV></DIV>
+<P>It is clear that even such a solution will result in a lot of code in case 
+the number of variables and values is large. The IN operator can be used, with 
+exclusive values and returns a true/false (1/0) result that can be added. </P>
+<H1><SPAN class=mw-headline id=.25COUNT>%COUNT</SPAN></H1>
+<P><B>1. REQUIREMENTS</B> </P>
+<P>In order to simplify the coding to obtain counts of values of variables 
+within records a prototype macro&nbsp;%Count has been developed. The 
+requirements were to minimize the number of variables and values to be 
+programmed and to allow for both numeric and character variables and values. The 
+macro initially has been developed to support functionality analogous to the 
+simple form of the SPSS equivalent. The (minimum) information to be passed to 
+the macro is: </P>
+<UL>
+  <LI>the name of the result variable to obtain the count (e.g. Countvar) 
+  <LI>the list of variable names to count values from 
+  <LI>the list of values to count </LI></UL>
+<P><BR><B>2. SYNTAX</B> </P>
+<P>Based on the previous requirements the following syntax to call the macro was 
+chosen: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>%Count <SPAN class=br0>(</SPAN>CountVar=Countvar, VarList=Var_a Var_b <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>, ValList=Value_1 Value_2 <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN>;</PRE></DIV></DIV>
+<P>The macro supports both numeric and character variables, but only one type at 
+a time. The user has to take care to specify only one type of (existing) 
+variables and values per macro call. The variable Countvar may or may not exist, 
+while the other variables should exist; otherwise SAS will generate its own 
+error reports in the log. Based on this macro call the&nbsp;%MACRO statement for 
+the macro&nbsp;%COUNT is: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1><SPAN class=kw2>%MACRO</SPAN> Count <SPAN class=br0>(</SPAN>CountVar=, VarList=, ValList=<SPAN class=br0>)</SPAN>;</PRE></DIV></DIV>
+<P>The complete macro code can be found below. </P>
+<P><BR><B>3. MISSING VALUES</B> </P>
+<P>As already explained the COUNT command in SPSS can also count missing values, 
+both user defined (MISSING) and the system missing value (SYSMIS). It may be 
+desirable to count only one (or some) of the user specified missing values (or 
+ranges). In that case SPSS allows to specify the actual value, whether specified 
+missing or not, e.g. 99 or ‘unknown’. </P>
+<P><BR>In SAS numeric missing values work considerably different from SPSS. SAS 
+only has system missing values, 28 numerical ones and one character one (a 
+space), of which the numeric single period (.) is best known. The numeric 
+missing values in ascending order are: ._ . .a to .z (dot underscore, dot, dot A 
+to dot Z), the last one being the largest. So selecting all numeric missing 
+values is best done by an IF statement like: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1><SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN>Variable LE .z<SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> .........;        <SPAN class=kw4>or</SPAN>:       <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw4>MISSING</SPAN><SPAN class=br0>(</SPAN>Variable<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> .........;</PRE></DIV></DIV>
+<P>The last form also supports the character missing value (space) to be checked 
+if the variable is of character type. The macro&nbsp;%Count may count single 
+numeric missing values by specifying them as values in the macro call. If one 
+wants to count all missing values the keyword _SYSMIS_ may be specified which 
+causes to count all numeric values LE .z and character values consisting of a 
+space. </P>
+<P><BR><B>4. MACRO CODE</B> </P>
+<P>The code of the initial macro&nbsp;%Count basically consists of: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>%<SPAN class=coMULTI>* Macro Count counts value lists for numeric and character dataset variables&nbsp;;</SPAN> 
+%<SPAN class=coMULTI>* (C) Jim Groeneveld, 1 December 2005, version 0.1;</SPAN> 
+<SPAN class=kw2>%MACRO</SPAN> Count <SPAN class=br0>(</SPAN>CountVar=, VarList=, ValList=<SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%LOCAL</SPAN> I <SPAN class=kw3>Var</SPAN> J Val; 
+  <SPAN class=re0>&amp;CountVar</SPAN> = <SPAN class=nu0>0</SPAN>; 
+  <SPAN class=kw2>%LET</SPAN> I = <SPAN class=nu0>1</SPAN>; 
+  <SPAN class=kw2>%LET</SPAN> <SPAN class=kw3>Var</SPAN> = <SPAN class=kw2>%SCAN</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%DO</SPAN> <SPAN class=kw2>%WHILE</SPAN> <SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN> NE<SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> J = <SPAN class=nu0>1</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> Val = <SPAN class=kw2>%SCAN</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%DO</SPAN> <SPAN class=kw2>%WHILE</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Val</SPAN> NE<SPAN class=br0>)</SPAN>; 
+      <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%UPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> EQ _SYSMIS_<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> 
+      <SPAN class=kw2>%DO</SPAN>; 
+        <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw4>MISSING</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> <SPAN class=re0>&amp;CountVar</SPAN> = <SPAN class=re0>&amp;CountVar</SPAN> + <SPAN class=nu0>1</SPAN>; 
+<SPAN class=coMULTI>* (all 28 SAS numerical missing values or character space are checked here);</SPAN> 
+      <SPAN class=kw2>%END</SPAN>; 
+      <SPAN class=kw2>%ELSE</SPAN> 
+      <SPAN class=kw2>%DO</SPAN>; 
+        <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN> EQ <SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> <SPAN class=re0>&amp;CountVar</SPAN> = <SPAN class=re0>&amp;CountVar</SPAN> + <SPAN class=nu0>1</SPAN>; 
+<SPAN class=coMULTI>* (no sum statement to avoid forced implicit RETAIN from this macro);</SPAN> 
+      <SPAN class=kw2>%END</SPAN>; 
+      <SPAN class=kw2>%LET</SPAN> J = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;J</SPAN> + <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+      <SPAN class=kw2>%LET</SPAN> Val = <SPAN class=kw2>%SCAN</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%END</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> I = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;I</SPAN> + <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> <SPAN class=kw3>Var</SPAN> = <SPAN class=kw2>%SCAN</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%END</SPAN>; 
+<SPAN class=kw2>%MEND</SPAN> Count;</PRE></DIV></DIV>
+<P><B>5. EXPLANATION</B> </P>
+<P>In its simplest form the name of a (new) counting variable is passed to the 
+macro along with a list of existing variable names and a list of values to check 
+for their occurrence with each variable of the variable list within the same 
+record. The variable list is scanned for single variable names, which are in 
+turn compared to each of the scanned values from the value list. All matches are 
+counted and the sum of the matches is stored in the counting variable. Multiple 
+specification of variables results in multiple counts. </P>
+<P><BR><B>%_COUNT_</B> </P>
+<P>The more recent, full code of the macro&nbsp;%Count is available from the 
+author’s website (see References below). It is yet subject to changes, possible 
+bug fixes and additions. In order to avoid interference with a possible future 
+internal SAS macro function&nbsp;%Count the macro discussed here has been 
+renamed to&nbsp;%_Count_. This macro, version 0.9, has evolved to support the 
+full syntax and the same functionality of SPSS with even a few extensions. Its 
+main code is presented below(without an extensive, informative header). The 
+basics to count values are the same as above, but many more additional features 
+are supported. It is not the intention to explain the full macro code here, but 
+some programming strategies are discussed with specific features. Versions of 
+the macro on the web may contain much more explanatory comments and error 
+checking code than the code presented below. The current features of the macro 
+are summarised below the macro code. Note that the code also contains two 
+auxiliary macros (serving as subroutines for more or less general purposes): 
+<B>%DisClose and&nbsp;%_ArrayNr</B>. Having them in the same source code file 
+causes them to be compiled along when the main macro is called, which in its 
+turn calls the auxiliary macros. </P>
+<P><BR><B>MACRO CODE</B> </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>%<SPAN class=coMULTI>*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~;</SPAN> 
+%<SPAN class=coMULTI>* Macro _Count_ counts occurring value lists for dataset variables&nbsp;;</SPAN> 
+%<SPAN class=coMULTI>*__________________________________________________________________;</SPAN> 
+%<SPAN class=coMULTI>* (C) Jim Groeneveld, 17 August 2008, version 0.9 for SAS vs. 9+;</SPAN> 
+<SPAN class=kw2>%MACRO</SPAN> _Count_ <SPAN class=br0>(</SPAN>SPSScode<SPAN class=br0>)</SPAN>;&nbsp;%<SPAN class=coMULTI>* just one (main) positional argument;</SPAN> 
+  <SPAN class=kw2>%LOCAL</SPAN> H SubCount Counter SpecList VarList ValList I <SPAN class=kw3>Var</SPAN> J Val ThruVal HighVal 
+         ToVar StopVar <SPAN class=kw4>Array</SPAN>; 
+ &nbsp;%<SPAN class=coMULTI>* remove enclosing parens;</SPAN> 
+  <SPAN class=kw2>%LET</SPAN> SPSScode =&nbsp;%Disclose <SPAN class=br0>(</SPAN>Enclosed=<SPAN class=re0>&amp;SPSScode</SPAN>, MaxDepth=<SPAN class=nu0>9</SPAN><SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QSYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;SPSScode</SPAN>,-<SPAN class=nu0>1</SPAN>,.<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> EQ<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%LET</SPAN> SPSScode = 
+      <SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN> <SPAN class=kw2>%SUBSTR</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;SPSScode</SPAN>, <SPAN class=nu0>1</SPAN>, <SPAN class=kw2>%LENGTH</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;SPSScode</SPAN><SPAN class=br0>)</SPAN>-<SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%LET</SPAN> H = <SPAN class=nu0>1</SPAN>; 
+  <SPAN class=kw2>%LET</SPAN> SubCount = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SPSScode</SPAN>, <SPAN class=re0>&amp;H</SPAN>, / <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%DO</SPAN> <SPAN class=kw2>%WHILE</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;SubCount</SPAN><SPAN class=br0>)</SPAN> NE<SPAN class=br0>)</SPAN>; 
+%<SPAN class=coMULTI>* Extract counter var name (and remove its leading and trailing blanks);</SPAN> 
+    <SPAN class=kw2>%LET</SPAN> Counter = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SubCount</SPAN>, <SPAN class=nu0>1</SPAN>, =<SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=re0>&amp;Counter</SPAN> = <SPAN class=nu0>0</SPAN>; <SPAN class=coMULTI>* if not implicitly (re)set by sum statement;</SPAN> 
+<SPAN class=coMULTI>/* &nbsp;%LET SpecList =&nbsp;%QSUBSTR(&amp;SubCount,%EVAL(%INDEX(&amp;SubCount,=)+1)); */</SPAN> 
+    <SPAN class=kw2>%LET</SPAN> SpecList = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SubCount</SPAN>, <SPAN class=nu0>2</SPAN>, = <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; &nbsp;%<SPAN class=coMULTI>* no more =&nbsp;!;</SPAN> 
+%<SPAN class=coMULTI>* No more = characters expected outside constant string values, if more: error;</SPAN> 
+    <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SubCount</SPAN>, <SPAN class=nu0>3</SPAN>, = <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> NE <SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%PUT</SPAN> <SPAN class=kw7>Error</SPAN>: SPSScode; 
+%<SPAN class=coMULTI>* Extract elements and remove leading and trailing blanks in them;</SPAN> 
+    <SPAN class=kw2>%LET</SPAN> VarList = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SpecList</SPAN>, <SPAN class=nu0>1</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN>%<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> ValList = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SpecList</SPAN>, <SPAN class=nu0>2</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN>%<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ValList</SPAN> EQ<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+      <SPAN class=kw2>%PUT</SPAN> Empty value <SPAN class=kw4>list</SPAN>, VarList=<SPAN class=re0>&amp;VarList</SPAN>; 
+    <SPAN class=kw2>%END</SPAN>; 
+    <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+      <SPAN class=kw2>%LET</SPAN> I = <SPAN class=nu0>1</SPAN>; 
+      <SPAN class=kw2>%LET</SPAN> <SPAN class=kw3>Var</SPAN> = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+      <SPAN class=kw2>%DO</SPAN> <SPAN class=kw2>%WHILE</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN><SPAN class=br0>)</SPAN> NE<SPAN class=br0>)</SPAN>; 
+%<SPAN class=coMULTI>* Support for _TO_ convention using arrays (with incrementally numbered names);</SPAN> 
+        <SPAN class=kw2>%LET</SPAN> ToVar = <SPAN class=kw2>%QUPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=kw2>%QSYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>+<SPAN class=nu0>1</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+        <SPAN class=kw2>%LET</SPAN> StopVar =        <SPAN class=kw2>%QSYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>+<SPAN class=nu0>2</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+        <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ToVar</SPAN><SPAN class=br0>)</SPAN> EQ _TO_ <SPAN class=kw4>OR</SPAN> <SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ToVar</SPAN><SPAN class=br0>)</SPAN> EQ <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>--<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> 
+          <SPAN class=kw4>AND</SPAN> <SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;StopVar</SPAN><SPAN class=br0>)</SPAN> NE              <SPAN class=coMULTI>/* _TO_ convention, var list */</SPAN> 
+          <SPAN class=kw4>AND</SPAN> <SPAN class=kw2>%SYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN>, <SPAN class=nu0>2</SPAN>, <SPAN class=br0>{</SPAN><SPAN class=br0>[</SPAN><SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> EQ <SPAN class=coMULTI>/* Var no array element */</SPAN> 
+          <SPAN class=kw4>AND</SPAN> <SPAN class=kw2>%SYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;StopVar</SPAN>, <SPAN class=nu0>2</SPAN>, <SPAN class=br0>{</SPAN><SPAN class=br0>[</SPAN><SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> EQ  <SPAN class=coMULTI>/* StopVar neither */</SPAN> 
+          <SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+          <SPAN class=kw2>%LET</SPAN> <SPAN class=kw4>Array</SPAN> =&nbsp;%_ArrayNr;      &nbsp;%<SPAN class=coMULTI>* use of auxiliary macro _ArrayNr;</SPAN> 
+             <SPAN class=kw4>DROP</SPAN> _0_;&nbsp;%<SPAN class=coMULTI>* drop temporary and macro defined index variable;</SPAN> 
+%<SPAN class=coMULTI>* unique incremental array name, no valid order check of variables;</SPAN> 
+          <SPAN class=kw2>%UNQUOTE</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=kw4>ARRAY</SPAN> _0&amp;<SPAN class=kw4>Array</SPAN> &amp;<SPAN class=kw3>Var</SPAN> -- <SPAN class=re0>&amp;StopVar</SPAN>; <SPAN class=br0>)</SPAN>&nbsp;%<SPAN class=coMULTI>* create unique array;</SPAN> 
+%<SPAN class=coMULTI>* variable list itself and its amount is unknown to macro;</SPAN> 
+          <SPAN class=kw2>%UNQUOTE</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=kw5>DO</SPAN> _0_ = <SPAN class=nu0>1</SPAN> TO <SPAN class=kw3>DIM</SPAN><SPAN class=br0>(</SPAN>_0&amp;<SPAN class=kw4>Array</SPAN><SPAN class=br0>)</SPAN>; <SPAN class=br0>)</SPAN>&nbsp;%<SPAN class=coMULTI>* start of data step loop;</SPAN> 
+          <SPAN class=kw2>%LET</SPAN> <SPAN class=kw3>Var</SPAN> = _0&amp;<SPAN class=kw4>Array</SPAN><SPAN class=br0>[</SPAN>_0_<SPAN class=br0>]</SPAN>;    &nbsp;%<SPAN class=coMULTI>* define array elements, redefine Var;</SPAN> 
+          <SPAN class=kw2>%LET</SPAN> I = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;I</SPAN> + <SPAN class=nu0>2</SPAN> <SPAN class=br0>)</SPAN>&nbsp;;  &nbsp;%<SPAN class=coMULTI>* finally skip over _TO_ and StopVar;</SPAN> 
+        <SPAN class=kw2>%END</SPAN>; 
+        <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>;&nbsp;%<SPAN class=coMULTI>* single variable;</SPAN> 
+          <SPAN class=kw5>DO</SPAN>;&nbsp;%<SPAN class=coMULTI>* nothing special, just to start a DO-END block with one iteration;</SPAN> 
+        <SPAN class=kw2>%END</SPAN>; 
+        <SPAN class=kw2>%LET</SPAN> J = <SPAN class=nu0>1</SPAN>; 
+        <SPAN class=kw2>%LET</SPAN> Val = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>  , <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+        <SPAN class=kw2>%DO</SPAN> <SPAN class=kw2>%WHILE</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> NE<SPAN class=br0>)</SPAN>; 
+          <SPAN class=kw2>%LET</SPAN> ThruVal = <SPAN class=kw2>%QUPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=kw2>%QSYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>+<SPAN class=nu0>1</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+          <SPAN class=kw2>%LET</SPAN> HighVal =          <SPAN class=kw2>%QSYSFUNC</SPAN><SPAN class=br0>(</SPAN>SCANQ<SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>+<SPAN class=nu0>2</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+          <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;ThruVal</SPAN><SPAN class=br0>)</SPAN> NE _THRU_<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+            <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QUPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> EQ _SYSMIS_<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+              <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw4>MISSING</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> <SPAN class=re0>&amp;Counter</SPAN> + <SPAN class=nu0>1</SPAN>; 
+<SPAN class=coMULTI>* (all 28 SAS numerical missing values or character space are checked here);</SPAN> 
+            <SPAN class=kw2>%END</SPAN>; 
+            <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+<SPAN class=kw2>%UNQUOTE</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN> EQ <SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> <SPAN class=kw5>DO</SPAN>; 
+                <SPAN class=re0>&amp;Counter</SPAN> + <SPAN class=nu0>1</SPAN>; <SPAN class=br0>)</SPAN> 
+              <SPAN class=kw5>END</SPAN>; 
+%<SPAN class=coMULTI>* can be simplified to: &amp;Counter + (&amp;Var EQ &amp;Val);</SPAN> 
+            <SPAN class=kw2>%END</SPAN>; 
+          <SPAN class=kw2>%END</SPAN>; 
+%<SPAN class=coMULTI>* _THRU_ support;</SPAN> 
+          <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>;&nbsp;%<SPAN class=coMULTI>* ThruVal = _THRU_, no _SYSMIS_ value expected here!;</SPAN> 
+%<SPAN class=coMULTI>* _LO_, _HI_ support;</SPAN> 
+            <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;HighVal</SPAN><SPAN class=br0>)</SPAN> NE<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+              <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QUPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Val</SPAN><SPAN class=br0>)</SPAN> EQ _LO_<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+                                <SPAN class=kw4>NOT</SPAN> <SPAN class=kw4>MISSING</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw4>AND</SPAN>    <SPAN class=kw2>%END</SPAN>; 
+                   <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>;   <SPAN class=kw2>%UNQUOTE</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN> GE <SPAN class=re0>&amp;Val</SPAN> <SPAN class=kw4>AND</SPAN><SPAN class=br0>)</SPAN>   <SPAN class=kw2>%END</SPAN>; 
+                   <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QUPCASE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;HighVal</SPAN><SPAN class=br0>)</SPAN> EQ _HI_<SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; <SPAN class=nu0>1</SPAN> <SPAN class=kw2>%END</SPAN>; 
+                   <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>;   <SPAN class=kw2>%UNQUOTE</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=kw3>Var</SPAN> LE <SPAN class=re0>&amp;HighVal</SPAN><SPAN class=br0>)</SPAN>   <SPAN class=kw2>%END</SPAN>; 
+                 <SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> <SPAN class=re0>&amp;Counter</SPAN> + <SPAN class=nu0>1</SPAN>; 
+%<SPAN class=coMULTI>* can be simplified to: &amp;Counter + ((interpreted) condition);</SPAN> 
+            <SPAN class=kw2>%END</SPAN>; 
+            <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%PUT</SPAN> _COUNT_ <SPAN class=kw9>NOTE</SPAN>: Value lacking after keyword _THRU_, no count!; 
+            <SPAN class=kw2>%LET</SPAN> J = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;J</SPAN> + <SPAN class=nu0>2</SPAN><SPAN class=br0>)</SPAN>;&nbsp;%<SPAN class=coMULTI>* Proceed to after range spec;</SPAN> 
+          <SPAN class=kw2>%END</SPAN>; 
+          <SPAN class=kw2>%LET</SPAN> J = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;J</SPAN> + <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+          <SPAN class=kw2>%LET</SPAN> Val = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;ValList</SPAN>, <SPAN class=re0>&amp;J</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+        <SPAN class=kw2>%END</SPAN>; 
+          <SPAN class=kw5>END</SPAN>;&nbsp;%<SPAN class=coMULTI>* of loop through var list from _TO_ convention or normal;</SPAN> 
+        <SPAN class=kw2>%LET</SPAN> I = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;I</SPAN> + <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+        <SPAN class=kw2>%LET</SPAN> <SPAN class=kw3>Var</SPAN> = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;VarList</SPAN>, <SPAN class=re0>&amp;I</SPAN>, <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>, <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+      <SPAN class=kw2>%END</SPAN>; 
+    <SPAN class=kw2>%END</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> H = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;H</SPAN> + <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%LET</SPAN> SubCount = <SPAN class=kw2>%QSYSFUNC</SPAN> <SPAN class=br0>(</SPAN> SCANQ <SPAN class=br0>(</SPAN> <SPAN class=re0>&amp;SPSScode</SPAN>, <SPAN class=re0>&amp;H</SPAN>, / <SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%END</SPAN>; 
+<SPAN class=kw2>%MEND</SPAN> _Count_; 
+%<SPAN class=coMULTI>*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~;</SPAN> 
+%<SPAN class=coMULTI>* Auxiliary Macro Disclose removes enclosing parentheses&nbsp;;</SPAN> 
+%<SPAN class=coMULTI>*________________________________________________________;</SPAN> 
+<SPAN class=kw2>%MACRO</SPAN> Disclose <SPAN class=br0>(</SPAN>Enclosed=, MaxDepth=<SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN>; 
+%<SPAN class=coMULTI>* Remove leading and trailing spaces beforehand;</SPAN> 
+  <SPAN class=kw2>%LET</SPAN> Enclosed = <SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=kw2>%UNQUOTE</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN> EQ <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN>%<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN>;&nbsp;%<SPAN class=coMULTI>* if () then return nothing or msg;</SPAN> 
+                                              &nbsp;%<SPAN class=coMULTI>* to prevent warning message;</SPAN> 
+  <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%QSUBSTR</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN>,<SPAN class=nu0>1</SPAN>,<SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN> EQ <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>(</SPAN><SPAN class=br0>)</SPAN> 
+         <SPAN class=kw4>AND</SPAN> <SPAN class=kw2>%QSUBSTR</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN>,<SPAN class=kw2>%LENGTH</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN><SPAN class=br0>)</SPAN>,<SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN> EQ <SPAN class=kw2>%STR</SPAN><SPAN class=br0>(</SPAN>%<SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>; 
+    <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=re0>&amp;MaxDepth</SPAN> LE <SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> 
+<SPAN class=coMULTI>/* truncate surrounding parentheses and remove leading and trailing spaces */</SPAN> 
+      <SPAN class=kw2>%BQUOTE</SPAN><SPAN class=br0>(</SPAN> <SPAN class=kw2>%SUBSTR</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN>, <SPAN class=nu0>2</SPAN>, <SPAN class=kw2>%LENGTH</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN><SPAN class=br0>)</SPAN>-<SPAN class=nu0>2</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>)</SPAN>; 
+    <SPAN class=kw2>%ELSE</SPAN> <SPAN class=coMULTI>/* recursively */</SPAN> 
+     &nbsp;%Disclose <SPAN class=br0>(</SPAN>Enclosed=<SPAN class=kw2>%QSUBSTR</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN>, <SPAN class=nu0>2</SPAN>, <SPAN class=kw2>%LENGTH</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;Enclosed</SPAN><SPAN class=br0>)</SPAN>-<SPAN class=nu0>2</SPAN><SPAN class=br0>)</SPAN>, 
+                 MaxDepth=<SPAN class=kw2>%EVAL</SPAN><SPAN class=br0>(</SPAN><SPAN class=re0>&amp;MaxDepth</SPAN>-<SPAN class=nu0>1</SPAN><SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%END</SPAN>; 
+  <SPAN class=kw2>%ELSE</SPAN> <SPAN class=re0>&amp;Enclosed</SPAN>;&nbsp;%<SPAN class=coMULTI>* return disclosed or original value;</SPAN> 
+<SPAN class=kw2>%MEND</SPAN> Disclose; 
+%<SPAN class=coMULTI>*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~;</SPAN> 
+%<SPAN class=coMULTI>* Auxiliary macro _ArrayNr creates or increments global macro variable _ArrayNr&nbsp;;</SPAN> 
+%<SPAN class=coMULTI>*_______________________________________________________________________________;</SPAN> 
+<SPAN class=kw2>%MACRO</SPAN> _ArrayNr <SPAN class=br0>(</SPAN>_Counter=_ArrayNr<SPAN class=br0>)</SPAN>; 
+  <SPAN class=kw2>%IF</SPAN> <SPAN class=br0>(</SPAN><SPAN class=kw2>%NRBQUOTE</SPAN><SPAN class=br0>(</SPAN>&amp;&amp;<SPAN class=re0>&amp;_Counter</SPAN><SPAN class=br0>)</SPAN> EQ <SPAN class=kw2>%NRSTR</SPAN><SPAN class=br0>(</SPAN>&amp;<SPAN class=br0>)</SPAN><SPAN class=re0>&amp;_Counter</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw2>%THEN</SPAN> <SPAN class=kw2>%DO</SPAN>;&nbsp;%<SPAN class=coMULTI>* Not existing;</SPAN> 
+   &nbsp;%<SPAN class=coMULTI>* [&nbsp;%SUPERQ(&amp;_Counter) then is empty, but that is not enough ]&nbsp;;</SPAN>  
+   &nbsp;%<SPAN class=coMULTI>* WARNING: Apparent symbolic reference &amp;_Counter not resolved.&nbsp;;</SPAN> 
+    <SPAN class=kw2>%PUT</SPAN> <SPAN class=kw9>NOTE</SPAN>: Ignore <SPAN class=kw8>WARNING</SPAN> about unresolved symbolic reference <SPAN class=re0>&amp;_Counter</SPAN> above; 
+   &nbsp;%<SPAN class=coMULTI>* Create GLOBAL macro variable &amp;_Counter and initialize to 1&nbsp;;</SPAN> 
+    <SPAN class=kw2>%GLOBAL</SPAN> <SPAN class=re0>&amp;_Counter</SPAN>&nbsp;; <SPAN class=kw2>%LET</SPAN> <SPAN class=re0>&amp;_Counter</SPAN> = <SPAN class=nu0>1</SPAN>; 
+  <SPAN class=kw2>%END</SPAN>; 
+  <SPAN class=kw2>%ELSE</SPAN> <SPAN class=kw2>%DO</SPAN>;&nbsp;%<SPAN class=coMULTI>* Existing;</SPAN> 
+   &nbsp;%<SPAN class=coMULTI>* Increment &amp;_Counter;</SPAN> 
+    <SPAN class=kw2>%LET</SPAN> <SPAN class=re0>&amp;_Counter</SPAN> = <SPAN class=kw2>%EVAL</SPAN> <SPAN class=br0>(</SPAN> &amp;&amp;<SPAN class=re0>&amp;_Counter</SPAN> + <SPAN class=nu0>1</SPAN> <SPAN class=br0>)</SPAN>&nbsp;; 
+  <SPAN class=kw2>%END</SPAN>; 
+  &amp;&amp;<SPAN class=re0>&amp;_Counter</SPAN> <SPAN class=coMULTI>/* return value */</SPAN> 
+<SPAN class=kw2>%MEND</SPAN> _ArrayNr;</PRE></DIV></DIV>
+<H1><SPAN class=mw-headline id=FEATURES>FEATURES</SPAN></H1>
+<P>The features of version 0.9 are: </P>
+<P><BR><B>1. Full support of the SPSS syntax</B> </P>
+<P>The complete SPSS syntax and functionality of the COUNT command is supported. 
+The command consists of (multiple) variable and value lists per count (SPSS’s 
+case) (and possibly multiple counts per record). Value lists are enclosed in 
+parentheses, preceded by variable lists, and multiple counts are separated by a 
+slash (/). The final period (.), ending the SPSS command may, for the sake of 
+syntax compatibility, be included or omitted; it will be ignored (filtered out). 
+See the examples in the next paragraph below. The syntax of the 
+macro&nbsp;%_Count_ in general is: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>%_COUNT_ <SPAN class=br0>(</SPAN><SPAN class=br0>(</SPAN> <SPAN class=coMULTI>/* note: _two_ consecutive left parentheses / start of SPSS-like syntax */</SPAN> 
+      Counter1 = variable_list_1 <SPAN class=br0>(</SPAN>value_list_1<SPAN class=br0>)</SPAN> variable_list_2 <SPAN class=br0>(</SPAN>value_list_2<SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / 
+      Counter2 = variable_list_3 <SPAN class=br0>(</SPAN>value_list_3<SPAN class=br0>)</SPAN> variable_list_4 <SPAN class=br0>(</SPAN>value_list_4<SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / 
+      <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>. 
+<SPAN class=coMULTI>/* end of SPSS-like syntax / note: _two_ consecutive right parentheses: */</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>;</PRE></DIV></DIV>
+<P><BR><B>2. Support for constant character values</B> </P>
+<P>Constant character values containing any characters between single or double 
+quotes may be specified, including commas, spaces and those used as delimiters 
+(parentheses and slash). This also applies to numeric values defined by a quoted 
+value, directly followed by a quoted string identifier, for example a date value 
+in the form of ‘31dec1948’d. (Initially this feature seemed difficult to 
+implement. The macro&nbsp;%SCAN and&nbsp;%QSCAN functions were firstly used to 
+separate parts of the specified code text. These functions do not discriminate 
+between separators wherever in the text, whether within normally quoted values 
+(specified in the code text, surrounded by single or double quotes) or not. A 
+scan function was needed to separate elements using the delimiters outside the 
+quoted values only. Initially it was intended to write a suitable macro 
+(function)&nbsp;%SCANQ for that purpose. However, since SAS 9 there is the SAS 
+function SCANQ doing exactly that in SAS code. It has been applied together with 
+the&nbsp;%QSYSFUNC macro function) </P>
+<P><BR><B>3. Missing value support with the _SYSMIS_ keyword</B> </P>
+<P>Missing values are supported by specifying them either individually or as a 
+group of 28 numerical missing values or space as character missing value using 
+the _SYSMIS_ keyword (generating: IF (MISSING(Var)) THEN ...) </P>
+<P><BR><B>4. Support for SPSS‘s TO convention for implied, consecutive, same 
+type variable lists.</B> </P>
+<P>Variable ranges specified with TO in SPSS and with -- and - in SAS differ 
+rather a lot regarding their interpretation between SPSS and SAS. In SPSS you 
+can't choose: if the variables exist, TO denotes an existing variable range 
+(from the PDF, like SAS’s --), if they (both) don't exist, TO denotes a range 
+indicated by names with sequence numbers (like SAS’s -). With the SPSS COUNT 
+command all variables, to count values from, however, should exist, so in this 
+case the interpretation is straightforward: a successive variable range from the 
+PDF. The TO convention in variable lists is supported by the macro using either 
+the keyword _TO_ (after SPSS) or -- (double dash, after SAS). The user has to 
+make sure that he knows which ordered variable list will be generated. It is not 
+allowed to specify array elements as the first and last entries of an implied 
+list. (It works like generating an ordered list of variables as they occur in 
+the PDV, though the algorithm actually works somewhat different from that. Due 
+to the way the feature has been programmed (SAS ARRAY and DO loop) it is not 
+possible and not necessary for the macro to know the actual variable list and 
+its size. Therefore checks on correct variable specifications can not be 
+performed and the user has to rely on SAS’s own error reporting, e.g. wrong 
+order of starting and ending list variables. More details about the programming 
+strategy of this feature is described below in a separate paragraph) </P>
+<P><BR><B>5. Support of the SPSS’s THRU convention for values</B> </P>
+<P>The equivalent macro’s _THRU_ convention in value lists generates value 
+ranges (GE and LE). If applied to character variables the range to compare will 
+be interpreted as a lexicographical one by SAS. If the second value (or 
+specified variable’s value) is lower than the first one the value range will be 
+empty and the resulting increment will be 0; no error report will be generated. 
+(If the subsequent value of any value consists of the keyword _THRU_ the value 
+thereafter and the current one will be used in a range comparison) </P>
+<P><BR><B>6. Support for the SPSS keywords LOWEST or LO and HIGHEST or HI</B> 
+</P>
+<P>Lowest and Highest values only apply to ranges and thus should occur together 
+with the keyword _THRU_ to indicate (one and two sided) infinite ranges. They 
+are callable as _LO_ and _HI_ keywords. The _LO_ keyword causes the exclusion of 
+all 28 numerical and single character SAS missing values; only valid values are 
+included. (If the range limits consist of the keywords _LO_ or _HI_ then the 
+range comparison is adapted accordingly) </P>
+<P><BR><B>7. Extraneous functionality beyond the SPSS functionality</B> </P>
+<P>a. Lexicographic comparison of character values with the _THRU_ keyword 
+(character set, platform dependent) </P>
+<P>b. Extended support for variable specifications instead of values in the 
+value (range) list. The values may thus consist of both constant numeric or 
+character values and variable names. The _THRU_ convention in value lists also 
+applies with variables and defines variable value ranges that may differ between 
+records. So while the _THRU_ convention applies to a value list, even with 
+variable names, the _TO_ convention will not apply there; <BR></P>
+<P>c. The reverse is also supported: constant values (without _TO_) instead of 
+variable names are allowed in the variable list; <BR></P>
+<P>d. Instead of variables array elements may be specified too as long as their 
+subscripts are not contained within parentheses, but within braces or brackets 
+instead. Array elements may not be used as starting and ending variables of a 
+TO-list; yet there will be no error report if this rule is violated but _TO_ 
+will then be regarded as a variable by SAS (-- in such a case will lead to a SAS 
+error) </P>
+<P>e. SAS name literals, variable names in the form ‘any characters’n, are 
+supported too. These are allowed (in SAS vs. 9.1 at least) with OPTIONS 
+VALIDVARNAME=ANY. (This feature was added along with the support for constant 
+character values, using the&nbsp;%QSYSFUNC(SCANQ(... construct)) </P>
+<P><BR><B>8. Extensively documented macro header</B> </P>
+<P>The macro header, in the newer versions, specifies the arguments, their 
+descriptions, their syntax, the development history and other information, 
+including a reference to this article. </P>
+<P>The supported macro call to count specific occurring values is for example 
+(original SPSS syntax code in italics): </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1>%_COUNT_ <SPAN class=br0>(</SPAN><SPAN class=br0>(</SPAN> <SPAN class=coMULTI>/* note: _two_ consecutive left parentheses / start of SPSS-like syntax */</SPAN>  
+      Cntvar1 = var_a <SPAN class=br0>(</SPAN>value_1, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> var_b <SPAN class=br0>(</SPAN>value_2 _THRU_ value_5, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / 
+      Cntvar2 = var_c var_d _TO_ var_f <SPAN class=br0>(</SPAN>value_6 value_7, <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN> / <SPAN class=br0>[</SPAN>...<SPAN class=br0>]</SPAN>. 
+<SPAN class=coMULTI>/* end of SPSS-like syntax / note: _two_ consecutive right parentheses: */</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>;</PRE></DIV></DIV>
+<P>Note the double parentheses at the start and at the end of the macro call. 
+These are mandatory because the inner parentheses and all code between them 
+define and distinguish the first (positional) macro argument (SPSScode) 
+containing the whole SPSS-like command, which is parsed. Any additional 
+arguments may be specified just before the final right parenthesis (in between 
+the last two parentheses). Additional arguments are not discussed here, though 
+they will be implemented as part of the newer production version(s) of the 
+macro. </P>
+<H1><SPAN class=mw-headline id=3._EXAMPLES>3. EXAMPLES</SPAN></H1>
+<P>The macro&nbsp;%_COUNT_ is called from within a SAS data step involving the 
+variables from the dataset being read. Below some examples with their 
+explanation are presented; the SPSS-equivalent code is printed in italics. The 
+example starts with some example data. Note that variable names and values 
+within lists are separated by commas and/or spaces. </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1><SPAN class=kw4>OPTIONS</SPAN> VALIDVARNAME=ANY; 
+<SPAN class=kw6>DATA</SPAN> <SPAN class=kw1>_NULL_</SPAN>; 
+  <SPAN class=kw3>INPUT</SPAN> a b c d $ e $ f $; 
+  <SPAN class=kw4>ARRAY</SPAN> abc a b c; 
+  One = <SPAN class=nu0>1</SPAN>; Two = <SPAN class=nu0>2</SPAN>; 
+  ParenL=<SPAN class=st0>'('</SPAN>; ParenR=<SPAN class=st0>')'</SPAN>; BracketL=<SPAN class=st0>'['</SPAN>; BraceR=<SPAN class=st0>"}"</SPAN>; 
+  <SPAN class=st0>'copy of: E as "SAS name literal"'</SPAN><SPAN class=kw3>n</SPAN> = E; 
+  <SPAN class=kw5>IF</SPAN> <SPAN class=br0>(</SPAN>E EQ <SPAN class=st0>'.'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=kw5>THEN</SPAN> E = <SPAN class=st0>''</SPAN>; <SPAN class=coMULTI>* make period (.) into missing space;</SPAN> 
+<SPAN class=coMULTI>* PUT (_ALL_)(=);</SPAN> 
+  CARDS; 
+<SPAN class=nu0>1</SPAN> <SPAN class=nu0>2</SPAN> <SPAN class=nu0>3</SPAN> <SPAN class=br0>(</SPAN> <SPAN class=br0>[</SPAN> <SPAN class=br0>{</SPAN> 
+<SPAN class=nu0>4</SPAN> <SPAN class=nu0>5</SPAN> <SPAN class=nu0>6</SPAN> <SPAN class=br0>)</SPAN> <SPAN class=br0>]</SPAN> <SPAN class=br0>}</SPAN> 
+<SPAN class=nu0>7</SPAN> <SPAN class=nu0>8</SPAN> <SPAN class=nu0>9</SPAN> D E F 
+. .d ._ _ . ._ <SPAN class=coMULTI>/* last three not at all missing character values */</SPAN> 
+; 
+<SPAN class=kw6>RUN</SPAN>; 
+<SPAN class=kw5>Then</SPAN> the _Count_ macro can be called <SPAN class=kw4>from</SPAN> inside a <SPAN class=kw6>data</SPAN> step <SPAN class=kw4>as</SPAN> follows: 
+%_COUNT_ <SPAN class=br0>(</SPAN><SPAN class=br0>(</SPAN> <SPAN class=coMULTI>/* note: _two_ consecutive left parentheses / start of SPSS-like syntax */</SPAN> 
+   Counter1 = a, b c <SPAN class=br0>(</SPAN><SPAN class=nu0>3</SPAN>, <SPAN class=nu0>5</SPAN> <SPAN class=nu0>7</SPAN>, _sysmis_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* _SYSMIS_ here means all 28 missing values */</SPAN>
+              b, a b <SPAN class=br0>(</SPAN><SPAN class=nu0>1</SPAN>, <SPAN class=nu0>9</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* multiple variable specification counts multiple */</SPAN>
+              d <SPAN class=br0>(</SPAN>ParenL <SPAN class=st0>'_'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* (temporary) var name instead of literal value */</SPAN>
+              e f <SPAN class=br0>(</SPAN>BracketL BraceR _sysmis_ <SPAN class=st0>'E'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* _SYSMIS_ here means empty, space */</SPAN>
+ / Counter2 = a c <SPAN class=br0>(</SPAN><SPAN class=nu0>1</SPAN> _THRU_ <SPAN class=nu0>8</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* _THRU_ value range, 1 up to 8 including the limits */</SPAN>
+              b <SPAN class=br0>(</SPAN><SPAN class=nu0>7</SPAN> _THRU_ <SPAN class=nu0>4</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* legal, but never incrementing the counter */</SPAN>
+              d <SPAN class=br0>(</SPAN><SPAN class=nu0>0</SPAN> _thru_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* lacking second value: no counting but NOTE: */</SPAN>
+ / Counter3 = a c <SPAN class=br0>(</SPAN>_THRU_ <SPAN class=nu0>8</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* there is no variable _THRU_, but value 8 may exist */</SPAN>
+              b <SPAN class=br0>(</SPAN><SPAN class=nu0>7</SPAN> _THRU_ _thru_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* no var _THRU_: SAS reports uninitialized variable */</SPAN>
+ / Counter4 = d e <SPAN class=br0>(</SPAN><SPAN class=st0>'D'</SPAN> _THRU_ <SPAN class=st0>'E'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* lexicographic comparison */</SPAN>
+              f <SPAN class=br0>(</SPAN><SPAN class=st0>'F'</SPAN> _THRU_ <SPAN class=st0>'E'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* legal, but not incrementing the counter */</SPAN>
+              a b <SPAN class=br0>(</SPAN>One _thru_ Two<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* Value list (vars in record), not variable list */</SPAN>
+ / Counter5 = <SPAN class=st0>"D"</SPAN> <SPAN class=st0>"E"</SPAN> <SPAN class=st0>"F"</SPAN> <SPAN class=br0>(</SPAN>D E F<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* reverse, values with variables, same result */</SPAN>
+ / Counter6 = <SPAN class=nu0>1</SPAN> <SPAN class=br0>(</SPAN><SPAN class=nu0>0</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* constant values, not matching here */</SPAN>
+ / Counter7 = <SPAN class=nu0>1</SPAN> <SPAN class=nu0>2</SPAN> <SPAN class=br0>(</SPAN>One _thru_ Two, <SPAN class=nu0>0</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* reverse value list, not variable list */</SPAN>
+ / Counter8 = d, f <SPAN class=br0>(</SPAN><SPAN class=st0>'='</SPAN> <SPAN class=st0>'*'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* some allowed special characters */</SPAN>
+ / Counter9 = abc<SPAN class=br0>[</SPAN><SPAN class=nu0>2</SPAN><SPAN class=br0>]</SPAN> abc<SPAN class=br0>{</SPAN><SPAN class=nu0>3</SPAN><SPAN class=br0>}</SPAN> <SPAN class=br0>(</SPAN><SPAN class=nu0>2</SPAN> <SPAN class=nu0>3</SPAN> abc<SPAN class=br0>[</SPAN><SPAN class=nu0>1</SPAN><SPAN class=br0>]</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* array elements */</SPAN> 
+ / Counter10 = a b <SPAN class=br0>(</SPAN>_lo_ _thru_ _hi_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* keywords _LO_ and _HI_ (with num &amp; char type) */</SPAN> 
+ / Counter11 = a b c <SPAN class=br0>(</SPAN><SPAN class=nu0>2</SPAN> _thru_ _hi_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* all values 2 and higher */</SPAN> 
+ / Counter12 = a b c <SPAN class=br0>(</SPAN>_lo_ _thru_ <SPAN class=nu0>2</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* all values 2 and lower, excluding SAS missings */</SPAN> 
+ / Counter13 = d _TO_ f <SPAN class=br0>(</SPAN>_LO_ _THRU_ <SPAN class=st0>'E'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* all lexicographically LE "E ", no missing */</SPAN> 
+ / Counter14 = a -- c <SPAN class=br0>(</SPAN><SPAN class=nu0>4</SPAN> _thru_ <SPAN class=nu0>6</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* consecutive variables in TO-list of same type */</SPAN> 
+ / Counter15 = a _to_ c d -- f <SPAN class=br0>(</SPAN>_sysmis_<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* first list numeric, second one character */</SPAN> 
+/ Counter16 = d _TO_ f <SPAN class=br0>(</SPAN><SPAN class=st0>'/'</SPAN> <SPAN class=st0>'('</SPAN> <SPAN class=st0>"._"</SPAN> <SPAN class=st0>""</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* all kinds of characters incl. delimiters */</SPAN> 
+ / Counter17 = <SPAN class=st0>')'</SPAN> <SPAN class=br0>(</SPAN>d<SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* constant value in variable list, reverse specification */</SPAN> 
+/ Counter18 = <SPAN class=st0>'copy of: E as "SAS name literal" '</SPAN><SPAN class=kw3>n</SPAN> E <SPAN class=br0>(</SPAN><SPAN class=st0>'['</SPAN> <SPAN class=st0>']'</SPAN> <SPAN class=st0>'.'</SPAN><SPAN class=br0>)</SPAN> <SPAN class=coMULTI>/* SAS name literal */</SPAN> 
+<SPAN class=coMULTI>/* end of SPSS-compatible syntax / note: _two_ consecutive right parentheses: */</SPAN> <SPAN class=br0>)</SPAN><SPAN class=br0>)</SPAN>;</PRE></DIV></DIV>
+<H1><SPAN class=mw-headline 
+id=PROGRAMMING_STRATEGY_OF_IMPLIED.2C_CONSECUTIVE.2C_SAME_TYPE_VARIABLE_LISTS_.28SPSS_TO-CONVENTION.29>PROGRAMMING 
+STRATEGY OF IMPLIED, CONSECUTIVE, SAME TYPE VARIABLE LISTS (SPSS 
+TO-CONVENTION)</SPAN></H1>
+<P>At first sight implementing a TO-convention for variables, generating an 
+explicit variable list to use, seemed virtually impossible. While PROC CONTENTS, 
+with its output written to a dataset, can easily yield the desired information, 
+this is not possible from within a SAS data step. Other possible solutions, 
+applying the functions VARNUM and VARNAME, need to know the current dataset 
+name, which isn’t known to the macro. And even if known it would be necessary to 
+constantly open, read and close the dataset from the macro code for every 
+(implied, consecutive, same type) variable list, using 
+the&nbsp;%SYSFUNC(VARNUM(..)) and&nbsp;%SYSFUNC(VARNAME(..)) constructs. This is 
+not very efficient. </P>
+<P><BR>Hence, quite another solution was devised and developed. This solution 
+started from the point of view that it isn’t really necessary for the macro to 
+know all the intermediate (and same type) variable names between the first and 
+last variables of a TO-list specification. It was sufficient to develop code 
+with which SAS (not the macro) can find the variables involved. Such code needs 
+an ARRAY specification with only the (known) first and last variables of the 
+list. Subsequently SAS could be driven by the macro to loop through that list of 
+array elements, which would be involved in the comparisons and counts. So this 
+solution needs to create a (uniquely named) SAS array for every implied TO-list. 
+</P>
+<P><BR>The next problem that emerged was that it isn’t possible to use the same 
+array over and over again for all TO-lists as once an array has been created in 
+a data step it can’t be removed and recreated (with a different specification) 
+anymore. This required defining a new and still uniquely named ARRAY for every 
+TO-list. For that purpose a prefix for an array name was chosen that quite 
+likely is very unique (_0), to which a sequence number (generated by the 
+auxiliary macro _ArrayNr) is appended. As any subsequent call of the macro 
+should be prohibited from using the same sequence numbers again it is necessary 
+to store the sequence number in a global macro variable with a unique name 
+(_ArrayNr). The first time the value of that macro has to be checked, while it 
+doesn’t exist yet, yields a WARNING on a not resolved symbolic reference. In 
+that case the macro generates a NOTE on ignoring the warning. Another solution 
+here to even avoid the warning would be to apply the macro 
+function&nbsp;%SYMEXIST (and possibly&nbsp;%SYMGLOBL), both in SAS version 9.x, 
+but the warning and the note in the log aren’t very disturbing. Initially, it 
+was the intention to have the macro compatible with at least SAS version 8.x, 
+but the use of the 9.x SAS function SCANQ (see above) changed this. </P>
+<P><BR>Thus every TO-list creates its own SAS array, incrementally numbered, 
+even across different data steps in a SAS program (open SAS session). Next SAS 
+needs an index variable to serve as the subscript for array elements. This index 
+variable may be the same one every time, but should be unique to the remaining 
+variables used in the data step (_0_). With it SAS is able to refer to the 
+variables in the implied, consecutive, same type variable list (TO-list) by 
+their respective array element specifications. The size of the array is not 
+known to the macro itself but it is known to the SAS code as DIM(array). This 
+way SAS is able to perform the comparisons and counts for each element of the 
+array(s) perfectly well. The arrays disappear automatically at the end of the 
+data step(s), but the index variable would remain if not DROPped explicitly by 
+the code generated by the macro (DROP _0_&nbsp;;). The global macro variable 
+disappears automatically at the end of the program (or SAS session). If the 
+TO-convention is not used these variables and arrays are not generated at all. 
+</P>
+<P><BR>The drawback of this solution is that it is never known for sure whether 
+the generated macro and SAS variable and array names are really unique and don’t 
+interfere with the other user specified data step code and existing variables in 
+datasets used. The names have been chosen as rather uncommon, but in the later 
+versions (1.0 and up) these names (and prefix) will be made user definable (with 
+defaults). In the macro code presented here these features have not been 
+incorporated as they don’t contribute to the understanding and operation of the 
+macro and its strategy. There will be other user definable arguments to the 
+macro as well, all of which will be keyword arguments, specified after the first 
+and most important positional argument SPSScode (containing the SPSS COUNT 
+compatible code). </P>
+<H1><SPAN class=mw-headline id=CONVERSION_DEMONSTRATION>CONVERSION 
+DEMONSTRATION</SPAN></H1>
+<P>To see the generated, converted SAS code of a call to the macro&nbsp;%_Count_ 
+(of any macro unconditionally generating SAS code actually), instead of running 
+it (as part of a data step), adapt and run the following code: </P>
+<DIV class=mw-geshi dir=ltr style="TEXT-ALIGN: left">
+<DIV class="sas source-sas"><PRE class=de1><SPAN class=kw2>%PUT</SPAN> <SPAN class=br0>{</SPAN>Start of generated code<SPAN class=br0>}</SPAN> <SPAN class=kw2>%QUOTE</SPAN><SPAN class=br0>(</SPAN> 
+<SPAN class=coMULTI>/* the complete&nbsp;%_Count_ call here */</SPAN> 
+<SPAN class=br0>)</SPAN> <SPAN class=br0>{</SPAN><SPAN class=kw5>End</SPAN> of generated code<SPAN class=br0>}</SPAN>;</PRE></DIV></DIV>
+<P>All generated SAS code will appear in the log, not neatly formatted, but 
+logically working. The generated code may be run directly and the resulting log 
+may be studied for debugging purposes. </P>
+<H1><SPAN class=mw-headline id=CONCLUSION>CONCLUSION</SPAN></H1>
+<P>Imitating the SPSS COUNT command in a SAS macro, both its syntax and its 
+functionality, is very well possible. The syntax ultimately can be the same, a 
+SAS macro call is different from an SPSS command, but the SPSS-like command can 
+be used embedded in the SAS macro call (its first and positional argument to be 
+exact). The functionality can also be regarded as identical; there are only 
+differences in the way SPSS and SAS deal with missing values. These differences 
+in the concept and the handling of missing values are no obstacle at all to 
+imitate the SPSS syntax and functionality as much as possible in SAS. After all, 
+it is not the intention to create an exact copy of SPSS’s COUNT command in SAS, 
+but merely to create a simple and efficient way to count occurring values in 
+SAS. If using dedicated SAS code it may need quite some amount of code and 
+programming effort to reach the desired result, while a macro reduces the amount 
+of programming work considerably. Any syntax could have been chosen while 
+calling a macro developed to that extent, but as the SPSS equivalent COUNT was 
+already known to be very easy and simple that syntax has been selected as the 
+syntax of choice. There is no need, wish or claim to be fully compliant with 
+SPSS regarding missing values. The macro&nbsp;%_Count_ can also be viewed as a 
+syntax converter from simple (SPSS-like) counting code to complex (SAS) code. 
+</P>
+<P><BR></P>
+<H1><SPAN class=mw-headline id=CONCLUSION_2>CONCLUSION</SPAN></H1>
+<P>Imitating the SPSS COUNT command in a SAS macro, both its syntax and its 
+functionality, is very well possible. The syntax ultimately can be the same, a 
+SAS macro call is different from an SPSS command, but the SPSS-like command can 
+be used embedded in the SAS macro call (its first and positional argument to be 
+exact). The functionality can also be regarded as identical; there are only 
+differences in the way SPSS and SAS deal with missing values. These differences 
+in the concept and the handling of missing values are no obstacle at all to 
+imitate the SPSS syntax and functionality as much as possible in SAS. After all, 
+it is not the intention to create an exact copy of SPSS’s COUNT command in SAS, 
+but merely to create a simple and efficient way to count occurring values in 
+SAS. If using dedicated SAS code it may need quite some amount of code and 
+programming effort to reach the desired result, while a macro reduces the amount 
+of programming work considerably. Any syntax could have been chosen while 
+calling a macro developed to that extent, but as the SPSS equivalent COUNT was 
+already known to be very easy and simple that syntax has been selected as the 
+syntax of choice. There is no need, wish or claim to be fully compliant with 
+SPSS regarding missing values. The macro&nbsp;%_Count_ can also be viewed as a 
+syntax converter from simple (SPSS-like) counting code to complex (SAS) code. 
+</P>
+<H1><SPAN class=mw-headline id=REFERENCES>REFERENCES</SPAN></H1>
+<P>1) SAS Institute Inc. 2004. Base SAS® 9.1.3 Procedures Guide. Cary, NC: SAS 
+Institute Inc. <BR>2) SPSS for Windows, Rel. 11.0.1. 2001. Chicago: SPSS Inc. 
+<BR>3) <A class="external free" 
+href="http://listserv.cc.uga.edu/cgi-bin/wa?A2=ind0609&amp;L=spssx-l&amp;D=0&amp;F=P&amp;P=43849&amp;F=" 
+rel=nofollow>http://listserv.cc.uga.edu/cgi-bin/wa?A2=ind0609&amp;L=spssx-l&amp;D=0&amp;F=P&amp;P=43849&amp;F=</A> 
+(question on SPSSX-L) <BR>4) <A class="external free" 
+href="http://tinyurl.com/parmbuff-at-comp-soft-sys-sas" 
+rel=nofollow>http://tinyurl.com/parmbuff-at-comp-soft-sys-sas</A> or <A 
+class="external free" href="http://tinyurl.com/parmbuff-at-SAS-L" 
+rel=nofollow>http://tinyurl.com/parmbuff-at-SAS-L</A> (discussion on SAS-L) 
+<BR>5) <A class="external free" 
+href="http://home.hccnet.nl/jim.groeneveld/software/SASmacro/_Count_.zip" 
+rel=nofollow>http://home.hccnet.nl/jim.groeneveld/software/SASmacro/_Count_.zip</A> 
+(the newest version of the macro) </P><!-- 
+NewPP limit report
+Preprocessor visited node count: 147/1000000
+Preprocessor generated node count: 284/1000000
+Post‐expand include size: 0/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/40
+Expensive parser function count: 0/100
+--><!-- Saved in parser cache with key phusewik_wiki3:pcache:idhash:765-0!*!*!!en!*!* and timestamp 20141112124606 --><SPAN 
+id=w4g_rb_area-3>Nobody voted on this yet<BR></SPAN>
+<SCRIPT type=text/javascript>
+//<![CDATA[
+if(typeof(W4GRB)=="undefined")
+{
+window.W4GRB = new Object();
+W4GRB.average_rating=new Array();
+W4GRB.user_rating=new Array();
+W4GRB.pid=new Array();
+W4GRB.query_url=new Array();
+}
+W4GRB.average_rating[3]=0;
+W4GRB.user_rating[3]=0;
+W4GRB.pid[3]=765;
+W4GRB.query_url[3]="/wiki/index.php?title=Special:W4GRB\x26bid=3\x26pid="+W4GRB.pid[3];
+query2page(W4GRB.query_url[3],"w4g_rb_area-3",2,3);
+//]]>
+</SCRIPT>
+
+<DIV class=rating_box id=rating_box-3>
+<DIV class=rating_target id=rating_target-3 
+onmouseout="updatebox('3',W4GRB.user_rating[3])">
+<DIV class=w4g_rb_nojs>&nbsp;You need to enable JavaScript to vote</DIV></DIV>
+<DIV class=rating_text>
+<DIV class=rating_text_text id=rating_text-3></DIV></DIV></DIV>
+<SCRIPT type=text/javascript>
+//<![CDATA[
+loadbox(3);
+updatebox(3,W4GRB.average_rating[3]);
+//]]>
+</SCRIPT>
+</DIV><!-- /bodycontent --><!-- printfooter -->
+<DIV class=printfooter>Retrieved from "<A 
+href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;oldid=5301">http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;oldid=5301</A>" 
+</DIV><!-- /printfooter --><!-- catlinks -->
+<DIV class=catlinks id=catlinks>
+<DIV class=mw-normal-catlinks id=mw-normal-catlinks><A title=Special:Categories 
+href="http://www.phusewiki.org/wiki/index.php?title=Special:Categories">Category</A>: 
+
+<UL>
+  <LI><A title="Category:Coders Corner" 
+  href="http://www.phusewiki.org/wiki/index.php?title=Category:Coders_Corner">Coders 
+  Corner</A></LI></UL></DIV></DIV><!-- /catlinks -->
+<DIV class=visualClear></DIV><!-- debughtml --><!-- /debughtml --></DIV><!-- /bodyContent --></DIV><!-- /content --><!-- header -->
+<DIV class=noprint id=mw-head><!-- 0 -->
+<DIV class="" id=p-personal>
+<H5>Personal tools</H5>
+<UL>
+  <LI id=pt-createaccount><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:UserLogin&amp;returnto=Sas+macro+%25count&amp;type=signup">Create 
+  account</A> </LI>
+  <LI id=pt-login><A 
+  title="You are encouraged to log in; however, it is not mandatory [o]" 
+  accessKey=o 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:UserLogin&amp;returnto=Sas+macro+%25count">Log 
+  in</A> </LI></UL></DIV><!-- /0 -->
+<DIV id=left-navigation><!-- 0 -->
+<DIV class=vectorTabs id=p-namespaces>
+<H5>Namespaces</H5>
+<UL>
+  <LI class=selected id=ca-nstab-main><SPAN><A title="View the content page [c]" 
+  accessKey=c 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count">Page</A></SPAN> 
+  </LI>
+  <LI class=new id=ca-talk><SPAN><A 
+  title="Discussion about the content page [t]" accessKey=t 
+  href="http://www.phusewiki.org/wiki/index.php?title=Talk:Sas_macro_%25count&amp;action=edit&amp;redlink=1">Discussion</A></SPAN> 
+  </LI></UL></DIV><!-- /0 --><!-- 1 -->
+<DIV class="vectorMenu emptyPortlet" id=p-variants>
+<H4></H4>
+<H5><SPAN>Variants</SPAN><A 
+href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#"></A></H5>
+<DIV class=menu>
+<UL></UL></DIV></DIV><!-- /1 --></DIV>
+<DIV id=right-navigation><!-- 0 -->
+<DIV class=vectorTabs id=p-views>
+<H5>Views</H5>
+<UL>
+  <LI class=selected id=ca-view><SPAN><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count">Read</A></SPAN> 
+  </LI>
+  <LI id=ca-viewsource><SPAN><A 
+  title="This page is protected.&#10;You can view its source [e]" accessKey=e 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;action=edit">View 
+  source</A></SPAN> </LI>
+  <LI class=collapsible id=ca-history><SPAN><A 
+  title="Past revisions of this page [h]" accessKey=h 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;action=history">View 
+  history</A></SPAN> </LI></UL></DIV><!-- /0 --><!-- 1 -->
+<DIV class="vectorMenu emptyPortlet" id=p-cactions>
+<H5><SPAN>Actions</SPAN><A 
+href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count#"></A></H5>
+<DIV class=menu>
+<UL></UL></DIV></DIV><!-- /1 --><!-- 2 -->
+<DIV id=p-search>
+<H5><LABEL for=searchInput>Search</LABEL></H5>
+<FORM id=searchform action=/wiki/index.php>
+<DIV id=simpleSearch><INPUT id=searchInput title="Search PhUSE Wiki [f]" 
+accessKey=f name=search><BUTTON id=searchButton 
+title="Search the pages for this text" name=button height="13" width="12"><IMG 
+alt=Search src="Sas macro %count - PhUSE Wiki_files/search-ltr.png"></BUTTON> 
+<INPUT type=hidden value=Special:Search name=title> </DIV></FORM></DIV><!-- /2 --></DIV></DIV><!-- /header --><!-- panel -->
+<DIV class=noprint id=mw-panel><!-- logo -->
+<DIV id=p-logo><A title="Visit the main page" 
+style="BACKGROUND-IMAGE: url(http://www.phusewiki.org/wiki/images/4/48/Phuse135.png)" 
+href="http://www.phusewiki.org/wiki/index.php?title=PhUSE_Wiki"></A></DIV><!-- /logo --><!-- navigation -->
+<DIV class=portal id=p-navigation>
+<H5>Navigation</H5>
+<DIV class=body>
+<UL>
+  <LI id=n-Home><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=PhUSE_Wiki">Home</A> 
+  <LI id=n-Categories><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:Categories">Categories</A> 
+
+  <LI id=n-recentchanges><A title="A list of recent changes in the wiki [r]" 
+  accessKey=r 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:RecentChanges">Recent 
+  changes</A> 
+  <LI id=n-New-Pages><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:NewPages">New 
+  Pages</A> 
+  <LI id=n-Popular-Pages><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:PopularPages">Popular 
+  Pages</A> </LI></UL></DIV></DIV><!-- /navigation --><!-- Projects -->
+<DIV class=portal id=p-Projects>
+<H5>Projects</H5>
+<DIV class=body>
+<UL>
+  <LI id=n-CSS-Working-Groups><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=CSS_Working_Groups">CSS 
+  Working Groups</A> 
+  <LI id=n-Annual-Conference><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Annual_Conference">Annual 
+  Conference</A> 
+  <LI id=n-Therapeutic-Areas><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Therapeutic_Areas">Therapeutic 
+  Areas</A> 
+  <LI id=n-Good-Programming-Practice><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Good_Programming_Practice">Good 
+  Programming Practice</A> 
+  <LI id=n-Data-Transparency><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Data_Transparency">Data 
+  Transparency</A> 
+  <LI id=n-QSPI><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=QSPI">QSPI</A> 
+</LI></UL></DIV></DIV><!-- /Projects --><!-- PhUSE Wiki Help -->
+<DIV class=portal id=p-PhUSE_Wiki_Help>
+<H5>PhUSE Wiki Help</H5>
+<DIV class=body>
+<UL>
+  <LI id=n-help><A title="The place to find out" 
+  href="http://www.phusewiki.org/wiki/index.php?title=Help">Help</A> 
+  <LI id=n-faq><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=FAQ">FAQ</A> 
+  <LI id=n-Training><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Wiki_Author_Training">Training</A> 
+
+  <LI id=n-Wiki-Feedback><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Wiki_Feedback">Wiki 
+  Feedback</A> 
+  <LI id=n-Wiki-Admin-Working-Group><A 
+  href="http://www.phusewiki.org/wiki/index.php?title=Wiki_Working_Group">Wiki 
+  Admin Working Group</A> </LI></UL></DIV></DIV><!-- /PhUSE Wiki Help --><!-- SEARCH --><!-- /SEARCH --><!-- TOOLBOX -->
+<DIV class=portal id=p-tb>
+<H5>Toolbox</H5>
+<DIV class=body>
+<UL>
+  <LI id=t-whatlinkshere><A title="A list of all wiki pages that link here [j]" 
+  accessKey=j 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:WhatLinksHere/Sas_macro_%25count">What 
+  links here</A> 
+  <LI id=t-recentchangeslinked><A 
+  title="Recent changes in pages linked from this page [k]" accessKey=k 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:RecentChangesLinked/Sas_macro_%25count">Related 
+  changes</A> 
+  <LI id=t-specialpages><A title="A list of all special pages [q]" accessKey=q 
+  href="http://www.phusewiki.org/wiki/index.php?title=Special:SpecialPages">Special 
+  pages</A> 
+  <LI id=t-print><A title="Printable version of this page [p]" accessKey=p 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;printable=yes" 
+  rel=alternate>Printable version</A> 
+  <LI id=t-permalink><A title="Permanent link to this revision of the page" 
+  href="http://www.phusewiki.org/wiki/index.php?title=Sas_macro_%25count&amp;oldid=5301">Permanent 
+  link</A> </LI></UL></DIV></DIV><!-- /TOOLBOX --><!-- LANGUAGES --><!-- /LANGUAGES --></DIV><!-- /panel --><!-- footer -->
+<DIV id=footer>
+<UL id=footer-info>
+  <LI id=footer-info-lastmod>This page was last modified on 15 January 2013, at 
+  07:44. 
+  <LI id=footer-info-viewcount>This page has been accessed 1,929 times. </LI></UL>
+<UL id=footer-places>
+  <LI id=footer-places-privacy><A title="PhUSEWiki:Privacy policy" 
+  href="http://www.phusewiki.org/wiki/index.php?title=PhUSEWiki:Privacy_policy">Privacy 
+  policy</A> </LI>
+  <LI id=footer-places-about><A title=PhUSEWiki:About 
+  href="http://www.phusewiki.org/wiki/index.php?title=PhUSEWiki:About">About 
+  PhUSE Wiki</A> </LI>
+  <LI id=footer-places-disclaimer><A title="PhUSEWiki:General disclaimer" 
+  href="http://www.phusewiki.org/wiki/index.php?title=PhUSEWiki:General_disclaimer">Disclaimers</A> 
+  </LI></UL>
+<UL class=noprint id=footer-icons>
+  <LI id=footer-poweredbyico><A href="http://www.mediawiki.org/"><IMG height=31 
+  alt="Powered by MediaWiki" 
+  src="Sas macro %count - PhUSE Wiki_files/poweredby_mediawiki_88x31.png" 
+  width=88></A> </LI></UL>
+<DIV style="CLEAR: both"></DIV></DIV><!-- /footer -->
+<SCRIPT>if(window.mw){
+mw.loader.state({"site":"loading","user":"missing","user.groups":"ready"});
+}</SCRIPT>
+
+<SCRIPT 
+src="C:\www\AutoReports\900tools\100SAS\Sas macro %count - PhUSE Wiki_files\load(1).php"></SCRIPT>
+
+<SCRIPT>if(window.mw){
+mw.loader.load(["ext.ajaxpoll","mediawiki.user","mediawiki.page.ready","mediawiki.searchSuggest","ext.vector.collapsibleNav","ext.vector.collapsibleTabs"], null, true);
+}</SCRIPT>
+
+<SCRIPT src="Sas macro %count - PhUSE Wiki_files/BreadCrumbs.js"></SCRIPT>
+
+<SCRIPT 
+src="C:\www\AutoReports\900tools\100SAS\Sas macro %count - PhUSE Wiki_files\load(2).php"></SCRIPT>
+
+<SCRIPT type=text/javascript>
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</SCRIPT>
+
+<SCRIPT type=text/javascript>
+var pageTracker = _gat._getTracker("UA-33017775-1");
+pageTracker._trackPageview();
+</SCRIPT>
+
+<SCRIPT type=text/javascript>
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'phusewiki'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = 'http://' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</SCRIPT>
+<!-- Served in 0.294 secs. --></BODY></HTML>

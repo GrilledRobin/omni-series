@@ -1,0 +1,1 @@
+%put %sysfunc(today());

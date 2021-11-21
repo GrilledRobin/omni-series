@@ -1,0 +1,41 @@
+|--------------------------<V20141110 >--------------------------|
+|--------------------------<  Start   >--------------------------|
+|Title         |Refine the SAS log check program                 |
+|Start Date    |2014-11-10                                       |
+|End Date      |2014-11-18                                       |
+|Updater       |Lu Robin Bin                                     |
+|Updater PSID  |1298609                                          |
+|Department    |China SBIM                                       |
+|--------------|-------------------------------------------------|
+|Description   |Enhance the SAS log check program to adapt the   |
+|              |SAS V9.3 in terms of the customization on CharSet|
+|              | or Code Page by different execution environments|
+|              |, esp. for Chinese Characters shown in the log.  |
+|--------------|-------------------------------------------------|
+|Changes       |1. Replace the PIPE reader by the file-system    |
+|              |   reader to avoid the errors in recognition.    |
+|              |2. Add features represented in the public tool:  |
+|              |   check_log_macro_for_batch.sas                 |
+|--------------|-------------------------------------------------|
+|Plan to Do    |                                                 |
+|--------------|-------------------------------------------------|
+|Effect        |The SAS log check process can now recognize the  |
+|              |system messages generated under the environment  |
+|              |of SAS Unicode Support.                          |
+|              |User can now choose whether to send the summary  |
+|              |report via Email. (Email Function Required)      |
+|              |NLS/EN under any version of SAS cannot be used as|
+|              | configuration when loading SAS system, in order |
+|              | to call the Error Check program.                |
+|--------------|-------------------------------------------------|
+|----------------------| Modified Files   |----------------------|
+autoCALL.bat
+PGM\0030CalcScore\290_genSCPass.sas
+%BAT_PATH%\SASlogCHK.bat
+%TOOL_PATH%\100SAS\errCHKSAS.sas
+|----------------------| Added Files      |----------------------|
+%TOOL_PATH%\100SAS\ecLang_CHS_GB2312.sas
+%TOOL_PATH%\100SAS\ecLang_CHSU8_utf-8.sas
+%TOOL_PATH%\100SAS\ecLang_ENG_GB2312.sas
+|----------------------| Deleted Files    |----------------------|
+|--------------------------<   End    >--------------------------|

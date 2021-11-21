@@ -1,0 +1,1274 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3c.org/TR/1999/REC-html401-19991224/loose.dtd">
+<!-- saved from url=(0065)http://stackoverflow.com/questions/25254685/email-sas-html-output -->
+<HTML itemtype="http://schema.org/QAPage" itemscope><HEAD><TITLE>Email SAS html output - Stack Overflow</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=utf-8"><LINK 
+href="//cdn.sstatic.net/stackoverflow/img/favicon.ico?v=038622610830" 
+rel="shortcut icon"><LINK 
+href="//cdn.sstatic.net/stackoverflow/img/apple-touch-icon.png?v=fd7230a85918" 
+rel="apple-touch-icon image_src"><LINK title="Stack Overflow" 
+href="/opensearch.xml" type=application/opensearchdescription+xml rel=search>
+<META content=summary name=twitter:card>
+<META content=stackoverflow.com name=twitter:domain>
+<META content=website property="og:type">
+<META 
+content=http://cdn.sstatic.net/stackoverflow/img/apple-touch-icon@2.png?v=fde65a5a78c6 
+property="og:image" itemprop="image primaryImageOfPage">
+<META content="Email SAS html output" name=twitter:title property="og:title" 
+itemprop="title name">
+<META 
+content="I am using SAS Enterprise Guide 6.1.  I am trying to batch the program below with windows scheduler to produce a weekly report.  It will have a few proc prints and sgplots.  The user I am sending i..." 
+name=twitter:description property="og:description" itemprop="description">
+<META content=http://stackoverflow.com/questions/25254685/email-sas-html-output 
+property="og:url"><LINK 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output" 
+rel=canonical>
+<SCRIPT 
+src="Email SAS html output - Stack Overflow_files/jquery.min.js"></SCRIPT>
+
+<SCRIPT src="Email SAS html output - Stack Overflow_files/stub.en.js"></SCRIPT>
+<LINK href="Email SAS html output - Stack Overflow_files/all.css" type=text/css 
+rel=stylesheet><LINK title="Feed for question 'Email SAS html output'" 
+href="/feeds/question/25254685" type=application/atom+xml rel=alternate>
+<SCRIPT>
+        
+        StackExchange.ready(function () {
+                
+                StackExchange.using("snippets", function () {
+                    StackExchange.snippets.initSnippetRenderer();
+                });
+                
+
+            StackExchange.using("postValidation", function () {
+                StackExchange.postValidation.initOnBlurAndSubmit($('#post-form'), 2, 'answer');
+            });
+
+            
+            StackExchange.question.init({showAnswerHelp:true,totalCommentCount:0,shownCommentCount:0,highlightColor:'#F4A83D',backgroundColor:'#FFF',questionId:25254685});
+
+            styleCode();
+
+                StackExchange.realtime.subscribeToQuestion('1', '25254685');
+            
+                    });
+    </SCRIPT>
+
+<SCRIPT>
+        StackExchange.init({"locale":"en","stackAuthUrl":"https://stackauth.com","serverTime":1415959477,"networkMetaHostname":"meta.stackexchange.com","routeName":"Questions/Show","styleCode":true,"enableUserHovercards":true,"snippets":{"enabled":true,"domain":"stacksnippets.net"},"site":{"name":"Stack Overflow","description":"Q&A for professional and enthusiast programmers","isNoticesTabEnabled":true,"recaptchaPublicKey":"6LdchgIAAAAAAJwGpIzRQSOFaO0pU6s44Xt8aTwc","recaptchaAudioLang":"en","enableNewTagCreationWarning":true,"nonAsciiTags":true,"enableSocialMediaInSharePopup":true},"user":{"fkey":"845d8357ff64c1c7ba8e49e91350af52","isAnonymous":true,"ab":{"tutorial_tooltips":{"v":"b","g":1},"homepage_recommended_algo":{"v":"c","g":2}}}});
+        StackExchange.using.setCacheBreakers({"js/prettify-full.en.js":"3d113e81a655","js/moderator.en.js":"3bf88d4bfb80","js/full-anon.en.js":"1525ee331b9a","js/full.en.js":"226e8460f30b","js/wmd.en.js":"da24545d7e5d","js/third-party/jquery.autocomplete.min.js":"e5f01e97f7c3","js/third-party/jquery.autocomplete.min.en.js":"","js/mobile.en.js":"909ba559e645","js/help.en.js":"56d0a3a560ae","js/tageditor.en.js":"fb6ca50266c2","js/tageditornew.en.js":"f4bf553cc164","js/inline-tag-editing.en.js":"9d7c6b9d01c1","js/revisions.en.js":"e707189c34fa","js/review.en.js":"d5d6d53cee99","js/tagsuggestions.en.js":"d1ff9b84abe5","js/post-validation.en.js":"65d38e2d8af0","js/explore-qlist.en.js":"ce6dbe2ac3f4","js/events.en.js":"3d7b826514c3","js/keyboard-shortcuts.en.js":"a2d964d1c80f","js/external-editor.en.js":"d63c2f10e7e1","js/external-editor.en.js":"d63c2f10e7e1","js/snippet-javascript.en.js":"f32a62fbdc0b","js/snippet-javascript-codemirror.en.js":"796dd5ae4375"});
+        StackExchange.using("gps", function() {
+             StackExchange.gps.init(true);
+        });
+    </SCRIPT>
+
+<SCRIPT>
+            StackExchange.ready(function () {
+                $('#nav-tour').click(function () {
+                    StackExchange.using("gps", function() {
+                        StackExchange.gps.track("aboutpage.click", { aboutclick_location: "headermain" }, true);
+                    });
+                });
+            });
+        </SCRIPT>
+
+<META content="MSHTML 6.00.2900.6575" name=GENERATOR></HEAD>
+<BODY class="question-page new-topbar" lang=""><NOSCRIPT>
+<DIV id=noscript-padding></DIV></NOSCRIPT>
+<DIV id=notify-container></DIV>
+<DIV id=overlay-header></DIV>
+<DIV id=custom-header></DIV>
+<DIV class=topbar>
+<DIV class=topbar-wrapper>
+<DIV class=js-topbar-dialog-corral>
+<DIV class="topbar-dialog siteSwitcher-dialog dno">
+<DIV class=header>
+<H3><A href="http://stackoverflow.com/">current community</A></H3></DIV>
+<DIV class="modal-content current-site-container">
+<UL class=current-site>
+  <LI>
+  <DIV class=related-links><A class=js-gps-track 
+  href="http://chat.stackoverflow.com/" 
+  data-gps-track="site_switcher.click({ item_type:6 })">chat</A> <A 
+  class=js-gps-track href="http://blog.stackoverflow.com/" 
+  data-gps-track="site_switcher.click({ item_type:7 })">blog</A> </DIV><A 
+  class="current-site-link site-link js-gps-track" 
+  href="http://stackoverflow.com/" 
+  data-gps-track="&#13;&#10;        site_switcher.click({ item_type:3 })" 
+  data-id="1">
+  <DIV class="site-icon favicon favicon-stackoverflow" 
+  title="Stack Overflow"></DIV>Stack Overflow </A>
+  <LI class=related-site>
+  <DIV class=L-shaped-icon-container><SPAN class=L-shaped-icon></SPAN></DIV><A 
+  class="site-link js-gps-track" href="http://meta.stackoverflow.com/" 
+  data-gps-track="&#13;&#10;            site.switch({ target_site:552, item_type:3 }),&#13;&#10;        site_switcher.click({ item_type:4 })" 
+  data-id="552">
+  <DIV class="site-icon favicon favicon-stackoverflowmeta" 
+  title="Meta Stack Overflow"></DIV>Meta Stack Overflow </A>
+  <LI class=related-site>
+  <DIV class=L-shaped-icon-container><SPAN class=L-shaped-icon></SPAN></DIV><A 
+  class="site-link js-gps-track" 
+  href="http://careers.stackoverflow.com/?utm_source=stackoverflow.com&amp;utm_medium=site-ui&amp;utm_campaign=multicollider" 
+  data-gps-track="site_switcher.click({ item_type:9 })">
+  <DIV class="site-icon favicon favicon-careers" 
+  title="Stack Overflow Careers"></DIV>Stack Overflow Careers </A></LI></UL></DIV>
+<DIV class=header id=your-communities-header>
+<H3>your communities </H3></DIV>
+<DIV class=modal-content id=your-communities-section>
+<DIV class=call-to-login><A class=js-gps-track 
+href="https://stackoverflow.com/users/signup?returnurl=http%3a%2f%2fstackoverflow.com%2fquestions%2f25254685%2femail-sas-html-output" 
+data-gps-track="site_switcher.click({ item_type:10 })">Sign up</A> or <A 
+class=js-gps-track 
+href="https://stackoverflow.com/users/login?returnurl=http%3a%2f%2fstackoverflow.com%2fquestions%2f25254685%2femail-sas-html-output" 
+data-gps-track="site_switcher.click({ item_type:11 })">log in</A> to customize 
+your list. </DIV></DIV>
+<DIV class=header>
+<H3><A href="http://stackexchange.com/sites">more stack exchange 
+communities</A></H3></DIV>
+<DIV class=modal-content>
+<DIV class=child-content></DIV></DIV></DIV></DIV>
+<DIV class=network-items><A 
+class="topbar-icon icon-site-switcher yes-hover js-site-switcher-button js-gps-track" 
+title="A list of all 131 Stack Exchange sites" href="http://stackexchange.com/" 
+data-gps-track="site_switcher.show"><SPAN class=hidden-text>Stack 
+Exchange</SPAN> </A></DIV>
+<DIV class=topbar-links>
+<DIV class=links-container><SPAN class=topbar-menu-links><A class=login-link 
+href="https://stackoverflow.com/users/signup?returnurl=http%3a%2f%2fstackoverflow.com%2fquestions%2f25254685%2femail-sas-html-output">sign 
+up</A> <A class=login-link 
+href="https://stackoverflow.com/users/login?returnurl=http%3a%2f%2fstackoverflow.com%2fquestions%2f25254685%2femail-sas-html-output">log 
+in</A> <A href="http://stackoverflow.com/tour">tour</A> <A 
+class="icon-help js-help-button" title="Help Center and other resources" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output#">help 
+<SPAN class=triangle></SPAN></A>
+<DIV class="topbar-dialog help-dialog js-help-dialog dno">
+<DIV class=modal-content>
+<UL>
+  <LI><A class=js-gps-track href="http://stackoverflow.com/tour" 
+  data-gps-track="help_popup.click({ item_type:1 })">Tour <SPAN 
+  class=item-summary>Start here for a quick overview of the site </SPAN></A>
+  <LI><A class=js-gps-track href="http://stackoverflow.com/help" 
+  data-gps-track="help_popup.click({ item_type:4 })">Help Center <SPAN 
+  class=item-summary>Detailed answers to any questions you might have 
+</SPAN></A>
+  <LI><A class=js-gps-track href="http://meta.stackoverflow.com/" 
+  data-gps-track="help_popup.click({ item_type:2 })">Meta <SPAN 
+  class=item-summary>Discuss the workings and policies of this site 
+  </SPAN></A></LI></UL></DIV></DIV><A 
+href="http://careers.stackoverflow.com/?utm_source=stackoverflow.com&amp;utm_medium=site-ui&amp;utm_campaign=anon-topbar">stack 
+overflow careers</A> </SPAN></DIV>
+<DIV class=search-container>
+<FORM id=search action=/search method=get autocomplete="off"><INPUT tabIndex=1 
+maxLength=240 name=q autocomplete="off" placeholder="search"> 
+</FORM></DIV></DIV></DIV></DIV>
+<SCRIPT>
+        StackExchange.ready(function() { StackExchange.topbar.init(); });
+    </SCRIPT>
+
+<DIV class=container>
+<DIV class=headeranon id=header><BR class=cbt>
+<DIV id=hlogo><A href="http://stackoverflow.com/">Stack Overflow </A></DIV>
+<DIV id=hmenus>
+<DIV class="nav mainnavs mainnavsanon">
+<UL>
+  <LI class=youarehere><A id=nav-questions 
+  href="http://stackoverflow.com/questions">Questions</A> </LI>
+  <LI><A id=nav-tags href="http://stackoverflow.com/tags">Tags</A> </LI>
+  <LI><A id=nav-users href="http://stackoverflow.com/users">Users</A> </LI>
+  <LI><A id=nav-badges href="http://stackoverflow.com/help/badges">Badges</A> 
+  </LI>
+  <LI><A id=nav-unanswered 
+  href="http://stackoverflow.com/unanswered">Unanswered</A> </LI></UL></DIV>
+<DIV class="nav askquestion">
+<UL>
+  <LI><A id=nav-askquestion href="http://stackoverflow.com/questions/ask">Ask 
+  Question</A> </LI></UL></DIV></DIV></DIV>
+<DIV class=snippet-hidden id=content>
+<DIV itemtype="http://schema.org/Question" itemscope><LINK 
+href="//cdn.sstatic.net/stackoverflow/img/apple-touch-icon.png" 
+itemprop="image"><!--googleoff: all-->
+<DIV id=herobox-mini>
+<DIV id=hero-content><SPAN id=controls><A class=button id=tell-me-more 
+href="http://stackoverflow.com/tour">Take the 2-minute tour</A> <SPAN 
+id=close><A title="click to dismiss">×</A></SPAN> </SPAN>
+<DIV id=blurb>Stack Overflow is a question and answer site for professional and 
+enthusiast programmers. It's 100% free, no registration required. </DIV></DIV>
+<SCRIPT>
+        $('#tell-me-more').click(function () {
+            var clickSource = $("body").attr("class") + '-mini';
+            if ($("body").hasClass("questions-page")) {
+                clickSource = 'questionpagemini';
+            } else if ($("body").hasClass("question-page")) {
+                clickSource = 'questionpagemini';
+            } else if ($("body").hasClass("home-page")) {
+                clickSource = 'homepagemini';
+            }
+
+            StackExchange.using("gps", function () {
+                StackExchange.gps.track("aboutpage.click", { aboutclick_location: clickSource } , true);
+            });
+        });
+        $('#herobox-mini #close').click(function () {
+            StackExchange.using("gps", function () {
+                StackExchange.gps.track("hero.action", { hero_action_type: "close" }, true);
+            });
+            $.cookie("hero", "none", { path: "/", expires: 365 });
+            var $hero = $("#herobox-mini");
+            $hero.slideUp('fast', function () { $hero.remove(); });
+            return false;
+        });
+    </SCRIPT>
+</DIV><!--googleon: all-->
+<DIV id=question-header>
+<H1 itemprop="name"><A class=question-hyperlink 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output">Email 
+SAS html output</A></H1></DIV>
+<DIV id=mainbar>
+<DIV class=question id=question data-questionid="25254685">
+<SCRIPT>
+                var ados = ados || {};ados.run = ados.run || [];
+                ados.run.push(function() { ados_add_placement(22,8277,"adzerk205851849",4).setZone(43) ; });                    
+            </SCRIPT>
+
+<DIV class=everyonelovesstackoverflow id=adzerk205851849></DIV>
+<TABLE>
+  <TBODY>
+  <TR>
+    <TD class=votecell>
+      <DIV class=vote><INPUT type=hidden value=25254685 name=_id_> <A 
+      class=vote-up-off 
+      title="This question shows research effort; it is useful and clear">up 
+      vote</A> <SPAN class="vote-count-post " itemprop="upvoteCount">2</SPAN> <A 
+      class=vote-down-off 
+      title="This question does not show any research effort; it is unclear or not useful">down 
+      vote</A> <A class=star-off 
+      title="This is a favorite question (click again to undo)" 
+      href="http://stackoverflow.com/questions/25254685/email-sas-html-output#">favorite</A> 
+
+      <DIV class=favoritecount><B></B></DIV></DIV></TD>
+    <TD class=postcell>
+      <DIV>
+      <DIV class=post-text itemprop="text">
+      <P>I am using SAS Enterprise Guide 6.1. I am trying to batch the program 
+      below with windows scheduler to produce a weekly report. It will have a 
+      few proc prints and sgplots. The user I am sending it to is high-level and 
+      does not have SAS (would not know what to do with the program if he did). 
+      Ideally, I'd like to just email him an attachment or even embed the 
+      plots/results in the email, so he can view them. The program I have seems 
+      to be creating the html file correctly, but when I open it in the email, 
+      the sgplots are not displaying. Any thoughts? Thanks.</P><PRE><CODE>filename temp email to="cthulhu@gmail.com"
+                    subject="Testing the report"
+                    type="text/html"
+                    attach='/sasdata/cthulhu/email.html';
+
+ods html path='/sasdata/cthulhu' file='email.html' gpath='/sasdata/cthulhu' style=htmlblue;
+
+data have;
+    input name $ class $ time score;
+cards;
+chewbacca wookie  1 97
+chewbacca wookie 2 100
+chewbacca wookie 3 95
+saruman wizard 1 79
+saruman wizard 2 85
+saruman wizard 3 40
+gandalf wizard 1 22
+gandalf wizard 2 50
+gandalf wizard 3 87
+bieber canadian 1 50
+bieber canadian 2 45
+bieber canadian 3 10
+;
+run;
+
+proc sql noprint;
+    select count(distinct class) into :numclass
+    from have;
+    %let numclass=&amp;numclass;
+    select distinct class into :class1 - :class&amp;numclass
+    from have;
+    select count(distinct name) into :numname
+    from have;  
+    %let numname=&amp;numname;
+    select distinct name into :name1 - :name&amp;numname
+    from have;
+quit;
+
+%macro printit;
+%do i = 1 %to &amp;numclass;
+title "Report for &amp;&amp;class&amp;i";
+proc print data=have;
+    where class="&amp;&amp;class&amp;i";
+run;
+%end;
+%mend;
+%printit;
+
+%macro plotit;
+%do i = 1 %to &amp;numname;
+title "Plot for &amp;&amp;name&amp;i";
+proc sgplot data=have(where=(name="&amp;&amp;name&amp;i"));
+    series x=time y=score
+    / legendlabel='score' markers lineattrs=(thickness=2);
+    xaxis label="time";
+    yaxis label='score';
+run;
+%end;
+%mend;
+%plotit;
+
+ods html close;
+
+data _null_;
+   file temp;
+   put 'This is a test';
+run;
+</CODE></PRE></DIV>
+      <DIV class=post-taglist><A class=post-tag 
+      title="show questions tagged 'html'" 
+      href="http://stackoverflow.com/questions/tagged/html" rel=tag>html</A> <A 
+      class=post-tag title="show questions tagged 'email'" 
+      href="http://stackoverflow.com/questions/tagged/email" rel=tag>email</A> 
+      <A class=post-tag title="show questions tagged 'sas'" 
+      href="http://stackoverflow.com/questions/tagged/sas" rel=tag>sas</A> 
+</DIV>
+      <TABLE class=fw>
+        <TBODY>
+        <TR>
+          <TD class=vt>
+            <DIV class=post-menu><A class=short-link id=link-post-25254685 
+            title="short permalink to this question" 
+            href="http://stackoverflow.com/q/25254685">share</A><SPAN 
+            class=lsep>|</SPAN><A class=suggest-edit-post title="" 
+            href="http://stackoverflow.com/posts/25254685/edit">improve this 
+            question</A></DIV></TD>
+          <TD class="post-signature owner">
+            <DIV class="user-info ">
+            <DIV class=user-action-time>asked <SPAN class=relativetime 
+            title="2014-08-12 01:02:43Z">Aug 12 at 1:02</SPAN> </DIV>
+            <DIV class=user-gravatar32><A 
+            href="http://stackoverflow.com/users/3077881/pyll">
+            <DIV class=gravatar-wrapper-32><IMG height=32 alt="" 
+            src="Email SAS html output - Stack Overflow_files/blocked.htm" 
+            width=32></DIV></A></DIV>
+            <DIV class=user-details><A 
+            href="http://stackoverflow.com/users/3077881/pyll">pyll</A><BR><SPAN 
+            class=reputation-score dir=ltr 
+            title="reputation score ">152</SPAN><SPAN 
+            title="9 bronze badges"><SPAN class=badge3></SPAN><SPAN 
+            class=badgecount>9</SPAN></SPAN> 
+      </DIV></DIV></TD></TR></TBODY></TABLE></DIV></TD></TR>
+  <TR>
+    <TD class=votecell></TD>
+    <TD>
+      <DIV class="comments  dno" id=comments-25254685>
+      <TABLE>
+        <TBODY data-addlink-disabled="true" data-comments-unavailable="false" 
+        data-cansee="true" data-canpost="false" 
+        data-remaining-comments-count="0">
+        <TR>
+          <TD></TD>
+          <TD></TD></TR></TBODY></TABLE></DIV>
+      <DIV id=comments-link-25254685 data-anon="true" data-rep="50"><A 
+      class="js-add-link comments-link disabled-link " 
+      title="Use comments to ask for more information or suggest improvements. Avoid answering questions in comments.">add 
+      a comment</A><SPAN class="js-link-separator dno">&nbsp;|&nbsp;</SPAN><A 
+      class="js-show-link comments-link dno" 
+      title="expand to show all comments on this post, or add one of your own" 
+      onclick="" 
+      href="http://stackoverflow.com/questions/25254685/email-sas-html-output#"></A> 
+      </DIV></TD></TR></TBODY></TABLE></DIV>
+<DIV id=answers><A name=tab-top></A>
+<DIV id=answers-header>
+<DIV class="subheader answers-subheader">
+<H2>2 Answers <SPAN style="DISPLAY: none" itemprop="answerCount">2</SPAN> </H2>
+<DIV>
+<DIV id=tabs><A title="Answers with the latest activity first" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output?answertab=active#tab-top">active</A> 
+<A title="Answers in the order they were provided" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output?answertab=oldest#tab-top">oldest</A> 
+<A class=youarehere title="Answers with the highest score first" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output?answertab=votes#tab-top">votes</A> 
+</DIV></DIV></DIV></DIV><A name=25255095></A>
+<DIV class="answer accepted-answer" id=answer-25255095 
+itemtype="http://schema.org/Answer" itemscope itemprop="acceptedAnswer" 
+data-answerid="25255095">
+<TABLE>
+  <TBODY>
+  <TR>
+    <TD class=votecell>
+      <DIV class=vote><INPUT type=hidden value=25255095 name=_id_> <A 
+      class=vote-up-off title="This answer is useful">up vote</A> <SPAN 
+      class="vote-count-post " itemprop="upvoteCount">2</SPAN> <A 
+      class=vote-down-off title="This answer is not useful">down vote</A> <SPAN 
+      class="vote-accepted-on load-accepted-answer-date" 
+      title="loading when this answer was accepted...">accepted</SPAN> </DIV></TD>
+    <TD class=answercell>
+      <DIV class=post-text itemprop="text">
+      <P>The graphs are not showing because they are not available to the html 
+      viewer. </P>
+      <P>Options</P>
+      <OL>
+        <LI>
+        <P>You could write the images to a place that is available and ensure 
+        the paths in the generated html are correct.</P>
+        <LI>
+        <P>Generate a PDF or RTF file and email that.</P>
+        <LI>
+        <P>Use SVG (scalable vector graphics). This will require you to parse 
+        the output files and embed the XML for the SVG into the 
+      HTML.</P></LI></OL></DIV>
+      <TABLE class=fw>
+        <TBODY>
+        <TR>
+          <TD class=vt>
+            <DIV class=post-menu><A class=short-link id=link-post-25255095 
+            title="short permalink to this answer" 
+            href="http://stackoverflow.com/a/25255095">share</A><SPAN 
+            class=lsep>|</SPAN><A class=suggest-edit-post title="" 
+            href="http://stackoverflow.com/posts/25255095/edit">improve this 
+            answer</A></DIV></TD>
+          <TD class=post-signature align=right>
+            <DIV class="user-info ">
+            <DIV class=user-action-time>answered <SPAN class=relativetime 
+            title="2014-08-12 02:05:28Z">Aug 12 at 2:05</SPAN> </DIV>
+            <DIV class=user-gravatar32><A 
+            href="http://stackoverflow.com/users/2734437/dompazz">
+            <DIV><IMG height=32 alt="" 
+            src="C:\www\AutoReports\900tools\100SAS\Email SAS html output - Stack Overflow_files\blocked(1).htm" 
+            width=32></DIV></A></DIV>
+            <DIV class=user-details><A 
+            href="http://stackoverflow.com/users/2734437/dompazz">DomPazz</A><BR><SPAN 
+            class=reputation-score dir=ltr 
+            title="reputation score ">3,795</SPAN><SPAN 
+            title="3 silver badges"><SPAN class=badge2></SPAN><SPAN 
+            class=badgecount>3</SPAN></SPAN><SPAN title="11 bronze badges"><SPAN 
+            class=badge3></SPAN><SPAN class=badgecount>11</SPAN></SPAN> 
+            </DIV></DIV></TD></TR></TBODY></TABLE></TD></TR>
+  <TR>
+    <TD class=votecell></TD>
+    <TD>
+      <DIV class="comments " id=comments-25255095>
+      <TABLE>
+        <TBODY data-addlink-disabled="true" data-comments-unavailable="false" 
+        data-cansee="true" data-canpost="false" 
+        data-remaining-comments-count="0">
+        <TR class="comment " id=comment-39349449>
+          <TD>
+            <TABLE>
+              <TBODY>
+              <TR>
+                <TD class=" comment-score">&nbsp;&nbsp; </TD>
+                <TD>&nbsp; </TD></TR></TBODY></TABLE></TD>
+          <TD class=comment-text>
+            <DIV class=comment-body style="DISPLAY: block"><SPAN 
+            class=comment-copy>Thanks @DomPazz. I hadn't considered pdf output. 
+            I tried that with my actual data and it was too large to fit on one 
+            page, so I'll have to mess around with the options and shrink it 
+            down. Thanks for the help.</SPAN> –&nbsp; <A 
+            class="comment-user owner" title="152 reputation" 
+            href="http://stackoverflow.com/users/3077881/pyll">pyll</A> <SPAN 
+            class=comment-date dir=ltr><SPAN class=relativetime-clean 
+            title="2014-08-12 02:55:35Z">Aug 12 at 2:55</SPAN></SPAN> 
+        </DIV></TD></TR></TBODY></TABLE></DIV>
+      <DIV id=comments-link-25255095 data-anon="true" data-rep="50"><A 
+      class="js-add-link comments-link disabled-link " 
+      title="Use comments to ask for more information or suggest improvements. Avoid comments like “+1” or “thanks”.">add 
+      a comment</A><SPAN class="js-link-separator dno">&nbsp;|&nbsp;</SPAN><A 
+      class="js-show-link comments-link dno" 
+      title="expand to show all comments on this post, or add one of your own" 
+      onclick="" 
+      href="http://stackoverflow.com/questions/25254685/email-sas-html-output#"></A> 
+      </DIV></TD></TR></TBODY></TABLE></DIV>
+<SCRIPT>
+                var ados = ados || {};ados.run = ados.run || [];
+                ados.run.push(function() { ados_add_placement(22,8277,"adzerk861054726",4).setZone(44) ; });                    
+            </SCRIPT>
+
+<DIV class=everyonelovesstackoverflow id=adzerk861054726></DIV><A 
+name=25270596></A>
+<DIV class=answer id=answer-25270596 itemtype="http://schema.org/Answer" 
+itemscope data-answerid="25270596">
+<TABLE>
+  <TBODY>
+  <TR>
+    <TD class=votecell>
+      <DIV class=vote><INPUT type=hidden value=25270596 name=_id_> <A 
+      class=vote-up-off title="This answer is useful">up vote</A> <SPAN 
+      class="vote-count-post " itemprop="upvoteCount">3</SPAN> <A 
+      class=vote-down-off title="This answer is not useful">down vote</A> 
+    </DIV></TD>
+    <TD class=answercell>
+      <DIV class=post-text itemprop="text">
+      <P>There is one more alternative that DomPazz did not mention and I'll 
+      include it here for completeness. I do <STRONG>NOT</STRONG> recommend this 
+      approach unless you find yourself in the following situation:</P>
+      <OL>
+        <LI>You are not allowed to use an attachment. 
+        <LI>The only locations you have available to place the images are either 
+        on an intranet or HTTPS server. 
+        <LI>The emails have to be readable from smartphones (which usually won't 
+        be connected to company VPN or able to supply HTTPS credentials to 
+        download and display the images). </LI></OL>
+      <P><STRONG>Cons</STRONG></P>
+      <UL>
+        <LI>This method is not supported directly by SAS. 
+        <LI>It requires third party tools (such as BLAT - <A 
+        href="http://www.blat.net/" rel=nofollow>http://www.blat.net/</A>). 
+        <LI>HTML email messages are known to be pretty finicky when being 
+        rendered, so you must keep them simple. 
+        <LI>It's not for the faint of heart. </LI></UL>
+      <P><STRONG>Overview</STRONG></P>
+      <P>The basic premise is that you create your charts as images on disk, 
+      create your HTML file on disk, and then use a 3rd party tool to send the 
+      email. The third party tool will embed the charts into the email, and the 
+      HTML you created will reference the embedded images using what is known as 
+      a CID (content-ID).</P>
+      <P>I suggest doing a little reading/googling on the terms 'html email cid' 
+      to become familiar with this first. You may also want to do a little 
+      reading up on base64 encoding and mime-types. You don't need to become an 
+      expert just learn enough to know what they are and roughly how they 
+      work.</P>
+      <P><STRONG>Developing/Testing</STRONG></P>
+      <P>You can still use ODS to create your <CODE>.html</CODE> file but be 
+      sure to use <CODE>ODS HTML3</CODE> which forces SAS to use an older 
+      version of HTML. It also forces it to repeat the styling against each 
+      element. You need this because email clients such as Outlook actually use 
+      the MS Word engine to render HTML emails. </P>
+      <P>Once you have built your .html file and charts, open the .html file in 
+      a web browser and make sure it is displaying correctly.</P>
+      <P>Once you have your output displaying as desired in your web browser you 
+      still have a few more changes you need to make before you can send it as 
+      an email. When developing in your browser you would have noticed you 
+      embedded the image like this:</P><PRE><CODE>&lt;img src="my_image.png" /&gt;
+</CODE></PRE>
+      <P>Well we can't do that for email, we need to use the CID link like 
+      this:</P><PRE><CODE>&lt;img src="cid:my_image.png" /&gt;
+</CODE></PRE>
+      <P>When we use BLAT to send the email, we'll specify the images to embed. 
+      The image names will automatically be used for the <CODE>CID:</CODE> 
+      naming conventions.</P>
+      <P>You can send an email using BLAT like so:</P><PRE><CODE>blat test.html -f "myemailaddress@myemailaddress.com" -subject "test" -html -alttextf test.html -embed test.png -server mail.mysmtpserver.com -to myrecipient@recipentemail.com 
+</CODE></PRE>
+      <P>That's about it. Maybe if I get more time I'll provide a full piece of 
+      code with a working example.</P>
+      <P><STRONG>Some useful reading:</STRONG></P>
+      <P><A href="http://24ways.org/2009/rock-solid-html-emails" 
+      rel=nofollow>http://24ways.org/2009/rock-solid-html-emails</A> (READ 
+      THIS!!)</P>
+      <P><A href="http://www.emailology.org/" 
+      rel=nofollow>http://www.emailology.org/</A></P>
+      <P><A href="http://www.campaignmonitor.com/css/" 
+      rel=nofollow>http://www.campaignmonitor.com/css/</A></P>
+      <P><A 
+      href="http://stackoverflow.com/questions/9989657/html-email-align-text">HTML 
+      email align text</A></P></DIV>
+      <TABLE class=fw>
+        <TBODY>
+        <TR>
+          <TD class=vt>
+            <DIV class=post-menu><A class=short-link id=link-post-25270596 
+            title="short permalink to this answer" 
+            href="http://stackoverflow.com/a/25270596">share</A><SPAN 
+            class=lsep>|</SPAN><A class=suggest-edit-post title="" 
+            href="http://stackoverflow.com/posts/25270596/edit">improve this 
+            answer</A></DIV></TD>
+          <TD class=post-signature align=right>
+            <DIV class="user-info ">
+            <DIV class=user-action-time><A title="show all edits to this post" 
+            href="http://stackoverflow.com/posts/25270596/revisions">edited 
+            <SPAN class=relativetime title="2014-08-12 18:05:02Z">Aug 12 at 
+            18:05</SPAN></A> </DIV>
+            <DIV class=user-gravatar32></DIV>
+            <DIV class=user-details><BR></DIV></DIV></TD>
+          <TD class=post-signature align=right>
+            <DIV class="user-info ">
+            <DIV class=user-action-time>answered <SPAN class=relativetime 
+            title="2014-08-12 17:33:20Z">Aug 12 at 17:33</SPAN> </DIV>
+            <DIV class=user-gravatar32><A 
+            href="http://stackoverflow.com/users/214994/robert-penridge">
+            <DIV class=gravatar-wrapper-32><IMG height=32 alt="" 
+            src="C:\www\AutoReports\900tools\100SAS\Email SAS html output - Stack Overflow_files\blocked(2).htm" 
+            width=32></DIV></A></DIV>
+            <DIV class=user-details><A 
+            href="http://stackoverflow.com/users/214994/robert-penridge">Robert 
+            Penridge</A><BR><SPAN class=reputation-score dir=ltr 
+            title="reputation score ">3,525</SPAN><SPAN 
+            title="9 silver badges"><SPAN class=badge2></SPAN><SPAN 
+            class=badgecount>9</SPAN></SPAN><SPAN title="27 bronze badges"><SPAN 
+            class=badge3></SPAN><SPAN class=badgecount>27</SPAN></SPAN> 
+            </DIV></DIV></TD></TR></TBODY></TABLE></TD></TR>
+  <TR>
+    <TD class=votecell></TD>
+    <TD>
+      <DIV class="comments " id=comments-25270596>
+      <TABLE>
+        <TBODY data-addlink-disabled="true" data-comments-unavailable="false" 
+        data-cansee="true" data-canpost="false" 
+        data-remaining-comments-count="0">
+        <TR class="comment " id=comment-39378995>
+          <TD>
+            <TABLE>
+              <TBODY>
+              <TR>
+                <TD class=" comment-score">&nbsp;&nbsp; </TD>
+                <TD>&nbsp; </TD></TR></TBODY></TABLE></TD>
+          <TD class=comment-text>
+            <DIV class=comment-body style="DISPLAY: block"><SPAN 
+            class=comment-copy>Thanks for the suggestion and reading 
+            recommendations, Robert. Definitely will star this one for future 
+            reference.</SPAN> –&nbsp; <A class="comment-user owner" 
+            title="152 reputation" 
+            href="http://stackoverflow.com/users/3077881/pyll">pyll</A> <SPAN 
+            class=comment-date dir=ltr><SPAN class=relativetime-clean 
+            title="2014-08-12 18:32:36Z">Aug 12 at 18:32</SPAN></SPAN> 
+        </DIV></TD></TR></TBODY></TABLE></DIV>
+      <DIV id=comments-link-25270596 data-anon="true" data-rep="50"><A 
+      class="js-add-link comments-link disabled-link " 
+      title="Use comments to ask for more information or suggest improvements. Avoid comments like “+1” or “thanks”.">add 
+      a comment</A><SPAN class="js-link-separator dno">&nbsp;|&nbsp;</SPAN><A 
+      class="js-show-link comments-link dno" 
+      title="expand to show all comments on this post, or add one of your own" 
+      onclick="" 
+      href="http://stackoverflow.com/questions/25254685/email-sas-html-output#"></A> 
+      </DIV></TD></TR></TBODY></TABLE></DIV><A name=new-answer></A>
+<FORM class=post-form id=post-form action=/questions/25254685/answer/submit 
+method=post><INPUT id=post-id type=hidden value=25254685> <INPUT 
+id=qualityBanWarningShown type=hidden value=false name=qualityBanWarningShown> 
+<INPUT type=hidden name=referrer> 
+<H2 class=space>Your Answer</H2>
+<SCRIPT>
+            StackExchange.ifUsing("editor", function () {
+                StackExchange.using("externalEditor", function () {
+                    StackExchange.using("snippets", function () {
+                        StackExchange.snippets.init();
+                    });
+                });
+            }, "code-snippets");
+        </SCRIPT>
+
+<SCRIPT>
+    StackExchange.ready(function() {
+        initTagRenderer("".split(" "), "".split(" "));
+       
+        StackExchange.using("externalEditor", function() {
+            // Have to fire editor after snippets, if snippets enabled
+            if (StackExchange.options.snippets.enabled) {
+                StackExchange.using("snippets", function() {
+                    createEditor();
+                });
+            }
+            else {
+                createEditor();
+            }
+        });
+
+        function createEditor() {
+            prepareEditor({
+                heartbeatType: 'answer',
+                bindNavPrevention: true,
+                postfix: "",
+                    onDemand: true,
+                    discardSelector: ".discard-answer"
+                ,immediatelyShowMarkdownHelp:true
+                });
+                
+
+        }
+    });  
+</SCRIPT>
+
+<DIV class=post-editor id=post-editor>
+<DIV style="POSITION: relative">
+<DIV class=wmd-container>
+<DIV class=wmd-button-bar id=wmd-button-bar></DIV><TEXTAREA class=wmd-input id=wmd-input tabIndex=101 name=post-text rows=15 cols=92 data-min-length=""></TEXTAREA> 
+</DIV></DIV>
+<DIV class=fl style="MARGIN-TOP: 8px; HEIGHT: 24px"></DIV>
+<DIV class="draft-saved community-option fl" id=draft-saved 
+style="MARGIN-TOP: 8px; DISPLAY: none; HEIGHT: 24px">draft saved</DIV>
+<DIV class="draft-discarded community-option fl" id=draft-discarded 
+style="MARGIN-TOP: 8px; DISPLAY: none; HEIGHT: 24px">draft discarded</DIV>
+<DIV class=wmd-preview id=wmd-preview></DIV>
+<DIV></DIV>
+<DIV class=edit-block><INPUT id=fkey type=hidden 
+value=845d8357ff64c1c7ba8e49e91350af52 name=fkey> <INPUT id=author name=author> 
+</DIV></DIV>
+<DIV style="POSITION: relative">
+<DIV class="form-item dno new-post-login">
+<DIV class=new-login-form>
+<DIV class=new-login-left>
+<H3>Sign up or <A id=login-link 
+href="http://stackoverflow.com/users/login?returnurl=%2fquestions%2f25254685%2femail-sas-html-output%23new-answer">log 
+in</A></H3>
+<SCRIPT>
+                            StackExchange.ready(function () {
+                                StackExchange.helpers.onClickDraftSave('#login-link');
+                            });
+                        </SCRIPT>
+
+<DIV class="preferred-login google-login">
+<P><SPAN class=icon></SPAN><SPAN>Sign up using Google</SPAN></P></DIV>
+<DIV class="preferred-login facebook-login">
+<P><SPAN class=icon></SPAN><SPAN>Sign up using Facebook</SPAN></P></DIV>
+<DIV class="preferred-login stackexchange-login">
+<P><SPAN class=icon></SPAN><SPAN>Sign up using Stack 
+Exchange</SPAN></P></DIV></DIV><INPUT class=manual-openid type=hidden 
+name=manual-openid> <INPUT class=use-facebook type=hidden value=false 
+name=use-facebook> <INPUT class=use-google type=hidden value=false 
+name=use-google> <INPUT class=submit-openid style="DISPLAY: none" type=button value=Submit> 
+<DIV class=new-login-right>
+<H3>Post as a guest</H3>
+<DIV class=form-item>
+<TABLE>
+  <TBODY>
+  <TR>
+    <SCRIPT>
+                StackExchange.ready(function () {
+                    StackExchange.helpers.bindHelpOverlayEvents($('.vm input'));
+                });
+            </SCRIPT>
+
+    <TD class=vm>
+      <DIV><LABEL for=display-name>Name</LABEL> <INPUT id=display-name 
+      tabIndex=105 maxLength=30 size=30 name=display-name> </DIV>
+      <DIV><LABEL for=m-address>Email</LABEL> <INPUT id=m-address tabIndex=106 
+      maxLength=100 size=30 name=m-address> <SPAN 
+      class=edit-field-overlay>required, but not shown</SPAN> 
+  </DIV></TD></TR></TBODY></TABLE></DIV></DIV></DIV></DIV>
+<SCRIPT>
+                StackExchange.ready(
+                    function () {
+                        StackExchange.openid.initPostLogin('.new-post-login', '%2fquestions%2f25254685%2femail-sas-html-output%23new-answer');
+                    }
+                );
+            </SCRIPT>
+<NOSCRIPT>
+<H3>Post as a guest</H3>
+<DIV class=form-item>
+<TABLE>
+  <TBODY>
+  <TR>
+    <SCRIPT>
+                StackExchange.ready(function () {
+                    StackExchange.helpers.bindHelpOverlayEvents($('.vm input'));
+                });
+            </SCRIPT>
+
+    <TD class=vm>
+      <DIV><LABEL for=display-name>Name</LABEL> <INPUT id=display-name 
+      tabIndex=105 maxLength=30 size=30 name=display-name> </DIV>
+      <DIV><LABEL for=m-address>Email</LABEL> <INPUT id=m-address tabIndex=106 
+      maxLength=100 size=30 name=m-address> <SPAN 
+      class=edit-field-overlay>required, but not shown</SPAN> 
+  </DIV></TD></TR></TBODY></TABLE></DIV></NOSCRIPT></DIV>
+<DIV class="form-submit cbt"><INPUT id=submit-button tabIndex=110 type=submit value="Post Your Answer"> 
+<A class="discard-answer dno" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output#">discard</A> 
+
+<P class=privacy-policy-agreement>By posting your answer, you agree to the <A 
+href="http://stackexchange.com/legal/privacy-policy" target=_blank>privacy 
+policy</A> and <A href="http://stackexchange.com/legal/terms-of-service" 
+target=_blank>terms of service</A>.</P><INPUT type=hidden value=1 
+name=legalLinksShown> </DIV></FORM>
+<H2 class=bottom-notice data-loc="1">Not the answer you're looking for? Browse 
+other questions tagged <A class=post-tag title="show questions tagged 'html'" 
+href="http://stackoverflow.com/questions/tagged/html" rel=tag>html</A> <A 
+class=post-tag title="show questions tagged 'email'" 
+href="http://stackoverflow.com/questions/tagged/email" rel=tag>email</A> <A 
+class=post-tag title="show questions tagged 'sas'" 
+href="http://stackoverflow.com/questions/tagged/sas" rel=tag>sas</A> or <A 
+href="http://stackoverflow.com/questions/ask">ask your own question</A>. 
+</H2></DIV></DIV>
+<DIV class=show-votes id=sidebar>
+<DIV class="module question-stats">
+<TABLE id=qinfo>
+  <TBODY>
+  <TR>
+    <TD>
+      <P class=label-key>asked</P></TD>
+    <TD style="PADDING-LEFT: 10px">
+      <P class=label-key title="2014-08-12 01:02:43Z"><B>3 months 
+  ago</B></P></TD></TR>
+  <TR>
+    <TD>
+      <P class=label-key>viewed</P></TD>
+    <TD style="PADDING-LEFT: 10px">
+      <P class=label-key><B>110 times</B> </P></TD></TR>
+  <TR>
+    <TD>
+      <P class=label-key>active</P></TD>
+    <TD style="PADDING-LEFT: 10px">
+      <P class=label-key><B><A class=lastactivity-link 
+      title="2014-08-12 18:05:02Z" 
+      href="http://stackoverflow.com/questions/25254685/email-sas-html-output?lastactivity">3 
+      months ago</A></B></P></TD></TR></TBODY></TABLE></DIV>
+<DIV class="module community-bulletin" data-tracker="cb=1">
+<DIV class=related>
+<DIV class=bulletin-title>Blog </DIV>
+<HR>
+
+<DIV class=spacer>
+<DIV class=bulletin-item-type><A class=question-hyperlink 
+href="http://blog.stackoverflow.com/2014/11/announcing-bosun-our-new-open-source-monitoring-alerting-system/">
+<DIV class="favicon favicon-stackexchangemeta" 
+title="Meta Stack Exchange"></DIV></A></DIV>
+<DIV class=bulletin-item-content><A class=question-hyperlink 
+href="http://blog.stackoverflow.com/2014/11/announcing-bosun-our-new-open-source-monitoring-alerting-system/">Announcing 
+Bosun, our new open source monitoring &amp; alerting system</A> </DIV><BR 
+class=cbt></DIV></DIV></DIV>
+<SCRIPT>
+                var ados = ados || {};ados.run = ados.run || [];
+                ados.run.push(function() { ados_add_placement(22,8277,"adzerk2129751431",[17,2221]).setZone(45) ; });                    
+            </SCRIPT>
+
+<DIV class=everyonelovesstackoverflow id=adzerk2129751431></DIV>
+<DIV id=hireme>
+<SCRIPT>
+;(function(d,g){var h=document;var a=window.$;var n=100;var c;var o="#sidebar [id^='adzerk'].everyonelovesstackoverflow";var k="#adzerk1";var b="div#hireme, div.hireme";function i(q){return a(q).html().replace(/\s+/g,"").length>0}function p(r){var q=a(o);if(q.length===0){return true}return !i(q)}function l(){var q=a(b);if(q.length>0){var r=a.map(q,function(s){return"d="+s.id});var t=h.createElement("script");t.type="text/javascript";t.src=d+(d.indexOf("?")===-1?"?":"&")+r.join("&");if(f()){t.src+="&l=1"}if(location.hash){t.src+="&"+location.hash.replace(/^#/,"")}if(g){t.src+="&background=true"}if(StackExchange&&StackExchange.options&&StackExchange.options.user&&StackExchange.options.user.accountId){t.src+="&a="+StackExchange.options.user.accountId}h.body.appendChild(t)}}function f(){return a("#careersadsdoublehigh").length>0}function e(){return a("#commdoubhi").length>0}function m(){clearTimeout(c);if(p(k)||p(o)){c=setTimeout(m,n);return}var q=location.hash.indexOf("#abort")!==-1||e();if(q){j();return}l()}function j(){clearTimeout(c);if(g){return}var q=a(b);q.each(function(){var r=a(this);if(!i(r)){var t=r;var s=r.parents(".everyonelovesstackoverflow").first();if(s.length>0){t=s}t.remove()}})}setTimeout(j,2000);c=setTimeout(m,n)}).apply(null, ["//clc.stackoverflow.com/j/p",false]);            </SCRIPT>
+</DIV>
+<DIV class="module sidebar-linked">
+<H4 id=h-linked>Linked</H4>
+<DIV class=linked data-tracker="lq=1">
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/9989657">
+<DIV class="answer-votes answered-accepted default">5</DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/9989657/html-email-align-text">HTML 
+email align text</A> </DIV></DIV></DIV>
+<DIV class="module sidebar-related">
+<H4 id=h-related>Related</H4>
+<DIV class="related js-gps-related-questions" data-tracker="rq=1">
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/46155">
+<DIV class="answer-votes answered-accepted extra-large">1020 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/46155/validate-email-address-in-javascript">Validate 
+email address in JavaScript?</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/201323">
+<DIV class="answer-votes answered-accepted extra-large">1468 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/201323/using-a-regular-expression-to-validate-an-email-address">Using 
+a regular expression to validate an email address</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/1018078">
+<DIV class="answer-votes answered-accepted large">104 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/1018078/testing-html-email-rendering">Testing 
+HTML email rendering</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/8318911">
+<DIV class="answer-votes answered-accepted extra-large">1981 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/8318911/why-does-html-think-chucknorris-is-a-color">Why 
+does HTML think “chucknorris” is a color?</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/9641363">
+<DIV class="answer-votes answered-accepted default">2 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/9641363/getting-vector-graphics-output-from-proc-sgplot-in-pdf">Getting 
+vector-graphics output from PROC SGPLOT in PDF</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/12883422">
+<DIV class="answer-votes answered-accepted default">2 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/12883422/why-does-the-output-delivery-system-fail-to-select-the-output-i-specify">Why 
+does the output delivery system fail to select the output I specify?</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/17960737">
+<DIV class="answer-votes default">0 </DIV></A><A class=question-hyperlink 
+href="http://stackoverflow.com/questions/17960737/display-settings-125-windows-and-html-emails">Display 
+settings 125% Windows and HTML Emails</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/19903383">
+<DIV class="answer-votes default">0 </DIV></A><A class=question-hyperlink 
+href="http://stackoverflow.com/questions/19903383/sas-send-an-email-via-browser">SAS 
+Send an email via browser</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/23409075">
+<DIV class="answer-votes default">3 </DIV></A><A class=question-hyperlink 
+href="http://stackoverflow.com/questions/23409075/small-amount-of-users-receiving-html-email-as-source-code">Small 
+amount of users receiving HTML email as source code</A> </DIV>
+<DIV class=spacer><A title="Vote score (upvotes - downvotes)" 
+href="http://stackoverflow.com/q/25214763">
+<DIV class="answer-votes answered-accepted default">0 </DIV></A><A 
+class=question-hyperlink 
+href="http://stackoverflow.com/questions/25214763/sas-macros-to-print-multiple-reports">SAS 
+macros to print multiple reports</A> </DIV></DIV></DIV>
+<DIV class=module id=hot-network-questions>
+<H4><A class=js-gps-track href="http://stackexchange.com/questions?tab=hot" 
+data-gps-track="posts_hot_network.click({ item_type:1, location:11 })">Hot 
+Network Questions </A></H4>
+<UL>
+  <LI>
+  <DIV class="favicon favicon-judaism" title="Mi Yodeya"></DIV><A 
+  class=js-gps-track 
+  href="http://judaism.stackexchange.com/questions/48362/how-do-you-know-when-to-make-chacham-harazim-if-you-cant-count-jews" 
+  data-gps-track="site.switch({ item_type:11, target_site:248 }); posts_hot_network.click({ item_type:2, location:11 })">How 
+  do you know when to make Chacham Harazim if you can't count Jews? </A>
+  <LI>
+  <DIV class="favicon favicon-gis" 
+  title="Geographic Information Systems Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://gis.stackexchange.com/questions/122082/piping-data-to-ogr2ogr" 
+  data-gps-track="site.switch({ item_type:11, target_site:79 }); posts_hot_network.click({ item_type:2, location:11 })">Piping 
+  data to ogr2ogr </A>
+  <LI>
+  <DIV class="favicon favicon-cs" 
+  title="Computer Science Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://cs.stackexchange.com/questions/32845/why-really-is-the-halting-problem-important" 
+  data-gps-track="site.switch({ item_type:11, target_site:419 }); posts_hot_network.click({ item_type:2, location:11 })">Why, 
+  really, is the Halting Problem important? </A>
+  <LI>
+  <DIV class="favicon favicon-hsm" 
+  title="History of Science and Math Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://hsm.stackexchange.com/questions/454/when-and-how-it-was-discovered-that-sound-is-related-to-some-kind-of-oscillation" 
+  data-gps-track="site.switch({ item_type:11, target_site:587 }); posts_hot_network.click({ item_type:2, location:11 })">When 
+  and how it was discovered that sound is related to some kind of oscillations? 
+  </A>
+  <LI>
+  <DIV class="favicon favicon-anime" 
+  title="Anime &amp; Manga Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://anime.stackexchange.com/questions/15080/what-does-shirobako-mean-in-terms-of-the-anime" 
+  data-gps-track="site.switch({ item_type:11, target_site:477 }); posts_hot_network.click({ item_type:2, location:11 })">What 
+  does "shirobako" mean in terms of the anime? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-travel" title="Travel Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://travel.stackexchange.com/questions/38609/what-does-the-expression-prepayment-mean-in-hotel-booking-terms" 
+  data-gps-track="site.switch({ item_type:11, target_site:273 }); posts_hot_network.click({ item_type:2, location:11 })">What 
+  does the expression 'Prepayment' mean in hotel booking terms? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-codereview" 
+  title="Code Review Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://codereview.stackexchange.com/questions/69804/parsing-argument-list-specifying-a-player-to-be-added" 
+  data-gps-track="site.switch({ item_type:11, target_site:196 }); posts_hot_network.click({ item_type:2, location:11 })">Parsing 
+  argument list specifying a player to be added </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-unix" 
+  title="Unix &amp; Linux Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://unix.stackexchange.com/questions/167814/get-first-x-characters-from-the-cat-command" 
+  data-gps-track="site.switch({ item_type:11, target_site:106 }); posts_hot_network.click({ item_type:2, location:11 })">get 
+  first X characters from the cat command? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-codegolf" 
+  title="Programming Puzzles &amp; Code Golf Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://codegolf.stackexchange.com/questions/41462/a-different-kind-of-meta-regex-golf" 
+  data-gps-track="site.switch({ item_type:11, target_site:200 }); posts_hot_network.click({ item_type:2, location:11 })">A 
+  Different Kind of Meta Regex Golf </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-physics" title="Physics Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://physics.stackexchange.com/questions/146698/why-does-my-measured-i-v-curve-for-a-film-of-aluminum-suggest-high-resistance" 
+  data-gps-track="site.switch({ item_type:11, target_site:151 }); posts_hot_network.click({ item_type:2, location:11 })">Why 
+  does my measured I-V curve for a film of aluminum suggest high resistance? 
+</A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-puzzling" title="Puzzling Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://puzzling.stackexchange.com/questions/4572/identity-crisis-what-exactly-am-i" 
+  data-gps-track="site.switch({ item_type:11, target_site:559 }); posts_hot_network.click({ item_type:2, location:11 })">Identity 
+  crisis. What exactly am I? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-physics" title="Physics Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://physics.stackexchange.com/questions/146666/measuring-speed-of-the-moving-train-if-im-inside-it" 
+  data-gps-track="site.switch({ item_type:11, target_site:151 }); posts_hot_network.click({ item_type:2, location:11 })">Measuring 
+  speed of the moving train, if I'm inside it </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-programmers" 
+  title="Programmers Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://programmers.stackexchange.com/questions/262571/what-did-people-do-before-templates-in-c" 
+  data-gps-track="site.switch({ item_type:11, target_site:131 }); posts_hot_network.click({ item_type:2, location:11 })">What 
+  did people do before templates in C++? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-mathoverflow" title=MathOverflow></DIV><A 
+  class=js-gps-track 
+  href="http://mathoverflow.net/questions/187001/combinatorial-databases" 
+  data-gps-track="site.switch({ item_type:11, target_site:504 }); posts_hot_network.click({ item_type:2, location:11 })">Combinatorial 
+  Databases </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-mathoverflow" title=MathOverflow></DIV><A 
+  class=js-gps-track 
+  href="http://mathoverflow.net/questions/187105/disjoint-images-of-polynomials" 
+  data-gps-track="site.switch({ item_type:11, target_site:504 }); posts_hot_network.click({ item_type:2, location:11 })">Disjoint 
+  images of polynomials </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-serverfault" title="Server Fault"></DIV><A 
+  class=js-gps-track 
+  href="http://serverfault.com/questions/644132/getting-a-list-of-all-the-snapshots-in-vms-managed-by-vcenter" 
+  data-gps-track="site.switch({ item_type:11, target_site:2 }); posts_hot_network.click({ item_type:2, location:11 })">Getting 
+  a list of all the snapshots in VMs managed by vCenter? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-rpg" 
+  title="Role-playing Games Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://rpg.stackexchange.com/questions/50827/is-studying-rules-and-pointing-out-which-ones-weve-stretched-or-broken-ok" 
+  data-gps-track="site.switch({ item_type:11, target_site:122 }); posts_hot_network.click({ item_type:2, location:11 })">Is 
+  studying rules and pointing out which ones we've stretched or broken ok? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-rpg" 
+  title="Role-playing Games Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://rpg.stackexchange.com/questions/50850/do-you-have-to-have-thieves-tools-in-order-to-pick-a-lock" 
+  data-gps-track="site.switch({ item_type:11, target_site:122 }); posts_hot_network.click({ item_type:2, location:11 })">Do 
+  you HAVE to have Thieves tools in order to pick a lock? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-stackoverflow" title="Stack Overflow"></DIV><A 
+  class=js-gps-track 
+  href="http://stackoverflow.com/questions/26924836/how-to-check-whether-two-lists-are-circularly-identical" 
+  data-gps-track="site.switch({ item_type:11, target_site:1 }); posts_hot_network.click({ item_type:2, location:11 })">How 
+  to check whether two lists are circularly identical </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-english" 
+  title="English Language &amp; Usage Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://english.stackexchange.com/questions/208020/a-photograph-depicts-its-object-is-there-a-comparable-verb-for-audio-recordin" 
+  data-gps-track="site.switch({ item_type:11, target_site:97 }); posts_hot_network.click({ item_type:2, location:11 })">A 
+  photograph 'depicts' its object. Is there a comparable verb for audio 
+  recordings? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-english" 
+  title="English Language &amp; Usage Stack Exchange"></DIV><A 
+  class=js-gps-track 
+  href="http://english.stackexchange.com/questions/207988/is-there-a-word-or-phrase-for-someone-who-works-hard-at-night-and-does-not-sleep" 
+  data-gps-track="site.switch({ item_type:11, target_site:97 }); posts_hot_network.click({ item_type:2, location:11 })">Is 
+  there a word or phrase for someone who works hard at night and does not sleep? 
+  </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-electronics" 
+  title="Electrical Engineering Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://electronics.stackexchange.com/questions/138319/what-kilogram-is-doing-in-volt-unit-definition" 
+  data-gps-track="site.switch({ item_type:11, target_site:135 }); posts_hot_network.click({ item_type:2, location:11 })">What 
+  kilogram is doing in volt unit definition? </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-earthscience" 
+  title="Earth Science Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://earthscience.stackexchange.com/questions/2772/farthest-point-from-the-center-of-the-earth" 
+  data-gps-track="site.switch({ item_type:11, target_site:553 }); posts_hot_network.click({ item_type:2, location:11 })">Farthest 
+  point from the center of the Earth </A>
+  <LI class="dno js-hidden">
+  <DIV class="favicon favicon-unix" 
+  title="Unix &amp; Linux Stack Exchange"></DIV><A class=js-gps-track 
+  href="http://unix.stackexchange.com/questions/167874/find-files-whose-basenames-are-the-same-but-their-ext-names-are-not" 
+  data-gps-track="site.switch({ item_type:11, target_site:106 }); posts_hot_network.click({ item_type:2, location:11 })">Find 
+  files whose basenames are the same, but their ext names are not </A></LI></UL><A 
+class="show-more js-show-more js-gps-track" 
+href="http://stackoverflow.com/questions/25254685/email-sas-html-output#" 
+data-gps-track="posts_hot_network.click({ item_type:3, location:11 })">more hot 
+questions </A></DIV></DIV>
+<DIV id=feed-link>
+<DIV id=feed-link-text><A title="feed of this question and its answers" 
+href="http://stackoverflow.com/feeds/question/25254685"><SPAN 
+class=feed-icon></SPAN>question feed </A></DIV></DIV>
+<SCRIPT>
+StackExchange.ready(function(){$.get('/posts/25254685/ivc/21c9');});
+</SCRIPT>
+<NOSCRIPT>
+<DIV><IMG class=dno height=0 alt="" src="" width=0></DIV></NOSCRIPT>
+<DIV id=prettify-lang style="DISPLAY: none">default</DIV></DIV></DIV></DIV>
+<DIV class=categories id=footer>
+<DIV class=footerwrap>
+<DIV id=footer-menu>
+<DIV class=top-footer-links><A href="http://stackoverflow.com/tour">tour</A> <A 
+href="http://stackoverflow.com/help">help</A> <A 
+href="http://stackoverflow.com/help/badges">badges</A> <A 
+href="http://blog.stackoverflow.com/?blb=1">blog</A> <A 
+href="http://chat.stackoverflow.com/">chat</A> <A 
+href="http://data.stackexchange.com/">data</A> <A 
+href="http://stackexchange.com/legal">legal</A> <A 
+href="http://stackexchange.com/legal/privacy-policy">privacy policy</A> <A 
+href="http://stackexchange.com/work-here">work here</A> <A 
+href="http://stackexchange.com/mediakit">advertising info</A> <A 
+onclick='StackExchange.switchMobile("on")'>mobile</A> <B><A 
+href="http://stackoverflow.com/contact">contact us</A></B> <B><A 
+href="http://meta.stackoverflow.com/">feedback</A></B> </DIV>
+<DIV id=footer-sites>
+<TABLE>
+  <TBODY>
+  <TR>
+    <TH colSpan=3>Technology </TH>
+    <TH>Life / Arts </TH>
+    <TH>Culture / Recreation </TH>
+    <TH>Science </TH>
+    <TH>Other </TH></TR>
+  <TR>
+    <TD>
+      <OL>
+        <LI><A title="professional and enthusiast programmers" 
+        href="http://stackoverflow.com/">Stack Overflow</A> 
+        <LI><A title="professional system and network administrators" 
+        href="http://serverfault.com/">Server Fault</A> 
+        <LI><A title="computer enthusiasts and power users" 
+        href="http://superuser.com/">Super User</A> 
+        <LI><A title="power users of web applications" 
+        href="http://webapps.stackexchange.com/">Web Applications</A> 
+        <LI><A title="Ubuntu users and developers" 
+        href="http://askubuntu.com/">Ask Ubuntu</A> 
+        <LI><A title="pro webmasters" 
+        href="http://webmasters.stackexchange.com/">Webmasters</A> 
+        <LI><A title="professional and independent game developers" 
+        href="http://gamedev.stackexchange.com/">Game Development</A> 
+        <LI><A 
+        title="users of TeX, LaTeX, ConTeXt, and related typesetting systems" 
+        href="http://tex.stackexchange.com/">TeX - LaTeX</A> </LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A 
+        title="professional programmers interested in conceptual questions about software development" 
+        href="http://programmers.stackexchange.com/">Programmers</A> 
+        <LI><A 
+        title="users of Linux, FreeBSD and other Un*x-like operating systems." 
+        href="http://unix.stackexchange.com/">Unix &amp; Linux</A> 
+        <LI><A title="power users of Apple hardware and software" 
+        href="http://apple.stackexchange.com/">Ask Different (Apple)</A> 
+        <LI><A title="WordPress developers and administrators" 
+        href="http://wordpress.stackexchange.com/">WordPress Development</A> 
+        <LI><A title="cartographers, geographers and GIS professionals" 
+        href="http://gis.stackexchange.com/">Geographic Information Systems</A> 
+        <LI><A 
+        title="electronics and electrical engineering professionals, students, and enthusiasts" 
+        href="http://electronics.stackexchange.com/">Electrical Engineering</A> 
+        <LI><A 
+        title="enthusiasts and power users of the Android operating system" 
+        href="http://android.stackexchange.com/">Android Enthusiasts</A> 
+        <LI><A title="Information security professionals" 
+        href="http://security.stackexchange.com/">Information Security</A> 
+      </LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A 
+        title="database professionals who wish to improve their database skills and learn from others in the community" 
+        href="http://dba.stackexchange.com/">Database Administrators</A> 
+        <LI><A title="Drupal developers and administrators" 
+        href="http://drupal.stackexchange.com/">Drupal Answers</A> 
+        <LI><A title="SharePoint enthusiasts" 
+        href="http://sharepoint.stackexchange.com/">SharePoint</A> 
+        <LI><A title="user experience researchers and experts" 
+        href="http://ux.stackexchange.com/">User Experience</A> 
+        <LI><A title="users of Mathematica" 
+        href="http://mathematica.stackexchange.com/">Mathematica</A> 
+        <LI><A 
+        title="Salesforce administrators, implementation experts, developers and anybody in-between" 
+        href="http://salesforce.stackexchange.com/">Salesforce</A> 
+        <LI><A class=more href="http://stackexchange.com/sites#technology">more 
+        (13) </A></LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A title="professional, enthusiast and amateur photographers" 
+        href="http://photo.stackexchange.com/">Photography</A> 
+        <LI><A title="science fiction and fantasy enthusiasts" 
+        href="http://scifi.stackexchange.com/">Science Fiction &amp; Fantasy</A> 
+
+        <LI><A title="Graphic Design professionals, students, and enthusiasts" 
+        href="http://graphicdesign.stackexchange.com/">Graphic Design</A> 
+        <LI><A title="professional and amateur chefs" 
+        href="http://cooking.stackexchange.com/">Seasoned Advice (cooking)</A> 
+        <LI><A title="contractors and serious DIYers" 
+        href="http://diy.stackexchange.com/">Home Improvement</A> 
+        <LI><A title="people who want to be financially literate" 
+        href="http://money.stackexchange.com/">Personal Finance &amp; Money</A> 
+        <LI><A title="academics and those enrolled in higher education" 
+        href="http://academia.stackexchange.com/">Academia</A> 
+        <LI><A class=more href="http://stackexchange.com/sites#lifearts">more 
+        (10) </A></LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A 
+        title="linguists, etymologists, and serious English language enthusiasts" 
+        href="http://english.stackexchange.com/">English Language &amp; 
+        Usage</A> 
+        <LI><A title="scientific skepticism" 
+        href="http://skeptics.stackexchange.com/">Skeptics</A> 
+        <LI><A 
+        title="those who base their lives on Jewish law and tradition and anyone interested in learning more" 
+        href="http://judaism.stackexchange.com/">Mi Yodeya (Judaism)</A> 
+        <LI><A title="road warriors and seasoned travelers" 
+        href="http://travel.stackexchange.com/">Travel</A> 
+        <LI><A 
+        title="committed Christians, experts in Christianity and those interested in learning more" 
+        href="http://christianity.stackexchange.com/">Christianity</A> 
+        <LI><A title="passionate videogamers on all platforms" 
+        href="http://gaming.stackexchange.com/">Arqade (gaming)</A> 
+        <LI><A 
+        title="people who build and repair bicycles, people who train cycling, or commute on bicycles" 
+        href="http://bicycles.stackexchange.com/">Bicycles</A> 
+        <LI><A 
+        title="gamemasters and players of tabletop, paper-and-pencil role-playing games" 
+        href="http://rpg.stackexchange.com/">Role-playing Games</A> 
+        <LI><A class=more 
+        href="http://stackexchange.com/sites#culturerecreation">more (21) 
+        </A></LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A 
+        title="people studying math at any level and professionals in related fields" 
+        href="http://math.stackexchange.com/">Mathematics</A> 
+        <LI><A 
+        title="people interested in statistics, machine learning, data analysis, data mining, and data visualization" 
+        href="http://stats.stackexchange.com/">Cross Validated (stats)</A> 
+        <LI><A 
+        title="theoretical computer scientists and researchers in related fields" 
+        href="http://cstheory.stackexchange.com/">Theoretical Computer 
+        Science</A> 
+        <LI><A title="active researchers, academics and students of physics" 
+        href="http://physics.stackexchange.com/">Physics</A> 
+        <LI><A title="professional mathematicians" 
+        href="http://mathoverflow.net/">MathOverflow</A> 
+        <LI><A class=more href="http://stackexchange.com/sites#science">more (7) 
+        </A></LI></OL></TD>
+    <TD>
+      <OL>
+        <LI><A 
+        title="apps, scripts, and development with the Stack Exchange API" 
+        href="http://stackapps.com/">Stack Apps</A> 
+        <LI><A 
+        title="meta-discussion of the Stack Exchange family of Q&amp;A websites" 
+        href="http://meta.stackexchange.com/">Meta Stack Exchange</A> 
+        <LI><A title="proposing new sites in the Stack Exchange network" 
+        href="http://area51.stackexchange.com/">Area 51</A> 
+        <LI><A 
+        href="http://careers.stackoverflow.com/?utm_source=stackoverflow.com&amp;utm_medium=site-ui&amp;utm_campaign=footerlink">Stack 
+        Overflow Careers</A> </LI></OL></TD></TR></TBODY></TABLE></DIV></DIV>
+<DIV id=copyright>site design / logo © 2014 stack exchange inc; user 
+contributions licensed under <A 
+href="http://creativecommons.org/licenses/by-sa/3.0/" rel=license>cc by-sa 
+3.0</A> with <A 
+href="http://blog.stackoverflow.com/2009/06/attribution-required/" 
+rel=license>attribution required</A> </DIV>
+<DIV id=svnrev>rev 2014.11.14.2017 </DIV></DIV></DIV><NOSCRIPT>
+<DIV id=noscript-warning>Stack Overflow works best with JavaScript enabled<IMG 
+class=dno alt="" 
+src="Email SAS html output - Stack Overflow_files/p-c1rF4kxgLUzNc.gif"></DIV></NOSCRIPT>
+<SCRIPT>var p = "http", d = "static"; if (document.location.protocol == "https:") { p += "s"; d = "engine"; } var z = document.createElement("script"); z.type = "text/javascript"; z.async = true; z.src = p + "://" + d + ".adzerk.net/ados.js"; var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(z, s);</SCRIPT>
+
+<SCRIPT>
+    var ados = ados || {};
+    ados.run = ados.run || [];
+    ados.run.push(function () { ados_setKeywords('html,email,sas');; ados_load(); });         
+</SCRIPT>
+
+<SCRIPT>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () { (i[r].q = i[r].q || []).push(arguments) }, i[r].l = 1 * new Date(); a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m);
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-5620270-1');        
+        
+        ga('set', 'dimension2', '|html|email|sas|');         
+        ga('send', 'pageview');
+        var _qevents = _qevents || [],
+            _comscore = _comscore || [];
+        (function () {
+            var ssl='https:'==document.location.protocol,
+                s=document.getElementsByTagName('script')[0],
+                qc=document.createElement('script');
+            qc.async=true;
+            qc.src=(ssl?'https://secure':'http://edge')+'.quantserve.com/quant.js';
+            s.parentNode.insertBefore(qc, s);
+            var sc=document.createElement('script');
+            sc.async=true;
+            sc.src=(ssl?'https://sb':'http://b') + '.scorecardresearch.com/beacon.js';
+            s.parentNode.insertBefore(sc, s);
+        })();
+        _comscore.push({ c1: "2", c2: "17440561" });
+        _qevents.push({ qacct: "p-c1rF4kxgLUzNc" });
+    </SCRIPT>
+</BODY></HTML>

@@ -1,0 +1,43 @@
+INFO: 2021-07-18 16:59:20 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:20 Process Parameters:
+INFO: 2021-07-18 16:59:20 <rundate      >: <2021-07-18>
+INFO: 2021-07-18 16:59:20 <Process Home >: <D:/R/Programs/ProgramTemplate_noArgs/PGM>
+INFO: 2021-07-18 16:59:20 <SAS Home     >: <C:/SASHome/SASFoundation/9.4>
+INFO: 2021-07-18 16:59:20 <SAS omnimacro>: <D:/SAS/omnimacro>
+INFO: 2021-07-18 16:59:20 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:20 Existence of above key locations:
+INFO: 2021-07-18 16:59:20 <Process Home >: <TRUE>
+INFO: 2021-07-18 16:59:20 <SAS Home     >: <TRUE>
+INFO: 2021-07-18 16:59:20 <SAS omnimacro>: <TRUE>
+INFO: 2021-07-18 16:59:20 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:20 Subordinate scripts to be located at:
+INFO: 2021-07-18 16:59:20 D:/R/Programs/ProgramTemplate_noArgs/PGM
+INFO: 2021-07-18 16:59:20 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:20 Subordinate scripts to be called in below order:
+INFO: 2021-07-18 16:59:20 <1>: <100_src.r   >
+INFO: 2021-07-18 16:59:20 <2>: <200_runsas.r>
+INFO: 2021-07-18 16:59:20 <3>: <300_final.r >
+INFO: 2021-07-18 16:59:20 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:20 Calling subordinate scripts...
+INFO: 2021-07-18 16:59:20 ----------------------------------------
+INFO: 2021-07-18 16:59:20 <100_src.r> Beginning...
+INFO: 2021-07-18 16:59:20 step 1
+INFO: 2021-07-18 16:59:20 test info
+
+
+WARN: 2021-07-18 16:59:20 test warning
+
+WARN: 2021-07-18 16:59:20 warning from my_logger
+INFO: 2021-07-18 16:59:20 <100_src.r> Complete!
+INFO: 2021-07-18 16:59:20 ----------------------------------------
+INFO: 2021-07-18 16:59:20 <200_runsas.r> Beginning...
+INFO: 2021-07-18 16:59:20 step 2
+INFO: 2021-07-18 16:59:20 Executing below SAS program...
+INFO: 2021-07-18 16:59:20 <"D:/R/Programs/ProgramTemplate_noArgs/PGM/testrun.sas">
+INFO: 2021-07-18 16:59:21 <200_runsas.r> Complete!
+INFO: 2021-07-18 16:59:21 ----------------------------------------
+INFO: 2021-07-18 16:59:21 <300_final.r> Beginning...
+INFO: 2021-07-18 16:59:21 step 3
+INFO: 2021-07-18 16:59:21 <300_final.r> Complete!
+INFO: 2021-07-18 16:59:21 --------------------------------------------------------------------------------
+INFO: 2021-07-18 16:59:21 Process Complete!

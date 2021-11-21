@@ -1,0 +1,20 @@
+INFO: 2021-08-21 17:13:51,012 --------------------------------------------------------------------------------
+INFO: 2021-08-21 17:13:51,012 Process Parameters:
+INFO: 2021-08-21 17:13:51,012 <rundate      >: <2021-08-21>
+INFO: 2021-08-21 17:13:51,022 <Process Home >: <D:\Python\Programs\ProgramTemplate_noArg\PGM>
+INFO: 2021-08-21 17:13:51,022 <SAS Home     >: <C:\SASHome\SASFoundation\9.4>
+INFO: 2021-08-21 17:13:51,022 <SAS omnimacro>: <D:\SAS\omnimacro>
+INFO: 2021-08-21 17:13:51,022 --------------------------------------------------------------------------------
+INFO: 2021-08-21 17:13:51,022 Existence of above key locations:
+INFO: 2021-08-21 17:13:51,022 <Process Home >: <True>
+INFO: 2021-08-21 17:13:51,022 <SAS Home     >: <True>
+INFO: 2021-08-21 17:13:51,022 <SAS omnimacro>: <True>
+INFO: 2021-08-21 17:13:51,022 --------------------------------------------------------------------------------
+INFO: 2021-08-21 17:13:51,022 Subordinate scripts to be located at:
+INFO: 2021-08-21 17:13:51,022 D:\Python\Programs\ProgramTemplate_noArg\PGM
+INFO: 2021-08-21 17:13:51,022 --------------------------------------------------------------------------------
+INFO: 2021-08-21 17:13:51,022 Below scripts have been executed today, thus are excluded.
+INFO: 2021-08-21 17:13:51,022 <100_src.py>
+INFO: 2021-08-21 17:13:51,022 <200_runsas.py>
+INFO: 2021-08-21 17:13:51,022 <300_final.py>
+INFO: 2021-08-21 17:13:51,022 All scripts have been executed previously. Program completed.

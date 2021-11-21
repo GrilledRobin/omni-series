@@ -1,0 +1,5 @@
+Note:   You can add these lines to your code to fix unmatched comment tags, unmatched quotation marks, and missing semicolons. 
+
+/* '; * "; */;
+quit;
+run;

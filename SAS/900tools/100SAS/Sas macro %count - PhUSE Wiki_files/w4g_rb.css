@@ -1,0 +1,39 @@
+.rating_box {
+	BORDER-RIGHT: #333333 1px solid; PADDING-RIGHT: 0px; BORDER-TOP: #333333 1px solid; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; MARGIN: 0px; BORDER-LEFT: #333333 1px solid; WIDTH: 242px; PADDING-TOP: 0px; BORDER-BOTTOM: #333333 1px solid; HEIGHT: 11px; BACKGROUND-COLOR: #555555
+}
+.rating_target {
+	BORDER-RIGHT: #333333 1px solid; PADDING-RIGHT: 0px; BORDER-TOP: #333333 1px solid; PADDING-LEFT: 0px; FLOAT: left; PADDING-BOTTOM: 0px; MARGIN: 0px; BORDER-LEFT: #333333 1px solid; WIDTH: 202px; PADDING-TOP: 0px; BORDER-BOTTOM: #333333 1px solid; POSITION: absolute; HEIGHT: 11px; BACKGROUND-COLOR: #555555
+}
+.rating_text {
+	BORDER-RIGHT: #333333 1px solid; PADDING-RIGHT: 0px; BORDER-TOP: #333333 1px solid; PADDING-LEFT: 0px; FONT-SIZE: 10px; FLOAT: left; PADDING-BOTTOM: 0px; MARGIN: 0px 0px 2px 202px; BORDER-LEFT: #333333 1px solid; WIDTH: 40px; PADDING-TOP: 0px; BORDER-BOTTOM: #333333 1px solid; FONT-FAMILY: arial; POSITION: absolute; HEIGHT: 11px; BACKGROUND-COLOR: #999999
+}
+.rating_text_text {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; Z-INDEX: 1; FLOAT: left; PADDING-BOTTOM: 0px; MARGIN: -4px 2px; PADDING-TOP: 0px; POSITION: absolute
+}
+.w4g_rb_barblock {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; FLOAT: left; PADDING-BOTTOM: 0px; MARGIN: 0px; WIDTH: 2px; PADDING-TOP: 0px; POSITION: absolute; HEIGHT: 11px
+}
+.w4g_rb_nojs {
+	FONT-SIZE: 10px; MARGIN: -4px 2px; COLOR: #ff9999; FONT-FAMILY: arial
+}
+.w4g_rb-error {
+	FONT-WEIGHT: bold; COLOR: #ff0000
+}
+.w4g_rb-rating-page-named {
+	FONT-WEIGHT: bold
+}
+.w4g_rb-ratinglist-table {
+	BORDER-RIGHT: #ccc 1px solid; BORDER-TOP: #ccc 1px solid; BACKGROUND: #fff; MARGIN: 1em 1em 1em 0px; BORDER-LEFT: #ccc 1px solid; BORDER-BOTTOM: #ccc 1px solid; BORDER-COLLAPSE: collapse
+}
+.w4g_rb-ratinglist-table CAPTION {
+	FONT-WEIGHT: bold; TEXT-ALIGN: left
+}
+.w4g_rb-ratinglist-table TH {
+	BORDER-RIGHT: #ccc 1px solid; PADDING-RIGHT: 0.2em; BORDER-TOP: #ccc 1px solid; PADDING-LEFT: 0.2em; PADDING-BOTTOM: 0.2em; BORDER-LEFT: #ccc 1px solid; PADDING-TOP: 0.2em; BORDER-BOTTOM: #ccc 1px solid
+}
+.w4g_rb-ratinglist-table TD {
+	BORDER-RIGHT: #ccc 1px solid; PADDING-RIGHT: 0.2em; BORDER-TOP: #ccc 1px solid; PADDING-LEFT: 0.2em; PADDING-BOTTOM: 0.2em; BORDER-LEFT: #ccc 1px solid; PADDING-TOP: 0.2em; BORDER-BOTTOM: #ccc 1px solid
+}
+.w4g_rb-ratinglist-table TH {
+	FONT-WEIGHT: bold; BACKGROUND: #153e7e; COLOR: #eee; TEXT-ALIGN: center
+}

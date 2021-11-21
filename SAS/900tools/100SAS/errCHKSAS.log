@@ -1,0 +1,619 @@
+1                                                          The SAS System                           16:02 Tuesday, November 18, 2014
+
+NOTE: Unable to open SASUSER.REGSTRY. WORK.REGSTRY will be opened instead.
+NOTE: All registry changes will be lost at the end of the session.
+
+WARNING: Unable to copy SASUSER registry to WORK registry. Because of this, you will not see registry customizations during this 
+         session.
+NOTE: Unable to open SASUSER.PROFILE. WORK.PROFILE will be opened instead.
+NOTE: All profile changes will be lost at the end of the session.
+NOTE: Copyright (c) 2002-2003 by SAS Institute Inc., Cary, NC, USA. 
+NOTE: SAS (r) 9.1 (TS1M3)
+      Licensed to STANDARD CHARTERED BANK-ECO,ETS,ODBC, Site 0036924014.
+NOTE: This session is executing on the XP_PRO  platform.
+
+
+
+NOTE: SAS 9.1.3 Service Pack 4
+
+NOTE: SAS initialization used:
+      real time           21.50 seconds
+      cpu time            0.29 seconds
+      
+1          %macro ecLog;
+2          %*100.	Prepare the system.;
+3          %*110.	Parameters.;
+4          %*111.	Usually this part is passed from outsourced files.;
+5          /*->Begin Block (Remove the following WHITE SPACE to un-comment the block)*/
+6          %let	G_PATH_LOGCHK	=	C:\www\AutoReports\900tools\100SAS;
+7          %let	LOG_NAME	=	X:\SAS_report\1298609\020201\notes_cn.log;
+8          %let	RST_NAME	=	&G_PATH_LOGCHK.\a.txt;
+9          %let	F_SENDEMAIL	=	0;
+10         %let	G_email		=	your.email.address@company.com;
+11         %let	G_ENC_LOG	=	euc-cn;
+12         %let	G_JOB_NAME	=	SIP Platform;
+13         /*<-End Block */
+14         
+15         %*112.	Specify the log file name.;
+16         %let	L_LOGNM	=	%qscan(%nrbquote(&LOG_NAME.),-1,%str(\/));
+17         
+18         %*150.	Load all language files.;
+19         %local
+20         	L_DOScmd
+21         	Fi
+22         ;
+23         data _NULL_;
+24         	cmd	=	"'dir /A-D /B """||"&G_PATH_LOGCHK."||'"''';
+25         	call symput("L_DOScmd",cmd);
+26         run;
+27         filename	cLang	pipe	&L_DOScmd.;
+28         data _NULL_;
+29         	infile
+30         		cLang
+31         		truncover
+32         		end=EOF
+33         	;
+34         	length
+35         		langfile	$512.
+36         		tmpEnc		$32.
+37         	;
+38         	input;
+39         	langfile	=	strip(_infile_);
+40         	retain
+41         		prxM	%*PRX for Match;
+42         		prxL	%*PRX for Language;
+43         		prxE	%*PRX for Encoding;
+44         		Fi
+45         	;
+46         	if	_N_	=	1	then do;
+47         		%*The naming convetion is: "ecLang_<Lang-Short-Name>_<SAS-Encoding-Code>.sas",;
+48         		%* where <Lang-Short-Name> should be unique and cannot contain underscores "_".;
+49         		%*The macros stored in the language files have the naming convention as:;
+50         		%* "ecLang_<Lang-Short-Name>".;
+51         		prxM	=	prxparse('/^ecLang_.+\.sas$/i');
+52         		prxL	=	prxparse('s/^([^_]+?_[^_]+?)_.+\.sas$/\1/i');
+53         		prxE	=	prxparse('s/^[^_]+?_[^_]+?_(.+)\.sas$/\1/i');
+54         		Fi		=	0;
+55         	end;
+2                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+56         	if	prxmatch(prxM, strip(langfile))	then do;
+57         		Fi	+	1;
+58         		call symputx(cats("LeLangFile",Fi),strip(langfile),"L");
+59         		call symputx(cats("LeLangMac",Fi),prxchange(prxL,1,strip(langfile)),"L");
+60         		call symputx(cats("LeLangName",Fi),scan(strip(prxchange(prxL,1,strip(langfile))),-1,"_"),"L");
+61         		tmpEnc	=	prxchange(prxE,1,strip(langfile));
+62         		if	upcase(tmpEnc)	=	"GB2312"	then do;
+63         			call symputx(cats("LeLangEnc",Fi),"euc-cn","L");
+64         		end;
+65         		else do;
+66         			call symputx(cats("LeLangEnc",Fi),tmpEnc,"L");
+67         		end;
+68         	end;
+69         	if	EOF	then do;
+70         		call symputx("LnLangFile",Fi,"L");
+71         		call prxfree(prxM);
+72         		call prxfree(prxL);
+73         		call prxfree(prxE);
+74         	end;
+75         run;
+76         %do	Fi	=	1	%to	&LnLangFile.;
+77         	%put	[&G_PATH_LOGCHK.\&&LeLangFile&Fi..][&&LeLangEnc&Fi..];
+78         	filename	tmplang	"&G_PATH_LOGCHK.\&&LeLangFile&Fi.."	encoding="&&LeLangEnc&Fi..";
+79         	%include	tmplang;
+80         	%&&LeLangMac&Fi..
+81         %end;
+82         
+83         %*180.	Initialization.;
+84         %*Note: We should use "INFILE" to read the source file, rather than DOS pipe,;
+85         %* for the source file could be of the CharSet or Code Page other than MS-DOS.;
+86         %*181.	Create necessary formats.;
+87         proc format;
+88         	%*100.	Number the Issues and Apply Format to get Proper Sort in Email.;
+89         	value ec_Typefm
+90         		1	=	'Error'
+91         		2	=	'Warning'
+92         		3	=	'Spec. Notes'
+93         		4	=	'Note'
+94         		5	=	'Datetime'
+95         	;
+96         
+97         	%*200.	Short Names for the system messages.;
+98         	value $ec_LangEXP(min=128)
+99         		%*100.	Warnings to be excluded.;
+100        		'Lec_WN_SasUserReg'	=	'Unable to copy SASUSER registry to WORK registry'
+101        		'Lec_WN_NoRegCust'	=	'you will not see registry customizations during this session'
+102        		'Lec_WN_SysSchExp'	=	'system is scheduled to expire'
+103        		'Lec_WN_BasSchExp'	=	'The Base Product product is going to expire by license'
+104        		'Lec_WN_BasSchExp1'	=	'(Continued) in warning mode to indicate the upcoming expiration'
+105        		'Lec_WN_BasSchExp2'	=	'(Continued) more information on your warning period'
+106        
+107        		%*200.	Notes to be captured.;
+108        		'Lec_NT_VarUnini'	=	'Some variables are uninitialized'
+109        		'Lec_NT_PassHdrDt'	=	'PASS HEADER, date'
+110        		'Lec_NT_Invalid'	=	'Invalid values'
+111        		'Lec_NT_WDFormat'	=	'W.D Format is used'
+112        		'Lec_NT_RepeatBy'	=	'Repeats of By values'
+113        		'Lec_NT_MathOps'	=	'Mathematical operations could not be used'
+114        		'Lec_NT_GenMissVal'	=	'Missing values are generated'
+115        		'Lec_NT_DivideBy0'	=	'Division by zero'
+116        		'Lec_NT_MergeStmt'	=	'Merge statement is not properly used'
+117        		'Lec_NT_ProcChar'	=	'Character values have been automatically processed'
+118        		'Lec_NT_ConvVal'	=	'Character or numeric values have been converted'
+119        		'Lec_NT_DisableItv'	=	'Interactivity is disabled'
+120        		'Lec_NT_ProcNoObs'	=	'No observation is found during Data or Proc step'
+121        		'Lec_NT_ProcStop'	=	'Processing is abnormally stopped'
+122        
+123        		%*300.	Errors to be excluded.;
+124        		'Lec_ER_ExpectPg1'	=	'SASUSER.CATALOG is not available, expecting page 1 to create'
+125        		'Lec_ER_PgVldFail'	=	'Page validation error while reading SASUSER.PROFILE.CATALOG.'
+126        	;
+127        run;
+128        
+129        %*185.	Prepare the access to the log file.;
+130        filename	CHKLOG	"&LOG_NAME." encoding="&G_ENC_LOG.";
+3                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+131        filename	CHKOUT	"&RST_NAME." encoding="&G_ENC_LOG.";
+132        
+133        %*200.	Analyze the log file.;
+134        %*210.	Read and flag the lines.;
+135        data CheckTheLog;
+136        	%*100.	Initialize the fields.;
+137        	%*Below field does not have to be dropped as it acts as a temporary one in the INFILE statement.;
+138        	length
+139        		finput	$512.
+140        	;
+141        	attrib
+142        		logname	length=$80				label='Log File Name'
+143        		c_msg	length=$32				label='Message to be put in the analysis result'
+144        		txt		length=$256				label='Original SAS Log message'
+145        		linum	length=8	format=8.	label='Line # in~SAS LOG'
+146        		type	length=8				label='Type'
+147        	;
+148        
+149        	%*200.	Input the log file.;
+150        	infile
+151        		CHKLOG
+152        		filename	=	finput
+153        		lrecl		=	200
+154        		pad
+155        		END			=	eof
+156        	;
+157        	length	getline	$256.;
+158        	input;
+159        	getline	=	strip(_infile_);
+160        
+161        	%*300.	Format the information.;
+162        	%*310.	Retrieve the correct log file name.;
+163        	retain
+164        		logname
+165        	;
+166        	if	_N_	=	1	then do;
+167        		logname	=	"&L_LOGNM.";
+168        		linum	=	0;
+169        	end;
+170        
+171        	%*320.	Initialization.;
+172        	intext	=	upcase(getline);
+173        	linum	+	1;
+174        	CTR		=	1;
+175        
+176        	%*330.	Segment the information.;
+177        	%*331.	Warnings.;
+178        	if index(intext, 'WARNING:')	=	1	then do;
+179        		Type	=	2;
+180        		c_msg	=	"[SASWARNING]:";
+181        		txt		=	substr(intext, 10);
+182        		output;
+183        	end;
+184        
+185        	%*332.	Pass Header information.;
+186        	else if	0
+187        	%do Fi=1 %to &LnLangFile.;
+188        		or	index(intext,strip("&&&&Lec_NT_PassHdrDt_&&LeLangName&Fi..."))	=	1
+189        	%end;
+190        		then do;
+191        		type	=	5;
+192        		c_msg	=	"[SASSPEC]:";
+193        		txt		=	scan(intext,1,"=");
+194        		output;
+195        	end;
+196        
+197        	%*333.	Universal abnormal notes.;
+198        	%*Update or remove from this list as makes sense to you - ALL CAPS!;
+199        	else  if index(intext, 'NOTE:')	=	1	then do;
+200        		if	0
+201        		%do Fi=1 %to &LnLangFile.;
+202        			or	index(intext,strip("&&&&Lec_NT_Invalid_&&LeLangName&Fi..."))	>	0
+203        			or	index(intext,strip("&&&&Lec_NT_WDFormat_&&LeLangName&Fi..."))	>	0
+204        			or	index(intext,strip("&&&&Lec_NT_VarUnini_&&LeLangName&Fi..."))	>	0
+205        			or	index(intext,strip("&&&&Lec_NT_RepeatBy_&&LeLangName&Fi..."))	>	0
+4                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+206        			or	index(intext,strip("&&&&Lec_NT_MathOps_&&LeLangName&Fi..."))	>	0
+207        			or	index(intext,strip("&&&&Lec_NT_GenMissVal_&&LeLangName&Fi..."))	>	0
+208        			or	index(intext,strip("&&&&Lec_NT_DivideBy0_&&LeLangName&Fi..."))	>	0
+209        			or	index(intext,strip("&&&&Lec_NT_MergeStmt_&&LeLangName&Fi..."))	>	0
+210        /*			or	index(intext,strip("&&&&Lec_NT_ProcChar_&&LeLangName&Fi..."))	>	0
+211        			or	index(intext,strip("&&&&Lec_NT_ConvVal&&LeLangName&Fi..."))		>	0
+212        */			or	index(intext,strip("&&&&Lec_NT_DisableItv_&&LeLangName&Fi..."))	>	0
+213        			or	index(intext,strip("&&&&Lec_NT_ProcNoObs_&&LeLangName&Fi..."))	>	0
+214        		%end;
+215        		then do;
+216        			Type	=	4;
+217        			c_msg	=	"[SASSPEC]:";
+218        			txt		=	substr(intext, 7);
+219        			output;
+220        		end;
+221        	end;
+222        
+223        	%*334.	User defined messages to be spotted.;
+224        	if index(intext, 'NOTE:')	=	1	then do;
+225        		if	0
+226        		%do Fi=1 %to &LnLangFile.;
+227        			or	index(intext,strip("&&&&Lec_NT_ProcStop_&&LeLangName&Fi..."))	>	0
+228        		%end;
+229        			then do;
+230        			TYPE	=	3;
+231        			c_msg	=	"[SASSPEC]:";
+232        			txt		=	substr(intext, 7);
+233        			output;
+234        		end;
+235        	end;
+236        
+237        	%*339.	Errors.;
+238        	if index(intext, 'ERROR:')	=	1	then do;
+239        		Type	=	1;
+240        		c_msg	=	"[SASERROR]:";
+241        		txt		=	substr(intext, 8);
+242        		output;
+243        	end;
+244        
+245        	%*900.	Cleansing.;
+246        	DROP
+247        		getline
+248        	;
+249        run;
+250        
+251        %*290.	Modify the flags as per user requirement.;
+252        %* In some cases - you have known issues that are not actual errors;
+253        %* Use this area to recode those errors as Notes or Delete the lines;
+254        data logcheck;
+255        	set CheckTheLog;
+256        /*	%*100.	TERADATA ISSUES THIS WARNING WHEN CLEARS TABLE;
+257        	if		index(txt,'TABLE') gt 0
+258        		and	index(txt,'HAS NOT BEEN DROPPED') gt 0
+259        		and	type=2
+260        		then do;
+261        		c_msg	=	"[SASSPEC]:";
+262        		type	=	4;
+263        	end;
+264        */
+265        	%*200.	Warning messages regarding system expiration can be excluded.;
+266        	if	type	=	2
+267        		and	(0
+268        			%do Fi=1 %to &LnLangFile.;
+269        				or	index(intext,strip("&&&&Lec_WN_SasUserReg_&&LeLangName&Fi..."))	>	0
+270        				or	index(intext,strip("&&&&Lec_WN_NoRegCust_&&LeLangName&Fi..."))	>	0
+271        				or	index(intext,strip("&&&&Lec_WN_SysSchExp_&&LeLangName&Fi..."))	>	0
+272        				or	index(intext,strip("&&&&Lec_WN_BasSchExp_&&LeLangName&Fi..."))	>	0
+273        				or	index(intext,strip("&&&&Lec_WN_BasSchExp1_&&LeLangName&Fi..."))	>	0
+274        				or	index(intext,strip("&&&&Lec_WN_BasSchExp2_&&LeLangName&Fi..."))	>	0
+275        			%end;
+276        		)
+277        		then do;
+278        		c_msg	=	"[SASSPEC]:";
+279        		type	=	4;
+280        		delete;
+5                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+281        	end;
+282        
+283        	%*300.	Error messages regarding user authentication can be excluded.;
+284        	if	type	=	1
+285        		and	(0
+286        			%do Fi=1 %to &LnLangFile.;
+287        				or	index(intext,strip("&&&&Lec_ER_ExpectPg1_&&LeLangName&Fi..."))	>	0
+288        				or	index(intext,strip("&&&&Lec_ER_PgVldFail_&&LeLangName&Fi..."))	>	0
+289        			%end;
+290        		)
+291        		then do;
+292        		c_msg	=	"[SASSPEC]:";
+293        		type	=	4;
+294        		delete;
+295        	end;
+296        
+297        	%*900.	You can stop the process when encountering the FIRST error message,;
+298        	%* as all the processes AFTERWARDS could have unexpected results.;
+299        	if Type	=	1	then do;
+300        		stop;
+301        	end;
+302        run;
+303        
+304        %*700.	Export the summary.;
+305        data _NULL_;
+306        	file CHKOUT;
+307        	set logcheck;
+308        	put c_msg '#' linum txt;
+309        run;
+310        
+311        %*800.	Send Email if required.;
+312        %if	&F_SENDEMAIL.	^=	0	%then %do;
+313        	%*100.	Generate summaries.;
+314        	%*Count the total messages for each type to have for the Email Subject Line;
+315        	%let	L_ERROR	=	0;
+316        	%let	L_WARN	=	0;
+317        	%let	L_NOTES	=	0;
+318        	%let	L_FAIL	=	0;
+319        	proc sql noprint;
+320        		select count(type) into :L_ERROR	from logcheck where type = 1;
+321        		select count(type) into :L_WARN		from logcheck where type = 2;
+322        		select count(type) into :L_NOTES	from logcheck where type in (3,4);
+323        		select count(type) into :L_FAIL		from logcheck where type ne 5;
+324        	quit;
+325        	data _NULL_;
+326        		call symputx("L_ERROR","&L_ERROR.","L");
+327        		call symputx("L_WARN","&L_WARN.","L");
+328        		call symputx("L_NOTES","&L_NOTES.","L");
+329        		call symputx("L_FAIL","&L_FAIL.","L");
+330        	run;
+331        
+332        	%*200.	Create summary information.;
+333        	data _mail_sum;
+334        		length	cnt	$256.;
+335        		cnt	=	"Log File:";
+336        		output;
+337        		cnt	=	"[&LOG_NAME.]";
+338        		output;
+339        		cnt	=	"";
+340        		output;
+341        		cnt	=	"[Errors: &L_ERROR.]";
+342        		output;
+343        		cnt	=	"[Warnings: &L_WARN.]";
+344        		output;
+345        		cnt	=	"[Notes: &L_NOTES.]";
+346        		output;
+347        		cnt	=	"";
+348        		output;
+349        		cnt	=	"--SAS System Generated Message--";
+350        		output;
+351        		cnt	=	"User: %sysget(USERNAME)";
+352        		output;
+353        		cnt	=	"Domain: %sysget(USERDOMAIN)";
+354        		output;
+355        	run;
+6                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+356        
+357        	%*300.	Create detailed report if issues are found.;
+358        	%if &L_FAIL.	^=	0	%then %do;
+359        		%*100.	Open the ODS system.;
+360        		%local	outf;
+361        		%let	outf	=	%sysfunc(pathname(WORK))\LogChk.pdf;
+362        		filename
+363        			outf
+364        			"&outf."
+365        			encoding="&G_ENC_LOG."
+366        		;
+367        		ods listing close;
+368        		ods
+369        			pdf
+370        			body="&outf."
+371        			style=printer
+372        		;
+373        
+374        		%*200.	Print the log table.;
+375        		title 'Log Check Results';
+376        		title2 "Run date: &SYSDATE.";
+377        		proc report data=logcheck  nowindows split='~';
+378        			format type ec_Typefm.;
+379        			column logname type linum txt;
+380        			define type / order=formatted 'Type';
+381        			define linum / display;
+382        			define txt / display width=80 flow;
+383        			compute txt;
+384        				if type.sum = 1 then do;
+385        					call define(_COL_,'style','style=[background=INDIANRED]');
+386        				end;
+387        				else if type.sum = 2 then do;
+388        					call define(_COL_,'style','style=[background=#FFD700]');
+389        				end;
+390        				else if type.sum in (3, 4) then do;
+391        					call define(_COL_,'style','style=[background=POWDERBLUE]');
+392        				end;
+393        				else if type.sum = 5 then do;
+394        					call define(_ROW_,'style','style=[background=#D3D3D3 font_style=italic]');
+395        				end;
+396        			endcomp;
+397        		run;
+398        
+399        		%*900.	Close the ODS system.;
+400        		ods pdf close;
+401        		ods listing;
+402        	%end;
+403        
+404        	%*400.	Prepare the OutBox.;
+405        	FILENAME
+406        		OutBox
+407        		EMAIL
+408        		to=("&G_email.")
+409        	%if &L_FAIL.	=	0	%then %do;
+410        		subject="SAS Log Check [&G_JOB_NAME.][&L_LOGNM.]: ==Job Successful!=="
+411        	%end;
+412        	%else %do;
+413        		subject="SAS Log Check [&G_JOB_NAME.][&L_LOGNM.]: [ERROR: &L_ERROR.][WARN: &L_WARN.][NOTE: &L_NOTES.]"
+414        		attach="&outf."
+415        	%end;
+416        	;
+417        
+418        	%*500.	Send the email.;
+419        	data _NULL_;
+420        		file OutBox;
+421        		set _mail_sum;
+422        		put cnt;
+423        	run;
+424        
+425        	%*900.	Purge the system.;
+426        	%if &L_FAIL.	^=	0	%then %do;
+427        		%sysexec(del /Q "&outf." & exit);
+428        	%end;
+429        
+430        %*End of %if	&F_SENDEMAIL.	^=	0;
+7                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+431        %end;
+432        
+433        %mend ecLog;
+434        %ecLog
+
+NOTE: DATA statement used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.03 seconds
+      
+
+
+NOTE: The infile CLANG is:
+      Unnamed Pipe Access Device,
+      PROCESS=dir /A-D /B "C:\www\AutoReports\900tools\100SAS",
+      RECFM=V,LRECL=256
+
+NOTE: 16 records were read from the infile CLANG.
+      The minimum record length was 5.
+      The maximum record length was 42.
+NOTE: DATA statement used (Total process time):
+      real time           0.09 seconds
+      cpu time            0.06 seconds
+      
+
+[C:\www\AutoReports\900tools\100SAS\ecLang_CHSU8_utf-8.sas][utf-8]
+[C:\www\AutoReports\900tools\100SAS\ecLang_CHS_GB2312.sas][euc-cn]
+ERROR: Unable to load translate table        .ERROR: Unable to load translate table        .ERROR: Unable to load translate table        .
+WARNING: Apparent invocation of macro ECLANG_CHS not resolved.
+NOTE: Line generated by the invoked macro "ECLOG".
+486          filename tmplang "&G_PATH_LOGCHK.\&&LeLangFile&Fi.." encoding="&&LeLangEnc&Fi..";  %include tmplang;
+486      ! %&&LeLangMac&Fi..           _           _           _
+           180           180           180
+ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.
+
+[C:\www\AutoReports\900tools\100SAS\ecLang_ENG_GB2312.sas][euc-cn]
+
+ERROR: Unable to load translate table 9       .ERROR: Unable to load translate table 9       .ERROR: Unable to load translate table 9       .
+WARNING: Apparent invocation of macro ECLANG_ENG not resolved.
+NOTE: Line generated by the invoked macro "ECLOG".
+486          filename tmplang "&G_PATH_LOGCHK.\&&LeLangFile&Fi.." encoding="&&LeLangEnc&Fi..";  %include tmplang;
+486      ! %&&LeLangMac&Fi..           _           _           _
+           180           180           180
+ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.
+
+
+NOTE: Line generated by the invoked macro "ECLOG".
+486                       value ec_Typefm   1 = 'Error'   2 = 'Warning'   3 = 'Spec. Notes'   4 = 'Note'   5 =                          _____                          _____                          _____
+                          180                          180                          180
+486      ! 'Datetime'  ;  value $ec_LangEXP(min=128)   'Lec_WN_SasUserReg' = 'Unable to copy SASUSER registry to
+
+ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.
+
+NOTE: Line generated by the invoked macro "ECLOG".
+486          value $ec_LangEXP(min=128)   'Lec_WN_SasUserReg' = 'Unable to copy SASUSER registry to WORK registry'
+_____                                                                                                               _____                                                                                                               _____                                                                                                               
+
+180180180
+486      !  'Lec_WN_NoRegCust' =
+
+ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.ERROR 180-322: Statement is not valid or it is used out of proper order.
+
+WARNING: Apparent symbolic reference LEC_NT_PASSHDRDT_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_PASSHDRDT_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_INVALID_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_WDFORMAT_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_VARUNINI_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_REPEATBY_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_MATHOPS_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_GENMISSVAL_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_DIVIDEBY0_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_MERGESTMT_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_DISABLEITV_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_PROCNOOBS_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_INVALID_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_WDFORMAT_ENG not resolved.
+8                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+WARNING: Apparent symbolic reference LEC_NT_VARUNINI_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_REPEATBY_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_MATHOPS_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_GENMISSVAL_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_DIVIDEBY0_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_MERGESTMT_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_DISABLEITV_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_PROCNOOBS_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_NT_PROCSTOP_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_NT_PROCSTOP_ENG not resolved.
+
+NOTE: SAS set option OBS=0 and will continue to check statements. This may cause NOTE: No observations in data set.
+NOTE: The data set WORK.CHECKTHELOG has 0 observations and 7 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.03 seconds
+      
+
+WARNING: Apparent symbolic reference LEC_WN_SASUSERREG_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_NOREGCUST_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_SYSSCHEXP_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP1_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP2_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_WN_SASUSERREG_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_WN_NOREGCUST_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_WN_SYSSCHEXP_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP1_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_WN_BASSCHEXP2_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_ER_EXPECTPG1_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_ER_PGVLDFAIL_CHS not resolved.
+WARNING: Apparent symbolic reference LEC_ER_EXPECTPG1_ENG not resolved.
+WARNING: Apparent symbolic reference LEC_ER_PGVLDFAIL_ENG not resolved.
+
+NOTE: The data set WORK.LOGCHECK has 0 observations and 7 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.03 seconds
+      cpu time            0.03 seconds
+      
+
+
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+      
+
+487        
+488        /*->Begin Block -Comment- (Remove the following WHITE SPACE to un-comment the block)* /
+489        SAS All Versions:
+490        When using INFILE statement to read the text file which is stored in EUC-CN by SAS English
+491         version (nls/en/), there will be a fatal I/O error.
+492        Solution:
+493        (1) Circumvent using SAS English version to execute this procedure to check logs generated in
+494        either EUC-CN or UTF-8.
+495        (2) Use "encoding=" option in FILENAME statement and then use '%include filename'.
+496        
+497        SAS9.1.3
+498        The programs stored in UTF-8 cannot be read properly and thus the entire Error Check
+499         procedure will be terminated.
+500        Solution:
+501        (1) Remove all "ecLang" files which are stored in UTF-8 when executing this procedure.
+502        (2) Use "encoding=" option in FILENAME statement and then use '%include filename'.
+503        
+504        SAS9.3
+505        If English version is to be used imperatively, please ensure the log file to be verified
+506         is stored in encoding other than EUC-CN and UTF-8.
+507        /*<-End Block -Comment- */
+
+ERROR: Errors printed on page 7.ERROR: Errors printed on page 7.ERROR: Errors printed on page 7.
+
+NOTE: SAS Institute Inc., SAS Campus Drive, Cary, NC USA 27513-2414
+NOTE: The SAS System used:
+      real time           21.85 seconds
+      cpu time            0.56 seconds
+9                                                  The SAS System                   16:02 Tuesday, November 18, 2014
+
+      

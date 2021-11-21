@@ -72,6 +72,11 @@ def getDateIntervals(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Correct the [span] for [weekday] as 1, instead of 5, to make it a type of incremental on single units instead of period #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211120        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [ptn_ntvl_matchobj.all()] fails on verification; change to [ptn_ntvl_matchobj.notnull().all()]             #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -146,7 +151,7 @@ def getDateIntervals(
     ptn_ntvl_matchobj = ntvl.apply(ptn_ntvl_match.fullmatch)
 
     #399. Stop if the input values is not recognized
-    if not ptn_ntvl_matchobj.all():
+    if not ptn_ntvl_matchobj.notnull().all():
         err_ntvl = ntvl[ptn_ntvl_matchobj.isnull()]
         raise ValueError(
             '[' + LfuncName + '][interval]:[{0}] cannot be recognized!'.format( ','.join(err_ntvl.apply(str)) )

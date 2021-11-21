@@ -6,11 +6,15 @@
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
 #100.   Import the local modules.
+from .isWindowCloaked import isWindowCloaked
+from .getDesktopWindows import getDesktopWindows
 from .setClipboard import setClipboard
 from .clicks import clicks
 
 #200.   Define available resources.
 __all__ = [
-    'setClipboard'
+    'isWindowCloaked'
+    ,'getDesktopWindows'
+    ,'setClipboard'
     ,'clicks'
 ]

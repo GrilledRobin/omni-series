@@ -1,0 +1,41 @@
+INFO: 2021-07-07 20:58:07,165 <dateBgn> is not provided, use <Current Quarter Beginning> instead.
+INFO: 2021-07-07 20:58:07,185 --------------------------------------------------------------------------------
+INFO: 2021-07-07 20:58:07,185 Process Parameters:
+INFO: 2021-07-07 20:58:07,185 <dateBgn      >: <2021-01-01>
+INFO: 2021-07-07 20:58:07,185 <dateEnd      >: <2021-03-31>
+INFO: 2021-07-07 20:58:07,185 <Process Home >: <D:\Python\Programs\ProgramTemplate\PGM>
+INFO: 2021-07-07 20:58:07,185 <SAS Home     >: <C:\SASHome\SASFoundation\9.4>
+INFO: 2021-07-07 20:58:07,185 <SAS omnimacro>: <D:\SAS\omnimacro>
+INFO: 2021-07-07 20:58:07,185 --------------------------------------------------------------------------------
+INFO: 2021-07-07 20:58:07,185 Existence of above key locations:
+INFO: 2021-07-07 20:58:07,185 <Process Home >: <True>
+INFO: 2021-07-07 20:58:07,195 <SAS Home     >: <True>
+INFO: 2021-07-07 20:58:07,195 <SAS omnimacro>: <True>
+INFO: 2021-07-07 20:58:07,195 --------------------------------------------------------------------------------
+INFO: 2021-07-07 20:58:07,195 Subordinate scripts to be located at:
+INFO: 2021-07-07 20:58:07,195 D:\Python\Programs\ProgramTemplate\PGM
+INFO: 2021-07-07 20:58:07,195 --------------------------------------------------------------------------------
+INFO: 2021-07-07 20:58:07,195 Subordinate scripts to be called in below order:
+INFO: 2021-07-07 20:58:07,195 <1>: <100_src.py   >
+INFO: 2021-07-07 20:58:07,195 <2>: <200_runsas.py>
+INFO: 2021-07-07 20:58:07,195 <3>: <300_final.py >
+INFO: 2021-07-07 20:58:07,195 --------------------------------------------------------------------------------
+INFO: 2021-07-07 20:58:07,195 Calling subordinate scripts...
+INFO: 2021-07-07 20:58:07,195 ----------------------------------------
+INFO: 2021-07-07 20:58:07,195 <100_src.py> Beginning...
+INFO: 2021-07-07 20:58:07,195 step 1
+INFO: 2021-07-07 20:58:07,195 <100_src.py> Complete!
+INFO: 2021-07-07 20:58:07,195 ----------------------------------------
+INFO: 2021-07-07 20:58:07,195 <200_runsas.py> Beginning...
+INFO: 2021-07-07 20:58:07,435 step 2
+INFO: 2021-07-07 20:58:07,435 Executing below SAS program...
+INFO: 2021-07-07 20:58:07,435 <D:\Python\Programs\ProgramTemplate\PGM\testrun.sas>
+ERROR: 2021-07-07 20:58:13,900 Uncaught exception
+Traceback (most recent call last):
+  File "D:\Python\Programs\ProgramTemplate\PGM\main.py", line 211, in <module>
+    exec_file(pgm[0])
+  File "D:\Python\omniPy\AdvOp\exec_file.py", line 87, in exec_file
+    exec(compile(file.read(), filepath, 'exec'), globals, locals)
+  File "D:\Python\Programs\ProgramTemplate\PGM\200_runsas.py", line 43, in <module>
+    raise RuntimeError('SAS program executed with errors!')
+RuntimeError: SAS program executed with errors!

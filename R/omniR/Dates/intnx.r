@@ -76,6 +76,11 @@
 #   |      |[3] Ensure the datetime conversion is only conducted once during the function call                                          #
 #   |      |[4] Re-launch the full calendar so that this function covers all special scenarios for work/trade/week days                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211122        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -410,7 +415,6 @@ intnx <- function(
 		#600. Conduct the calculation for [date] and [time] parts respectively
 		#610. Retrieve the parts as vectors for simplification
 		dtt_indate <- df_indate %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% lubridate::date()
-		dtt_intime <- df_indate %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% h_cr_hms()
 
 		#630. Increment by [day]
 		dtt_rst_date <- intnx(
@@ -428,19 +432,7 @@ intnx <- function(
 		)
 
 		#650. Increment by different scenarios of [time]
-		dtt_ntvl <- gsub('^dt', '', dict_attr[['name']])
-		dtt_rst_time <- intnx(
-			interval = dtt_ntvl
-			,indate = dtt_intime
-			,increment = l_incr
-			,alignment = dict_attr[['alignment']]
-			,daytype = daytype
-			,cal = cal
-			,kw_d = kw_d
-			,kw_dt = kw_dt
-			,kw_t = kw_t
-			,kw_cal = kw_cal
-		)
+		dtt_rst_time <- asTimes(dtt_incr %% 86400)
 
 		#700. Correction on incremental for [Work/Trade Days]
 		if (daytype %in% c('W', 'T')) {
@@ -782,6 +774,7 @@ if (FALSE){
 	if (TRUE){
 		#010. Load user defined functions
 		source('D:\\R\\autoexec.r')
+		if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
 
 		#100. Create dates for test
 		dt1 <- lubridate::today()
@@ -795,6 +788,10 @@ if (FALSE){
 		dt7 <- asDatetimes( list(dt6, '20190512 10:12:23', '20200925 17:34:27') )
 		dt8 <- data.frame(a = dt7, b = asDatetimes(c('20181122 05:36:34', '20200214 18:06:38', '')))
 		dt9 <- asTimes('08:25:40')
+
+		t_now <- lubridate::now()
+		t_end <- ObsDates$new(t_now)$nextWorkDay + asTimes('05:00:00')
+		lubridate::tz(t_end) <- Sys.getenv('TZ')
 
 		#200. Shift the values
 		dt1_intnx1 <- intnx('day', dt1, -2, daytype = 'w')
@@ -810,6 +807,10 @@ if (FALSE){
 
 		#250. With invalid input values
 		dt5_intnx1 <- intnx('qtr', dt5, 2, 'b', daytype = 't')
+
+		#260. Test the multiple on [dtt]
+		diff_min5 <- intck('dtsecond300', t_now, t_end)
+		t_chk <- intnx('dtsecond300', t_now, diff_min5)
 
 		#300. Test datetime values
 		dt6_intnx1 <- intnx('dtday', dt6, -2, daytype = 'w')
@@ -838,6 +839,8 @@ if (FALSE){
 		dt11_intnx2 <- intnx('dthour', '20210925 23:42:15', 6, 's', daytype = 't')
 		dt11_intnx3 <- intnx('dthour', '20210926 23:42:15', -6, 's', daytype = 't')
 
+		# [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+		# [RAM] 64GB 2400MHz
 		#700. Test the timing of 2 * 10K dates
 		df_ttt <- dt4 %>% dplyr::slice_sample(n = 100000, replace = T)
 
@@ -845,7 +848,7 @@ if (FALSE){
 		df_trns <- intnx('month', df_ttt, -12, 'e', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 0.92s
+		# 0.33s
 		View(df_trns)
 
 		#800. Test the timing  of 2 * 10K datetimes
@@ -855,7 +858,7 @@ if (FALSE){
 		df_trns8 <- intnx('dthour', df_ttt8, 12, 's', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 4.07s
+		# 1.0s
 		View(df_trns8)
 
 		#900. Test special cases

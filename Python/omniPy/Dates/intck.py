@@ -523,7 +523,7 @@ def intck(
         )
 
         #150. Increment by different scenarios of [time]
-        dtt_ntvl = re.sub(r'^dt', '', interval)
+        dtt_ntvl = re.sub(r'^dt', '', dict_attr['name'])
         dtt_rst_time = intck(
             interval = dtt_ntvl
             ,date_bgn = dtt_Mtime
@@ -778,7 +778,8 @@ if __name__=='__main__':
         sys.path.append( dir_omniPy )
 
     from omniPy.AdvOp import exec_file
-    from omniPy.Dates import intck, asDates, asDatetimes, asTimes
+    from omniPy.Dates import intck
+    from omniPy.Dates import asDates, asDatetimes, asTimes, ObsDates, intnx
     print(intck.__doc__)
 
     #050. Load user defined functions
@@ -811,6 +812,9 @@ if __name__=='__main__':
     pair6_dt4.loc[:, 'c'] = pair6_dt4.loc[:, 'c'].combine(pair5_dt3['c'], dt.datetime.combine)
     pair6_dt4.loc[:, 'd'] = pair6_dt4.loc[:, 'd'].combine(pair5_dt3['d'], dt.datetime.combine)
 
+    t_now = dt.datetime.now()
+    t_end = dt.datetime.combine(ObsDates(t_now).nextWorkDay[0], asTimes('05:00:00'))
+
     #200. Calculate the incremental between dates
     dt1_intck1 = intck('day', pair1_dt1, pair1_dt2, daytype = 'w')
     dt1_intck2 = intck('day', pair1_dt2, pair1_dt1, daytype = 't')
@@ -835,6 +839,10 @@ if __name__=='__main__':
     #250. Test if both of the inputs are [pd.DataFrame] with different indexes
     dt4_intck3 = intck('day', pair4_dt1, pair4_dt2, daytype = 'c')
     dt4_intck4 = intck('day3', pair4_dt2, pair4_dt1, daytype = 'w')
+
+    #260. Test the multiple on [dtt]
+    diff_min5 = intck('dtsecond300', t_now, t_end)
+    t_chk = intnx('dtsecond300', t_now, diff_min5)
 
     #300. Calculate the incremental between times
     dt5_intck1 = intck('hour2', pair5_dt1, pair5_dt2)
@@ -862,6 +870,8 @@ if __name__=='__main__':
     dt11_intck2 = intck('dthour', '20210925 23:42:15', '20210927 5:42:15', daytype = 't')
     dt11_intck3 = intck('dthour', '20210926 23:42:15', '20210926 17:42:15', daytype = 't')
 
+    # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+    # [RAM] 64GB 2400MHz
     #700. Test the timing of 2 * 10K dates
     dt7_smp1 = pair4_dt1.copy(deep=True).sample(50000, replace = True)
     dt7_smp2 = pair4_dt2.copy(deep=True).sample(50000, replace = True)
@@ -870,7 +880,7 @@ if __name__=='__main__':
     dt7_intck1 = intck('day2', dt7_smp1, dt7_smp2, daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0.76s on average
+    # 0.33s on average
 
     #800. Test the timing  of 2 * 10K datetimes
     dt8_smp1 = pair6_dt4.copy(deep=True).sample(50000, replace = True)
@@ -880,7 +890,7 @@ if __name__=='__main__':
     dt8_intck1 = intck('dthour', dt8_smp1, dt8_smp2, daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 4.55s on average
+    # 1.60s on average
 
     #900. Test special cases
     #910. [None] vs [None]

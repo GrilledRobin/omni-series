@@ -34,7 +34,7 @@
 #   |                 [W           ]           Working Days                                                                             #
 #   |                 [T           ]           Trading Days                                                                             #
 #   |cal         :   data.frame that is usually created by [omniR$Dates$intCalendar] object as the essential during the calculation     #
-#   |                 [<None>      ] <Default> Function calls [intCalendar] with the arguments [**kw_cal]                               ##
+#   |                 [<None>      ] <Default> Function calls [intCalendar] with the arguments [**kw_cal]                               #
 #   |kw_d        :   Arguments for function [omniR$Dates$asDates] to convert the [indate] where necessary                               #
 #   |                 [<Default>   ] <Default> Use the default arguments for [asDates]                                                  #
 #   |kw_dt       :   Arguments for function [omniR$Dates$asDatetimes] to convert the [indate] where necessary                           #
@@ -59,6 +59,11 @@
 #   | Date |    20211009        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211122        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -561,7 +566,7 @@ intck <- function(
 
 		#700. Transform the [date] part into the same [span] as [time] part, and combine both
 		dtt_rst <- df_M %>% dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol)))
-		dtt_rst[[col_rst]] <- dtt_rst_date * 86400 / dict_attr[['span']] + dtt_rst_time
+		dtt_rst[[col_rst]] <- floor((dtt_rst_date * 86400 + dtt_rst_time) / dict_attr[['span']] / dict_attr[['multiple']])
 
 		#990. Return the final result
 		return(h_rst(dtt_rst, col_rst))
@@ -786,6 +791,10 @@ if (FALSE){
 		pair6_dt4[['c']] <- pair6_dt4[['c']] + pair5_dt3[['c']]
 		pair6_dt4[['d']] <- pair6_dt4[['d']] + pair5_dt3[['d']]
 
+		t_now <- lubridate::now()
+		t_end <- ObsDates$new(t_now)$nextWorkDay + asTimes('05:00:00')
+		lubridate::tz(t_end) <- Sys.getenv('TZ')
+
 		#200. Calculate the incremental between dates
 		dt1_intck1 <- intck('day', pair1_dt1, pair1_dt2, daytype = 'w')
 		dt1_intck2 <- intck('day', pair1_dt2, pair1_dt1, daytype = 't')
@@ -810,6 +819,10 @@ if (FALSE){
 		#250. Test if both of the inputs are [table-like] with different row names
 		dt4_intck3 <- intck('day', pair4_dt1, pair4_dt2, daytype = 'c')
 		dt4_intck4 <- intck('day3', pair4_dt2, pair4_dt1, daytype = 'w')
+
+		#260. Test the multiple on [dtt]
+		diff_min5 <- intck('dtsecond300', t_now, t_end)
+		t_chk <- intnx('dtsecond300', t_now, diff_min5)
 
 		#300. Calculate the incremental between times
 		dt5_intck1 <- intck('hour2', pair5_dt1, pair5_dt2)
@@ -837,6 +850,8 @@ if (FALSE){
 		dt11_intck2 <- intck('dthour', '20210925 23:42:15', '20210927 05:42:15', daytype = 't')
 		dt11_intck3 <- intck('dthour', '20210926 23:42:15', '20210926 17:42:15', daytype = 't')
 
+		# [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+		# [RAM] 64GB 2400MHz
 		#700. Test the timing of 2 * 10K dates
 		dt7_smp1 <- pair4_dt1 %>% dplyr::slice_sample(n = 50000, replace = T)
 		dt7_smp2 <- pair4_dt2 %>% dplyr::slice_sample(n = 50000, replace = T)
@@ -845,7 +860,7 @@ if (FALSE){
 		dt7_intck1 <- intck('day2', dt7_smp1, dt7_smp2, daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 0.75s
+		# 0.29s
 		View(dt7_intck1)
 
 		#800. Test the timing  of 2 * 10K datetimes
@@ -856,7 +871,7 @@ if (FALSE){
 		dt8_intck1 <- intck('dthour', dt8_smp1, dt8_smp2, daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 2.39s
+		# 0.91s
 		View(dt8_intck1)
 
 		#900. Test special cases

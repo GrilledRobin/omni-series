@@ -495,8 +495,6 @@ def intnx(
         #610. Retrieve the parts as [pd.Series] for simplification
         dtt_indate = df_indate[col_calc].apply( lambda x: x.date() )
         dtt_indate.name = '_dtt_date_'
-        dtt_intime = df_indate[col_calc].apply( lambda x: pd.NaT if pd.isnull(x) else x.time() )
-        dtt_intime.name = '_dtt_time_'
 
         #630. Increment by [day]
         dtt_rst_date = intnx(
@@ -514,19 +512,7 @@ def intnx(
         )
 
         #650. Increment by different scenarios of [time]
-        dtt_ntvl = re.sub(r'^dt', '', interval)
-        dtt_rst_time = intnx(
-            interval = dtt_ntvl
-            ,indate = dtt_intime
-            ,increment = l_incr
-            ,alignment = dict_attr['alignment']
-            ,daytype = daytype
-            ,cal = cal
-            ,kw_d = kw_d
-            ,kw_dt = kw_dt
-            ,kw_t = kw_t
-            ,kw_cal = kw_cal
-        )
+        dtt_rst_time = asTimes(dtt_incr.mod(86400))
 
         #700. Correction on incremental for [Work/Trade Days]
         if daytype in ['W', 'T']:
@@ -901,7 +887,8 @@ if __name__=='__main__':
         sys.path.append( dir_omniPy )
 
     from omniPy.AdvOp import exec_file
-    from omniPy.Dates import intnx, asDates, asDatetimes, asTimes
+    from omniPy.Dates import intnx
+    from omniPy.Dates import asDates, asDatetimes, asTimes, ObsDates, intck
     print(intnx.__doc__)
 
     #050. Load user defined functions
@@ -925,6 +912,9 @@ if __name__=='__main__':
     dt8['b'] = asDatetimes(pd.Series([ '20181122 05:36:34', '20200214 18:06:38', '' ], dtype = 'object', index = dt8.index))
     dt9 = dt.time(8,25,40)
 
+    t_now = dt.datetime.now()
+    t_end = dt.datetime.combine(ObsDates(t_now).nextWorkDay[0], asTimes('05:00:00'))
+
     #200. Shift the values
     dt1_intnx1 = intnx('day', dt1, -2, daytype = 'w')
     dt2_intnx1 = intnx('day', dt2, -2, daytype = 'w')
@@ -943,6 +933,10 @@ if __name__=='__main__':
 
     #250. With invalid input values
     dt5_intnx1 = intnx('qtr', dt5, 2, 'b', daytype = 't')
+
+    #260. Test the multiple on [dtt]
+    diff_min5 = intck('dtsecond300', t_now, t_end)
+    t_chk = intnx('dtsecond300', t_now, diff_min5)
 
     #300. Test datetime values
     dt6_intnx1 = intnx('dtday', dt6, -2, daytype = 'w')
@@ -971,6 +965,8 @@ if __name__=='__main__':
     dt11_intnx2 = intnx('dthour', '20210925 23:42:15', 6, 's', daytype = 't')
     dt11_intnx3 = intnx('dthour', '20210926 23:42:15', -6, 's', daytype = 't')
 
+    # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+    # [RAM] 64GB 2400MHz
     #700. Test the timing of 2 * 10K dates
     df_ttt = dt4.copy(deep=True).sample(100000, replace = True)
 
@@ -978,7 +974,7 @@ if __name__=='__main__':
     df_trns = intnx('month', df_ttt, -12, 'e', daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 1.08s on average
+    # 0.4s on average
 
     #800. Test the timing  of 2 * 10K datetimes
     df_ttt8 = dt8.copy(deep=True).sample(100000, replace = True)
@@ -989,7 +985,7 @@ if __name__=='__main__':
     time_end = dt.datetime.now()
     print(time_end)
     print(time_end - time_bgn)
-    # 6.43s on average
+    # 1.9s on average
 
     #900. Test special cases
     #910. [None] vs [None]

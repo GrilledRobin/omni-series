@@ -566,7 +566,17 @@ intck <- function(
 
 		#700. Transform the [date] part into the same [span] as [time] part, and combine both
 		dtt_rst <- df_M %>% dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol)))
-		dtt_rst[[col_rst]] <- floor((dtt_rst_date * 86400 + dtt_rst_time) / dict_attr[['span']] / dict_attr[['multiple']])
+
+		#750. Combine the date and time parts
+		dtt_srs_tmp <- dtt_rst_date * 86400 + dtt_rst_time
+
+		#770. Divide the result by the span and multiple by the absolute values
+		dtt_rst[[col_rst]] <- floor(abs(dtt_srs_tmp) / dict_attr[['span']] / dict_attr[['multiple']])
+
+		#800. Negate the values where necessary
+		mask_mul <- dtt_srs_tmp <= 0
+		mask_mul[is.na(mask_mul)] <- F
+		dtt_rst[mask_mul, col_rst] <- dtt_rst[mask_mul, col_rst] * (-1)
 
 		#990. Return the final result
 		return(h_rst(dtt_rst, col_rst))

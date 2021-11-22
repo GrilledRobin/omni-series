@@ -586,15 +586,27 @@ def intck(
 
         #700. Transform the [date] part into the same [span] as [time] part, and combine both
         dtt_rst = df_M[[col_idxrow, col_idxcol]].copy(deep = True)
-        dtt_rst[col_rst] = (
+
+        #750. Combine the date and time parts
+        dtt_srs_tmp = (
             dtt_rst_date
             .copy(deep=True)
             .mul(86400)
             #[IMPORTANT] We have to add the [time part] before dividing it!
             .add(dtt_rst_time)
+        )
+
+        #770. Divide the result by the span and multiple by the absolute values
+        dtt_rst[col_rst] = (
+            dtt_srs_tmp
+            .abs()
             .div(dict_attr['span'])
             .floordiv(dict_attr['multiple'])
         )
+
+        #800. Negate the values where necessary
+        mask_mul = dtt_srs_tmp.lt(0)
+        dtt_rst.loc[mask_mul, col_rst] *= -1
 
         #990. Return the final result
         return(h_rst(dtt_rst, col_rst))

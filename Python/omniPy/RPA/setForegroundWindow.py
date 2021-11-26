@@ -6,51 +6,41 @@ import sys
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
 import pywintypes
-import win32gui
-from collections.abc import Iterable
-from . import isWindowCloaked
+import win32gui, win32com
 
-def getDesktopWindows(
-    classes : Iterable = None
-    ,titles = None
-) -> 'Get the handles of all windows on current desktop':
+def setForegroundWindow(hwnd) -> 'Set the window to foreground as indicated by the provided handle':
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to get the handles of all visible windows on current desktop, even if they are minimized                 #
+#   |This function is intended to set the window to foreground as indicated by the provided handle, resembling the function             #
+#   | [win32gui.SetForegroundWindow] which sometimes has no effect but causes an error                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   | https://stackoverflow.com/questions/61865399/win32gui-shows-some-windows-that-are-not-open                                        #
-#   | https://stackoverflow.com/questions/64586371/filtering-background-processes-pywin32                                               #
+#   |[1] This function is quoted by below article:                                                                                      #
+#   | https://exceptionshub.com/python-win32gui-setasforegroundwindow-function-not-working-properly.html                                #
+#   |[2] Mapping table of [shell.sendkeys] is in below website:                                                                         #
+#   | https://devguru.com/content/technologies/wsh/wshshell-sendkeys.html                                                               #
+#   |[3] Below forum discussed on [Start] button and [Shell_TrayWnd] (Task Bar) exceptions, but it works fine for me regardless of them #
+#   | https://stackoverflow.com/questions/30200381/python-win32gui-setasforegroundwindow-function-not-working-properly                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |classes     :   Iterable of [class] strings to filter from the results                                                             #
-#   |                 [<None>      ] <Default> Function does not filter out any class                                                   #
-#   |titles      :   Iterable of [title] strings to filter from the results                                                             #
-#   |                 [<None>      ] <Default> Function does not filter out any title                                                   #
+#   |<hwnd>      :   Handle of the window to be brought to foreground                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<dict>      :   Dictionary with <keys> set as the [handles] of the windows found, while the <values> set as below for each:        #
-#   |                [class   ] Class of the window by which to filter the dedicated one among these many                               #
-#   |                [title   ] Title of the window by which to filter the dedicated one among these many                               #
+#   |<None>      :   This function has no return value but has direct effect on the provided handle                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20211120        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20211126        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20211126        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add arguments [classes] and [titles] to filter the windows when required                                                #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -61,12 +51,9 @@ def getDesktopWindows(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, collections, win32gui                                                                                                     #
+#   |   |sys, win32gui, win32com                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.RPA                                                                                                                     #
-#   |   |   |isWindowCloaked                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -78,53 +65,24 @@ def getDesktopWindows(
     LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
-    if classes is not None:
-        if not isinstance(classes, Iterable):
-            raise ValueError('[' + LfuncName + '][classes] must be iterable of character strings!')
-        if not all([ isinstance(s, str) for s in classes ]):
-            raise ValueError('[' + LfuncName + '][classes] must be iterable of character strings!')
-    if titles is not None:
-        if not isinstance(titles, Iterable):
-            raise ValueError('[' + LfuncName + '][titles] must be iterable of character strings!')
-        if not all([ isinstance(s, str) for s in titles ]):
-            raise ValueError('[' + LfuncName + '][titles] must be iterable of character strings!')
 
     #050. Local parameters
-    rstOut = {}
 
-    #100. Define helper functions
-    #110. Function as handler to filter the handles
-    def winEnumHandler(hwnd, rst):
-        if (
-            True
-            and win32gui.IsWindowEnabled(hwnd)
-            and win32gui.IsWindowVisible(hwnd)
-            and (win32gui.GetWindowTextLength(hwnd) != 0)
-            and (not isWindowCloaked(hwnd))
-        ):
-            h_class = win32gui.GetClassName(hwnd)
-            h_title = win32gui.GetWindowText(hwnd)
+    #100. Call a dispatch to [WScript.Shell]
+    shell = win32com.client.Dispatch('WScript.Shell')
 
-            if classes:
-                if h_class not in classes:
-                    return(None)
-            if titles:
-                if h_title not in titles:
-                    return(None)
+    #200. Send a special key [Alt] to the shell to avoid the unnecessary error of [win32gui]
+    shell.SendKeys('%')
 
-            rst.update({
-                hwnd: {
-                    'class' : h_class
-                    ,'title' : h_title
-                }
-            })
+    #500. Bring the window to foreground by the provided handle
+    win32gui.SetForegroundWindow(hwnd)
 
-    #500. Overwrite the dict [rstOut] by handling all windows on current OS
-    win32gui.EnumWindows(winEnumHandler, rstOut)
-
-    #900. Return the flag
-    return(rstOut)
-#End getDesktopWindows
+    #800. Send another key to the shell to cancel the effect of the previously entered key
+    #[1] It is tested that when we enter some other string right after above step, the first letter was 'eaten'';
+    # hence we assume it is caused by the effect of the previous [Alt] key.
+    #[2] We choose the key [DOWN ARROW] to avoid conflict to most of the scenarios
+    shell.SendKeys('{DOWN}')
+#End setForegroundWindow
 
 '''
 #-Notes- -Begin-
@@ -136,13 +94,13 @@ if __name__=='__main__':
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
 
-    from omniPy.RPA import getDesktopWindows
-    print(getDesktopWindows.__doc__)
+    from omniPy.RPA import getDesktopWindows, setForegroundWindow
+    print(setForegroundWindow.__doc__)
 
     #100. Retrieve all available windows on current desktop
     win_desktop = getDesktopWindows()
 
-    #190. Print the dict if there is at least one window
-    print(win_desktop)
+    #190. Bring the second window to front, as we know that currently the first one is this debug window
+    setForegroundWindow(list(win_desktop.keys())[1])
 #-Notes- -End-
 '''

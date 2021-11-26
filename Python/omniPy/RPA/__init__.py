@@ -8,6 +8,7 @@
 #100.   Import the local modules.
 from .isWindowCloaked import isWindowCloaked
 from .getDesktopWindows import getDesktopWindows
+from .setForegroundWindow import setForegroundWindow
 from .setClipboard import setClipboard
 from .clicks import clicks
 
@@ -15,6 +16,7 @@ from .clicks import clicks
 __all__ = [
     'isWindowCloaked'
     ,'getDesktopWindows'
+    ,'setForegroundWindow'
     ,'setClipboard'
     ,'clicks'
 ]

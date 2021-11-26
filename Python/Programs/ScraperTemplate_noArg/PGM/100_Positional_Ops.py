@@ -19,7 +19,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from omniPy.Dates import ObsDates
-from omniPy.RPA import clicks, setClipboard, getDesktopWindows
+from omniPy.RPA import clicks, setClipboard, getDesktopWindows, setForegroundWindow
 
 #There must be a script file [winGuiAuto.py] in the same directory as this one
 from winGuiAuto import findControl, clickButton
@@ -138,7 +138,7 @@ def closeSecWarning():
 
     #810. Set the window to the foreground
     #Quote: https://www.cnblogs.com/chenjy1225/p/12174889.html
-    win32gui.SetForegroundWindow(hwnd_warn)
+    setForegroundWindow(hwnd_warn)
 
     #830. Get the rect of the control
     #[left]-[top]-[right]-[bottom]
@@ -160,7 +160,7 @@ def skipErrPage(page_type = 'Err Page'):
     hwnd_warn = win32gui.FindWindow('IEFrame', attr_IE[curr_win_ver][page_type]['title'][curr_win_lang] + ' - Internet Explorer')
 
     #500. Bring the window to the foreground and set proper size for clicking inside it
-    win32gui.SetForegroundWindow(hwnd_warn)
+    setForegroundWindow(hwnd_warn)
     driver.set_window_rect(0,0,1800,1000)
     hwnd_pos = win32gui.GetWindowRect(hwnd_warn)
     topleft = (hwnd_pos[0], hwnd_pos[1])
@@ -217,7 +217,7 @@ time.sleep(2)
 hwnd_login = win32gui.FindWindow('IEFrame', site_title1 + ' - Internet Explorer')
 
 #150. Bring the window to the foreground and maximize it
-win32gui.SetForegroundWindow(hwnd_login)
+setForegroundWindow(hwnd_login)
 #Quote: https://www.programcreek.com/python/example/115351/win32con.SW_MAXIMIZE
 win32gui.ShowWindow( hwnd_login, win32con.SW_MAXIMIZE )
 
@@ -266,7 +266,7 @@ logger.info('500. Download report')
 time.sleep(2)
 #Assume there is only one IE window and it is initiated by our webdriver
 driver.switch_to.window(driver.window_handles[0])
-win32gui.SetForegroundWindow(win32gui.FindWindow('IEFrame', None))
+setForegroundWindow(win32gui.FindWindow('IEFrame', None))
 
 #530. Get the page of specified menu
 #[IMPORTANT] Starting from this step, we need to call [driver.page_source] frequently, and look inside its content for URL
@@ -285,7 +285,7 @@ checkErrPage('Err Page2')
 #Quote: https://github.com/seleniumhq/selenium-google-code-issue-archive/issues/5116
 time.sleep(2)
 driver.switch_to.window(driver.window_handles[0])
-win32gui.SetForegroundWindow(win32gui.FindWindow('IEFrame', site_title1 + ' - Internet Explorer'))
+setForegroundWindow(win32gui.FindWindow('IEFrame', site_title1 + ' - Internet Explorer'))
 #Quote: https://selenium-python.readthedocs.io/locating-elements.html
 #[SEARCH_TEXT] is the [name] attribute of the dedicated html tag as retrieved by [driver.page_source], the same for the rest
 srch_input = driver.find_element(By.NAME, 'SEARCH_TEXT')
@@ -326,7 +326,7 @@ download_bgn.send_keys(Keys.RETURN)
 
 #590. Send the keys [Alt+S] to save the file to the default directory
 time.sleep(5)
-win32gui.SetForegroundWindow(win32gui.FindWindow('IEFrame', None))
+setForegroundWindow(win32gui.FindWindow('IEFrame', None))
 time.sleep(1)
 #[对照表]
 #Quote: https://www.cnblogs.com/chenxi188/p/11642006.html

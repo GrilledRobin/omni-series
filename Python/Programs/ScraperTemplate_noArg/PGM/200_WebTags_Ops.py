@@ -21,7 +21,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from omniPy.Dates import ObsDates
-from omniPy.RPA import clicks
+from omniPy.RPA import clicks, setForegroundWindow
 
 #010. Local parameters
 svr_home2 = 'https://aaa/bbb/'
@@ -116,7 +116,7 @@ def closeActiveXWarning():
 
     #810. Set the window to the foreground
     #Quote: https://www.cnblogs.com/chenjy1225/p/12174889.html
-    win32gui.SetForegroundWindow(hwnd_warn)
+    setForegroundWindow(hwnd_warn)
 
     #830. Get the rect of the control
     #[left]-[top]-[right]-[bottom]
@@ -149,7 +149,7 @@ time.sleep(2)
 hwnd_login = win32gui.FindWindow('IEFrame', u'登录 - Internet Explorer')
 
 #150. Bring the window to the foreground and maximize it
-win32gui.SetForegroundWindow(hwnd_login)
+setForegroundWindow(hwnd_login)
 #Quote: https://www.programcreek.com/python/example/115351/win32con.SW_MAXIMIZE
 win32gui.ShowWindow( hwnd_login, win32con.SW_MAXIMIZE )
 
@@ -184,7 +184,7 @@ time.sleep(5)
 #Assume there is only one IE window and it is initiated by our webdriver
 driver.switch_to.window(driver.window_handles[0])
 hwnd_main = win32gui.FindWindow('IEFrame', None)
-win32gui.SetForegroundWindow(hwnd_main)
+setForegroundWindow(hwnd_main)
 #Quote: https://www.programcreek.com/python/example/115351/win32con.SW_MAXIMIZE
 win32gui.ShowWindow( hwnd_main, win32con.SW_MAXIMIZE )
 
@@ -243,7 +243,7 @@ for i,d in enumerate(rpt_date):
         a_down = getAnchors(query_date[i])
 
         #300. Click the [j]th link on the page
-        win32gui.SetForegroundWindow(hwnd_main)
+        setForegroundWindow(hwnd_main)
         time.sleep(0.5)
         a_down[j].click()
 

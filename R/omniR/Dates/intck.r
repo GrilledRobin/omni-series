@@ -65,6 +65,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211204        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -673,11 +678,7 @@ intck <- function(
 
 	#700. Calculate the incremental
 	#701. Determine the columns in the calendar to be used for calculation
-	if (dict_attr[['span']] == 1) {
-		col_cal <- c(col_rowidx, col_out)
-	} else {
-		col_cal <- c(col_rowidx, col_out, col_period, col_prdidx)
-	}
+	col_cal <- c(col_out, col_period, col_prdidx)
 	by_var <- col_out
 	names(by_var) <- col_merge
 
@@ -702,14 +703,10 @@ intck <- function(
 	h_chg_N <- function(){
 		if (f_Mto1) {
 			#100. Prepare a [list]
-			if (dict_attr[['span']] == 1) {
-				rst <- rlang::list2(!!col_rowidx := df_N_in[1,col_rowidx])
-			} else {
-				rst <- rlang::list2(
-					!!col_period := df_N_in[1,col_period]
-					,!!col_prdidx := df_N_in[1,col_prdidx]
-				)
-			}
+			rst <- rlang::list2(
+				!!col_period := df_N_in[1,col_period]
+				,!!col_prdidx := df_N_in[1,col_prdidx]
+			)
 
 			#900. Return
 			return(rst)
@@ -724,11 +721,7 @@ intck <- function(
 	#Scenarios:
 	#[1] Index/rowname of [df_M_in] is the same as [df_N_in]
 	#[2] [df_N_in] is a [list]
-	if (dict_attr[['span']] == 1) {
-		col_intck <- col_rowidx
-	} else {
-		col_intck <- col_period
-	}
+	col_intck <- col_period
 	df_M_in[[col_rst]] <- df_N_comp[[col_intck]] - df_M_in[[col_intck]]
 
 	#770. Apply [multiple] if any
@@ -862,7 +855,7 @@ if (FALSE){
 
 		# [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
 		# [RAM] 64GB 2400MHz
-		#700. Test the timing of 2 * 10K dates
+		#700. Test the timing of 2 * 100K dates
 		dt7_smp1 <- pair4_dt1 %>% dplyr::slice_sample(n = 50000, replace = T)
 		dt7_smp2 <- pair4_dt2 %>% dplyr::slice_sample(n = 50000, replace = T)
 
@@ -873,7 +866,7 @@ if (FALSE){
 		# 0.29s
 		View(dt7_intck1)
 
-		#800. Test the timing  of 2 * 10K datetimes
+		#800. Test the timing  of 2 * 100K datetimes
 		dt8_smp1 <- pair6_dt4 %>% dplyr::slice_sample(n = 50000, replace = T)
 		dt8_smp2 <- pair6_dt4[c('d','c')] %>% dplyr::slice_sample(n = 50000, replace = T)
 

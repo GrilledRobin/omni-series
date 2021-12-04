@@ -110,6 +110,11 @@ def intck(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211204        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -707,10 +712,7 @@ def intck(
         .reindex(df_M[col_merge])
         .set_axis(df_M_in.index, axis = 0)
     )
-    if dict_attr['span'] == 1:
-        df_M_in[col_rowidx] = calmrg_M[col_rowidx]
-    else:
-        df_M_in[[col_period,col_prdidx]] = calmrg_M[[col_period,col_prdidx]]
+    df_M_in[[col_period,col_prdidx]] = calmrg_M[[col_period,col_prdidx]]
 
     calmrg_N = (
         intck_calfull
@@ -718,10 +720,7 @@ def intck(
         .reindex(df_N[col_merge])
         .set_axis(df_N_in.index, axis = 0)
     )
-    if dict_attr['span'] == 1:
-        df_N_in[col_rowidx] = calmrg_N[col_rowidx]
-    else:
-        df_N_in[[col_period,col_prdidx]] = calmrg_N[[col_period,col_prdidx]]
+    df_N_in[[col_period,col_prdidx]] = calmrg_N[[col_period,col_prdidx]]
 #    sys._getframe(1).f_globals.update({ 'vfy_dat' : df_M.copy(deep=True) })
 #    sys._getframe(1).f_globals.update({ 'vfy_N' : df_N_in.copy(deep=True) })
 
@@ -729,15 +728,10 @@ def intck(
     def h_chg_N():
         if f_Mto1:
             #100. Prepare a [dict]
-            if dict_attr['span'] == 1:
-                rst = {
-                    col_rowidx : df_N_in.iat[0,df_N_in.columns.get_loc(col_rowidx)]
-                }
-            else:
-                rst = {
-                    col_period : df_N_in.iat[0,df_N_in.columns.get_loc(col_period)]
-                    ,col_prdidx : df_N_in.iat[0,df_N_in.columns.get_loc(col_prdidx)]
-                }
+            rst = {
+                col_period : df_N_in.iat[0,df_N_in.columns.get_loc(col_period)]
+                ,col_prdidx : df_N_in.iat[0,df_N_in.columns.get_loc(col_prdidx)]
+            }
 
             #900. Return
             return(deepcopy(rst))
@@ -751,7 +745,7 @@ def intck(
     #Scenarios:
     #[1] Index of [df_M_in] is the same as [df_N_in]
     #[2] [df_N_in] is a [dict]
-    col_intck = col_rowidx if dict_attr['span'] == 1 else col_period
+    col_intck = col_period
     df_M_in.loc[:, col_rst] = df_M_in[col_intck].rsub(df_N_comp[col_intck]).astype(float)
 #    sys._getframe(1).f_globals.update({ 'vfy_dat' : df_M_in.copy(deep=True) })
 

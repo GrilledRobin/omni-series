@@ -90,6 +90,11 @@ def intCalendar(
 #   |      |     possible scenarios                                                                                                     #
 #   |      |[2] Add a special flag [col_weekday] as a new argument, as interface to external usage                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211204        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now return the same data frame for all [itype]s, to unify the calculation for all [span]s in the related functions      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -205,6 +210,10 @@ def intCalendar(
 
             #900. Correct the default index by all weekdays
             outRst[col_rowidx] = outRst[col_weekday].cumsum().astype(int)
+
+        #800. Create the field of [Period], which is the same as [Row Index] for such case
+        outRst[col_period] = outRst[col_rowidx]
+        outRst[col_prdidx] = outRst[col_rowidx].apply(lambda x: 0)
     else:
         #100. Create intervals for different scenarios
         if dict_attr['name'] in ['week', 'dtweek']:

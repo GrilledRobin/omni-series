@@ -81,6 +81,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211204        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -582,38 +587,18 @@ intnx <- function(
 	}
 
 	#500. Define helper functions to calculate the incremental for different scenarios
-	#501. Basic calculator
-	h_intnx_idxincr <- function(col, increment, multiple) {
-		tmpseries <- col + increment * multiple
-		return(tmpseries)
-	}
-
-	#510. Base unit, i.e. [Days] for [d, dt] and [Seconds] for [t]
-	h_intnx_single <- function(cal_in, cal_full, multiple, alignment) {
+	h_intnx <- function(cal_in, cal_full, multiple, alignment) {
 		#100. Create a copy of the input data
 		rst <- cal_in
 
 		#500. Calculate the incremented [col_period]
-		rst[['.gti_newidx.']] <- h_intnx_idxincr(rst[[col_rowidx]], rst[['.intnxIncr.']], multiple)
-
-		#800. Retrieve the corresponding columns from the calendar for non-empty dates
-		rst %<>% dplyr::left_join(cal_full, by = c('.gti_newidx.' = col_rowidx))
-
-		#999. Return the result
-		return(rst %>% dplyr::select(tidyselect::all_of(c(col_keys, col_out))))
-	}
-
-	#550. Periods that cover more than 1 unit per interval
-	h_intnx_period <- function(cal_in, cal_full, multiple, alignment) {
-		#100. Create a copy of the input data
-		rst <- cal_in
-
-		#500. Calculate the incremented [col_period]
-		rst[['.gti_newprd.']] <- h_intnx_idxincr(rst[[col_period]], rst[['.intnxIncr.']], multiple)
+		rst[['.gti_newprd.']] <- rst[[col_period]] + rst[['.intnxIncr.']] * multiple
 		# print(rst[c(col_rowidx, col_period, '.gti_newprd.')])
 
 		#700. Calculate the alignment based on the request
-		if (alignment == 'b') {
+		if (dict_attr[['span']] == 1) {
+			rst %<>% dplyr::left_join(cal_full, by = c('.gti_newprd.' = col_period))
+		} else if (alignment == 'b') {
 			#100. Identify the beginning of each period
 			prd_bgn <- cal_full %>%
 				dplyr::group_by_at(tidyselect::all_of(col_period)) %>%
@@ -697,13 +682,6 @@ intnx <- function(
 		return(rst %>% dplyr::select(tidyselect::all_of(c(col_keys, col_out))))
 	}
 
-	#599. Unify the functions by the coverage of the period
-	if (dict_attr[['span']] == 1) {
-		h_intnx <- h_intnx_single
-	} else {
-		h_intnx <- h_intnx_period
-	}
-
 	#700. Prepare the calendar
 	#710. Copy the full calendar
 	intnx_cal <- intnx_calfull
@@ -723,11 +701,7 @@ intnx <- function(
 
 	#800. Calculate the incremental
 	#801. Determine the columns in the calendar to be used for calculation
-	if (dict_attr[['span']] == 1) {
-		col_cal <- c(col_rowidx, col_out)
-	} else {
-		col_cal <- c(col_rowidx, col_out, col_period, col_prdidx)
-	}
+	col_cal <- c(col_out, col_period, col_prdidx)
 
 	#820. Retrieve the corresponding columns from the calendar for non-empty dates
 	#[IMPORTANT] We keep all the calendar days at this step, to match the holidays
@@ -841,7 +815,7 @@ if (FALSE){
 
 		# [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
 		# [RAM] 64GB 2400MHz
-		#700. Test the timing of 2 * 10K dates
+		#700. Test the timing of 2 * 100K dates
 		df_ttt <- dt4 %>% dplyr::slice_sample(n = 100000, replace = T)
 
 		t1 <- lubridate::now()
@@ -851,7 +825,7 @@ if (FALSE){
 		# 0.33s
 		View(df_trns)
 
-		#800. Test the timing  of 2 * 10K datetimes
+		#800. Test the timing  of 2 * 100K datetimes
 		df_ttt8 <- dt8 %>% dplyr::slice_sample(n = 100000, replace = T)
 
 		t1 <- lubridate::now()

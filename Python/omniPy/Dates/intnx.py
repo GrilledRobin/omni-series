@@ -144,6 +144,11 @@ def intnx(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211204        | Version | 6.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -654,43 +659,24 @@ def intnx(
         intnx_calfull = cal.copy(deep=True).sort_values(col_out).reset_index(drop = True)
 
     #500. Define helper functions to calculate the incremental for different scenarios
-    #501. Basic calculator
-    def h_intnx_idxincr(col, increment, multiple):
-        tmpseries = col + increment * multiple
-        return( tmpseries )
-
-    #510. Base unit, i.e. [Days] for [d, dt] and [Seconds] for [t]
-    def h_intnx_single(cal_in, cal_full, multiple, alignment):
+    def h_intnx(cal_in, cal_full, multiple, alignment):
         #100. Create a copy of the input data
         rst = cal_in.copy(deep=True)
 
         #500. Calculate the incremented [col_period]
-        rst['_gti_newidx_'] = h_intnx_idxincr(rst[col_rowidx], rst['_intnxIncr_'], multiple)
-
-        #800. Retrieve the corresponding columns from the calendar for non-empty dates
-        rst.loc[:, col_out] = (
-            cal_full
-            .set_index(col_rowidx)
-            .reindex(rst['_gti_newidx_'])
-            .set_axis(rst.index, axis = 0)
-            [col_out]
-        )
-
-        #999. Return the result
-        return(rst[[col_keys, col_out]])
-    #End h_intnx_single
-
-    #550. Periods that cover more than 1 unit per interval
-    def h_intnx_period(cal_in, cal_full, multiple, alignment):
-        #100. Create a copy of the input data
-        rst = cal_in.copy(deep=True)
-
-        #500. Calculate the incremented [col_period]
-        rst['_gti_newprd_'] = h_intnx_idxincr(rst[col_period], rst['_intnxIncr_'], multiple)
+        rst['_gti_newprd_'] = rst[col_period] + rst['_intnxIncr_'] * multiple
 #        print(rst[[col_rowidx, col_period, '_gti_newprd_']])
 
         #700. Calculate the alignment based on the request
-        if alignment == 'b':
+        if dict_attr['span'] == 1:
+            rst.loc[:, col_out] = (
+                cal_full
+                .set_index(col_period)
+                .reindex(rst['_gti_newprd_'])
+                .set_axis(rst.index, axis = 0)
+                [col_out]
+            )
+        elif alignment == 'b':
             #100. Identify the beginning of each period
             prd_bgn = (
                 cal_full
@@ -796,10 +782,7 @@ def intnx(
 
         #999. Return the result
         return(rst[[col_keys, col_out]])
-    #End h_intnx_period
-
-    #599. Unify the functions by the coverage of the period
-    h_intnx = h_intnx_single if dict_attr['span'] == 1 else h_intnx_period
+    #End h_intnx
 
     #700. Prepare the calendar
     #710. Copy the full calendar
@@ -830,10 +813,7 @@ def intnx(
         .reindex(df_cal_in[col_merge])
         .set_axis(df_cal_in.index, axis = 0)
     )
-    if dict_attr['span'] == 1:
-        df_cal_in[col_rowidx] = intnx_calmrg[col_rowidx]
-    else:
-        df_cal_in[[col_period,col_prdidx]] = intnx_calmrg[[col_period,col_prdidx]]
+    df_cal_in[[col_period,col_prdidx]] = intnx_calmrg[[col_period,col_prdidx]]
 #    sys._getframe(1).f_globals.update({ 'vfy_dat' : df_cal_in.copy(deep=True) })
 
     #830. Calculation

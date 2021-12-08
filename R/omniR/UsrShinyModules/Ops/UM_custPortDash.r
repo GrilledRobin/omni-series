@@ -99,19 +99,20 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Packages                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |shiny, DT, shinydashboard, shinydashboardPlus, echarts4r, htmlwidgets, htmltools, V8, dplyr, tidyselect, data.table, grDevices #
+#   |   |shiny, DT, shinydashboard, shinydashboardPlus, echarts4r, htmlwidgets, dplyr, tidyselect, data.table, grDevices                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$Styles]                                                                                                      #
+#   |   |omniR$Styles                                                                                                                   #
 #   |   |   |rgba2rgb                                                                                                                   #
+#   |   |   |bg_gradient                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	shiny, DT, shinydashboard, shinydashboardPlus, echarts4r, htmlwidgets, htmltools, V8, dplyr, tidyselect, data.table, grDevices
+	shiny, DT, shinydashboard, shinydashboardPlus, echarts4r, htmlwidgets, dplyr, tidyselect, data.table, grDevices
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -122,28 +123,28 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
 UM_CPD_ui_NameCard <- function(id){
 	#Set current Name Space
-	ns <- NS(id)
+	ns <- shiny::NS(id)
 
 	shiny::uiOutput(ns('uDiv_NameCard'))
 }
 
 UM_CPD_ui_ProdType <- function(id){
 	#Set current Name Space
-	ns <- NS(id)
+	ns <- shiny::NS(id)
 
 	shiny::uiOutput(ns('uDiv_ProdType'))
 }
 
 UM_CPD_ui_DashTables <- function(id){
 	#Set current Name Space
-	ns <- NS(id)
+	ns <- shiny::NS(id)
 
 	shiny::uiOutput(ns('uDiv_DashTables'))
 }
 
 UM_CPD_ui_CTT <- function(id){
 	#Set current Name Space
-	ns <- NS(id)
+	ns <- shiny::NS(id)
 
 	shiny::uiOutput(ns('uDiv_CTT'))
 }
@@ -208,7 +209,7 @@ UM_custPortDash_svr <- function(input,output,session
 		,'border: none;'
 	)
 
-	#207. Text area for dataframe attributes
+	#202. Text area for dataframe attributes
 	uRV$txt_styles_attr <- paste0(''
 		,'font-family: "',font_disp,'";'
 		,'font-size: 12px;'
@@ -216,9 +217,70 @@ UM_custPortDash_svr <- function(input,output,session
 		,'padding-top: 6px;'
 	)
 
-	#212. Font Size of chart items
+	#203. Font Size of chart items
 	uRV$styles_ch_FontSize_title <- 14
 	uRV$styles_ch_FontSize_item <- 10
+
+	#204. Default styles for the content in all charts
+	uRV$styles_ch_content <- list(
+		fontFamily = font_disp
+		,fontSize = uRV$styles_ch_FontSize_item
+	)
+
+	#207. Attributes for [tooltips]
+	uRV$attr_tooltips <- list(
+		textStyle = modifyList(
+			uRV$styles_ch_content
+			,list(
+				color = '#fff'
+			)
+		)
+		,backgroundColor = 'rgba(50,50,50,0.7)'
+		,borderColor = 'rgba(50,50,50,0)'
+	)
+
+	#210. Format the [userBox]
+	uRV$styles_uCard <- shiny::HTML(
+		paste0(''
+			,'.box:hover {'
+				#Quote: https://blog.csdn.net/dangbai01_/article/details/108658829
+				#box-shadow: h-shadow v-shadow blur spread color inset
+				,'box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);'
+				,'transition: 0.3s;'
+			,'}'
+			#Narrow down the margin of the user profile box
+			,'.box-widget {'
+				,'margin-bottom: 4px;'
+			,'}'
+			,'.box-footer {'
+				,'border-top: none;'
+				,bg_gradient( color_cfg$UsrFooterBg, rgba2rgb(color_cfg$UsrFooterBg, alpha_in = 0.5) )
+				,'box-shadow: 1px 1px 4px 1px rgba(0,0,0,0.2) inset;'
+			,'}'
+			,'.widget-user-header {'
+				,'padding-right: 10px !important;'
+			,'}'
+			,'.widget-user-username {'
+				,'color: ',color_cfg$UsrTitle,';'
+				,'font-family: "',font_disp,'";'
+				,'font-size: 18px !important;'
+				,'overflow: hidden;'
+				,'white-space: nowrap;'
+			,'}'
+			,'.widget-user-desc {'
+				,'color: ',color_cfg$UsrTitle,';'
+				,'font-family: "',font_disp,'";'
+				,'font-size: 12px !important;'
+				,'overflow: hidden;'
+				,'white-space: nowrap;'
+				,'padding-top: 4px;'
+				,'margin-bottom: 6px;'
+			,'}'
+			,'.bg-light-blue-gradient {'
+				,bg_gradient( color_cfg$UsrBox, rgba2rgb(color_cfg$UsrBox, alpha_in = 0.7) )
+			,'}'
+		)
+	)
 
 	#220. Grid for the chart [ProdCat]
 	uRV$grid_ProdCat_Left <- list(CN = 40 , EN = 48)
@@ -227,16 +289,14 @@ UM_custPortDash_svr <- function(input,output,session
 	uRV$grid_RiskLvl_Right <- list(CN = 40 , EN = 72)
 
 	#240. Prepare the color series to differentiate the bars in the chart by [ProdType]
-	# [Quote:[omniR$Styles$rgba2rgb.r]]
-	# nrow_Bal_ProdType <- nrow(CustData$Bal_ProdType)
-	# uRV$alpha_ProdType <- seq(1,0.1,length.out = nrow_Bal_ProdType)
-	# uRV$colors_ProdType <- rgba2rgb( rep(color_cfg$CustAct, nrow_Bal_ProdType), alpha_in = uRV$alpha_ProdType )
 	CustData$Bal_ProdType$color_old <- color_cfg$CustAct
 	CustData$Bal_ProdType$color_new <- color_cfg$CustNew
+	uRV$legendColor_ch_ProdName <- min(CustData$Bal_ProdType$color_old)
 
 	#250. Prepare the color series to differentiate the bars in the chart by [FundName]
 	CustData$Bal_FundName$color_old <- color_cfg$CustAct
 	CustData$Bal_FundName$color_new <- color_cfg$CustNew
+	uRV$legendColor_ch_FundName <- min(CustData$Bal_FundName$color_old)
 
 	#260. Determine the styles of specific columns in [DT::datatable]
 	#261. Whether to display the row names
@@ -257,6 +317,8 @@ UM_custPortDash_svr <- function(input,output,session
 	#Check the definition of the series of variables from the input: [CustData$NumFmt_:]
 
 	#270. Format the [DT::datatable] to ensure the table is fully stretch-able
+	#Check below website to find the selectors to override:
+	#Quote: https://datatables.net/manual/styling/theme-creator
 	uRV$dt_styles_byProduct <- shiny::HTML(
 		paste0(''
 			#Selectors in CSS:
@@ -274,6 +336,19 @@ UM_custPortDash_svr <- function(input,output,session
 			,'.dataTable {'
 				,'width: 100% !important;'
 			,'}'
+			,'.dataTable.display>tbody>tr {'
+				,'background-color: ',color_cfg$tabBox_NavBg,';'
+			,'}'
+			#[1] Here the color [#F9F9F9] is the default one as an odd row in a striped table of [DT::datatable]
+			#[2] It is tested that: rgba2rgb( '#F7F7F7', alpha_in = 0.7, color_bg = grDevices::col2rgb('#FFFFFF') ) == '#F9F9F9'
+			#[3] We have to set the color of the pseudo-class selector as [!important] to override the default effect
+			,'.dataTable.display>tbody>tr:hover {'
+				,'background-color: rgba(',paste0(grDevices::col2rgb('#F7F7F7'), collapse = ','),',0.7) !important;'
+			,'}'
+			#Fill the rows with opacity
+			,'.dataTable.display>tbody>tr.odd {'
+				,'background-color: rgba(',paste0(grDevices::col2rgb('#F7F7F7'), collapse = ','),',0.7) !important;'
+			,'}'
 			#Below ensure the widget has a full width in its container
 			,'[id^=htmlwidget-] {'
 				,'width: 100% !important;'
@@ -290,9 +365,37 @@ UM_custPortDash_svr <- function(input,output,session
 				,'line-height: 1;'
 				,uRV$styles_tabBox_font
 			,'}'
+		)
+	)
+
+	#275. Format the [shinydashboard::tabBox]
+	uRV$styles_tabBox <- shiny::HTML(
+		paste0(''
+			#Selectors in CSS:
+			#[Quote: http://www.divcss5.com/rumen/r50591.shtml ]
+			#Below ensures the background is transparent
+			,'.nav-tabs-custom {'
+				,'background: none !important;'
+			,'}'
+			#[title] in the [shinydashboard::tabBox]
+			,'.nav-tabs-custom>.nav-tabs>li.header {'
+				,'background: none !important;'
+			,'}'
+			#All inactive tabs
+			,'.nav-tabs-custom>.nav-tabs>li {'
+				,'background-color: rgba(',paste0(grDevices::col2rgb(color_cfg$tabBox_NavBg), collapse = ','),',0.7);'
+			,'}'
+			#<a> tag of the active tab
+			,'.nav-tabs-custom>.nav-tabs>li.active>a {'
+				,'background: none !important;'
+			,'}'
 			#Set the color of the top-border of active tabs inside the [tabBox]
 			,'.nav-tabs-custom>.nav-tabs>li.active {'
 				,'border-top-color: ',color_cfg$tabBox,';'
+			,'}'
+			#Set the same background for the active tab and the tab content
+			,'.nav-tabs-custom>.nav-tabs>li.active, .nav-tabs-custom>.tab-content {'
+				,'background-color: ',color_cfg$tabBox_NavBg,';'
 			,'}'
 		)
 	)
@@ -305,6 +408,8 @@ UM_custPortDash_svr <- function(input,output,session
 		,kpiseq = c(10,50,90)
 		,stringsAsFactors = FALSE
 	)
+	#Here the number 3 reparesents these: [Core], [T1], [T2]
+	uRV$colors_legend_ProdCTT <- rgba2rgb(rep('#000000',3), alpha_in = c(1,0.6,0.2))
 
 	#290. Styles for the final output UI
 	#Use [HTML] to escape any special characters
@@ -315,30 +420,6 @@ UM_custPortDash_svr <- function(input,output,session
 			# '[class^=col-][class$=',uRV$uTB_width,'] {'
 			'.col-sm-',uRV$uTB_width,' {'
 				,'padding: 0px;'
-			,'}'
-			#Narrow down the margin of the user profile box
-			,'.box-widget {'
-				,'margin-bottom: 4px;'
-			,'}'
-			,'.widget-user-header {'
-				,'padding-right: 10px !important;'
-				,'background-color: ',color_cfg$UsrBox,';'
-			,'}'
-			,'.widget-user-username {'
-				,'color: ',color_cfg$UsrTitle,';'
-				,'font-family: "',font_disp,'";'
-				,'font-size: 18px !important;'
-				,'overflow: hidden;'
-				,'white-space: nowrap;'
-			,'}'
-			,'.widget-user-desc {'
-				,'color: ',color_cfg$UsrTitle,';'
-				,'font-family: "',font_disp,'";'
-				,'font-size: 12px !important;'
-				,'overflow: hidden;'
-				,'white-space: nowrap;'
-				,'padding-top: 4px;'
-				,'margin-bottom: 6px;'
 			,'}'
 			,'.cpd_fluidRow {padding: 2px 15px 2px 15px;}'
 			,'.cpd_Column {'
@@ -354,73 +435,91 @@ UM_custPortDash_svr <- function(input,output,session
 	if (fDebug){
 		message(ns(paste0('[410][Prepare Chart][IN][uRV$uCard_Profile]')))
 	}
-	uRV$uCard_Profile <- shinydashboardPlus::widgetUserBox(
-		width = 12
-		,height = 192
-		,collapsible = FALSE
-		,type = 2
-		,src = CustData$PhotoURL
-		#Below color setting is no use because it is not [adminLTE] them color
-		,color = color_cfg$UsrBox
-		,imageElevation = 1
-		,title = CustData$custinf[[paste0('CustName_',lang_disp)]][[1]]
-		#[Quote: https://github.com/rstudio/shinydashboard/issues/57 ]
-		,subtitle = shiny::span(shiny::tagList(
-			shiny::icon(ifelse(CustData$custinf[['f_qpv']][[1]] == 1,'diamond','star'))
-			,paste0(' ',CustData$custinf[[paste0('qpv_',lang_disp)]][[1]])
-		))
-		#Relationship period length with the Bank
-		,shiny::fluidRow(
-			class = 'cpd_fluidRow'
-			,style = paste0(''
-				,'overflow: hidden;'
-			)
-			,shiny::fillRow(
-				flex = c(NA,1)
-				,height = 24
-				,shiny::tags$div(
-					style = uRV$btn_styles_attr
-					,shiny::span(shiny::tagList(
-						shiny::icon('calendar-plus-o')
-						,paste0(' ',lang_cfg[[lang_disp]][['tblvars']][['custinf']][['d_create_on']])
-					))
-				)
-				,shiny::tags$div(
-					style = uRV$txt_styles_attr
-					,strftime(CustData$custinf[['d_create_on']][[1]], '%Y-%m-%d', tz = Sys.getenv('TZ'))
-				)
-			#End of [fillRow]
-			)
-		#End of [fluidRow]
+	uRV$uCard_Profile <- shiny::tagList(
+		shiny::tags$style(
+			type = 'text/css'
+			,uRV$styles_uCard
 		)
-		,footer_padding = TRUE
-		,footer = shiny::tagList(
-			#Risk Profile Questionaire
-			shiny::fluidRow(
-				class = 'cpd_fluidRow'
-				,style = paste0(''
-					,'overflow: hidden;'
-				)
-				,shiny::fillRow(
-					flex = c(NA,1)
-					,height = 24
-					,shiny::tags$div(
-						style = uRV$btn_styles_attr
-						,shiny::span(shiny::tagList(
-							shiny::icon('map-marker')
-							,paste0(' ',lang_cfg[[lang_disp]][['tblvars']][['custinf']][['RPQ']])
-						))
-					)
-					,shiny::tags$div(
-						style = uRV$txt_styles_attr
-						,paste0(CustData$custinf[['RPQ']][[1]],'-' , CustData$custinf[[paste0('RPQ_Value_',lang_disp)]][[1]])
-					)
-				#End of [fillRow]
-				)
-			#End of [fluidRow]
+
+		,shinydashboardPlus::userBox(
+			width = 12
+			,height = 192
+			,collapsible = FALSE
+			#We will modify the CSS class [bg-light-blue-gradient] with our color theme in [uRV$styles_final]
+			# ,background = color_cfg$UsrBox
+			,background = 'light-blue'
+			,gradient = TRUE
+			,title = shinydashboardPlus::userDescription(
+				title = CustData$custinf[[paste0('CustName_',lang_disp)]][[1]]
+				#[Quote: https://github.com/rstudio/shinydashboard/issues/57 ]
+				,subtitle = shiny::span(shiny::tagList(
+					shiny::icon(ifelse(CustData$custinf[['f_qpv']][[1]] == 1,'gem','star'))
+					,paste0(' ',CustData$custinf[[paste0('qpv_',lang_disp)]][[1]])
+				))
+				,type = 2
+				,image = CustData$PhotoURL
+				,imageElevation = 1
 			)
+			,footer = shiny::tagList(
+				#Relationship period length with the Bank
+				shiny::fluidRow(
+					class = 'cpd_fluidRow'
+					,style = paste0(''
+						,'overflow: hidden;'
+						,'color: ',color_cfg$UsrBox
+					)
+					,shiny::fillRow(
+						flex = c(NA,1)
+						,height = 24
+						,shiny::tags$div(
+							style = uRV$btn_styles_attr
+							,shiny::span(shiny::tagList(
+								shiny::icon('calendar-plus')
+								,paste0(' ',lang_cfg[[lang_disp]][['tblvars']][['custinf']][['d_create_on']])
+							))
+						)
+						,shiny::tags$div(
+							style = uRV$txt_styles_attr
+							,strftime(CustData$custinf[['d_create_on']][[1]], '%Y-%m-%d', tz = Sys.getenv('TZ'))
+						)
+					#End of [fillRow]
+					)
+				#End of [fluidRow]
+				)
+				#Risk Profile Questionnaire
+				,shiny::fluidRow(
+					class = 'cpd_fluidRow'
+					,style = paste0(''
+						,'overflow: hidden;'
+						,'color: ',color_cfg$UsrBox
+					)
+					,shiny::fillRow(
+						flex = c(NA,1)
+						,height = 24
+						,shiny::tags$div(
+							style = uRV$btn_styles_attr
+							,shiny::span(shiny::tagList(
+								shiny::icon('map-marker-alt')
+								,paste0(' ',lang_cfg[[lang_disp]][['tblvars']][['custinf']][['RPQ']])
+							))
+						)
+						,shiny::tags$div(
+							style = uRV$txt_styles_attr
+							,paste0(
+								CustData$custinf[['RPQ']][[1]]
+								,'-'
+								,CustData$custinf[[paste0('RPQ_Value_',lang_disp)]][[1]]
+							)
+						)
+					#End of [fillRow]
+					)
+				#End of [fluidRow]
+				)
+			#End of [footer]
+			)
+		#End of [userBox]
 		)
-	#End of [bs4UserCard]
+	#End of [tagList]
 	)
 	#Debug Mode
 	if (fDebug){
@@ -442,34 +541,38 @@ UM_custPortDash_svr <- function(input,output,session
 			paste0('ProdCat_',lang_disp)
 			,name = lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['PortRatio']]
 			,barWidth = 12
-			,color = color_cfg$Advise
-			,label = list(
-				show = TRUE
-				,position = 'right'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			,itemStyle = list(
+				color = color_cfg$Advise
+				,borderWidth = 1
+				,barBorderRadius = 3
 			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'right'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['PortRatio']] , '</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['PortRatio']] , '</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -481,34 +584,38 @@ UM_custPortDash_svr <- function(input,output,session
 			,name = lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['bal_pct']]
 			,barWidth = 12
 			,barCategoryGap = 20
-			,color = color_cfg$CustAct
-			,label = list(
-				show = TRUE
-				,position = 'right'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			,itemStyle = list(
+				color = color_cfg$CustAct
+				,borderWidth = 1
+				,barBorderRadius = 3
 			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'right'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['bal_pct']] , '</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCat']][['bal_pct']] , '</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -518,12 +625,18 @@ UM_custPortDash_svr <- function(input,output,session
 			index = 0
 			,gridIndex = 0
 			,data = CustData$Bal_ProdCat[[paste0('ProdCat_',lang_disp)]]
+			,position = 'left'
 			,type = 'category'
-			,axisLabel = list(
-				# rotate = -90
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,margin = 4
+			,axisLabel = modifyList(
+				uRV$styles_ch_content
+				,list(
+					margin = 4
+				)
+			)
+			,axisLine = list(
+				lineStyle = list(
+					color = color_cfg$ech_al_Style
+				)
 			)
 			,axisTick = list(show = FALSE)
 			,splitLine = list(
@@ -549,20 +662,14 @@ UM_custPortDash_svr <- function(input,output,session
 			,itemGap = 2
 			,itemWidth = 8
 			,itemHeight = 8
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		#500. Setup the title
 		echarts4r::e_title(
 			text = lang_cfg[[lang_disp]][['charttitle']][['Bal_ProdCat']]
 			,left = 4
 			,top = 2
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_title
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		#920. Show a loading animation when the chart is re-drawn
 		echarts4r::e_show_loading() %>%
@@ -570,7 +677,7 @@ UM_custPortDash_svr <- function(input,output,session
 		echarts4r::e_tooltip(
 			trigger = 'item'
 			,axisPointer = list(
-				type = 'cross'
+				show = FALSE
 			)
 		)
 
@@ -603,34 +710,38 @@ UM_custPortDash_svr <- function(input,output,session
 			,name = lang_cfg[[lang_disp]][['tblvars']][['Bal_RiskLvl']][['bal_pct']]
 			,barWidth = 12
 			,barCategoryGap = 16
-			,color = color_cfg$CustAct
-			,label = list(
-				show = TRUE
-				,position = 'left'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			,itemStyle = list(
+				color = color_cfg$CustAct
+				,borderWidth = 1
+				,barBorderRadius = 3
 			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'left'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>" + params.value[1] + "</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>" + params.value[1] + "</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -641,11 +752,16 @@ UM_custPortDash_svr <- function(input,output,session
 			,data = CustData$Bal_RiskLvl[[paste0('Value_',lang_disp)]]
 			,position = 'right'
 			,type = 'category'
-			,axisLabel = list(
-				# rotate = -90
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,margin = 4
+			,axisLabel = modifyList(
+				uRV$styles_ch_content
+				,list(
+					margin = 4
+				)
+			)
+			,axisLine = list(
+				lineStyle = list(
+					color = color_cfg$ech_al_Style
+				)
 			)
 			,axisTick = list(show = FALSE)
 			,splitLine = list(
@@ -671,25 +787,19 @@ UM_custPortDash_svr <- function(input,output,session
 			,itemGap = 2
 			,itemWidth = 8
 			,itemHeight = 8
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		echarts4r::e_title(
 			text = lang_cfg[[lang_disp]][['charttitle']][['Bal_RiskLvl']]
 			,right = 4
 			,top = 2
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_title
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		echarts4r::e_show_loading() %>%
 		echarts4r::e_tooltip(
 			trigger = 'item'
 			,axisPointer = list(
-				type = 'cross'
+				show = FALSE
 			)
 		)
 
@@ -719,10 +829,10 @@ UM_custPortDash_svr <- function(input,output,session
 	name_Bal_ProdType <- names(CustData$Bal_ProdType)
 	if ('new_bcy' %in% name_Bal_ProdType) {
 		Bal_ProdType <- CustData$Bal_ProdType %>%
-			dplyr::arrange(desc(new_bcy),desc(bal_bcy))
+			dplyr::arrange(dplyr::desc(new_bcy),dplyr::desc(bal_bcy))
 	} else {
 		Bal_ProdType <- CustData$Bal_ProdType %>%
-			dplyr::arrange(desc(bal_bcy))
+			dplyr::arrange(dplyr::desc(bal_bcy))
 	}
 
 	#435. Asset distribution by Product Type
@@ -735,90 +845,40 @@ UM_custPortDash_svr <- function(input,output,session
 			,barWidth = '30%'
 			#Inject the JS code to set different colors to all bars respectively
 			#[Quote: https://www.php.cn/js-tutorial-409788.html ]
-			,color = htmlwidgets::JS(paste0(
-				'function(params){'
-					,'var colorlst = ["',paste0(CustData$Bal_ProdType$color_old,collapse = '","'),'"];'
-					,'return(colorlst[params.dataIndex]);'
-				,'}'
-			))
-			,label = list(
-				show = TRUE
-				,position = 'top'
-				,distance = 2
-				#Turn on this option if the colors of each bar are not unified
-				# ,color = '#000'
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
+			,itemStyle = list(
+				color = htmlwidgets::JS(paste0(
 					'function(params){'
-						,"var labellst = [\"",paste0(CustData$Bal_ProdType[[paste0('lbl_',lang_disp)]],collapse = '","'),"\"];"
-						,'return('
-							,'labellst[params.dataIndex]'
-						,');'
-					,'}'
-				))
-			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
-				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,"var pctlst = [",paste0(CustData$Bal_ProdType$bal_pct,collapse = ','),"];"
-						,'return('
-							,'"<strong>" + params.value[0] + "</strong>"'
-							,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
-							,'+ "<br/>(" + (parseFloat(pctlst[params.dataIndex]) * 100).toFixed(2) + "%)"'
-						,');'
-					,'}'
-				))
-			)
-			,x_index = 0
-			,y_index = 0
-		)
-
-	#437. Add a new serie to represent the adjusted holding
-	if ('new_bcy' %in% name_Bal_ProdType) {
-		uRV$ch_ProdType <- uRV$ch_ProdType %>%
-			#120. Draw the bars for adjusted holdings
-			echarts4r::e_bar(
-				new_bcy
-				,name = lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdType']][['new_bcy']]
-				,barWidth = '30%'
-				#Inject the JS code to set different colors to all bars respectively
-				#[Quote: https://www.php.cn/js-tutorial-409788.html ]
-				,color = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'var colorlst = ["',paste0(CustData$Bal_ProdType$color_new,collapse = '","'),'"];'
+						,'var colorlst = ["',paste0(CustData$Bal_ProdType$color_old,collapse = '","'),'"];'
 						,'return(colorlst[params.dataIndex]);'
 					,'}'
 				))
-				,label = list(
+				,borderWidth = 1
+				,barBorderRadius = 3
+			)
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
 					show = TRUE
 					,position = 'top'
 					,distance = 2
 					#Turn on this option if the colors of each bar are not unified
 					# ,color = '#000'
-					,fontFamily = font_disp
-					,fontSize = uRV$styles_ch_FontSize_item
 					,formatter = htmlwidgets::JS(paste0(
 						'function(params){'
-							,"var labellst = [\"",paste0(CustData$Bal_ProdType[[paste0('lbl_new_',lang_disp)]],collapse = '","'),"\"];"
+							,'var labellst = ["',paste0(CustData$Bal_ProdType[[paste0('lbl_',lang_disp)]],collapse = '","'),'"];'
 							,'return('
 								,'labellst[params.dataIndex]'
 							,');'
 						,'}'
 					))
 				)
-				,tooltip = list(
-					confine = TRUE
-					,textStyle = list(
-						fontFamily = font_disp
-					)
-					,formatter = htmlwidgets::JS(paste0(
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
 						'function(params){'
-							,"var pctlst = [",paste0(CustData$Bal_ProdType$new_pct,collapse = ','),"];"
+							,'var pctlst = [',paste0(CustData$Bal_ProdType$bal_pct,collapse = ','),'];'
 							,'return('
 								,'"<strong>" + params.value[0] + "</strong>"'
 								,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
@@ -827,13 +887,73 @@ UM_custPortDash_svr <- function(input,output,session
 						,'}'
 					))
 				)
+			)
+			,x_index = 0
+			,y_index = 0
+		)
+
+	#437. Add a new serie to represent the adjusted holding
+	if ('new_bcy' %in% name_Bal_ProdType) {
+		uRV$legendColor_ch_ProdName <- c(uRV$legendColor_ch_ProdName, min(CustData$Bal_ProdType$color_new))
+
+		uRV$ch_ProdType %<>%
+			#120. Draw the bars for adjusted holdings
+			echarts4r::e_bar(
+				new_bcy
+				,name = lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdType']][['new_bcy']]
+				,barWidth = '30%'
+				#Inject the JS code to set different colors to all bars respectively
+				#[Quote: https://www.php.cn/js-tutorial-409788.html ]
+				,itemStyle = list(
+					color = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'var colorlst = ["',paste0(CustData$Bal_ProdType$color_new,collapse = '","'),'"];'
+							,'return(colorlst[params.dataIndex]);'
+						,'}'
+					))
+					,borderWidth = 1
+					,barBorderRadius = 3
+				)
+				,label = modifyList(
+					uRV$styles_ch_content
+					,list(
+						show = TRUE
+						,position = 'top'
+						,distance = 2
+						#Turn on this option if the colors of each bar are not unified
+						# ,color = '#000'
+						,formatter = htmlwidgets::JS(paste0(
+							'function(params){'
+								,'var labellst = ["',paste0(CustData$Bal_ProdType[[paste0('lbl_new_',lang_disp)]],collapse = '","'),'"];'
+								,'return('
+									,'labellst[params.dataIndex]'
+								,');'
+							,'}'
+						))
+					)
+				)
+				,tooltip = modifyList(
+					uRV$attr_tooltips
+					,list(
+						formatter = htmlwidgets::JS(paste0(
+							'function(params){'
+								,'var pctlst = [',paste0(CustData$Bal_ProdType$new_pct,collapse = ','),'];'
+								,'return('
+									,'"<strong>" + params.value[0] + "</strong>"'
+									,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
+									,'+ "<br/>(" + (parseFloat(pctlst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+								,');'
+							,'}'
+						))
+					)
+				)
 				,x_index = 0
 				,y_index = 0
 			)
 	}
 
 	#439. Other settings
-	uRV$ch_ProdType <- uRV$ch_ProdType %>%
+	uRV$ch_ProdType %<>%
 		#300. Setup the axes
 		echarts4r::e_y_axis(
 			index = 0
@@ -846,20 +966,26 @@ UM_custPortDash_svr <- function(input,output,session
 			,gridIndex = 0
 			,data = CustData$Bal_ProdType[[paste0('ProdType_',lang_disp)]]
 			,show = TRUE
-			,axisLabel = list(
-				formatter = htmlwidgets::JS(paste0(
-					'function(value,index){'
-						,'return('
-							#[Quote: parameter config of both [xAxis.axisLabel.formatter] and [legend.tooltip]]
-							,'echarts.format.truncateText(value,48,"',uRV$styles_ch_FontSize_item,'px ',font_disp,'","...")'
-						,');'
-					,'}'
-				))
-				# ,rotate = 90
-				,interval = 0
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,margin = 4
+			,axisLabel = modifyList(
+				uRV$styles_ch_content
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(value,index){'
+							,'return('
+								#[Quote: parameter config of both [xAxis.axisLabel.formatter] and [legend.tooltip]]
+								,'echarts.format.truncateText(value,48,"',uRV$styles_ch_FontSize_item,'px ',font_disp,'","...")'
+							,');'
+						,'}'
+					))
+					# ,rotate = 90
+					,interval = 0
+					,margin = 4
+				)
+			)
+			,axisLine = list(
+				lineStyle = list(
+					color = color_cfg$ech_al_Style
+				)
 			)
 			,axisTick = list(show = FALSE)
 		) %>%
@@ -870,9 +996,9 @@ UM_custPortDash_svr <- function(input,output,session
 			,itemWidth = 8
 			,itemHeight = 8
 			# ,icon = rep('none',nrow(uRV$colors_ProdCTT))
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
+			,textStyle = uRV$styles_ch_content
+			,itemStyle = list(
+				color = uRV$legendColor_ch_ProdName
 			)
 		) %>%
 		#500. Setup the title
@@ -880,10 +1006,7 @@ UM_custPortDash_svr <- function(input,output,session
 			text = lang_cfg[[lang_disp]][['charttitle']][['Bal_ProdType']]
 			,left = 4
 			,top = 2
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_title
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		#920. Show a loading animation when the chart is re-drawn
 		echarts4r::e_show_loading() %>%
@@ -891,7 +1014,7 @@ UM_custPortDash_svr <- function(input,output,session
 		echarts4r::e_tooltip(
 			trigger = 'item'
 			,axisPointer = list(
-				type = 'cross'
+				show = FALSE
 			)
 		)
 
@@ -924,11 +1047,11 @@ UM_custPortDash_svr <- function(input,output,session
 	if (nrow_ch_FundName == 0) rows_ch_FundName <- 0 else rows_ch_FundName <- seq(1,nrow_ch_FundName,1)
 	if ('new_bcy' %in% name_Bal_FundName) {
 		Bal_FundName <- CustData$Bal_FundName %>%
-			dplyr::arrange(desc(new_bcy),desc(bal_bcy)) %>%
+			dplyr::arrange(dplyr::desc(new_bcy),dplyr::desc(bal_bcy)) %>%
 			.[rows_ch_FundName,]
 	} else {
 		Bal_FundName <- CustData$Bal_FundName %>%
-			dplyr::arrange(desc(bal_bcy)) %>%
+			dplyr::arrange(dplyr::desc(bal_bcy)) %>%
 			.[rows_ch_FundName,]
 	}
 
@@ -942,46 +1065,52 @@ UM_custPortDash_svr <- function(input,output,session
 			,barWidth = '30%'
 			#Inject the JS code to set different colors to all bars respectively
 			#[Quote: https://www.php.cn/js-tutorial-409788.html ]
-			,color = htmlwidgets::JS(paste0(
-				'function(params){'
-					,'var colorlst = ["',paste0(CustData$Bal_FundName$color_old,collapse = '","'),'"];'
-					,'return(colorlst[params.dataIndex]);'
-				,'}'
-			))
-			,label = list(
-				show = TRUE
-				,position = 'top'
-				,distance = 2
-				#Turn on this option if the colors of each bar are not unified
-				# ,color = '#000'
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
+			,itemStyle = list(
+				color = htmlwidgets::JS(paste0(
 					'function(params){'
-						,"var labellst = [\"",paste0(CustData$Bal_FundName[[paste0('lbl_',lang_disp)]],collapse = '","'),"\"];"
-						,'return('
-							,'labellst[params.dataIndex]'
-						,');'
+						,'var colorlst = ["',paste0(CustData$Bal_FundName$color_old,collapse = '","'),'"];'
+						,'return(colorlst[params.dataIndex]);'
 					,'}'
 				))
+				,borderWidth = 1
+				,barBorderRadius = 3
 			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'top'
+					,distance = 2
+					#Turn on this option if the colors of each bar are not unified
+					# ,color = '#000'
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'var labellst = ["',paste0(CustData$Bal_FundName[[paste0('lbl_',lang_disp)]],collapse = '","'),'"];'
+							,'return('
+								,'labellst[params.dataIndex]'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,"var pct_aum_lst = [",paste0(CustData$Bal_FundName$bal_pct,collapse = ','),"];"
-						,"var pct_fund_lst = [",paste0(CustData$Bal_FundName$bal_fund_pct,collapse = ','),"];"
-						,'return('
-							,'"<strong>" + params.value[0] + "</strong>"'
-							,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
-							,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['bal_pct']],': " + (parseFloat(pct_aum_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
-							,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['bal_fund_pct']],': " + (parseFloat(pct_fund_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'var pct_aum_lst = [',paste0(CustData$Bal_FundName$bal_pct,collapse = ','),'];'
+							,'var pct_fund_lst = [',paste0(CustData$Bal_FundName$bal_fund_pct,collapse = ','),'];'
+							,'return('
+								,'"<strong>" + params.value[0] + "</strong>"'
+								,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
+								,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['bal_pct']]
+									,': " + (parseFloat(pct_aum_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+								,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['bal_fund_pct']]
+									,': " + (parseFloat(pct_fund_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -989,7 +1118,9 @@ UM_custPortDash_svr <- function(input,output,session
 
 	#447. Add a new serie to represent the adjusted holding
 	if ('new_bcy' %in% name_Bal_FundName) {
-		uRV$ch_FundName <- uRV$ch_FundName %>%
+		uRV$legendColor_ch_FundName <- c(uRV$legendColor_ch_FundName, min(CustData$Bal_FundName$color_new))
+
+		uRV$ch_FundName %<>%
 			#120. Draw the bars for adjusted holdings
 			echarts4r::e_bar(
 				new_bcy
@@ -997,46 +1128,73 @@ UM_custPortDash_svr <- function(input,output,session
 				,barWidth = '30%'
 				#Inject the JS code to set different colors to all bars respectively
 				#[Quote: https://www.php.cn/js-tutorial-409788.html ]
-				,color = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'var colorlst = ["',paste0(CustData$Bal_FundName$color_new,collapse = '","'),'"];'
-						,'return(colorlst[params.dataIndex]);'
-					,'}'
-				))
-				,label = list(
-					show = TRUE
-					,position = 'top'
-					,distance = 2
-					#Turn on this option if the colors of each bar are not unified
-					# ,color = '#000'
-					,fontFamily = font_disp
-					,fontSize = uRV$styles_ch_FontSize_item
-					,formatter = htmlwidgets::JS(paste0(
+				,itemStyle = list(
+					color = htmlwidgets::JS(paste0(
 						'function(params){'
-							,"var labellst = [\"",paste0(CustData$Bal_FundName[[paste0('lbl_new_',lang_disp)]],collapse = '","'),"\"];"
-							,'return('
-								,'labellst[params.dataIndex]'
-							,');'
+							,'var colorlst = ["',paste0(CustData$Bal_FundName$color_new,collapse = '","'),'"];'
+							,'return(colorlst[params.dataIndex]);'
 						,'}'
 					))
+					,borderWidth = 1
+					,barBorderRadius = 3
 				)
-				,tooltip = list(
-					confine = TRUE
-					,textStyle = list(
-						fontFamily = font_disp
+				,label = modifyList(
+					uRV$styles_ch_content
+					,list(
+						show = TRUE
+						,position = 'top'
+						,distance = 2
+						#Turn on this option if the colors of each bar are not unified
+						# ,color = '#000'
+						,formatter = htmlwidgets::JS(paste0(
+							'function(params){'
+								,'var labellst = ["'
+									,paste0(CustData$Bal_FundName[[paste0('lbl_new_',lang_disp)]],collapse = '","')
+								,'"];'
+								,'return('
+									,'labellst[params.dataIndex]'
+								,');'
+							,'}'
+						))
 					)
-					,formatter = htmlwidgets::JS(paste0(
-						'function(params){'
-							,"var pct_aum_lst = [",paste0(CustData$Bal_FundName$new_pct,collapse = ','),"];"
-							,"var pct_fund_lst = [",paste0(CustData$Bal_FundName$new_fund_pct,collapse = ','),"];"
-							,'return('
-								,'"<strong>" + params.value[0] + "</strong>"'
-								,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
-								,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_pct']],': " + (parseFloat(pct_aum_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
-								,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_fund_pct']],': " + (parseFloat(pct_fund_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
-							,');'
-						,'}'
-					))
+				)
+				,tooltip = modifyList(
+					uRV$attr_tooltips
+					,list(
+						formatter = htmlwidgets::JS(paste0(
+							'function(params){'
+								,'var pct_aum_lst = [',paste0(CustData$Bal_FundName$new_pct,collapse = ','),'];'
+								,'var pct_fund_lst = [',paste0(CustData$Bal_FundName$new_fund_pct,collapse = ','),'];'
+								,'return('
+									,'"<strong>" + params.value[0] + "</strong>"'
+									,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
+									,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_pct']]
+										,': " + (parseFloat(pct_aum_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+									,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_fund_pct']]
+										,': " + (parseFloat(pct_fund_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+								,');'
+							,'}'
+						))
+					)
+				)
+				,tooltip = modifyList(
+					uRV$attr_tooltips
+					,list(
+						formatter = htmlwidgets::JS(paste0(
+							'function(params){'
+								,'var pct_aum_lst = [',paste0(CustData$Bal_FundName$new_pct,collapse = ','),'];'
+								,'var pct_fund_lst = [',paste0(CustData$Bal_FundName$new_fund_pct,collapse = ','),'];'
+								,'return('
+									,'"<strong>" + params.value[0] + "</strong>"'
+									,'+ "<br/>" + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(2))'
+									,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_pct']]
+										,': " + (parseFloat(pct_aum_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+									,'+ "<br/>(',lang_cfg[[lang_disp]][['tblvars']][['Bal_FundName']][['new_fund_pct']]
+										,': " + (parseFloat(pct_fund_lst[params.dataIndex]) * 100).toFixed(2) + "%)"'
+								,');'
+							,'}'
+						))
+					)
 				)
 				,x_index = 0
 				,y_index = 0
@@ -1044,7 +1202,7 @@ UM_custPortDash_svr <- function(input,output,session
 	}
 
 	#449. Other settings
-	uRV$ch_FundName <- uRV$ch_FundName %>%
+	uRV$ch_FundName %<>%
 		#300. Setup the axes
 		echarts4r::e_y_axis(
 			index = 0
@@ -1056,20 +1214,26 @@ UM_custPortDash_svr <- function(input,output,session
 			index = 0
 			,gridIndex = 0
 			,show = TRUE
-			,axisLabel = list(
-				formatter = htmlwidgets::JS(paste0(
-					'function(value,index){'
-						,'return('
-							#[Quote: parameter config of both [xAxis.axisLabel.formatter] and [legend.tooltip]]
-							,'echarts.format.truncateText(value,60,"',uRV$styles_ch_FontSize_item,'px ',font_disp,'","...")'
-						,');'
-					,'}'
-				))
-				# ,rotate = 90
-				,interval = 0
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,margin = 4
+			,axisLabel = modifyList(
+				uRV$styles_ch_content
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(value,index){'
+							,'return('
+								#[Quote: parameter config of both [xAxis.axisLabel.formatter] and [legend.tooltip]]
+								,'echarts.format.truncateText(value,60,"',uRV$styles_ch_FontSize_item,'px ',font_disp,'","...")'
+							,');'
+						,'}'
+					))
+					# ,rotate = 90
+					,interval = 0
+					,margin = 4
+				)
+			)
+			,axisLine = list(
+				lineStyle = list(
+					color = color_cfg$ech_al_Style
+				)
 			)
 			,axisTick = list(show = FALSE)
 		) %>%
@@ -1080,9 +1244,9 @@ UM_custPortDash_svr <- function(input,output,session
 			,itemWidth = 8
 			,itemHeight = 8
 			# ,icon = rep('none',nrow(uRV$colors_ProdCTT))
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
+			,textStyle = uRV$styles_ch_content
+			,itemStyle = list(
+				color = uRV$legendColor_ch_FundName
 			)
 		) %>%
 		#500. Setup the title
@@ -1090,10 +1254,7 @@ UM_custPortDash_svr <- function(input,output,session
 			text = lang_cfg[[lang_disp]][['charttitle']][['Bal_FundName']]
 			,left = 4
 			,top = 2
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_title
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		echarts4r::e_text_g(
 			type = 'text'
@@ -1111,7 +1272,7 @@ UM_custPortDash_svr <- function(input,output,session
 		echarts4r::e_tooltip(
 			trigger = 'item'
 			,axisPointer = list(
-				type = 'cross'
+				show = FALSE
 			)
 		)
 
@@ -1181,45 +1342,45 @@ UM_custPortDash_svr <- function(input,output,session
 			,stack = 'Stack'
 			,barWidth = 8
 			,itemStyle = list(
-				borderWidth = 1
+				#Inject the JS code to set different colors to all bars respectively
+				#[Quote: https://www.php.cn/js-tutorial-409788.html ]
+				color = htmlwidgets::JS(paste0(
+					'function(params){'
+						,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_Core,collapse = '","'),'"];'
+						,'return(colorlst[params.dataIndex]);'
+					,'}'
+				))
+				,borderWidth = 1
 				,barBorderRadius = 3
 			)
-			#Inject the JS code to set different colors to all bars respectively
-			#[Quote: https://www.php.cn/js-tutorial-409788.html ]
-			,color = htmlwidgets::JS(paste0(
-				'function(params){'
-					,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_Core,collapse = '","'),'"];'
-					,'return(colorlst[params.dataIndex]);'
-				,'}'
-			))
-			,label = list(
-				show = TRUE
-				,position = 'bottom'
-				,color = '#333'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
-			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'bottom'
+					,color = '#333'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['Core']] , '</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['Core']] , '</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -1231,43 +1392,43 @@ UM_custPortDash_svr <- function(input,output,session
 			,stack = 'Stack'
 			,barWidth = 8
 			,itemStyle = list(
-				borderWidth = 1
+				color = htmlwidgets::JS(paste0(
+					'function(params){'
+						,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_T1,collapse = '","'),'"];'
+						,'return(colorlst[params.dataIndex]);'
+					,'}'
+				))
+				,borderWidth = 1
 				,barBorderRadius = 3
 			)
-			,color = htmlwidgets::JS(paste0(
-				'function(params){'
-					,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_T1,collapse = '","'),'"];'
-					,'return(colorlst[params.dataIndex]);'
-				,'}'
-			))
-			,label = list(
-				show = TRUE
-				,position = 'bottom'
-				,color = '#333'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
-			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'bottom'
+					,color = '#333'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['T1']] , '</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['T1']] , '</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -1279,44 +1440,44 @@ UM_custPortDash_svr <- function(input,output,session
 			,stack = 'Stack'
 			,barWidth = 8
 			,itemStyle = list(
-				borderWidth = 1
+				color = htmlwidgets::JS(paste0(
+					'function(params){'
+						,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_T2,collapse = '","'),'"];'
+						,'return(colorlst[params.dataIndex]);'
+					,'}'
+				))
+				,borderWidth = 1
 				,barBorderRadius = 3
 			)
 			,barCategoryGap = 16
-			,color = htmlwidgets::JS(paste0(
-				'function(params){'
-					,'var colorlst = ["',paste0(uRV$trns_ProdCTT$color_T2,collapse = '","'),'"];'
-					,'return(colorlst[params.dataIndex]);'
-				,'}'
-			))
-			,label = list(
-				show = TRUE
-				,position = 'bottom'
-				,color = '#333'
-				,distance = 2
-				,fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'(params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
-			)
-			,tooltip = list(
-				confine = TRUE
-				,textStyle = list(
-					fontFamily = font_disp
+			,label = modifyList(
+				uRV$styles_ch_content
+				,list(
+					show = TRUE
+					,position = 'bottom'
+					,color = '#333'
+					,distance = 2
+					,formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'(params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
 				)
-				,formatter = htmlwidgets::JS(paste0(
-					'function(params){'
-						,'return('
-							,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['T2']] , '</strong>"'
-							,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
-						,');'
-					,'}'
-				))
+			)
+			,tooltip = modifyList(
+				uRV$attr_tooltips
+				,list(
+					formatter = htmlwidgets::JS(paste0(
+						'function(params){'
+							,'return('
+								,'"<strong>' , lang_cfg[[lang_disp]][['tblvars']][['Bal_ProdCTT']][['T2']] , '</strong>"'
+								,'+ " : " + (params.value[0] * 100).toFixed(2) + "%"'
+							,');'
+						,'}'
+					))
+				)
 			)
 			,x_index = 0
 			,y_index = 0
@@ -1329,11 +1490,11 @@ UM_custPortDash_svr <- function(input,output,session
 			,axisLine = list(
 				show = FALSE
 			)
-			,axisLabel = list(
-				# rotate = -90
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
-				,margin = 4
+			,axisLabel = modifyList(
+				uRV$styles_ch_content
+				,list(
+					margin = 4
+				)
 			)
 			,axisTick = list(show = FALSE)
 			,splitLine = list(
@@ -1359,9 +1520,9 @@ UM_custPortDash_svr <- function(input,output,session
 			,itemWidth = 8
 			,itemHeight = 8
 			# ,icon = rep('none',nrow(uRV$colors_ProdCTT))
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_item
+			,textStyle = uRV$styles_ch_content
+			,itemStyle = list(
+				color = uRV$colors_legend_ProdCTT
 			)
 		) %>%
 		#500. Setup the title
@@ -1369,10 +1530,7 @@ UM_custPortDash_svr <- function(input,output,session
 			text = lang_cfg[[lang_disp]][['charttitle']][['Bal_ProdCTT']]
 			,left = 4
 			,top = 2
-			,textStyle = list(
-				fontFamily = font_disp
-				,fontSize = uRV$styles_ch_FontSize_title
-			)
+			,textStyle = uRV$styles_ch_content
 		) %>%
 		#910. Flip the coordinates
 		echarts4r::e_flip_coords() %>%
@@ -1382,7 +1540,7 @@ UM_custPortDash_svr <- function(input,output,session
 		echarts4r::e_tooltip(
 			trigger = 'item'
 			,axisPointer = list(
-				type = 'cross'
+				show = FALSE
 			)
 		)
 
@@ -1432,12 +1590,12 @@ UM_custPortDash_svr <- function(input,output,session
 		sum_PnL <- sum(CustData[[tblname]][['Gain_bcy_mtd']])
 		sumC_PnL <- formatC( sum_PnL , digits = 2 , big.mark = ',' , format = 'f' , zero.print = '0.00' )
 
-		#800. Draw the datatable
+		#300. Draw the datatable
 		#[Quote: https://rstudio.github.io/DT/options.html ]
 		#[Quote: https://rstudio.github.io/DT/010-style.html ]
 		dt_pre <- DT::datatable(
 			CustData[[tblname]][,colsDT_tbl]
-			,caption = htmltools::tags$caption(
+			,caption = shiny::tags$caption(
 				style = paste0(
 					'padding-right: 5px;'
 					,'caption-side: bottom;'
@@ -1446,7 +1604,7 @@ UM_custPortDash_svr <- function(input,output,session
 				)
 				,shiny::tags$span(shiny::tagList(
 					lang_cfg[[lang_disp]][['tblsubtotals']][['Holding']]
-					,shiny::icon('cny')
+					,shiny::icon('yen-sign')
 					,shiny::tags$span(
 						style = paste0('color: ',setNumColor(sum_PnL),';')
 						,sumC_PnL
@@ -1469,15 +1627,15 @@ UM_custPortDash_svr <- function(input,output,session
 			)
 			,options = list(
 				#Setup the styles for the table header
-				initComplete = V8::JS(paste0(
-					"function(settings, json){"
-						,"$(this.api().table().header()).css({"
-							,"'background-color': '",color_cfg$DTHeaderBg,"'"
-							,",'color': '",color_cfg$DTHeaderTxt,"'"
-							,",'font-family': '",font_disp,"'"
-							,",'font-size': '",shiny::validateCssUnit(uRV$styles_ch_FontSize_item),"'"
-						,"});"
-					,"}"
+				initComplete = htmlwidgets::JS(paste0(
+					'function(settings, json){'
+						,'$(this.api().table().header()).css({'
+							,'"background-color": "',color_cfg$DTHeaderBg,'"'
+							,',"color": "',color_cfg$DTHeaderTxt,'"'
+							,',"font-family": "',font_disp,'"'
+							,',"font-size": "',shiny::validateCssUnit(uRV$styles_ch_FontSize_item),'"'
+						,'});'
+					,'}'
 				))
 				#We have to set the [stateSave=F], otherwise the table cannot be displayed completely!!
 				,stateSave = FALSE
@@ -1495,36 +1653,49 @@ UM_custPortDash_svr <- function(input,output,session
 			)
 		#End of [datatable]
 		) %>%
-			#Set the numbers to be displayed as: [#,###.00]
-			DT::formatCurrency(
-				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Currency)]
-				,currency = ''
-			) %>%
-			#Set the price to be displayed as: [#,###.0000]
-			DT::formatCurrency(
-				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Price)]
-				,currency = ''
-				,digits = 4
-			) %>%
-			#Set the percentage to be displayed as: [#,###.00%]
-			DT::formatPercentage(
-				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Percent)]
-				,digits = 2
-			) %>%
-			#Set the font color for positive numbers as [green], while that for negative ones as [red]
-			DT::formatStyle(
-				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_PnL)]
-				,color = DT::styleInterval(
-					-0.0000001
-					,c(color_cfg$Negative,color_cfg$Positive)
-				)
-			) %>%
 			#Set the font for all content in the table
 			DT::formatStyle(
 				names(colsDT_tbl)
 				,fontFamily = font_disp
 				,fontSize = shiny::validateCssUnit(uRV$styles_ch_FontSize_item)
 			)
+
+		#500. Format specific values
+		#510. Format the amount as: [#,###.00]
+		if (any(colsDT_tbl %in% CustData$NumFmt_Currency)) {
+			dt_pre %<>% DT::formatCurrency(
+				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Currency)]
+				,currency = ''
+			)
+		}
+
+		#530. Format the price as: [#,###.0000]
+		if (any(colsDT_tbl %in% CustData$NumFmt_Price)) {
+			dt_pre %<>% DT::formatCurrency(
+				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Price)]
+				,currency = ''
+				,digits = 4
+			)
+		}
+
+		#550. Format the percentage as: [#,###.00%]
+		if (any(colsDT_tbl %in% CustData$NumFmt_Percent)) {
+			dt_pre %<>% DT::formatPercentage(
+				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_Percent)]
+				,digits = 2
+			)
+		}
+
+		#570. Set the font color for positive numbers as [green], while that for negative ones as [red]
+		if (any(colsDT_tbl %in% CustData$NumFmt_PnL)) {
+			dt_pre %<>% DT::formatStyle(
+				names(colsDT_tbl)[which(colsDT_tbl %in% CustData$NumFmt_PnL)]
+				,color = DT::styleInterval(
+					-0.0000001
+					,c(color_cfg$Negative,color_cfg$Positive)
+				)
+			)
+		}
 
 		#900. Define the output
 		dt_out <- shiny::tagList(
@@ -1545,7 +1716,7 @@ UM_custPortDash_svr <- function(input,output,session
 		style = uRV$styles_tabBox_font
 		,shiny::tags$span(shiny::tagList(
 			lang_cfg[[lang_disp]][['tbltotals']][['Holding']]
-			,shiny::icon('cny')
+			,shiny::icon('yen-sign')
 			,shiny::tags$span(
 				style = paste0('color: ',setNumColor(CustData$Gain_AllProd),';')
 				,formatC(
@@ -1665,15 +1836,22 @@ UM_custPortDash_svr <- function(input,output,session
 				,uRV$styles_final
 			)
 			#Below is a weird solution, but it works!
-			#[Quote: https://stackoverflow.com/questions/56410385/how-to-use-lapply-or-another-higher-order-function-when-calling-tabpanel-in-r-sh ]
+			#How to use lapply or another higher order function when calling tabPanel in R shiny
+			#[Quote: https://stackoverflow.com/questions/56410385 ]
 			,do.call(
 				function(...){
-					shinydashboard::tabBox(
-						title = uRV$span_AllPnL
-						# The id lets us use input$tabset1 on the server to find the current tab
-						,id = ns('uTB_byProd')
-						,width = uRV$uTB_width
-						,...
+					shiny::tagList(
+						shiny::tags$style(
+							type = 'text/css'
+							,uRV$styles_tabBox
+						)
+						,shinydashboard::tabBox(
+							title = uRV$span_AllPnL
+							# The id lets us use input$tabset1 on the server to find the current tab
+							,id = ns('uTB_byProd')
+							,width = uRV$uTB_width
+							,...
+						)
 					)
 				}
 				,mapply(
@@ -1754,7 +1932,7 @@ UM_custPortDash_svr <- function(input,output,session
 if (FALSE){
 	if (interactive()){
 		lst_pkg <- c( 'tmcn'
-			, 'shiny', 'DT', 'shinydashboard', 'shinydashboardPlus', 'echarts4r', 'htmlwidgets', 'htmltools', 'V8', 'dplyr', 'tidyselect', 'data.table', 'grDevices'
+			, 'shiny', 'DT', 'shinydashboard', 'shinydashboardPlus', 'echarts4r', 'htmlwidgets', 'dplyr', 'tidyselect', 'data.table', 'grDevices'
 		)
 
 		suppressPackageStartupMessages(
@@ -1763,10 +1941,8 @@ if (FALSE){
 		tmcn::setchs(rev=F)
 
 		#Source the user specified functions and processes.
-		omniR <- 'D:\\R\\omniR'
-		source(normalizePath(file.path(omniR,'Styles','rgba2rgb.r')),encoding = 'utf-8')
-		source(normalizePath(file.path(omniR,'AdvOp','rem_shiny_inputs.r')),encoding = 'utf-8')
-		source(normalizePath(file.path(omniR,'AdvOp','gc_shiny_module.r')),encoding = 'utf-8')
+		source('D:\\R\\autoexec.r')
+		omniR <- getOption('path.omniR')
 
 		#Load necessary data
 		myProj <- 'D:\\R\\Project'
@@ -1775,20 +1951,20 @@ if (FALSE){
 		source(normalizePath(file.path(myProj,'Analytics','Func','UI','lang_PortMgmt.r')), encoding = 'utf-8')
 		source(normalizePath(file.path(myProj,'Analytics','Func','UI','color_PortMgmt.r')), encoding = 'utf-8')
 
-		ui <- shinydashboardPlus::dashboardPagePlus(
-			header = shinydashboardPlus::dashboardHeaderPlus()
-			,sidebar = shinydashboard::dashboardSidebar(
+		ui <- shinydashboardPlus::dashboardPage(
+			header = shinydashboardPlus::dashboardHeader()
+			,sidebar = shinydashboardPlus::dashboardSidebar(
 				shinydashboard::sidebarMenu(id = 'left_sidebar'
 					#[Icons are from the official page: https://adminlte.io/themes/AdminLTE/pages/UI/icons.html ]
 					,shinydashboard::menuItem(
 						'Portfolio Management'
 						,tabName = 'uMI_PortMgmt'
-						,icon = shiny::icon('bar-chart')
+						,icon = shiny::icon('chart-bar')
 					)
 					,shinydashboard::menuItem(
 						'Print Report'
 						,tabName = 'uMI_PrintRpt'
-						,icon = shiny::icon('bar-chart')
+						,icon = shiny::icon('chart-bar')
 					)
 				)
 			)
@@ -1803,10 +1979,10 @@ if (FALSE){
 							,shinyWidgets::prettyToggle(inputId = 'toggle'
 								,label_on = 'CN'
 								,status_on = 'default'
-								,icon_on = icon('ok-circle', lib = 'glyphicon')
+								,icon_on = shiny::icon('ok-circle', lib = 'glyphicon')
 								,label_off = 'EN'
 								,status_off = 'default'
-								,icon_off = icon('remove-circle', lib = 'glyphicon')
+								,icon_off = shiny::icon('remove-circle', lib = 'glyphicon')
 								,plain = TRUE
 								,inline = TRUE
 							)
@@ -1831,7 +2007,7 @@ if (FALSE){
 					)
 				)
 			)
-			,rightsidebar = shinydashboardPlus::rightSidebar()
+			,controlbar = shinydashboardPlus::dashboardControlbar()
 			,title = 'DashboardPage'
 		)
 		server <- function(input, output, session) {
@@ -1908,7 +2084,7 @@ if (FALSE){
 			})
 		}
 
-		shinyApp(ui, server)
+		shiny::shinyApp(ui, server)
 	}
 
 }
@@ -1941,110 +2117,5 @@ if (FALSE){
 	lang_disp <- 'CN'
 
 	#Below please paste related code snippets and execute
-
-}
-
-#[Below statements are extracted from the primary program, which cannot be executed as [bs4Dash] has conflicts to [Shinydashboard]]
-if (FALSE){
-	uRV$uCard_Profile <- bs4Dash::bs4UserCard(
-		type = 2
-		,src = CustData$PhotoURL
-		,status = 'info'
-		,imageElevation = 1
-		,title = CustData$custinf[[paste0('CustName_',lang_disp)]][[1]]
-		#[Quote: https://github.com/rstudio/shinydashboard/issues/57 ]
-		,subtitle = shiny::span(shiny::tagList(
-			shiny::icon(ifelse(CustData$custinf[['f_qpv']][[1]] == 1,'diamond','star'))
-			,paste0(' ',CustData$custinf[[paste0('qpv_',lang_disp)]][[1]])
-		))
-		#Relationship period length with the Bank
-		,shiny::fluidRow(
-			class = 'cpm_fluidRow'
-			,shiny::fillRow(
-				flex = c(NA,1)
-				,height = 24
-				,shiny::actionButton(ns('uWg_AB_ACOpen')
-					,lang_cfg[[lang_disp]][['tblvars']][['custinf']][['d_create_on']]
-					,style = uRV$btn_styles_attr
-					,icon = shiny::icon('calendar-plus-o')
-				)
-				,shiny::tags$div(
-					style = uRV$txt_styles_attr
-					,strftime(CustData$custinf[['d_create_on']][[1]], '%Y-%m-%d', tz = Sys.getenv('TZ'))
-				)
-			#End of [fillRow]
-			)
-		#End of [fluidRow]
-		)
-		#Risk Profile Questionaire
-		,shiny::fluidRow(
-			class = 'cpm_fluidRow'
-			,shiny::fillRow(
-				flex = c(NA,1)
-				,height = 24
-				,shiny::actionButton(ns('uWg_AB_RPQ')
-					,lang_cfg[[lang_disp]][['tblvars']][['custinf']][['RPQ']]
-					,style = uRV$btn_styles_attr
-					,icon = shiny::icon('map-marker')
-				)
-				,shiny::tags$div(
-					style = uRV$txt_styles_attr
-					,paste0(CustData$custinf[['RPQ']][[1]],' - ' , CustData$custinf[[paste0('RPQ_Value_',lang_disp)]][[1]])
-				)
-			#End of [fillRow]
-			)
-		#End of [fluidRow]
-		)
-	#End of [bs4UserCard]
-	)
-
-if(interactive()){
- library(shiny)
- library(bs4Dash)
-
- shiny::shinyApp(
-   ui = bs4DashPage(
-     navbar = bs4DashNavbar(),
-     sidebar = bs4DashSidebar(),
-     controlbar = bs4DashControlbar(),
-     footer = bs4DashFooter(),
-     title = 'test',
-     body = bs4DashBody(
-      fluidRow(
-      bs4UserCard(
-        src = 'https://adminlte.io/themes/AdminLTE/dist/img/user1-128x128.jpg',
-        status = 'info',
-        title = 'User card type 1',
-        subtitle = 'a subtitle here',
-        elevation = 4,
-        'Any content here'
-       ),
-       bs4UserCard(
-        type = 2,
-        src = 'https://adminlte.io/themes/AdminLTE/dist/img/user7-128x128.jpg',
-        status = 'success',
-        imageElevation = 4,
-        title = 'User card type 2',
-        subtitle = 'a subtitle here',
-        bs4ProgressBar(
-         value = 5,
-         striped = FALSE,
-         status = 'info'
-         ),
-        bs4ProgressBar(
-          value = 5,
-          striped = TRUE,
-          status = 'warning'
-        )
-       )
-      )
-      ,fluidRow(
-      	uRV$uCard_Profile
-      )
-     )
-   ),
-   server = function(input, output) {}
- )
-}
 
 }

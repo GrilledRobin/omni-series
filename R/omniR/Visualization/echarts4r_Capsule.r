@@ -172,12 +172,78 @@ echarts4r_Capsule <- function(
 				)
 			)
 			,'color' = list(
-				'bar' = cache_BlackGold$black$d
-				,'sym' = cache_BlackGold$gold$d
+				'bar' = cache_BlackGold$gold$d
+				,'sym' = rgba2rgb(cache_BlackGold$black$d, alpha_in = 0.7, color_bg = cache_BlackGold$gold$d)
 				,'tooltip' = cache_BlackGold$gold$d
 			)
 			,'box-shadow' = list(
 				'tooltip' = paste0('0 0 2px ', cache_BlackGold$black$d, alphaToHex(0.3), ';')
+			)
+		)
+		,'Inno' = list(
+			'backgroundColor' = list(
+				'tooltip' = paste0(
+					cache_Inno$black$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'borderColor' = list(
+				'tooltip' = paste0(
+					cache_Inno$white$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'color' = list(
+				'bar' = cache_Inno$yellow$d
+				,'sym' = rgba2rgb(cache_Inno$black$p[[4]], alpha_in = 0.7, color_bg = cache_Inno$white$p[[1]])
+				,'tooltip' = cache_Inno$white$p[[1]]
+			)
+			,'box-shadow' = list(
+				'tooltip' = paste0('0 0 2px ', cache_Inno$black$p[[4]], alphaToHex(0.3), ';')
+			)
+		)
+		,'PBI' = list(
+			'backgroundColor' = list(
+				'tooltip' = paste0(
+					cache_PBI$black$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'borderColor' = list(
+				'tooltip' = paste0(
+					cache_PBI$black$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'color' = list(
+				'bar' = cache_PBI$black$p[[4]]
+				,'sym' = cache_PBI$white$p[[1]]
+				,'tooltip' = cache_PBI$white$p[[1]]
+			)
+			,'box-shadow' = list(
+				'tooltip' = paste0('0 0 2px ', cache_PBI$black$p[[4]], alphaToHex(0.3), ';')
+			)
+		)
+		,'MSOffice' = list(
+			'backgroundColor' = list(
+				'tooltip' = paste0(
+					cache_MSOffice$black$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'borderColor' = list(
+				'tooltip' = paste0(
+					cache_MSOffice$black$p[[4]]
+					,alphaToHex(0.95)
+				)
+			)
+			,'color' = list(
+				'bar' = cache_MSOffice$black$p[[4]]
+				,'sym' = cache_MSOffice$white$p[[1]]
+				,'tooltip' = cache_MSOffice$white$p[[1]]
+			)
+			,'box-shadow' = list(
+				'tooltip' = paste0('0 0 2px ', cache_MSOffice$black$p[[4]], alphaToHex(0.3), ';')
 			)
 		)
 	)
@@ -433,7 +499,7 @@ echarts4r_Capsule <- function(
 			))
 		}
 
-		#999. Make the return value conceivable
+		#999. Make the return value explicit
 		return(ch_html)
 	}
 
@@ -457,6 +523,18 @@ if (FALSE){
 		#010. Load user defined functions
 		source('D:\\R\\autoexec.r')
 
+		#050. Choose theme
+		rpt_theme <- 'BlackGold'
+		if (rpt_theme == 'BlackGold') {
+			rpt_bgcol <- themePalette(rpt_theme)$black$d
+		} else if (rpt_theme == 'Inno') {
+			rpt_bgcol <- themePalette(rpt_theme)$black$p[[4]]
+		} else if (rpt_theme == 'PBI') {
+			rpt_bgcol <- themePalette(rpt_theme)$white$d
+		} else if (rpt_theme == 'MSOffice') {
+			rpt_bgcol <- themePalette(rpt_theme)$white$d
+		}
+
 		#100. Create sample data
 		ch_mtcar <- mtcars %>%
 			tibble::rownames_to_column('brand') %>%
@@ -477,8 +555,16 @@ if (FALSE){
 			dplyr::mutate(
 				hp_ymin = min(mtcars$hp)
 				,hp_ymax = max(mtcars$hp)
-				,hp_color = ifelse(hp_curr * 0.7 >= hp_mean, '#108372', '#F15628')
-				,qsec_color = ifelse(qsec_curr * 1.1 >= qsec_mean, '#8AD4EB', '#FE9666')
+				,hp_color = ifelse(
+					hp_curr * 0.7 >= hp_mean
+					, themePalette('Inno')$green$p[[2]]
+					, themePalette('Inno')$red$p[[2]]
+				)
+				,qsec_color = ifelse(
+					qsec_curr * 1.1 >= qsec_mean
+					, themePalette('PBI')$blue$d
+					, themePalette('PBI')$orange$d
+				)
 			) %>%
 			dplyr::mutate(
 				hp_ech = echarts4r_Capsule(
@@ -488,9 +574,11 @@ if (FALSE){
 					,y_min = hp_ymin
 					,y_max = hp_ymax
 					,barColor = hp_color
+					,symColor = themePalette('BlackGold')$gold$d
 					,disp_min = '最小值'
 					,disp_max = '最大值'
 					,disp_sym = brand
+					,theme = rpt_theme
 					,fontFamily = c('宋体')
 					,jsFmtFloat = 'toFixed(0)'
 				)
@@ -500,6 +588,7 @@ if (FALSE){
 					,qsec_curr
 					,html_id = paste0('ech_widget_qsec_', dplyr::row_number())
 					,barColor = qsec_color
+					,symColor = '#FFFFFF'
 					,disp_min = '最小值'
 					,disp_max = '最大值'
 					,disp_sym = brand
@@ -536,6 +625,7 @@ if (FALSE){
 				,scrollX = FALSE
 				#[Show N entries] on top left
 				,pageLength = 2
+				,lengthMenu = c(2,4,10,-1)
 			)
 		) %>%
 			add_datatable_render_code() %>%
@@ -557,13 +647,13 @@ if (FALSE){
 							type = 'text/css'
 							,paste0(''
 								,'.main-header .navbar, .main-header .logo {'
-									,'background-color: #202122 !important;'
+									,'background-color: ',rpt_bgcol,' !important;'
 								,'}'
 								,'.main-sidebar {'
-									,'background-color: #202122 !important;'
+									,'background-color: ',rpt_bgcol,' !important;'
 								,'}'
 								,'.content-wrapper {'
-									,'background-color: #202122 !important;'
+									,'background-color: ',rpt_bgcol,' !important;'
 								,'}'
 							)
 						)
@@ -573,7 +663,7 @@ if (FALSE){
 								type = 'text/css'
 								,paste0(''
 									,'.box {'
-										,'background-color: #202122 !important;'
+										,'background-color: ',rpt_bgcol,' !important;'
 									,'}'
 								)
 							)
@@ -588,7 +678,7 @@ if (FALSE){
 				output$uDiv_DashTables <- shiny::renderUI({
 
 					shiny::tagList(
-						theme_datatable(transparent = T)
+						theme_datatable(theme = rpt_theme, transparent = T)
 						,dt_mtcar
 					)
 				})

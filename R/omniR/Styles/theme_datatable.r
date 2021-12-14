@@ -126,19 +126,31 @@ theme_datatable <- function(
 			'background-color' = list(
 				'default' = paste0(cache_BlackGold$black$d, alpha_trans)
 				,'stripe' = paste0(cache_BlackGold$gold$d, alphaToHex(0.1))
-				,'header' = paste0(cache_BlackGold$gold$d, alphaToHex(0.3))
-				,'accessory' = rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3)
+				,'stripe-odd' = paste0(cache_BlackGold$black$d, alpha_trans)
+				,'header' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
+				,'accessory' = rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.2)
 			)
 			,'background' = list(
 				'btn-act' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'top', 'bottom')
 				,'btn-act-hover' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact' = h_grad(cache_BlackGold$black$d, cache_BlackGold$gold$d, 'top', 'bottom')
-				,'btn-inact-hover' = h_grad(cache_BlackGold$black$d, cache_BlackGold$gold$d, 'bottom', 'top')
+				,'btn-inact' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
+				,'btn-inact-hover' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'bottom', 'top')
 			)
 			,'color' = list(
 				'default' = cache_BlackGold$gold$d
 				,'header' = cache_BlackGold$gold$d
+				,'body' = rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.1)
 				,'accessory' = cache_BlackGold$black$d
+				,'btn-act' = cache_BlackGold$black$d
+				,'btn-act-hover' = cache_BlackGold$black$d
+				,'btn-inact' = cache_BlackGold$gold$d
+				,'btn-inact-hover' = cache_BlackGold$black$d
+			)
+			,'border' = list(
+				'btn-act' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
+				,'btn-act-hover' = paste0(cache_BlackGold$gold$d, alphaToHex(0.3))
+				,'btn-inact' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
+				,'btn-inact-hover' = paste0(cache_BlackGold$gold$d, alphaToHex(0.3))
 			)
 			,'border-top' = list(
 				'default' = paste0('1px solid ', cache_BlackGold$gold$d, alphaToHex(0.3))
@@ -149,77 +161,133 @@ theme_datatable <- function(
 		)
 		,'Inno' = list(
 			'background-color' = list(
-				'default' = paste0(cache_Inno$black$d, alpha_trans)
-				,'stripe' = paste0(cache_Inno$white$d, alphaToHex(0.1))
-				,'header' = paste0(cache_Inno$white$d, alphaToHex(0.3))
-				,'accessory' = rgba2rgb(cache_Inno$white$d, alpha_in = 0.3)
+				'default' = paste0(cache_Inno$black$p[[4]], alpha_trans)
+				,'stripe' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.1))
+				,'stripe-odd' = paste0(cache_Inno$black$p[[4]], alpha_trans)
+				,'header' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
+				,'accessory' = rgba2rgb(cache_Inno$white$p[[4]], alpha_in = 0.3)
 			)
 			,'background' = list(
-				'btn-act' = h_grad(cache_Inno$black$d, rgba2rgb(cache_Inno$white$d, alpha_in = 0.3), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_Inno$black$d, rgba2rgb(cache_Inno$white$d, alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact' = h_grad(cache_Inno$black$d, cache_Inno$white$d, 'top', 'bottom')
-				,'btn-inact-hover' = h_grad(cache_Inno$black$d, cache_Inno$white$d, 'bottom', 'top')
+				'btn-act' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'top', 'bottom')
+				,'btn-act-hover' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'bottom', 'top')
+				,'btn-inact' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
+				,'btn-inact-hover' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'bottom', 'top')
 			)
 			,'color' = list(
-				'default' = cache_Inno$white$d
-				,'header' = cache_Inno$white$d
-				,'accessory' = cache_Inno$black$d
+				'default' = cache_Inno$white$p[[2]]
+				,'header' = cache_Inno$white$p[[2]]
+				,'body' = cache_Inno$white$p[[2]]
+				,'accessory' = cache_Inno$black$p[[4]]
+				,'btn-act' = cache_Inno$black$p[[4]]
+				,'btn-act-hover' = cache_Inno$black$p[[4]]
+				,'btn-inact' = cache_Inno$white$p[[2]]
+				,'btn-inact-hover' = cache_Inno$black$p[[4]]
+			)
+			,'border' = list(
+				'btn-act' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.2))
+				,'btn-act-hover' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
+				,'btn-inact' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.2))
+				,'btn-inact-hover' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
 			)
 			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_Inno$white$d, alphaToHex(0.3))
+				'default' = paste0('1px solid ', cache_Inno$white$p[[2]], alphaToHex(0.3))
 			)
 			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_Inno$white$d, alphaToHex(0.3))
+				'default' = paste0('1px solid ', cache_Inno$white$p[[2]], alphaToHex(0.3))
 			)
 		)
 		,'PBI' = list(
 			'background-color' = list(
 				'default' = paste0(cache_PBI$white$d, alpha_trans)
-				,'stripe' = paste0(cache_PBI$black$d, alphaToHex(0.1))
-				,'header' = paste0(cache_PBI$black$d, alphaToHex(0.2))
-				,'accessory' = cache_PBI$white$p[[1]]
+				,'stripe' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
+				,'stripe-odd' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
+				,'header' = paste0(cache_PBI$white$d, alpha_trans)
+				,'accessory' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
 			)
 			,'background' = list(
-				'btn-act' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$d, alpha_in = 0.2), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$d, alpha_in = 0.2), 'bottom', 'top')
-				,'btn-inact' = h_grad(cache_PBI$white$d, cache_PBI$black$p[[1]], 'top', 'bottom')
-				,'btn-inact-hover' = h_grad(cache_PBI$white$d, cache_PBI$black$p[[1]], 'bottom', 'top')
+				'btn-act' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'top', 'bottom')
+				,'btn-act-hover' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
+				,'btn-inact' = h_grad(cache_PBI$black$p[[4]], rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
+				,'btn-inact-hover' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
 			)
 			,'color' = list(
-				'default' = cache_PBI$black$d
-				,'header' = cache_PBI$black$d
-				,'accessory' = cache_PBI$black$d
+				'default' = cache_PBI$black$p[[4]]
+				,'header' = cache_PBI$black$p[[4]]
+				,'body' = cache_PBI$black$p[[4]]
+				,'accessory' = cache_PBI$black$p[[4]]
+				,'btn-act' = cache_PBI$white$black$p[[4]]
+				,'btn-act-hover' = cache_PBI$black$p[[4]]
+				,'btn-inact' = cache_PBI$white$d
+				,'btn-inact-hover' = cache_PBI$black$p[[4]]
+			)
+			,'border' = list(
+				'btn-act' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.2))
+				,'btn-act-hover' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.3))
+				,'btn-inact' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.2))
+				,'btn-inact-hover' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.3))
 			)
 			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_PBI$black$d, alphaToHex(0.2))
+				'default' = paste0('1px solid ', cache_PBI$black$p[[4]], alphaToHex(0.2))
 			)
 			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_PBI$black$d, alphaToHex(0.2))
+				'default' = paste0('1px solid ', cache_PBI$black$p[[4]], alphaToHex(0.2))
 			)
 		)
 		,'MSOffice' = list(
 			'background-color' = list(
 				'default' = paste0(cache_MSOffice$white$d, alpha_trans)
-				,'stripe' = paste0(cache_MSOffice$black$d, alphaToHex(0.1))
-				,'header' = paste0(cache_MSOffice$black$d, alphaToHex(0.2))
-				,'accessory' = cache_MSOffice$white$p[[1]]
+				,'stripe' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
+				,'stripe-odd' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
+				,'header' = paste0(cache_MSOffice$white$d, alpha_trans)
+				,'accessory' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
 			)
 			,'background' = list(
-				'btn-act' = h_grad(cache_MSOffice$white$d, rgba2rgb(cache_MSOffice$black$d, alpha_in = 0.1), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_MSOffice$white$d, rgba2rgb(cache_MSOffice$black$d, alpha_in = 0.1), 'bottom', 'top')
-				,'btn-inact' = h_grad(cache_MSOffice$white$d, cache_MSOffice$white$p[[3]], 'top', 'bottom')
-				,'btn-inact-hover' = h_grad(cache_MSOffice$white$d, cache_MSOffice$white$p[[3]], 'bottom', 'top')
+				'btn-act' = h_grad(
+					cache_MSOffice$white$d
+					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
+					, 'top'
+					, 'bottom'
+				)
+				,'btn-act-hover' = h_grad(
+					cache_MSOffice$white$d
+					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
+					, 'bottom'
+					, 'top'
+				)
+				,'btn-inact' = h_grad(
+					cache_MSOffice$black$p[[4]]
+					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
+					, 'bottom'
+					, 'top'
+				)
+				,'btn-inact-hover' = h_grad(
+					cache_MSOffice$white$d
+					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
+					, 'top'
+					, 'bottom'
+				)
 			)
 			,'color' = list(
-				'default' = cache_MSOffice$black$d
-				,'header' = cache_MSOffice$black$d
-				,'accessory' = cache_MSOffice$black$d
+				'default' = cache_MSOffice$black$p[[4]]
+				,'header' = cache_MSOffice$black$p[[4]]
+				,'body' = cache_MSOffice$black$p[[4]]
+				,'accessory' = cache_MSOffice$black$p[[4]]
+				,'btn-act' = cache_MSOffice$white$black$p[[4]]
+				,'btn-act-hover' = cache_MSOffice$black$p[[4]]
+				,'btn-inact' = cache_MSOffice$white$d
+				,'btn-inact-hover' = cache_MSOffice$black$p[[4]]
+			)
+			,'border' = list(
+				'btn-act' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.2))
+				,'btn-act-hover' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.3))
+				,'btn-inact' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.2))
+				,'btn-inact-hover' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.3))
 			)
 			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_MSOffice$black$d, alphaToHex(0.2))
+				'default' = paste0('1px solid ', cache_MSOffice$black$p[[4]], alphaToHex(0.2))
 			)
 			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_MSOffice$black$d, alphaToHex(0.2))
+				'default' = paste0('1px solid ', cache_MSOffice$black$p[[4]], alphaToHex(0.2))
 			)
 		)
 	)
@@ -281,7 +349,7 @@ theme_datatable <- function(
 			,'}'
 			,'.dataTables_wrapper .dataTables_scroll div.dataTables_scrollBody {'
 				,'overflow: visible !important;'
-				,'color' %>% h_attr('default')
+				,'color' %>% h_attr('body')
 			,'}'
 			,'.dataTables_wrapper.no-footer .dataTables_scrollBody {'
 				,'border-bottom' %>% h_attr('default')
@@ -295,26 +363,39 @@ theme_datatable <- function(
 			,', .dataTables_wrapper .dataTables_info'
 			,', .dataTables_wrapper .dataTables_processing'
 			,', .dataTables_wrapper .dataTables_paginate {'
-				,'background-color' %>% h_attr('default')
-				,'color' %>% h_attr('default')
+				,'background-color' %>% h_attr('default', important = T)
+				,'color' %>% h_attr('body')
+				,'font-weight: 100;'
+			,'}'
+			,'.dataTables_wrapper .dataTables_length label'
+			,', .dataTables_wrapper .dataTables_filter label {'
+				,'font-weight: 100;'
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button.disabled'
 			,', .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover'
 			,', .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:active {'
-				,'color' %>% h_attr('default', important = T)
+				,'color' %>% h_attr('body', important = T)
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button {'
 				,'background' %>% h_attr('btn-inact')
-				,'color' %>% h_attr('accessory', important = T)
+				,'border' %>% h_attr('btn-inact')
+				,'color' %>% h_attr('btn-inact', important = T)
+				,'font-weight: 100;'
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button:hover {'
 				,'background' %>% h_attr('btn-inact-hover', important = T)
+				,'border' %>% h_attr('btn-inact-hover')
+				,'color' %>% h_attr('btn-inact-hover', important = T)
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button.current {'
 				,'background' %>% h_attr('btn-act')
+				,'border' %>% h_attr('btn-act')
+				,'color' %>% h_attr('btn-act', important = T)
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {'
 				,'background' %>% h_attr('btn-act-hover', important = T)
+				,'border' %>% h_attr('btn-act-hover')
+				,'color' %>% h_attr('btn-act-hover', important = T)
 			,'}'
 			,'table.dataTable.stripe tbody tr, table.dataTable.display tbody tr {'
 				,'background-color' %>% h_attr('default')
@@ -327,7 +408,7 @@ theme_datatable <- function(
 			,'}'
 			#Fill the rows with opacity
 			,'table.dataTable.stripe tbody tr.odd, table.dataTable.display tbody tr.odd {'
-				,'background-color' %>% h_attr('stripe')
+				,'background-color' %>% h_attr('stripe-odd')
 			,'}'
 			#Below ensure the widget has a full width in its container
 			,'[id^=htmlwidget-] {'

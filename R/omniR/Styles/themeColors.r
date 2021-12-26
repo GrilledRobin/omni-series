@@ -187,12 +187,12 @@ themeColors <- function(
 				,'btn-act-hover' = cache_Inno$black$p[[4]]
 				,'btn-inact' = cache_Inno$white$p[[2]]
 				,'btn-inact-hover' = cache_Inno$black$p[[4]]
-				,'chart-bar' = cache_Inno$yellow$d
-				,'chart-line' = cache_Inno$yellow$d
+				,'chart-bar' = cache_Inno$yellow$p[[1]]
+				,'chart-line' = cache_Inno$yellow$p[[1]]
 				,'chart-sym' = rgba2rgb(cache_Inno$black$p[[4]], alpha_in = 0.7, color_bg = cache_Inno$white$p[[1]])
-				,'chart-bar-incr' = cache_Inno$red$d
-				,'chart-bar-decr' = cache_Inno$green$d
-				,'chart-sym-light' = cache_Inno$white$p[[2]]
+				,'chart-bar-incr' = cache_Inno$red$p[[2]]
+				,'chart-bar-decr' = cache_Inno$green$p[[2]]
+				,'chart-sym-light' = cache_Inno$white$p[[1]]
 				,'chart-markpoint' = cache_Inno$black$p[[4]]
 				,'tooltip' = cache_Inno$white$p[[1]]
 			)
@@ -251,8 +251,8 @@ themeColors <- function(
 				,'btn-act-hover' = cache_PBI$black$p[[4]]
 				,'btn-inact' = cache_PBI$white$d
 				,'btn-inact-hover' = cache_PBI$black$p[[4]]
-				,'chart-bar' = cache_PBI$black$p[[4]]
-				,'chart-line' = cache_PBI$black$p[[4]]
+				,'chart-bar' = cache_PBI$yellow$p[[1]]
+				,'chart-line' = cache_PBI$yellow$p[[1]]
 				,'chart-sym' = cache_PBI$white$p[[1]]
 				,'chart-bar-incr' = cache_PBI$red$d
 				,'chart-bar-decr' = cache_PBI$green$d
@@ -335,8 +335,8 @@ themeColors <- function(
 				,'btn-act-hover' = cache_MSOffice$black$p[[4]]
 				,'btn-inact' = cache_MSOffice$white$d
 				,'btn-inact-hover' = cache_MSOffice$black$p[[4]]
-				,'chart-bar' = cache_MSOffice$black$p[[4]]
-				,'chart-line' = cache_MSOffice$black$p[[4]]
+				,'chart-bar' = cache_MSOffice$gold$p[[1]]
+				,'chart-line' = cache_MSOffice$gold$p[[1]]
 				,'chart-sym' = cache_MSOffice$white$p[[1]]
 				,'chart-bar-incr' = cache_MSOffice$orange$d
 				,'chart-bar-decr' = cache_MSOffice$green$d

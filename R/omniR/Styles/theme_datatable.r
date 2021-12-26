@@ -13,6 +13,9 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |theme       :   The pre-defined themes                                                                                             #
 #   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
+#   |transparent :   Whether to set the entire background of the datatable as transparent                                               #
+#   |                 [FALSE       ] <Default> Use the theme color                                                                      #
+#   |                 [TRUE        ]           Set the alpha of background color as 0                                                   #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
 #   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
@@ -20,9 +23,6 @@
 #   |fs_header   :   Any vector that can be translated by [htmltools::validateCssUnit].                                                 #
 #   |                 [IMPORTANT] Font size for table header will override [fontSize]                                                   #
 #   |                 [14px        ] <Default> Common font size                                                                         #
-#   |transparent :   Whether to set the entire background of the datatable as transparent                                               #
-#   |                 [FALSE       ] <Default> Use the theme color                                                                      #
-#   |                 [TRUE        ]           Set the alpha of background color as 0                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -33,6 +33,11 @@
 #   | Date |    20211212        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211218        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new function [themeColors] to standardize the theme selection                                               #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -48,9 +53,7 @@
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Styles                                                                                                                   #
-#   |   |   |rgba2rgb                                                                                                                   #
-#   |   |   |themePalette                                                                                                               #
-#   |   |   |alphaToHex                                                                                                                 #
+#   |   |   |themeColors                                                                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -69,10 +72,10 @@ library(magrittr)
 
 theme_datatable <- function(
 	theme = c('BlackGold', 'PBI', 'Inno', 'MSOffice')
+	,transparent = FALSE
 	,fontFamily = c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
 	,fontSize = '14px'
 	,fs_header = '14px'
-	,transparent = FALSE
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -80,220 +83,20 @@ theme_datatable <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	theme <- match.arg(theme, c('BlackGold', 'PBI', 'Inno', 'MSOffice'))
 	fontSize <- htmltools::validateCssUnit(fontSize)
 	fs_header <- htmltools::validateCssUnit(fs_header)
 
 	#015. Function local variables
-	cache_BlackGold <- themePalette('BlackGold')
-	cache_Inno <- themePalette('Inno')
-	cache_PBI <- themePalette('PBI')
-	cache_MSOffice <- themePalette('MSOffice')
-	alpha_trans <- ifelse(transparent, '00', '')
 	fontFamily_css <- paste0(
 		sapply(fontFamily, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('\'',m,'\'') else m})
 		,collapse = ','
 	)
 
-	#100. Function to define the [gradient] styles
-	#Quote: https://blog.csdn.net/qq_38990521/article/details/80588232
-	#Quote: https://webkit.org/blog/1424/css3-gradients/
-	h_grad <- function(col, bg, from, to) {
-		c(
-			paste0('-webkit-gradient('
-				,'linear'
-				,', left ',from
-				,', left ',to
-				,', color-stop(0%, ',rgba2rgb(col, alpha_in = 0.1, color_bg = bg),')'
-				,', color-stop(100%, ',rgba2rgb(col, alpha_in = 0.3, color_bg = bg),')'
-			,');')
-			,paste0('-',c('webkit','moz','ms','o'),'-linear-gradient('
-				,from
-				,', ',rgba2rgb(col, alpha_in = 0.1, color_bg = bg),' 0%'
-				,', ',rgba2rgb(col, alpha_in = 0.3, color_bg = bg),' 100%'
-			,');')
-			,paste0('linear-gradient('
-				,'to ',to
-				,', ',rgba2rgb(col, alpha_in = 0.1, color_bg = bg),' 0%'
-				,', ',rgba2rgb(col, alpha_in = 0.3, color_bg = bg),' 100%'
-			,');')
-		)
-	}
-
-	#500. Create colors
-	coltheme <- list(
-		'BlackGold' = list(
-			'background-color' = list(
-				'default' = paste0(cache_BlackGold$black$d, alpha_trans)
-				,'stripe' = paste0(cache_BlackGold$gold$d, alphaToHex(0.1))
-				,'stripe-odd' = paste0(cache_BlackGold$black$d, alpha_trans)
-				,'header' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
-				,'accessory' = rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.2)
-			)
-			,'background' = list(
-				'btn-act' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
-				,'btn-inact-hover' = h_grad(cache_BlackGold$black$d, rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.3), 'bottom', 'top')
-			)
-			,'color' = list(
-				'default' = cache_BlackGold$gold$d
-				,'header' = cache_BlackGold$gold$d
-				,'body' = rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.1)
-				,'accessory' = cache_BlackGold$black$d
-				,'btn-act' = cache_BlackGold$black$d
-				,'btn-act-hover' = cache_BlackGold$black$d
-				,'btn-inact' = cache_BlackGold$gold$d
-				,'btn-inact-hover' = cache_BlackGold$black$d
-			)
-			,'border' = list(
-				'btn-act' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
-				,'btn-act-hover' = paste0(cache_BlackGold$gold$d, alphaToHex(0.3))
-				,'btn-inact' = paste0(cache_BlackGold$gold$d, alphaToHex(0.2))
-				,'btn-inact-hover' = paste0(cache_BlackGold$gold$d, alphaToHex(0.3))
-			)
-			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_BlackGold$gold$d, alphaToHex(0.3))
-			)
-			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_BlackGold$gold$d, alphaToHex(0.3))
-			)
-		)
-		,'Inno' = list(
-			'background-color' = list(
-				'default' = paste0(cache_Inno$black$p[[4]], alpha_trans)
-				,'stripe' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.1))
-				,'stripe-odd' = paste0(cache_Inno$black$p[[4]], alpha_trans)
-				,'header' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
-				,'accessory' = rgba2rgb(cache_Inno$white$p[[4]], alpha_in = 0.3)
-			)
-			,'background' = list(
-				'btn-act' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
-				,'btn-inact-hover' = h_grad(cache_Inno$black$p[[4]], rgba2rgb(cache_Inno$white$p[[2]], alpha_in = 0.3), 'bottom', 'top')
-			)
-			,'color' = list(
-				'default' = cache_Inno$white$p[[2]]
-				,'header' = cache_Inno$white$p[[2]]
-				,'body' = cache_Inno$white$p[[2]]
-				,'accessory' = cache_Inno$black$p[[4]]
-				,'btn-act' = cache_Inno$black$p[[4]]
-				,'btn-act-hover' = cache_Inno$black$p[[4]]
-				,'btn-inact' = cache_Inno$white$p[[2]]
-				,'btn-inact-hover' = cache_Inno$black$p[[4]]
-			)
-			,'border' = list(
-				'btn-act' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.2))
-				,'btn-act-hover' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
-				,'btn-inact' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.2))
-				,'btn-inact-hover' = paste0(cache_Inno$white$p[[4]], alphaToHex(0.3))
-			)
-			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_Inno$white$p[[2]], alphaToHex(0.3))
-			)
-			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_Inno$white$p[[2]], alphaToHex(0.3))
-			)
-		)
-		,'PBI' = list(
-			'background-color' = list(
-				'default' = paste0(cache_PBI$white$d, alpha_trans)
-				,'stripe' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
-				,'stripe-odd' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
-				,'header' = paste0(cache_PBI$white$d, alpha_trans)
-				,'accessory' = paste0(cache_PBI$black$p[[4]], alphaToHex(0.07))
-			)
-			,'background' = list(
-				'btn-act' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'top', 'bottom')
-				,'btn-act-hover' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact' = h_grad(cache_PBI$black$p[[4]], rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
-				,'btn-inact-hover' = h_grad(cache_PBI$white$d, rgba2rgb(cache_PBI$black$p[[4]], alpha_in = 0.3), 'bottom', 'top')
-			)
-			,'color' = list(
-				'default' = cache_PBI$black$p[[4]]
-				,'header' = cache_PBI$black$p[[4]]
-				,'body' = cache_PBI$black$p[[4]]
-				,'accessory' = cache_PBI$black$p[[4]]
-				,'btn-act' = cache_PBI$white$black$p[[4]]
-				,'btn-act-hover' = cache_PBI$black$p[[4]]
-				,'btn-inact' = cache_PBI$white$d
-				,'btn-inact-hover' = cache_PBI$black$p[[4]]
-			)
-			,'border' = list(
-				'btn-act' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.2))
-				,'btn-act-hover' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.3))
-				,'btn-inact' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.2))
-				,'btn-inact-hover' = paste0(cache_PBI$white$p[[1]], alphaToHex(0.3))
-			)
-			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_PBI$black$p[[4]], alphaToHex(0.2))
-			)
-			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_PBI$black$p[[4]], alphaToHex(0.2))
-			)
-		)
-		,'MSOffice' = list(
-			'background-color' = list(
-				'default' = paste0(cache_MSOffice$white$d, alpha_trans)
-				,'stripe' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
-				,'stripe-odd' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
-				,'header' = paste0(cache_MSOffice$white$d, alpha_trans)
-				,'accessory' = paste0(cache_MSOffice$black$p[[4]], alphaToHex(0.07))
-			)
-			,'background' = list(
-				'btn-act' = h_grad(
-					cache_MSOffice$white$d
-					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
-					, 'top'
-					, 'bottom'
-				)
-				,'btn-act-hover' = h_grad(
-					cache_MSOffice$white$d
-					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
-					, 'bottom'
-					, 'top'
-				)
-				,'btn-inact' = h_grad(
-					cache_MSOffice$black$p[[4]]
-					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
-					, 'bottom'
-					, 'top'
-				)
-				,'btn-inact-hover' = h_grad(
-					cache_MSOffice$white$d
-					, rgba2rgb(cache_MSOffice$black$p[[4]], alpha_in = 0.3)
-					, 'top'
-					, 'bottom'
-				)
-			)
-			,'color' = list(
-				'default' = cache_MSOffice$black$p[[4]]
-				,'header' = cache_MSOffice$black$p[[4]]
-				,'body' = cache_MSOffice$black$p[[4]]
-				,'accessory' = cache_MSOffice$black$p[[4]]
-				,'btn-act' = cache_MSOffice$white$black$p[[4]]
-				,'btn-act-hover' = cache_MSOffice$black$p[[4]]
-				,'btn-inact' = cache_MSOffice$white$d
-				,'btn-inact-hover' = cache_MSOffice$black$p[[4]]
-			)
-			,'border' = list(
-				'btn-act' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.2))
-				,'btn-act-hover' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.3))
-				,'btn-inact' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.2))
-				,'btn-inact-hover' = paste0(cache_MSOffice$white$p[[1]], alphaToHex(0.3))
-			)
-			,'border-top' = list(
-				'default' = paste0('1px solid ', cache_MSOffice$black$p[[4]], alphaToHex(0.2))
-			)
-			,'border-bottom' = list(
-				'default' = paste0('1px solid ', cache_MSOffice$black$p[[4]], alphaToHex(0.2))
-			)
-		)
-	)
+	#500. Retrieve the color set for the requested theme
+	coltheme <- themeColors(theme, transparent)
 
 	#600. Combine all attributes
-	csstheme <- modifyList(coltheme[[theme]]
+	csstheme <- modifyList(coltheme
 		,list(
 			'font-family' = list(
 				'default' = fontFamily_css
@@ -381,6 +184,7 @@ theme_datatable <- function(
 				,'border' %>% h_attr('btn-inact')
 				,'color' %>% h_attr('btn-inact', important = T)
 				,'font-weight: 100;'
+				,'line-height: 1;'
 			,'}'
 			,'.dataTables_wrapper .dataTables_paginate .paginate_button:hover {'
 				,'background' %>% h_attr('btn-inact-hover', important = T)

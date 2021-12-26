@@ -1,0 +1,36 @@
+---
+title: 'Fund Price'
+author: 'Robin Lu'
+date: '`r strftime(Sys.Date(), "%Y-%m-%d")`'
+output:
+  html_document:
+    self_contained: TRUE
+params:
+  dt: NULL
+---
+\textbf{ Quote: https://bookdown.org/yihui/rmarkdown-cookbook/html-css.html }
+```{css, echo=FALSE}
+body {
+  background-color: #202122;
+  color: #FFE8CB;
+  font-family: 'Microsoft YaHei';
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Table of Fund Price
+
+This is a demo of parallel comparison of prices between funds with features as below:
+
+- Capsules show the summary of historical prices for respective fund
+  - Bar represents the range between the minimum and maximum prices
+  - Symbol shows the position of the latest price in the history
+- Tooltips, when hovering on the symbol, show the price trend
+
+```{r charts, echo=FALSE}
+params$dt
+```
+

@@ -99,6 +99,11 @@ def parseDatName(
 #   |      |     therefore ensure a consistent output                                                                                   #
 #   |      |[2] Change the way to assign list of values to a subset of data frame, to facilitate the syntax of [pandas >= 1.2.1]        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211228        | Version | 1.03        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] No longer reset the index when there is no cartesian join                                                               #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -231,7 +236,9 @@ def parseDatName(
         #100. Create cartesian join of the naming patterns and dates
         if isinstance(dates, pd.DataFrame):
             if len(dates):
-                ptn_comb = df_ptn.merge(dates, how = 'cross').reset_index(drop = True)
+                ptn_comb = df_ptn.merge(dates, how = 'cross')
+            if len(dates) > 1:
+                ptn_comb.reset_index(drop = True, inplace = True)
 
         #500. Translation by the helper function
         # sys._getframe(1).f_globals.update({ 'chkdat' : ptn_comb })
@@ -239,7 +246,6 @@ def parseDatName(
     else:
         #100. Consider there is no need for translation
         ptn_comb[names_resolve] = ptn_comb[names_trans]
-        ptn_comb.reset_index(drop = True, inplace = True)
 
     #700. Check file existence if requested
     if col_exist:

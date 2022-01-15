@@ -312,8 +312,9 @@ echarts4r_vec_line <- function(
 		echarts4r::e_charts(.ech.xaxis, elementId = html_id) %>%
 		echarts4r::e_grid(
 			index = 0
-			, top = 40, right = 40, bottom = 40 + zoom_height, left = 56
-			, height = height - 80 - zoom_height, width = width - 64
+			, top = 40, right = 40, bottom = 40 + zoom_height, left = 0
+			, height = height - 80 - zoom_height, width = width - 8
+			, containLabel = TRUE
 		) %>%
 		#300. Draw a line with the symbol
 		echarts4r::e_line(
@@ -340,8 +341,8 @@ echarts4r_vec_line <- function(
 				silent = TRUE
 				,symbol = 'pin'
 				#20211225 It is tested [symbolOffset] takes no effect on [echarts4r==0.4.2]
-				,symbolOffset = c('0px','40px')
-				,symbolSize = c(96,40)
+				# ,symbolOffset = c('0px','40px')
+				,symbolSize = 48
 				,symbolRotate = htmlwidgets::JS(paste0(''
 					,'function(value,params){'
 						,'var rotate = 0;'
@@ -355,12 +356,15 @@ echarts4r_vec_line <- function(
 					fontFamily = fontFamily
 					,fontSize = fontSize
 					,color = coltheme[['color']][['chart-markpoint']]
+					,backgroundColor = rgba2rgb(col_line, alpha_in = 0.7)
+					,borderColor = col_line
+					,borderWidth = 1
+					,borderRadius = 2
+					,padding = 4
+					,offset = c(0,4)
 					,formatter = htmlwidgets::JS(paste0(''
 						,'function(params){'
 							,'var placeholder = \'\';'
-							,'if (params.data.type == \'max\') {'
-								,'placeholder = \'\n\';'
-							,'} '
 							,'return('
 								,'placeholder + parseFloat(params.value).',jsFmtFloat
 							,');'
@@ -368,9 +372,9 @@ echarts4r_vec_line <- function(
 					))
 				)
 				,itemStyle = list(
-					color = rgba2rgb(col_line, alpha_in = 0.7)
-					,borderColor = col_line
-					,borderWidth = 1
+					color = paste0(col_line, '00')
+					,borderColor = paste0(col_line, '00')
+					,borderWidth = 0
 				)
 				,data = list(
 					list(
@@ -663,7 +667,7 @@ echarts4r_vec_line <- function(
 									,'ttChart.dispatchAction({'
 										#[IMPORTANT] We cannot use double quotes here, as there will be two consecutive calls
 										#             of [shQuote] in the following steps (the other is in [echarts4r.as.tooltip]),
-										#             which causes syntax error onmultiple double-quotes
+										#             which causes syntax error on multiple double-quotes
 										,'type: \'dataZoom\''
 										,',dataZoomIndex: 0'
 										,',start: ',x[['min']]

@@ -61,6 +61,10 @@
 #   |fmtTTSym    :   Character vector of the formatter to tweak the [tooltip] for the markers of each chart respectively                #
 #   |                 [IMPORTANT] MUST NOT provide a string of class [htmlwidgets::JS]                                                  #
 #   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
+#   |barShowBG   :   Whether to show a semi-transparent background of bars, indicating the full range covering the present values       #
+#   |                 [IMPORTANT] It is ignored if neither [y_min] nor [y_max] is provided                                              #
+#   |                 [FALSE       ] <Default> Do not show the background of bars                                                       #
+#   |                 [TRUE        ]           Show the background of bars, useful for comparison of scales between charts              #
 #   |gradient    :   Whether to draw the bar with gradient color effect                                                                 #
 #   |                 [FALSE       ] <Default> Draw the bar with the provided color [barColor]                                          #
 #   |                 [TRUE        ]           Draw a bar with gradient color effect. In such case, [barColor] plays as the last among  #
@@ -91,6 +95,11 @@
 #   | Log  |[1] Corrected the logic to retrieve the width and height from the script                                                    #
 #   |      |[2] Leverage the original [elementID] in [echarts4r::e_charts()] to assign the HTML ID                                      #
 #   |      |[3] Introduce a new argument [gradient] to allow passing various colors to create a bar with gradient color effect          #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220115        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [barShowBG] to enable showing background of bars for comparison between charts                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -148,6 +157,7 @@ echarts4r_Capsule <- function(
 	,jsFmtFloat = 'toFixed(4)'
 	,fmtTTBar = NULL
 	,fmtTTSym = NULL
+	,barShowBG = FALSE
 	,gradient = FALSE
 	,...
 ){
@@ -217,6 +227,7 @@ echarts4r_Capsule <- function(
 		,v_float
 		,v_html_id
 		,v_fmtTTbar,v_fmtTTsym
+		, v_barShowBG, v_gradient
 		,...
 	){
 		#015. Function local variables
@@ -251,22 +262,22 @@ echarts4r_Capsule <- function(
 			,borderWidth = 0
 			,borderColor = paste0(v_bar_col, alphaToHex(0.5))
 			,borderRadius = v_barBRadius
-			,showBackground = FALSE
-			,backgroundStyle = list()
 			,!!!cfg_shadow
 		)
-		if (!(is.na(y_amin) & is.na(y_amax))) {
-			disp_itemStyle %<>%
-				modifyList(
-					list(
-						showBackground = TRUE
-						,backgroundStyle = list(
-							color = paste0(coltheme[['color']][['default']], alphaToHex(0.1))
-							,borderWidth = 0
-							,borderRadius = v_barBRadius
-						)
-					)
+		if (v_barShowBG & !(is.na(y_amin) & is.na(y_amax))) {
+			bar_showBG <- list(
+				showBackground = TRUE
+				,backgroundStyle = list(
+					color = coltheme[['color']][['default']]
+					,borderWidth = 0
+					,borderRadius = v_barBRadius
+					,opacity = 0.07
 				)
+			)
+		} else {
+			bar_showBG <- list(
+				showBackground = FALSE
+			)
 		}
 
 		#070. Setup tooltip styles
@@ -404,7 +415,7 @@ echarts4r_Capsule <- function(
 			tooltip_floor <- disp_tooltip_bar
 
 			#700. Add a visual map to make the gradient color effect to the bar
-			if (gradient & (v_all != 0)) {
+			if (v_gradient & (v_all != 0)) {
 				#100. Calculate the index of the 3 points among 20 interpolated points between [min] and [max]
 				i_interp <- round(scales::rescale(
 					20 * (c(v_floor, 0, v_ceil) - yaxis_min) / v_all
@@ -472,7 +483,7 @@ echarts4r_Capsule <- function(
 			tooltip_floor <- list(show = FALSE)
 
 			#700. Add a visual map to make the gradient color effect to the bar
-			if (gradient & (v_all != 0)) {
+			if (v_gradient & (v_all != 0)) {
 				#100. Calculate the index of the 2 points among 20 interpolated points between [min] and [max]
 				i_interp <- round(scales::rescale(
 					20 * (c(v_min, v_max) - yaxis_min) / v_all
@@ -529,6 +540,7 @@ echarts4r_Capsule <- function(
 					,barWidth = v_barheight
 					,tooltip = tooltip_floor
 					,itemStyle = floor_itemStyle
+					,!!!bar_showBG
 				) %>%
 				#200. Draw the data bar
 				echarts4r::e_bar(
@@ -539,6 +551,7 @@ echarts4r_Capsule <- function(
 					,barWidth = v_barheight
 					,tooltip = tooltip_ceil
 					,itemStyle = ceil_itemStyle
+					,!!!bar_showBG
 				) %>%
 				#300. Draw a line with the symbol to resemble the [marker] on the capsule
 				echarts4r::e_line(
@@ -626,6 +639,7 @@ echarts4r_Capsule <- function(
 		, jsFmtFloat
 		, html_id
 		, fmtTTBar, fmtTTSym
+		, barShowBG, gradient
 		, ...
 		, SIMPLIFY = TRUE
 	)))
@@ -856,7 +870,8 @@ if (FALSE){
 			#Quote: https://stackoverflow.com/questions/29762393/how-does-one-stop-using-rowwise-in-dplyr
 			dplyr::ungroup() %>%
 			dplyr::mutate(
-				t_ymin = min(t_min)
+				t_now = ifelse(dplyr::row_number() == 1, t_now, NA)
+				,t_ymin = min(t_min)
 				,t_ymax = max(t_max)
 			) %>%
 			dplyr::mutate(
@@ -878,6 +893,7 @@ if (FALSE){
 					,disp_sym = '当前气温'
 					,theme = uRV$theme
 					,jsFmtFloat = 'toFixed(0)'
+					,barShowBG = T
 					,gradient = T
 					# ,col_bottom = color_cuts(t_ymin)
 					,col_bottom = '#0096FF'

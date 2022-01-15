@@ -124,7 +124,7 @@ echarts4r.as.tooltip <- function(
 			{gsub('\\\\\'','\'', .)}
 
 		#700. Convert the [formatter] part, when a function is introduced rather than a character string
-		func_opts <- gsub(paste0('\'(function\\(.*?\\)\\s*{.+?/\\*EndFunc\\*/})\''), '\\1', char_opts, perl = T)
+		func_opts <- gsub(paste0('\'(function\\s*\\(.*?\\)\\s*{.+?/\\*EndFunc\\*/})\''), '\\1', char_opts, perl = T)
 
 		#900. Create the JS function
 		js_func <- paste0(

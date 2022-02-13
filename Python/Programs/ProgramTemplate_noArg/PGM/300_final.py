@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #This step is to standardize the usage of multi-processing
+#[Capture exceptions raised by any threads inside the parent thread]
+#Quote: https://www.geeksforgeeks.org/handling-a-threads-exception-in-the-caller-thread-in-python/
 #[IMPORTANT]
 #[1] All MP scripts MUST BE executed within the [main] module, as they will spawn child processes out of it!
 #[2] It is tested that we can put the statement [if __name__=='__main__':] at the start of this script to enable MP

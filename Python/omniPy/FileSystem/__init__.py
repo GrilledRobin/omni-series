@@ -11,6 +11,7 @@ from .MSExcelSaveAs import MSExcelSaveAs
 from .getMSDNKnownFolderIDDoc import getMSDNKnownFolderIDDoc
 from .winKnownFolders import winKnownFolders
 from .winUserShellFolders import winUserShellFolders
+from .winReg_QueryValue import winReg_QueryValue
 
 #200.   Define available resources.
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     ,'getMSDNKnownFolderIDDoc'
     ,'winKnownFolders'
     ,'winUserShellFolders'
+    ,'winReg_QueryValue'
 ]

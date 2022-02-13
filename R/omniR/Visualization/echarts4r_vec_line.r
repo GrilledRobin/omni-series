@@ -215,7 +215,7 @@ echarts4r_vec_line <- function(
 		)
 	)
 	btn_width <- ifelse(xAxis.zoom, 48, 0)
-	zoom_height <- ifelse(xAxis.zoom, 16, 0)
+	zoom_height <- ifelse(xAxis.zoom, 32, 0)
 
 	#100. Retrieve the color set for the requested theme
 	coltheme <- themeColors(theme, transparent = transparent)
@@ -313,7 +313,7 @@ echarts4r_vec_line <- function(
 		echarts4r::e_grid(
 			index = 0
 			, top = 40, right = 40, bottom = 40 + zoom_height, left = 0
-			, height = height - 80 - zoom_height, width = width - 8
+			, height = height - 48 - zoom_height, width = width - 8
 			, containLabel = TRUE
 		) %>%
 		#300. Draw a line with the symbol

@@ -21,10 +21,15 @@ from .selNumVar import selNumVar
 from .trimCatVar import trimCatVar
 from .getWinUILanguage import getWinUILanguage
 
+from .locSubstr import locSubstr
+from .strBalancedGroup import strBalancedGroup
+from .strBalancedGroupEval import strBalancedGroupEval
+
 #200.   Define available resources.
 __all__ = [
     'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
     , 'modifyDict'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage'
+    , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
 ]

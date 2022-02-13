@@ -78,6 +78,9 @@ from omniPy.AdvOp import exec_file
 #Check the [__doc__] of below script for its detailed output
 exec_file(file_autoexec)
 
+#040. Load user defined functions
+from omniPy.FileSystem import getMemberByStrPattern, winReg_QueryValue
+
 #050. Define local environment
 #052. Directories for current process
 dir_proc = os.path.dirname(dir_curr)
@@ -95,19 +98,27 @@ dir_DM_src = os.path.join(dir_DM, 'SRC')
 dir_DM_T1 = os.path.join(dir_DM, 'custlvl')
 dir_DM_T2 = os.path.join(dir_DM_db, '08Digital Banking')
 
+#057. Prepare R parameters, in case one has to call RScript.exe for interaction
+rKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R64'
+rVal = r'InstallPath'
+R_HOME = winReg_QueryValue(rKey, rVal) or ''
+R_EXE = os.path.join(R_HOME, 'bin', 'Rscript.exe')
+
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
 #[ASSUMPTION]
 #[1] There is no need to quote the commands in shell, as [subprocess] will do the implicit quoting
 #Quote: https://stackoverflow.com/questions/14928860/passing-double-quote-shell-commands-in-python-to-subprocess-popen
-SAS_HOME = r'C:\SASHome\SASFoundation\9.4'
-#SAS_HOME = r'C:\Program Files\SASHome\x86\SASFoundation\9.4'
+sasVer = '9.4'
+sasKey = os.path.join(r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System', sasVer)
+sasVal = r'DefaultRoot'
+SAS_HOME = winReg_QueryValue(sasKey, sasVal) or ''
 SAS_EXE = os.path.join(SAS_HOME, 'sas.exe')
 SAS_CFG_ZH = os.path.join(SAS_HOME, 'nls', 'zh', 'sasv9.cfg')
 SAS_CFG_INIT = ['-CONFIG', SAS_CFG_ZH, '-MEMSIZE', '0', '-NOLOGO', '-ICON']
 SAS_omnimacro = [ d for d in paths_omnimacro if os.path.isdir(d) ][0]
 
 #100. Find all subordinate scripts that are to be called within current session
-pgms_curr = opy.FileSystem.getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
+pgms_curr = getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
 i_len = len(pgms_curr)
 
 #700. Print configurations into the log for debug
@@ -152,7 +163,7 @@ fname_ctrl = r'proc_ctrl' + G_obsDates.values[0].strftime('%Y%m%d') + '.txt'
 proc_ctrl = os.path.join(dir_curr, fname_ctrl)
 
 #781. Remove any control files that were created on other dates
-cln_ctrls = opy.FileSystem.getMemberByStrPattern(
+cln_ctrls = getMemberByStrPattern(
     dir_curr
     ,r'^proc_ctrl\d{8}\.txt$'
     ,exclRegExp = r'^' + fname_ctrl + r'$'

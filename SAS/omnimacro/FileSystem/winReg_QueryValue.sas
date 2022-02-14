@@ -52,9 +52,9 @@
 	%let	name		=	\(.+?\);
 %end;
 %else %do;
-	%let	reg_switch	=	/v %qsysfunc(quote(%superq(key), %str(%")));
+	%let	reg_switch	=	/v %qsysfunc(quote(%superq(name), %str(%")));
 %end;
-%let	reg_stmt	=	reg query %qsysfunc(quote(%superq(name), %str(%"))) &reg_switch.;
+%let	reg_stmt	=	reg query %qsysfunc(quote(%superq(key), %str(%"))) &reg_switch.;
 
 %*200.	Define the Regular Expression to filter the query result;
 %let	prx_ver	=	%sysfunc(prxparse(s/^\s*%superq(name)\s{4}REG_\w+\s{4}(.+)\s*$/\1/ismx));

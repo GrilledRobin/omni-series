@@ -149,6 +149,12 @@ def intnx(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220214        | Version | 6.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [intnx('day', '20211231', 1, daytype = 'w')] returns [NaT]. This was due to the calendar span is not set   #
+#   |      |     enough for calculation                                                                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -599,11 +605,11 @@ def intnx(
             #500. Extend the period coverage by the provided span and multiple
             #For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
             cal_bgn = (
-                in_min.replace(month = 1, day = 1)
+                in_min.replace(year = in_min.year - 1, month = 1, day = 1)
                 + dt.timedelta(days = l_cal_imin * dict_attr['multiple'] * dict_attr['span'])
             )
             cal_end = (
-                in_max.replace(month = 12, day = 31)
+                in_max.replace(year = in_max.year + 1, month = 12, day = 31)
                 + dt.timedelta(days = l_cal_imax * dict_attr['multiple'] * dict_attr['span'])
             )
 

@@ -86,6 +86,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220214        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug: [intnx('day', '20211231', 1, daytype = 'w')] returns [NA]. This was due to the calendar span is not set    #
+#   |      |     enough for calculation                                                                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -521,10 +527,12 @@ intnx <- function(
 
 			#500. Extend the period coverage by the provided span and multiple
 			tmp_min <- in_min
+			lubridate::year(tmp_min) <- lubridate::year(in_min) - 1
 			lubridate::month(tmp_min) <- 1
 			lubridate::day(tmp_min) <- 1
 			cal_bgn <- tmp_min + as.difftime(l_cal_imin * dict_attr[['multiple']] * dict_attr[['span']], units = 'days')
 			tmp_max <- in_max
+			lubridate::year(tmp_max) <- lubridate::year(in_max) + 1
 			lubridate::month(tmp_max) <- 12
 			lubridate::day(tmp_max) <- 31
 			cal_end <- tmp_max + as.difftime(l_cal_imax * dict_attr[['multiple']] * dict_attr[['span']], units = 'days')

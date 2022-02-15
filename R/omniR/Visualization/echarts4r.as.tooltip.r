@@ -8,6 +8,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Due to character manipulation, one MUST place such remarks [/*EndFunc*/] right before the end of the function definition for any   #
 #   | options that support function callback, such as [formatter] and [position], inside the echarts4r widget                           #
+#   |[20220215] This restriction is removed by introducing new functions, to ensure a better flexibility of programming                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -42,6 +43,15 @@
 #   | Log  |[1] Introduce a new argument [container] to allow containing the chart with other HTML tags                                 #
 #   |      |[2] Introduce a new argument [ech_name] to allow dispatching actions upon the named chart via JS                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220215        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce new functions [strBalancedGroup] and [re.escape] to eliminate the unnecessary convention to define any JS     #
+#   |      |     functions, to ensure a better flexibility of programming                                                               #
+#   |      |[2] Known limitations: If there are any unmatched braces, either left or right ones, inside the JS functions of the         #
+#   |      |     provided characterized html widgets (esp. when they are within JS character strings), this function fails to recognize #
+#   |      |     the entire input string; hence the result is unexpected                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -57,6 +67,8 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |getListNames                                                                                                               #
+#   |   |   |re.escape                                                                                                                  #
+#   |   |   |strBalancedGroup                                                                                                           #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Visualization                                                                                                            #
 #   |   |   |as.character.htmlwidget                                                                                                    #
@@ -124,7 +136,24 @@ echarts4r.as.tooltip <- function(
 			{gsub('\\\\\'','\'', .)}
 
 		#700. Convert the [formatter] part, when a function is introduced rather than a character string
-		func_opts <- gsub(paste0('\'(function\\s*\\(.*?\\)\\s*{.+?/\\*EndFunc\\*/})\''), '\\1', char_opts, perl = T)
+		# func_opts <- gsub(paste0('\'(function\\s*\\(.*?\\)\\s*{.+?/\\*EndFunc\\*/})\''), '\\1', char_opts, perl = T)
+		#710. Extract all balanced groups of contents embraced by braces [{}]
+		braces_opts <- strBalancedGroup(
+			char_opts
+			,lBound = '{'
+			,rBound = '}'
+			,rx = FALSE
+			,include = TRUE
+		)[[1]]
+
+		#750. Prepare the regular expression for conversion
+		#[ASSUMPTION]
+		#[1] JS functions are defined in the convention: function(...){...}
+		#[2] In [char_opts] all the function definitions are quoted by single quotation marks
+		rx_func_opts <- paste0('\'(function\\s*\\(.*?\\)\\s*(', paste0(re.escape(braces_opts), collapse = '|'), '))\'')
+
+		#790. Remove the outer-most single quotation marks from the JS function definitions
+		func_opts <- gsub(rx_func_opts, '\\1', char_opts, perl = T)
 
 		#900. Create the JS function
 		js_func <- paste0(

@@ -52,6 +52,13 @@
 #   |      |     provided characterized html widgets (esp. when they are within JS character strings), this function fails to recognize #
 #   |      |     the entire input string; hence the result is unexpected                                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220219        | Version | 1.21        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the function [stringr::str_replace_all] to conduct multiple replacements, instead of using a single large     #
+#   |      |     size of RegEx in [gsub], as the size of RegEx may exceed the maximum                                                   #
+#   |      |[2] Known limitations: The size of each RegEx may still exceed the maximum when data for a single chart is extremely large  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -149,11 +156,17 @@ echarts4r.as.tooltip <- function(
 		#750. Prepare the regular expression for conversion
 		#[ASSUMPTION]
 		#[1] JS functions are defined in the convention: function(...){...}
-		#[2] In [char_opts] all the function definitions are quoted by single quotation marks
-		rx_func_opts <- paste0('\'(function\\s*\\(.*?\\)\\s*(', paste0(re.escape(braces_opts), collapse = '|'), '))\'')
+		#[2] Parameters of Echarts JS functions can only contain: [\\w\\s,] characters
+		#[3] In [char_opts] all the function definitions are quoted by single quotation marks
+		# rx_func_opts <- paste0('\'(function\\s*\\(.*?\\)\\s*(', paste0(re.escape(braces_opts), collapse = '|'), '))\'')
+		rx_func_opts <- rep_along(braces_opts, '\\1')
+		names(rx_func_opts) <- paste0('\'(function\\s*\\([\\w\\s,]*?\\)\\s*', re.escape(braces_opts), ')\'')
 
 		#790. Remove the outer-most single quotation marks from the JS function definitions
-		func_opts <- gsub(rx_func_opts, '\\1', char_opts, perl = T)
+		#[ASSUMPTION]
+		#[1] When the data for Echarts is relatively large, the RegEx may exceed the acceptable size in characters
+		# func_opts <- gsub(rx_func_opts, '\\1', char_opts, perl = T)
+		func_opts <- stringr::str_replace_all(char_opts, rx_func_opts)
 
 		#900. Create the JS function
 		js_func <- paste0(

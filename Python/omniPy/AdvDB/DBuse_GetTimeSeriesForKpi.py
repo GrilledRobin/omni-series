@@ -272,6 +272,12 @@ def DBuse_GetTimeSeriesForKpi(
 #   | Log  |[1] Change the output into a [dict] to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220314        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug that always raise error when there are multiple paths provided for [InfDatCfg] and [InfDat] does not exist  #
+#   |      |     in any among them                                                                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -315,9 +321,9 @@ def DBuse_GetTimeSeriesForKpi(
     if not dnDates: raise ValueError('['+LfuncName+']'+'[dnDates] is not provided!')
     d_Dates = asDates(dnDates)
     if isinstance(d_Dates, Iterable):
-        if not d_Dates:
+        if len(d_Dates) == 0:
             raise ValueError('['+LfuncName+']'+'[dnDates]:[{0}] should be able to convert to date values!'.format(dnDates))
-        invdates = [ str(dnDates[i]) for i in range(len(dnDates)) if d_Dates[i] is None ]
+        invdates = [ str(dnDates[i]) for i in range(len(dnDates)) if pd.isnull(d_Dates[i]) ]
         if invdates:
             raise ValueError('['+LfuncName+']'+'Some values among [dnDates] cannot be converted to dates! ['+']['.join(invdates)+']')
     elif isinstance(d_Dates, dt.date):
@@ -575,26 +581,27 @@ def DBuse_GetTimeSeriesForKpi(
         #500. Verify the existence of the data files and only use the first one among the existing files
         #510. Find the first existing data file per group
         #Below statement is the same as [col_exist='datPtn.chkExist'], except that it demonstrates the usage of [.values]
-        col_exist = parse_infDat.columns[parse_infDat.columns.str.endswith('.chkExist')]
+        col_exist = 'datPtn.chkExist'
         if SingleInf:
             InfDat_exist = (
-                parse_infDat[parse_infDat[col_exist].values]
+                parse_infDat[parse_infDat[col_exist].eq(True)]
                 #[head(1)] works even if there is no observation that can be extracted
                 .head(1)
-                .reset_index()
-                .drop(columns=['index'])
-            )
-        else:
-            InfDat_exist = (
-                parse_infDat[parse_infDat[col_exist].values]
-                .groupby('dates', as_index = False)
-                .head(1)
-                .reset_index()
-                .drop(columns=['index'])
+                .reset_index(drop = True)
             )
 
-        #550. Find the missing data files
-        InfDat_miss = parse_infDat[~parse_infDat['datPtn'].isin(InfDat_exist['datPtn'])]
+            #Find the missing data files
+            InfDat_miss = parse_infDat[~parse_infDat['datPtn'].isin(InfDat_exist['datPtn'])]
+        else:
+            InfDat_exist = (
+                parse_infDat[parse_infDat[col_exist].eq(True)]
+                .groupby('dates', as_index = False)
+                .head(1)
+                .reset_index(drop = True)
+            )
+
+            #Find the missing data files
+            InfDat_miss = parse_infDat[~parse_infDat['dates'].isin(InfDat_exist['dates'])]
 
         #559. Abort if there is any one not found as Information Table is not skippable once requested
         if len(InfDat_miss):
@@ -649,8 +656,7 @@ def DBuse_GetTimeSeriesForKpi(
         .sort_values(['C_KPI_ID', 'dates', 'N_LIB_PATH_SEQ'])
         .groupby(['C_KPI_ID', 'dates'], as_index = False)
         .head(1)
-        .reset_index()
-        .drop(columns=['index'])
+        .reset_index(drop = True)
     )
 
     #559. Abort the process if there is no data file found anywhere
@@ -741,8 +747,7 @@ def DBuse_GetTimeSeriesForKpi(
             qc_KPI_id = (
                 pd.concat([ d.get(dup_KPIs) for d in GTSFK_import ], ignore_index = True)
                 .drop_duplicates()
-                .reset_index()
-                .drop(columns=['index'])
+                .reset_index(drop = True)
             )
             print(qc_KPI_id)
 
@@ -895,7 +900,7 @@ if __name__=='__main__':
         sys.path.append( dir_omniPy )
     from omniPy.AdvOp import exec_file, modifyDict
     from omniPy.AdvDB import loadSASdat, DBuse_GetTimeSeriesForKpi
-    from omniPy.Dates import UserCalendar
+    from omniPy.Dates import UserCalendar, asDates
 
     #010. Load user defined functions
     #[getOption] is from [autoexec.py]
@@ -910,8 +915,8 @@ if __name__=='__main__':
     CFG_LIB, meta_lib = loadSASdat(r'D:\R\omniR\SampleKPI\KPI\K1\cfg_lib.sas7bdat', encoding = 'GB2312')
 
     #190. Combine the configuration tables
-    mask_kpi = CFG_KPI.apply(lambda x: x['D_BGN'] <= pd.to_datetime(G_d_curr) <= x['D_END'], axis = 1)
-    mask_lib = CFG_LIB.apply(lambda x: x['D_BGN'] <= pd.to_datetime(G_d_curr) <= x['D_END'], axis = 1)
+    mask_kpi = CFG_KPI.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
+    mask_lib = CFG_LIB.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
     KPICfg_all = CFG_KPI[mask_kpi].merge( CFG_LIB[mask_lib], on = 'C_KPI_DAT_LIB', suffixes = ('', '.y') )
     KPICfg_all = KPICfg_all.loc[:, ~KPICfg_all.columns.str.endswith('.y')]
     KPICfg_all['C_KPI_FILE_TYPE'] = 'SAS'

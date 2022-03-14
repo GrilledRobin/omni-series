@@ -196,6 +196,12 @@
 #   |      |[4] Change the output into a [list] to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220314        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug that always raise error when there are multiple paths provided for [InfDatCfg] and [InfDat] does not exist  #
+#   |      |     in any among them                                                                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -543,6 +549,13 @@ DBuse_GetTimeSeriesForKpi <- function(
 				dplyr::filter_at(col_exist, ~.) %>%
 				#[slice_head()] works even if there is no observation that can be extracted
 				dplyr::slice_head()
+
+			#Find the missing data files
+			InfDat_miss <- parse_infDat %>%
+				dplyr::anti_join(
+					InfDat_exist %>% dplyr::select_at('datPtn') %>% unique()
+				) %>%
+				suppressMessages()
 		} else {
 			InfDat_exist <- parse_infDat %>%
 				dplyr::filter_at(col_exist, ~.) %>%
@@ -550,14 +563,14 @@ DBuse_GetTimeSeriesForKpi <- function(
 				#[slice_head()] works even if there is no observation that can be extracted
 				dplyr::slice_head() %>%
 				dplyr::ungroup()
-		}
 
-		#550. Find the missing data files
-		InfDat_miss <- parse_infDat %>%
-			dplyr::anti_join(
-				InfDat_exist %>% dplyr::select_at('datPtn') %>% unique()
-			) %>%
-			suppressMessages()
+			#Find the missing data files
+			InfDat_miss <- parse_infDat %>%
+				dplyr::anti_join(
+					InfDat_exist %>% dplyr::select_at('dates') %>% unique()
+				) %>%
+				suppressMessages()
+		}
 
 		#559. Abort if there is any one not found as Information Table is not skippable once requested
 		if (nrow(InfDat_miss) > 0) {

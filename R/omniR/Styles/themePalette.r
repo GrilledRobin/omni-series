@@ -127,7 +127,7 @@ themePalette <- function(theme = c('BlackGold', 'PBI', 'Inno', 'MSOffice')){
 						,rgba2rgb(bg_gold, alpha_in = 0.8, color_bg = '#FFFFFF')
 						,rgba2rgb(bg_gold, alpha_in = 0.9, color_bg = bg_black)
 						,rgba2rgb(bg_gold, alpha_in = 0.7, color_bg = bg_black)
-						,rgba2rgb(bg_gold, alpha_in = 0.8, color_bg = bg_black)
+						,rgba2rgb(bg_gold, alpha_in = 0.5, color_bg = bg_black)
 					)
 				)
 				,black = list(

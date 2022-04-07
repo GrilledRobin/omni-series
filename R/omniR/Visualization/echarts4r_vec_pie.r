@@ -11,12 +11,12 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[Quote]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] https://echarts.apache.org/zh/index.html                                                                                      #
+#   |[01] https://echarts.apache.org/zh/option.html#series-pie                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[Scenarios]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] This can be useful if one needs to render charts within [DT::datatable]                                                        #
-#   |[2] Draw charts for groups of keys along a time series, such as fund price trend within 5 years                                    #
+#   |[2] Draw charts for groups of keys split into several categories, such as distribution of Product Holdings of customer AUM         #
 #   |[3] Draw charts within [echarts:tooltip] for another vectorized chart series                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -24,35 +24,37 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |vec_value   :   Numeric vector to be used as [values] to draw the charts                                                           #
-#   |xAxis       :   Vector to play as the role of x-axis on the charts, only one vector of class [Date] is allowed at present          #
-#   |y_min       :   Numeric as the minimum value of y-axis. It is useful to unify the y-axis of the charts                             #
-#   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
-#   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is usefull for parallel comparison       #
-#   |y_max       :   Numeric as the maximum value of y-axis. It is useful to unify the y-axis of the charts                             #
-#   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
-#   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is usefull for parallel comparison       #
+#   |vec_cat     :   Vector by which to slice the pie                                                                                   #
+#   |sortBy      :   Character vector to determine how to display the slices in specific order                                          #
+#   |                 [input       ] <Default> The order follows the input sequence of [vec_cat]                                        #
+#   |                 [category    ]           Function sorts the input data by [vec_cat] in ASCENDING order and then draw the chart    #
+#   |                 [value       ]           Function sorts the input data by [vec_value] in DESCENDING order and then draw the chart #
 #   |html_id     :   Character vector of the html [id]s of each chart widget respectively, for reactive programming purpose             #
 #   |                 [NULL        ] <Default> Chart ID will be generated randomly by [echarts4r]                                       #
 #   |height      :   Integer of the chart height                                                                                        #
 #   |                 [540         ] <Default>                                                                                          #
 #   |width       :   Integer of the chart width                                                                                         #
 #   |                 [960         ] <Default>                                                                                          #
-#   |lineColor   :   Character as the CSS color of the line in current chart                                                            #
+#   |sliceColor  :   Character as the CSS color of the slices in current chart                                                          #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
 #   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
-#   |symSize     :   Integer as the size of the markers in current chart                                                                #
-#   |                 [4           ] <Default>                                                                                          #
-#   |symColor    :   Character as the CSS color of the markers in current chart                                                         #
-#   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
-#   |disp_min    :   Character as the name of the mark point on the minimum value                                                       #
-#   |                 [Min         ] <Default> Minimum                                                                                  #
-#   |disp_max    :   Character as the name of the mark point on the maximum value                                                       #
-#   |                 [Max         ] <Default> Maximum                                                                                  #
-#   |disp_sym    :   Character as the name showing in the tooltip on the marker                                                         #
-#   |                 [Value       ] <Default> Value of current data point                                                              #
-#   |title       :   Character as the title of current chart                                                                            #
-#   |                 [Line        ] <Default> Name all charts with this one                                                            #
+#   |roseType    :   Logical or character vector of whether or how to display the pie in rose type                                      #
+#   |                Quote: https://echarts.apache.org/zh/option.html#series-pie.roseType                                               #
+#   |                 [FALSE       ] <Default> Display the chart in normal pie form                                                     #
+#   |avoidLabelOverlap : Whether to avoid the overlap of the labels of slices                                                           #
+#   |                 [FALSE       ] <Default> Allow overlap of the data labels, as all labels are displayed in the center of the chart #
+#   |                 [TRUE        ]           Move the labels given any are overlapped                                                 #
+#   |label_show  :   Whether to always show the label of the slices                                                                     #
+#   |                 [FALSE       ] <Default> Only show the label when hovering on any slice                                           #
+#   |                 [TRUE        ]           Always show the labels of all slices                                                     #
+#   |label_pos   :   Character value that indicates the position of the labels of the slices                                            #
+#   |                 [center      ] <Default> Display the label at the center of the ring                                              #
+#   |rad_inner   :   Character or numeric vector as the radius of the inner circle of the pie                                           #
+#   |                 [0           ] <Default> Draw a classic pie instead of a ring chart                                               #
+#   |rad_outer   :   Character or numeric vector as the radius of the outer circle of the pie                                           #
+#   |                 [75%         ] <Default> Default proportion to the smaller among the rects of the container for the chart         #
+#   |title       :   Character as the title of current chart, taking the first value if the vector contains multiple values             #
+#   |                 [Pie         ] <Default> Name all charts with this one                                                            #
 #   |titleSize   :   Integer of the font size of the chart title                                                                        #
 #   |                 [18          ] <Default> Common font size                                                                         #
 #   |theme       :   The pre-defined themes                                                                                             #
@@ -63,16 +65,13 @@
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
 #   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
-#   |                 [14p       ] <Default> Common font size                                                                           #
-#   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_min], [vec_max] and [vec_sym] for  #
-#   |                 this function) of each chart respectively                                                                         #
-#   |                 [IMPORTANT] If [formatter] is provided in [tooltip], this option will no longer take effect                       #
-#   |                 [toFixed(4)  ] <Default> Format all values into numbers with fixed decimals as 4                                  #
-#   |fmtTTSym    :   Character as the formatter to tweak the [tooltip] for the markers of current chart                                 #
+#   |                 [14          ] <Default> Common font size                                                                         #
+#   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
+#   |                 chart respectively                                                                                                #
+#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 2, separated by comma              #
+#   |fmtLabel    :   Character as the formatter to tweak the [label] for the highlighted categories of current chart                    #
 #   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
-#   |xAxis.zoom  :   Whether to add zooming tools to x-axis                                                                             #
-#   |                 [TRUE        ] <Default> Add data zoom for x-axis, and several buttons for quick zooming                          #
-#   |                 [FALSE       ]           Only draw a plain chart                                                                  #
 #   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
@@ -84,14 +83,9 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20211218        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20220405        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20211223        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [xAxis.zoom] to allow adding zoom tools to x-axis                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -108,6 +102,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Styles                                                                                                                   #
 #   |   |   |themeColors                                                                                                                #
+#   |   |   |rgba2rgb                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Visualization                                                                                                            #
 #   |   |   |as.character.htmlwidget                                                                                                    #
@@ -129,29 +124,30 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 library(magrittr)
 library(rlang)
 
-echarts4r_vec_line <- function(
+#Require [echarts4r >= 0.4.3]
+
+echarts4r_vec_pie <- function(
 	vec_value
-	,xAxis
-	,y_min = NULL
-	,y_max = NULL
+	,vec_cat
+	,sortBy = c('input','category','value')
 	,html_id = NULL
-	,height = 540
-	,width = 960
-	,lineColor = NULL
-	,symSize = 4
-	,symColor = NULL
-	,disp_min = 'Min'
-	,disp_max = 'Max'
-	,disp_sym = 'Value'
-	,title = 'Line'
+	,height = 440
+	,width = 640
+	,sliceColor = NULL
+	,roseType = FALSE
+	,avoidLabelOverlap = FALSE
+	,label_show = FALSE
+	,label_pos = 'center'
+	,rad_inner = 144
+	,rad_outer = 184
+	,title = 'Pie'
 	,titleSize = 18
 	,theme = c('BlackGold', 'PBI', 'Inno', 'MSOffice')
 	,transparent = TRUE
 	,fontFamily = 'Microsoft YaHei'
 	,fontSize = 14
-	,jsFmtFloat = 'toFixed(4)'
-	,fmtTTSym = NULL
-	,xAxis.zoom = TRUE
+	,jsFmtFloat = 'toLocaleString(\'en-US\', {style:\'currency\', currency:\'CNY\', minimumFractionDigits:2, maximumFractionDigits:2})'
+	,fmtLabel = NULL
 	,as.tooltip = TRUE
 ){
 	#001. Handle parameters
@@ -160,74 +156,36 @@ echarts4r_vec_line <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	if (!all(class(xAxis) %in% c('Date'))) {
-		stop('[',LfuncName,'][xAxis] must be an object of class [Date]!')
-	}
 	if (height <= 124) {
 		stop('[',LfuncName,'][height] is too small!')
 	}
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
 	}
+	sortBy <- match.arg(sortBy, c('input','category','value'))
 	fontSize <- htmltools::validateCssUnit(fontSize)
 
 	#012. Handle the parameter buffer
-	if ((length(vec_value) == 0) | (length(xAxis) == 0)) return(character(0))
-	if (length(y_min) == 0) y_min <- 'dataMin'
-	if (length(y_max) == 0) y_max <- 'dataMax'
+	if (length(vec_value) != length(vec_cat)) {
+		stop('[',LfuncName,'][vec_value] has different length [',length(vec_value),'] to [vec_cat] as [',length(vec_cat),']!')
+	}
+	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
+	if (!(length(sliceColor) %in% c(0,1,length(vec_cat)))) {
+		stop('[',LfuncName,'][sliceColor] has length [',length(sliceColor),'], which is different to the input data!')
+	}
+	len_data <- length(vec_value)
 
 	#015. Function local variables
-	pct_7D <- length(xAxis[xAxis >= max(xAxis, na.rm = T) - as.difftime(7, units = 'days')]) / length(xAxis)
-	pct_30D <- length(xAxis[xAxis >= max(xAxis, na.rm = T) - as.difftime(30, units = 'days')]) / length(xAxis)
-	pct_180D <- length(xAxis[xAxis >= max(xAxis, na.rm = T) - as.difftime(180, units = 'days')]) / length(xAxis)
-	pct_1Y <- length(xAxis[xAxis >= max(xAxis, na.rm = T) - as.difftime(365, units = 'days')]) / length(xAxis)
-	pct_5Y <- length(xAxis[xAxis >= max(xAxis, na.rm = T) - as.difftime(1875, units = 'days')]) / length(xAxis)
-	zoom_cfg <- list(
-		'7D' = list(
-			'id' = '7D'
-			,'name' = '7D'
-			,'min' = round((1 - pct_7D) * 100, 4)
-			,'max' = 100
-		)
-		,'30D' = list(
-			'id' = '30D'
-			,'name' = '30D'
-			,'min' = round((1 - pct_30D) * 100, 4)
-			,'max' = 100
-		)
-		,'180D' = list(
-			'id' = '180D'
-			,'name' = '180D'
-			,'min' = round((1 - pct_180D) * 100, 4)
-			,'max' = 100
-		)
-		,'1Y' = list(
-			'id' = '1Y'
-			,'name' = '1Y'
-			,'min' = round((1 - pct_1Y) * 100, 4)
-			,'max' = 100
-		)
-		,'5Y' = list(
-			'id' = '5Y'
-			,'name' = '5Y'
-			,'min' = round((1 - pct_5Y) * 100, 4)
-			,'max' = 100
-		)
-	)
-	btn_width <- ifelse(xAxis.zoom, 48, 0)
-	zoom_height <- ifelse(xAxis.zoom, 32, 0)
+	v_roseType <- head(roseType, 1)
+	v_avoidLabelOverlap <- head(avoidLabelOverlap, 1)
+	v_label_show <- head(label_show, 1)
+	v_label_pos <- head(label_pos, 1)
 
 	#100. Retrieve the color set for the requested theme
 	coltheme <- themeColors(theme, transparent = transparent)
 	tt_theme <- themeColors(theme, transparent = F)
 
 	#200. Setup styles
-	#201. Function to paste the attribute names with their respective values
-	h_attr <- function(attr, atype, important = FALSE, theme = tt_theme) {
-		imp <- ifelse(important, ' !important', '')
-		paste0(paste0(attr, ': ', theme[[attr]][[atype]], imp, ';'), collapse = '')
-	}
-
 	#210. Create the styles of [tooltip] for this specific chart
 	tooltip <- list(
 		textStyle = list(
@@ -242,40 +200,9 @@ echarts4r_vec_line <- function(
 		)
 	)
 
-	#220. Define button styles
-	fontFamily_css <- paste0(
-		sapply(fontFamily, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('\'',m,'\'') else m})
-		,collapse = ','
-	)
-	styles_btn <- paste0(''
-		,'.dt_btn_as_tooltip {'
-			,'box-sizing: border-box;'
-			,'padding: .5em 0;'
-			,'margin-left: 2px;'
-			,'text-align: center;'
-			,'align-items: center;'
-			,'text-decoration: none;'
-			,'cursor: pointer;'
-			,'border-radius: 2px;'
-			,'font-family: ',fontFamily_css,';'
-			,'font-size: ',fontSize,';'
-			,'background' %>% h_attr('btn-inact')
-			,'border' %>% h_attr('btn-inact')
-			,'color' %>% h_attr('btn-inact')
-			,'font-weight: 100;'
-			,'line-height: 1;'
-			,'width:',btn_width,'px;'
-		,'}'
-		,'.dt_btn_as_tooltip:hover {'
-			,'background' %>% h_attr('btn-inact-hover')
-			,'border' %>% h_attr('btn-inact-hover')
-			,'color' %>% h_attr('btn-inact-hover')
-		,'}'
-	)
-
 	#250. Format the tooltip for current chart
-	if (length(fmtTTSym) > 0) {
-		tooltip_sym <- modifyList(tooltip, list(formatter = htmlwidgets::JS(fmtTTSym)))
+	if (length(fmtLabel) > 0) {
+		tooltip_sym <- modifyList(tooltip, list(formatter = htmlwidgets::JS(fmtLabel)))
 	} else {
 		tooltip_sym <- modifyList(
 			tooltip
@@ -283,221 +210,114 @@ echarts4r_vec_line <- function(
 				formatter = htmlwidgets::JS(paste0(''
 					,'function(params){'
 						,'return('
-							,'\'<strong>',disp_sym,'</strong>\''
-							,'+ " : " + parseFloat(params.value[1]).',jsFmtFloat
+							#Quote: https://www.tutorialspoint.com/how-to-convert-a-value-to-a-string-in-javascript
+							,'\'<strong>\' + String(params.name) + \'</strong>\''
+							,'+ \'<br/>\' + parseFloat(params.value).',jsFmtFloat
 						,');'
-					#[IMPORTANT] We must place such remark to ensure [echarts4r.as.tooltip] can locate this function correctly
-					,'/*EndFunc*/}'
+					,'}'
 				))
 			)
 		)
 	}
 
-	#300. Override the colors when required
-	if (length(lineColor) == 0) {
-		col_line <- coltheme[['color']][['chart-line']]
-	} else {
-		col_line <- lineColor
+	#300. Prepare the internal data frame to pre-process the charting options
+	df_chart <- data.frame(.ech.cat = vec_cat, .ech.value = vec_value)
+	if (length(sliceColor) != 0) {
+		df_chart$.ech.col <- sliceColor
 	}
-	if (length(symColor) == 0) {
-		col_sym <- coltheme[['color']][['chart-sym']]
+
+	#310. Determine the display order of the slices
+	if (sortBy == 'category') {
+		df_chart %<>% dplyr::arrange(.ech.cat)
+	} else if (sortBy == 'value') {
+		df_chart %<>% dplyr::arrange(dplyr::desc(.ech.value))
+	}
+
+	#400. Override the colors when required
+	#410. Determine the background color for interpolation
+	if (as.tooltip) {
+		col_bg <- coltheme[['background-color']][['tooltip']]
 	} else {
-		col_sym <- symColor
+		col_bg <- coltheme[['background-color']][['default']]
+	}
+
+	#450. Determine the colors of the slices
+	if (length(sliceColor) == len_data) {
+		col_slice <- df_chart$.ech.col
+	} else {
+		#100. Determine the base color to create a series of colors that cover all the input categories
+		if (length(sliceColor) == 0) {
+			col_base <- coltheme[['color']][['chart-pie']]
+		} else {
+			col_base <- sliceColor
+		}
+
+		#300. Prepare the interpolation of alpha between 0.07 (the least effective value) and 1
+		alpha_interp <- round(1 - (seq_len(len_data) - 1) * (1 - 0.07) / (len_data - 1), 2)
+
+		#900. Create the colors based on the interpolation
+		col_slice <- rgba2rgb(col_base, alpha_in = alpha_interp, color_bg = col_bg)
 	}
 
 	#500. Create the charting script
 	ch_html <- eval(rlang::expr(
-		data.frame(.ech.xaxis = xAxis, .ech.value = vec_value) %>%
+		data.frame(.ech.cat = vec_cat, .ech.value = vec_value) %>%
 		#[IMPORTANT] It is tested that the size of [canvas] is unexpected if we set [width] or [height] for [e_charts]
-		echarts4r::e_charts(.ech.xaxis, elementId = html_id) %>%
+		echarts4r::e_charts(.ech.cat, elementId = html_id) %>%
 		echarts4r::e_grid(
 			index = 0
-			, top = 40, right = 40, bottom = 40 + zoom_height, left = 0
-			, height = height - 48 - zoom_height, width = width - 8
+			, top = 0, right = 0, bottom = 0, left = 0
+			, height = height - 24, width = width - 16
 			, containLabel = TRUE
 		) %>%
-		#300. Draw a line with the symbol
-		echarts4r::e_line(
+		#300. Draw the chart
+		echarts4r::e_pie(
 			.ech.value
-			,x_index = 0
-			,y_index = 0
-			,name = disp_sym
-			# ,tooltip = tooltip_sym
-			,symbol = 'circle'
-			,symbolSize = symSize
-			,showSymbol = TRUE
-			,itemStyle = list(
-				#This color results in the same in [legend]
-				color = col_sym
-				,borderColor = col_line
-				,borderWidth = 0.5
-			)
-			,lineStyle = list(
-				#This color is different from that in [legend]
-				color = col_line
-				,width = 1
-			)
-			,markPoint = list(
-				silent = TRUE
-				,symbol = 'pin'
-				#20211225 It is tested [symbolOffset] takes no effect on [echarts4r==0.4.2]
-				# ,symbolOffset = c('0px','40px')
-				,symbolSize = 48
-				,symbolRotate = htmlwidgets::JS(paste0(''
-					,'function(value,params){'
-						,'var rotate = 0;'
-						,'if (params.data.type == \'max\') {'
-							,'rotate = 180;'
-						,'} '
-						,'return(rotate);'
-					,'/*EndFunc*/}'
-				))
-				,label = list(
-					fontFamily = fontFamily
-					,fontSize = fontSize
-					,color = coltheme[['color']][['chart-markpoint']]
-					,backgroundColor = rgba2rgb(col_line, alpha_in = 0.7)
-					,borderColor = col_line
-					,borderWidth = 1
-					,borderRadius = 2
-					,padding = 4
-					,offset = c(0,4)
-					,formatter = htmlwidgets::JS(paste0(''
-						,'function(params){'
-							,'var placeholder = \'\';'
-							,'return('
-								,'placeholder + parseFloat(params.value).',jsFmtFloat
-							,');'
-						,'/*EndFunc*/}'
-					))
-				)
-				,itemStyle = list(
-					color = paste0(col_line, '00')
-					,borderColor = paste0(col_line, '00')
-					,borderWidth = 0
-				)
-				,data = list(
-					list(
-						name = disp_min
-						,type = 'min'
-					)
-					,list(
-						name = disp_max
-						,type = 'max'
-					)
-				)
-			)
-		) %>%
-		#400. Setup the axes
-		echarts4r::e_x_axis(
-			index = 0
-			,gridIndex = 0
-			,type = 'time'
-			,axisLabel = list(
-				fontFamily = fontFamily
-				,fontSize = fontSize
-				,formatter = '{yyyy}-{MM}-{dd}'
-				,hideOverlap = TRUE
-			)
-			,axisLine = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,minorTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisPointer = list(
+			,roseType = v_roseType
+			,avoidLabelOverlap = v_avoidLabelOverlap
+			,name = 'Pie'
+			,left = 16
+			,top = 24
+			,legend = list(
 				show = TRUE
-				,triggerTooltip = FALSE
-				,label = list(
-					fontFamily = fontFamily
-					,fontSize = fontSize
-					,formatter = htmlwidgets::JS(paste0(''
-						,'function(params){'
-							,'return('
-								,'echarts.format.formatTime(\'yyyy-MM-dd\', params.value)'
-							,');'
-						,'/*EndFunc*/}'
-					))
-					,color = coltheme[['color']][['chart-markpoint']]
-					,borderColor = rgba2rgb(col_line, alpha_in = 0.7)
-					,backgroundColor = rgba2rgb(col_line, alpha_in = 0.7)
-				)
-				,lineStyle = list(
-					color = paste0(col_line, alphaToHex(0.1))
-					,type = 'dotted'
-				)
 			)
-		) %>%
-		echarts4r::e_y_axis(
-			index = 0
-			,gridIndex = 0
-			,type = 'value'
-			,min = y_min
-			,max = y_max
-			,splitLine = list(
-				lineStyle = list(
-					color = paste0(col_line, alphaToHex(0.1))
-					,type = 'dotted'
-				)
+			,showEmptyCircle = TRUE
+			,emptyCircleStyle = list(
+				color = rgba2rgb(coltheme[['color']][['chart-pie']], alpha_in = 0.07, color_bg = col_bg)
+				,borderWidth = 0
 			)
-			,minorSplitLine = list(
-				show = FALSE
-			)
-			,axisLabel = list(
-				fontFamily = fontFamily
-				,fontSize = fontSize
+			,label = list(
+				show = v_label_show
+				,position = v_label_pos
+				,fontFamily = fontFamily
+				,fontSize = titleSize
+				,color = coltheme[['color']][['header']]
+				,borderWidth = 0
 				,formatter = htmlwidgets::JS(paste0(''
-					,'function(value, index){'
+					,'function(params){'
+						,'var placeholder = \'\';'
 						,'return('
-							,'value.',jsFmtFloat
+							,'placeholder + parseFloat(params.value).',jsFmtFloat
 						,');'
-					,'/*EndFunc*/}'
+					,'}'
 				))
 			)
-			,axisLine = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,minorTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisPointer = list(
-				show = TRUE
-				,triggerTooltip = FALSE
-				,label = list(
-					fontFamily = fontFamily
-					,fontSize = fontSize
-					,formatter = htmlwidgets::JS(paste0(''
-						,'function(params){'
-							,'return('
-								,'parseFloat(params.value).',jsFmtFloat
-							,');'
-						,'/*EndFunc*/}'
-					))
-					,color = coltheme[['color']][['chart-markpoint']]
-					,borderColor = rgba2rgb(col_line, alpha_in = 0.7)
-					,backgroundColor = rgba2rgb(col_line, alpha_in = 0.7)
-				)
+			,labelLine = list(
+				show = !v_label_show
 				,lineStyle = list(
-					color = paste0(col_line, alphaToHex(0.1))
-					,type = 'dotted'
+					color = rgba2rgb(coltheme[['color']][['chart-pie']], alpha_in = 0.5, color_bg = col_bg)
+					,width = 1
+				)
+			)
+			,itemStyle = list(
+				#Obtain the color from the global color palette [echarts4r::e_color()]
+				borderWidth = 0
+			)
+			,center = list('30%', '50%')
+			,radius = list(rad_inner, rad_outer)
+			,emphasis = list(
+				label = list(
+					show = TRUE
 				)
 			)
 		) %>%
@@ -514,7 +334,10 @@ echarts4r_vec_line <- function(
 		) %>%
 		#700. Setup the legend
 		echarts4r::e_legend(
-			show = FALSE
+			show = TRUE
+			,right = '10%'
+			,top = 'center'
+			,orient = 'vertical'
 			,textStyle = list(
 				fontFamily = fontFamily
 				,fontSize = fontSize
@@ -522,6 +345,8 @@ echarts4r_vec_line <- function(
 			)
 		) %>%
 		#800. Extra configurations
+		#810. Prepare the color palette
+		echarts4r::e_color(color = col_slice) %>%
 		#820. Show a loading animation when the chart is re-drawn
 		echarts4r::e_show_loading() %>%
 		#880. Enable the tooltip triggered by mouse over the bars
@@ -530,89 +355,9 @@ echarts4r_vec_line <- function(
 			,confine = TRUE
 			,appendToBody = TRUE
 			,enterable = FALSE
-			,axisPointer = list(
-				show = TRUE
-				,z = 9999
-			)
 			,!!!tooltip_sym
 		)
 	))
-
-	#520. Add zooming bar if required
-	if (xAxis.zoom) {
-		ch_html %<>%
-			echarts4r::e_datazoom(
-				x_index = 0
-				,bottom = 4
-				,toolbox = F
-				,type = 'slider'
-				,filterMode = 'filter'
-				,backgroundColor = tt_theme[['background-color']][[ifelse(as.tooltip, 'tooltip', 'default')]]
-				,dataBackground = list(
-					lineStyle = list(
-						type = 'dotted'
-						,color = col_line
-						,opacity = 0.2
-						,width = 0.5
-					)
-					,areaStyle = list(
-						opacity = 0.1
-						,color = col_line
-					)
-				)
-				,selectedDataBackground = list(
-					lineStyle = list(
-						type = 'solid'
-						,color = col_line
-						,opacity = 0.2
-						,width = 0.5
-					)
-					,areaStyle = list(
-						opacity = 0.2
-						,color = col_line
-					)
-				)
-				,fillerColor = paste0(col_line, alphaToHex(0.1))
-				,borderColor = paste0(col_line, alphaToHex(0.1))
-				,handleStyle = list(
-					color = col_line
-					,borderColor = col_line
-				)
-				,moveHandleStyle = list(
-					color = col_line
-					,opacity = 0.2
-					,borderColor = paste0(col_line, alphaToHex(0.2))
-				)
-				,labelFormatter = htmlwidgets::JS(paste0(''
-					,'function(value){'
-						,'return('
-							,'echarts.format.formatTime(\'yyyy-MM-dd\', value)'
-						,');'
-					,'/*EndFunc*/}'
-				))
-				,textStyle = list(
-					fontFamily = fontFamily
-					,fontSize = fontSize
-					,color = col_line
-				)
-				,brushStyle = list(
-					color = col_line
-					,opacity = 0.1
-					,borderColor = paste0(col_line, alphaToHex(0.2))
-				)
-				,emphasis = list(
-					handleStyle = list(
-						color = col_line
-						,borderColor = col_line
-					)
-					,moveHandleStyle = list(
-						color = col_line
-						,opacity = 0.3
-						,borderColor = paste0(col_line, alphaToHex(0.2))
-					)
-				)
-			)
-	}
 
 	#580. Convert the htmlwiget into character vector
 	#581. Conversion
@@ -641,51 +386,11 @@ echarts4r_vec_line <- function(
 
 	#800. Function as container for creating the tooltip out of current chart
 	h_contain <- function(html_tag){
-		if (!xAxis.zoom) return(html_tag)
 		paste0(''
 			#Quote: https://www.cnblogs.com/zhuzhenwei918/p/6058457.html
 			,'<div style=\'display:inline-block;margin:0;padding:0;font-size:0;width:',width,'px;height:',height,'px;\'>'
 				,'<div style=\'display:inherit;font-size:',fontSize,';width:',width,'px;height:',height,'px;\'>'
 					,html_tag
-				,'</div>'
-				,'<div style=\''
-					,'position:absolute;'
-					,'display:inline-block;'
-					,'font-size:0;'
-					,'top:12px;'
-					,'right:20px;'
-					,'white-space:nowrap;'
-				,'\'>'
-					,'<style type=\'text/css\'>'
-						,styles_btn
-					,'</style>'
-					,paste0(
-						sapply(
-							zoom_cfg
-							,function(x){
-								js_callback <- paste0(''
-									,'ttChart.dispatchAction({'
-										#[IMPORTANT] We cannot use double quotes here, as there will be two consecutive calls
-										#             of [shQuote] in the following steps (the other is in [echarts4r.as.tooltip]),
-										#             which causes syntax error on multiple double-quotes
-										,'type: \'dataZoom\''
-										,',dataZoomIndex: 0'
-										,',start: ',x[['min']]
-										,',end: ',x[['max']]
-									,'})'
-								)
-								paste0(
-									'<button id=\'',vfy_html_id,'_',x[['id']],'\''
-										,' class=\'dt_btn_as_tooltip\''
-										,' onclick=',shQuote(js_callback)
-									,'>'
-										,x[['name']]
-									,'</button>'
-								)
-							}
-						)
-						,collapse = ''
-					)
 				,'</div>'
 			,'</div>'
 		)
@@ -712,63 +417,51 @@ if (FALSE){
 		uRV$theme <- 'BlackGold'
 		uRV$coltheme <- themeColors(uRV$theme)
 
-		#070. Load the raw data
-		myenv <- new.env()
-		load(file.path(getOption('path.omniR'), 'Visualization', 'prodprice.rdata'), envir = myenv)
-		# View(myenv$ProdPrice)
-
 		#100. Create sample data
-		ch_fundprice <- myenv$ProdPrice %>%
-			dplyr::group_by(ProdName_CN) %>%
-			dplyr::arrange(d_data) %>%
+		ch_scoring <- lubridate::lakers %>%
+			dplyr::group_by(opponent, period) %>%
 			dplyr::summarise(
-				c_currency = dplyr::last(c_currency)
-				,pr_min = min(Price, na.rm = T)
-				,pr_max = max(Price, na.rm = T)
-				,pr_curr = dplyr::last(Price)
-				,pr_mean = mean(Price, na.rm = T)
-				,ech_line = echarts4r_vec_line(
-					Price
-					,xAxis = d_data
+				points = sum(points, na.rm = T)
+				,.groups = 'keep'
+			) %>%
+			dplyr::group_by(opponent) %>%
+			dplyr::summarise(
+				score = sum(points, na.rm = T)
+				,ech_pie = echarts4r_vec_pie(
+					points
+					,vec_cat = period
+					,sortBy = 'input'
 					,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
-					,disp_min = '历史最低'
-					,disp_max = '历史最高'
-					,disp_sym = '当日净值'
-					,title = '净值走势'
+					,title = 'Distribution by Period'
 					,theme = uRV$theme
-					,jsFmtFloat = 'toFixed(4)'
-					,fmtTTSym = NULL
+					# ,jsFmtFloat = 'toFixed(4)'
+					,fmtLabel = NULL
 					,as.tooltip = TRUE
 				)
 				,.groups = 'keep'
 			) %>%
 			dplyr::ungroup() %>%
 			dplyr::mutate(
-				pr_color = ifelse(
-					pr_curr >= pr_mean
-					, uRV$coltheme[['color']][['chart-bar-incr']]
-					, uRV$coltheme[['color']][['chart-bar-decr']]
-				)
-			) %>%
-			dplyr::mutate(
-				pr_ech = echarts4r_Capsule(
-					pr_min
-					,pr_max
-					,pr_curr
-					,barColor = pr_color
+				ech_score = echarts4r_Capsule(
+					score
+					,score
+					,score
 					,symColor = uRV$coltheme[['color']][['chart-sym-light']]
-					,disp_min = '历史最低'
-					,disp_max = '历史最高'
-					,disp_sym = '最新净值'
 					,theme = uRV$theme
-					,fmtTTSym = ech_line
+					,fmtTTSym = ech_pie
+				)
+				,score_text = echarts4r_vec_text(
+					score
+					,width = 64
+					,theme = uRV$theme
+					,fmtTooltip = ech_pie
 				)
 			)
 
 		#200. Create a [DT::datatable]
-		cols <- c('ProdName_CN','c_currency','pr_curr','pr_ech')
-		dt_fundprice <- DT::datatable(
-			ch_fundprice %>% dplyr::select(tidyselect::all_of(cols))
+		cols <- c('opponent', 'score', 'ech_score', 'score_text')
+		dt_scoring <- DT::datatable(
+			ch_scoring %>% dplyr::select(tidyselect::all_of(cols))
 			#Only determine the columns to be displayed, rather than the columns to extract from the input data
 			,colnames = cols
 			,width = '100%'
@@ -802,7 +495,7 @@ if (FALSE){
 			htmltools::browsable()
 
 		#500. Export a standalone HTML file
-		div_funcprice <- shiny::fluidRow(
+		div_scoring <- shiny::fluidRow(
 			shinydashboardPlus::box(
 				width = 12
 				,shiny::tags$style(
@@ -815,19 +508,19 @@ if (FALSE){
 				)
 				,shiny::tagList(
 					theme_datatable(theme = uRV$theme, transparent = T)
-					,dt_fundprice
+					,dt_scoring
 				)
 			)
 		)
 
 		path_rpt <- dirname(thisfile())
-		rpt_tpl <- file.path(path_rpt, 'echarts4r_vec_line.Rmd')
-		rpt_out <- file.path(path_rpt, 'FundPrice.html')
+		rpt_tpl <- file.path(path_rpt, 'echarts4r_vec_pie.Rmd')
+		rpt_out <- file.path(path_rpt, 'ScoreDistribution.html')
 		rmarkdown::render(
 			rpt_tpl
 			,output_file = rpt_out
 			,params = list(
-				dt = div_funcprice
+				dt = div_scoring
 			)
 			,envir = new.env(parent = globalenv())
 		)
@@ -878,7 +571,7 @@ if (FALSE){
 
 					shiny::tagList(
 						theme_datatable(theme = uRV$theme, transparent = T)
-						,dt_fundprice
+						,dt_scoring
 					)
 				})
 			}

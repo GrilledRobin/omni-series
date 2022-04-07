@@ -23,6 +23,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220405        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add color configurations for [chart-area] and [chart-pie]                                                               #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -101,7 +106,7 @@ themeColors <- function(
 					rgba2rgb(cache_BlackGold$black$d, alpha_in = 0.9, color_bg = cache_BlackGold$gold$d)
 					,alphaToHex(0.95)
 				)
-				,'tooltip-light' = paste0(
+				,'tooltip-inverse' = paste0(
 					rgba2rgb(cache_BlackGold$gold$d, alpha_in = 0.2, color_bg = cache_BlackGold$black$d)
 					,alphaToHex(0.95)
 				)
@@ -123,6 +128,8 @@ themeColors <- function(
 				,'btn-inact-hover' = cache_BlackGold$black$d
 				,'chart-bar' = cache_BlackGold$gold$d
 				,'chart-line' = cache_BlackGold$gold$d
+				,'chart-area' = cache_BlackGold$gold$d
+				,'chart-pie' = cache_BlackGold$gold$d
 				,'chart-sym' = rgba2rgb(cache_BlackGold$black$d, alpha_in = 0.7, color_bg = cache_BlackGold$gold$d)
 				#[红灯] or [上涨]
 				,'chart-bar-incr' = cache_BlackGold$red$p[[2]]
@@ -167,7 +174,7 @@ themeColors <- function(
 					cache_Inno$black$p[[4]]
 					,alphaToHex(0.95)
 				)
-				,'tooltip-light' = paste0(
+				,'tooltip-inverse' = paste0(
 					rgba2rgb(cache_Inno$white$p[[1]], alpha_in = 0.2, color_bg = cache_Inno$black$p[[4]])
 					,alphaToHex(0.95)
 				)
@@ -189,6 +196,8 @@ themeColors <- function(
 				,'btn-inact-hover' = cache_Inno$black$p[[4]]
 				,'chart-bar' = cache_Inno$yellow$p[[1]]
 				,'chart-line' = cache_Inno$yellow$p[[1]]
+				,'chart-area' = cache_Inno$yellow$p[[1]]
+				,'chart-pie' = cache_Inno$yellow$p[[1]]
 				,'chart-sym' = rgba2rgb(cache_Inno$black$p[[4]], alpha_in = 0.7, color_bg = cache_Inno$white$p[[1]])
 				,'chart-bar-incr' = cache_Inno$red$p[[2]]
 				,'chart-bar-decr' = cache_Inno$green$p[[2]]
@@ -231,7 +240,7 @@ themeColors <- function(
 					cache_PBI$black$p[[4]]
 					,alphaToHex(0.95)
 				)
-				,'tooltip-light' = paste0(
+				,'tooltip-inverse' = paste0(
 					rgba2rgb(cache_PBI$white$p[[1]], alpha_in = 0.1, color_bg = cache_PBI$black$p[[4]])
 					,alphaToHex(0.95)
 				)
@@ -253,6 +262,8 @@ themeColors <- function(
 				,'btn-inact-hover' = cache_PBI$black$p[[4]]
 				,'chart-bar' = cache_PBI$yellow$p[[1]]
 				,'chart-line' = cache_PBI$yellow$p[[1]]
+				,'chart-area' = cache_PBI$yellow$p[[1]]
+				,'chart-pie' = cache_PBI$yellow$p[[1]]
 				,'chart-sym' = cache_PBI$white$p[[1]]
 				,'chart-bar-incr' = cache_PBI$red$d
 				,'chart-bar-decr' = cache_PBI$green$d
@@ -295,7 +306,7 @@ themeColors <- function(
 					cache_MSOffice$black$p[[4]]
 					,alphaToHex(0.95)
 				)
-				,'tooltip-light' = paste0(
+				,'tooltip-inverse' = paste0(
 					rgba2rgb(cache_MSOffice$white$p[[1]], alpha_in = 0.1, color_bg = cache_MSOffice$black$p[[4]])
 					,alphaToHex(0.95)
 				)
@@ -337,6 +348,8 @@ themeColors <- function(
 				,'btn-inact-hover' = cache_MSOffice$black$p[[4]]
 				,'chart-bar' = cache_MSOffice$gold$p[[1]]
 				,'chart-line' = cache_MSOffice$gold$p[[1]]
+				,'chart-area' = cache_MSOffice$gold$p[[1]]
+				,'chart-pie' = cache_MSOffice$gold$p[[1]]
 				,'chart-sym' = cache_MSOffice$white$p[[1]]
 				,'chart-bar-incr' = cache_MSOffice$orange$d
 				,'chart-bar-decr' = cache_MSOffice$green$d

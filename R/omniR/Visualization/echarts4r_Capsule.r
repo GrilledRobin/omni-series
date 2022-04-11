@@ -71,6 +71,13 @@
 #   |                                           the color choices (which is desirably the color on the right-most side of the bar),     #
 #   |                                           while those listed in [...] plays as the first till the second last one in the sequence #
 #   |                                           as when they are provided                                                               #
+#   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
+#   |                 will become an html element inside the tooltip of another chart                                                   #
+#   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
+#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
+#   |                 nested HTML tags                                                                                                  #
+#   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |...         :   The rest of the color series to fill the bar with gradient effect. The provided colors play as the first till the  #
 #   |                  second last colors on the visual map, while [barColor] always plays as the last one on it                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -100,6 +107,12 @@
 #   | Date |    20220115        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [barShowBG] to enable showing background of bars for comparison between charts                 #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220411        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [as.tooltip] to allow the charts to be displayed inside a tooltip of another chart             #
+#   |      |[2] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -159,6 +172,8 @@ echarts4r_Capsule <- function(
 	,fmtTTSym = NULL
 	,barShowBG = FALSE
 	,gradient = FALSE
+	,as.tooltip = FALSE
+	,container = function(html_tag){html_tag}
 	,...
 ){
 	#001. Handle parameters
@@ -217,8 +232,8 @@ echarts4r_Capsule <- function(
 	}
 	col_grad <- rgba2rgb(col_bar, alpha_in = 0.3)
 
-	#700. Define helper functions
-	#710. Function to apply to all vectors
+	#500. Define helper functions
+	#510. Function to apply to all vectors
 	h_charts <- function(
 		v_min,v_max,v_sym,y_amin,y_amax
 		,v_barheight,v_barwidth,v_barBRadius,v_bar_col,v_bar_col_gr
@@ -295,76 +310,78 @@ echarts4r_Capsule <- function(
 								,'+ \'<br/>\' + \'<strong>',v_d_max,'</strong>\''
 								,'+ \' : \' + parseFloat(',v_max,').',v_float
 							,');'
-						#[IMPORTANT] We must place such remark to ensure [echarts4r.as.tooltip] can locate this function correctly
-						,'/*EndFunc*/}'
+						,'}'
 					))
 				)
 			)
 		}
-		tooltip_sym_base <- modifyList(
-			tooltip
-			,list(
-				position = htmlwidgets::JS(paste0(''
-					,'function (point, params, dom, rect, size){'
-						#鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
-						# ,'var obj = {top: 60};'
-						# ,'obj[[\'left\', \'right\'][+(pos[0] < size.viewSize[0] / 2)]] = 8;'
-						#[IMPORTANT]
-						#[1] We cannot locate the [iframe] in shinydashboard, hence we have to prefer right side to place the tooltip
-						#[2] We apply the same rule to the vertical alignment of the tooltip
-						#010. Declare the positions
-						,'var x = 0;'
-						,'var y = 0;'
+		if (as.tooltip) {
+			tooltip_sym_base <- tooltip
+		} else {
+			tooltip_sym_base <- modifyList(
+				tooltip
+				,list(
+					position = htmlwidgets::JS(paste0(''
+						,'function (point, params, dom, rect, size){'
+							#鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
+							# ,'var obj = {top: 60};'
+							# ,'obj[[\'left\', \'right\'][+(pos[0] < size.viewSize[0] / 2)]] = 8;'
+							#[IMPORTANT]
+							#[1] We cannot locate [iframe] in shinydashboard, hence we have to prefer right side to place the tooltip
+							#[2] We apply the same rule to the vertical alignment of the tooltip
+							#010. Declare the positions
+							,'var x = 0;'
+							,'var y = 0;'
 
-						#100. Obtain the relative position from the mouse to the parent node of current DOM
-						#[1] Current DOM is the tooltip
-						#[2] The parent node of current DOM is the chart
-						,'var mouseLeft = point[0];'
-						,'var mouseTop = point[1];'
+							#100. Obtain the relative position from the mouse to the parent node of current DOM
+							#[1] Current DOM is the tooltip
+							#[2] The parent node of current DOM is the chart
+							,'var mouseLeft = point[0];'
+							,'var mouseTop = point[1];'
 
-						#200. Obtain the size of current DOM
-						,'var boxWidth = size.contentSize[0];'
-						,'var boxHeight = size.contentSize[1];'
+							#200. Obtain the size of current DOM
+							,'var boxWidth = size.contentSize[0];'
+							,'var boxHeight = size.contentSize[1];'
 
-						#300. Obtain the inner size of current window
-						,'var winWidth = window.innerWidth;'
-						,'var winHeight = window.innerHeight;'
+							#300. Obtain the inner size of current window
+							,'var winWidth = window.innerWidth;'
+							,'var winHeight = window.innerHeight;'
 
-						#400. Obtain the position of the parent node (i.e. the chart) of current DOM
-						#[1] Here the Left and Top are relative to the inner bound of current window
-						#[2] Quote: https://blog.csdn.net/mj404/article/details/51246433
-						,'var chart = dom.parentNode;'
-						,'var chartLeft = chart.getBoundingClientRect().left;'
-						,'var chartTop = chart.getBoundingClientRect().top;'
+							#400. Obtain the position of the parent node (i.e. the chart) of current DOM
+							#[1] Here the Left and Top are relative to the inner bound of current window
+							#[2] Quote: https://blog.csdn.net/mj404/article/details/51246433
+							,'var chart = dom.parentNode;'
+							,'var chartLeft = chart.getBoundingClientRect().left;'
+							,'var chartTop = chart.getBoundingClientRect().top;'
 
-						#500. Calculate the distance from current mouse position to the bottom and right side of the window respectively
-						#[1] Quote: https://www.cnblogs.com/jiangxiaobo/p/6593584.html
-						#[2] Quote: https://www.cnblogs.com/qixinbo/p/7052808.html
-						,'var mouseToRight = winWidth - chartLeft - chart.clientLeft - mouseLeft;'
-						,'var mouseToBottom = winHeight - chartTop - chart.clientTop - mouseTop;'
+							#500. Calculate the distance from current mouse position to the bottom and right side of the window
+							#[1] Quote: https://www.cnblogs.com/jiangxiaobo/p/6593584.html
+							#[2] Quote: https://www.cnblogs.com/qixinbo/p/7052808.html
+							,'var mouseToRight = winWidth - chartLeft - chart.clientLeft - mouseLeft;'
+							,'var mouseToBottom = winHeight - chartTop - chart.clientTop - mouseTop;'
 
-						#600. Calculate the horizontal alignment
-						#[1] Place the DOM on the right side as long as there is enough distance
-						#[2] Place it to the left side regardless of the space, if above position is unavailable
-						,'if (boxWidth <= mouseToRight) {'
-							,'x = mouseLeft + Math.min(4, mouseToRight - boxWidth);'
-						,'} else {'
-							,'x = mouseLeft - boxWidth - 4;'
-						,'} '
+							#600. Calculate the horizontal alignment
+							#[1] Place the DOM on the right side as long as there is enough distance
+							#[2] Place it to the left side regardless of the space, if above position is unavailable
+							,'if (boxWidth <= mouseToRight) {'
+								,'x = mouseLeft + Math.min(4, mouseToRight - boxWidth);'
+							,'} else {'
+								,'x = mouseLeft - boxWidth - 4;'
+							,'} '
 
-						#700. Calculate the vertical alignment
-						#[1] Always place the DOM 8 pixels right above the bottom edge of the window, to ensure the border is seen
-						#[2] Place the DOM 4 pixels down the mouse position where there is enough height
-						,'y = mouseTop + Math.min(4, mouseToBottom - boxHeight - 8);'
+							#700. Calculate the vertical alignment
+							#[1] Always place the DOM 8 pixels right above the bottom edge of the window, to ensure the border is seen
+							#[2] Place the DOM 4 pixels down the mouse position where there is enough height
+							,'y = mouseTop + Math.min(4, mouseToBottom - boxHeight - 8);'
 
-						#900. Set the position of the DOM
-						#[1] All return values here only refer to the relative position from the top-left of its parent node
-						,'return [x,y];'
-					#[IMPORTANT] We must place such remark to ensure [echarts4r.as.tooltip] can locate this function correctly
-					,'/*EndFunc*/}'
-				))
+							#900. Set the position of the DOM
+							#[1] All return values here only refer to the relative position from the top-left of its parent node
+							,'return [x,y];'
+						,'}'
+					))
+				)
 			)
-		)
+		}
 		if (!is.na(v_fmtTTsym)) {
 			tooltip_sym <- modifyList(
 				tooltip_sym_base
@@ -382,8 +399,7 @@ echarts4r_Capsule <- function(
 								,'\'<strong>',v_d_sym,'</strong>\''
 								,'+ \' : \' + parseFloat(params.value[0]).',v_float
 							,');'
-						#[IMPORTANT] We must place such remark to ensure [echarts4r.as.tooltip] can locate this function correctly
-						,'/*EndFunc*/}'
+						,'}'
 					))
 				)
 			)
@@ -629,8 +645,8 @@ echarts4r_Capsule <- function(
 		return(ch_html)
 	}
 
-	#999. Return the vector
-	eval(rlang::expr(mapply(
+	#600. Generate the charts
+	ch_html <- eval(rlang::expr(mapply(
 		h_charts
 		, vec_min, vec_max, vec_sym, y_min, y_max
 		, barHeight, barWidth, barBorderRadius, col_bar, col_grad
@@ -643,6 +659,29 @@ echarts4r_Capsule <- function(
 		, ...
 		, SIMPLIFY = TRUE
 	)))
+
+	#700. Directly return if no need to convert it to tooltip
+	if (!as.tooltip) return(ch_html)
+
+	#800. Function as container for creating the tooltip out of current chart
+	#[IMPORTANT]
+	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
+	ech_func_name <- paste0('ttCapsule_', as.integer(runif(length(ch_html)) * 10^7))
+	h_contain <- function(html_tag){html_tag}
+
+	#890. Nest the containers when necessary
+	if (is.function(container)) {
+		container_multi <- function(html_tag){ h_contain(html_tag) %>% container() }
+	} else {
+		container_multi <- h_contain
+	}
+
+	#900. Convert the widget into tooltip
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
+
+	#999. Return the vector
+	return(ch_tooltip)
 }
 
 #[Full Test Program;]

@@ -76,6 +76,9 @@
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
 #   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
+#   |                 nested HTML tags                                                                                                  #
+#   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -86,6 +89,11 @@
 #   | Date |    20220405        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220411        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -149,6 +157,7 @@ echarts4r_vec_pie <- function(
 	,jsFmtFloat = 'toLocaleString(\'en-US\', {style:\'currency\', currency:\'CNY\', minimumFractionDigits:2, maximumFractionDigits:2})'
 	,fmtLabel = NULL
 	,as.tooltip = TRUE
+	,container = function(html_tag){html_tag}
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -385,19 +394,21 @@ echarts4r_vec_pie <- function(
 	if (!as.tooltip) return(ch_html)
 
 	#800. Function as container for creating the tooltip out of current chart
-	h_contain <- function(html_tag){
-		paste0(''
-			#Quote: https://www.cnblogs.com/zhuzhenwei918/p/6058457.html
-			,'<div style=\'display:inline-block;margin:0;padding:0;font-size:0;width:',width,'px;height:',height,'px;\'>'
-				,'<div style=\'display:inherit;font-size:',fontSize,';width:',width,'px;height:',height,'px;\'>'
-					,html_tag
-				,'</div>'
-			,'</div>'
-		)
+	#[IMPORTANT]
+	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
+	ech_func_name <- paste0('ttPie_', as.integer(runif(length(ch_html)) * 10^7))
+	h_contain <- function(html_tag){html_tag}
+
+	#890. Nest the containers when necessary
+	if (is.function(container)) {
+		container_multi <- function(html_tag){ h_contain(html_tag) %>% container() }
+	} else {
+		container_multi <- h_contain
 	}
 
 	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = h_contain, ech_name = 'ttChart')
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
 
 	#999. Return the vector
 	return(ch_tooltip)

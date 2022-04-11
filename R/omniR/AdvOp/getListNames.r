@@ -49,7 +49,7 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 getListNames <- function(x) {
 	rstOut <- names(x)
 	for (m in x) {
-		if (rlang::is_named(x)) {
+		if (rlang::is_named(m)) {
 			rstOut <- c(rstOut, getListNames(m))
 		}
 	}

@@ -48,6 +48,9 @@
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [FALSE       ] <Default> Output as characterized widget, useful for inline charting in [DT::datatable]            #
 #   |                 [TRUE        ]           Convert as tooltip, as this is the most common usage of vectorized charts                #
+#   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
+#   |                 nested HTML tags                                                                                                  #
+#   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -58,6 +61,11 @@
 #   | Date |    20220406        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220411        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -106,6 +114,7 @@ echarts4r_vec_text <- function(
 	,fmtTooltip = NULL
 	,jsFmtFloat = 'toLocaleString(\'en-US\', {style:\'currency\', currency:\'CNY\', minimumFractionDigits:2, maximumFractionDigits:2})'
 	,as.tooltip = FALSE
+	,container = function(html_tag){html_tag}
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -160,69 +169,73 @@ echarts4r_vec_text <- function(
 		,v_fmtTT
 	){
 		#070. Setup tooltip styles
-		tooltip_base <- modifyList(
-			tooltip
-			,list(
-				position = htmlwidgets::JS(paste0(''
-					,'function (point, params, dom, rect, size){'
-						#鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
-						# ,'var obj = {top: 60};'
-						# ,'obj[[\'left\', \'right\'][+(pos[0] < size.viewSize[0] / 2)]] = 8;'
-						#[IMPORTANT]
-						#[1] We cannot locate the [iframe] in shinydashboard, hence we have to prefer right side to place the tooltip
-						#[2] We apply the same rule to the vertical alignment of the tooltip
-						#010. Declare the positions
-						,'var x = 0;'
-						,'var y = 0;'
+		if (as.tooltip) {
+			tooltip_base <- tooltip
+		} else {
+			tooltip_base <- modifyList(
+				tooltip
+				,list(
+					position = htmlwidgets::JS(paste0(''
+						,'function (point, params, dom, rect, size){'
+							#鼠标在左侧时 tooltip 显示到右侧，鼠标在右侧时 tooltip 显示到左侧。
+							# ,'var obj = {top: 60};'
+							# ,'obj[[\'left\', \'right\'][+(pos[0] < size.viewSize[0] / 2)]] = 8;'
+							#[IMPORTANT]
+							#[1] We cannot locate [iframe] in shinydashboard, hence we have to prefer right side to place the tooltip
+							#[2] We apply the same rule to the vertical alignment of the tooltip
+							#010. Declare the positions
+							,'var x = 0;'
+							,'var y = 0;'
 
-						#100. Obtain the relative position from the mouse to the parent node of current DOM
-						#[1] Current DOM is the tooltip
-						#[2] The parent node of current DOM is the chart
-						,'var mouseLeft = point[0];'
-						,'var mouseTop = point[1];'
+							#100. Obtain the relative position from the mouse to the parent node of current DOM
+							#[1] Current DOM is the tooltip
+							#[2] The parent node of current DOM is the chart
+							,'var mouseLeft = point[0];'
+							,'var mouseTop = point[1];'
 
-						#200. Obtain the size of current DOM
-						,'var boxWidth = size.contentSize[0];'
-						,'var boxHeight = size.contentSize[1];'
+							#200. Obtain the size of current DOM
+							,'var boxWidth = size.contentSize[0];'
+							,'var boxHeight = size.contentSize[1];'
 
-						#300. Obtain the inner size of current window
-						,'var winWidth = window.innerWidth;'
-						,'var winHeight = window.innerHeight;'
+							#300. Obtain the inner size of current window
+							,'var winWidth = window.innerWidth;'
+							,'var winHeight = window.innerHeight;'
 
-						#400. Obtain the position of the parent node (i.e. the chart) of current DOM
-						#[1] Here the Left and Top are relative to the inner bound of current window
-						#[2] Quote: https://blog.csdn.net/mj404/article/details/51246433
-						,'var chart = dom.parentNode;'
-						,'var chartLeft = chart.getBoundingClientRect().left;'
-						,'var chartTop = chart.getBoundingClientRect().top;'
+							#400. Obtain the position of the parent node (i.e. the chart) of current DOM
+							#[1] Here the Left and Top are relative to the inner bound of current window
+							#[2] Quote: https://blog.csdn.net/mj404/article/details/51246433
+							,'var chart = dom.parentNode;'
+							,'var chartLeft = chart.getBoundingClientRect().left;'
+							,'var chartTop = chart.getBoundingClientRect().top;'
 
-						#500. Calculate the distance from current mouse position to the bottom and right side of the window respectively
-						#[1] Quote: https://www.cnblogs.com/jiangxiaobo/p/6593584.html
-						#[2] Quote: https://www.cnblogs.com/qixinbo/p/7052808.html
-						,'var mouseToRight = winWidth - chartLeft - chart.clientLeft - mouseLeft;'
-						,'var mouseToBottom = winHeight - chartTop - chart.clientTop - mouseTop;'
+							#500. Calculate the distance from current mouse position to the bottom and right side of the window
+							#[1] Quote: https://www.cnblogs.com/jiangxiaobo/p/6593584.html
+							#[2] Quote: https://www.cnblogs.com/qixinbo/p/7052808.html
+							,'var mouseToRight = winWidth - chartLeft - chart.clientLeft - mouseLeft;'
+							,'var mouseToBottom = winHeight - chartTop - chart.clientTop - mouseTop;'
 
-						#600. Calculate the horizontal alignment
-						#[1] Place the DOM on the right side as long as there is enough distance
-						#[2] Place it to the left side regardless of the space, if above position is unavailable
-						,'if (boxWidth <= mouseToRight) {'
-							,'x = mouseLeft + Math.min(4, mouseToRight - boxWidth);'
-						,'} else {'
-							,'x = mouseLeft - boxWidth - 4;'
-						,'} '
+							#600. Calculate the horizontal alignment
+							#[1] Place the DOM on the right side as long as there is enough distance
+							#[2] Place it to the left side regardless of the space, if above position is unavailable
+							,'if (boxWidth <= mouseToRight) {'
+								,'x = mouseLeft + Math.min(4, mouseToRight - boxWidth);'
+							,'} else {'
+								,'x = mouseLeft - boxWidth - 4;'
+							,'} '
 
-						#700. Calculate the vertical alignment
-						#[1] Always place the DOM 8 pixels right above the bottom edge of the window, to ensure the border is seen
-						#[2] Place the DOM 4 pixels down the mouse position where there is enough height
-						,'y = mouseTop + Math.min(4, mouseToBottom - boxHeight - 8);'
+							#700. Calculate the vertical alignment
+							#[1] Always place the DOM 8 pixels right above the bottom edge of the window, to ensure the border is seen
+							#[2] Place the DOM 4 pixels down the mouse position where there is enough height
+							,'y = mouseTop + Math.min(4, mouseToBottom - boxHeight - 8);'
 
-						#900. Set the position of the DOM
-						#[1] All return values here only refer to the relative position from the top-left of its parent node
-						,'return [x,y];'
-					,'}'
-				))
+							#900. Set the position of the DOM
+							#[1] All return values here only refer to the relative position from the top-left of its parent node
+							,'return [x,y];'
+						,'}'
+					))
+				)
 			)
-		)
+		}
 		if (!is.na(v_fmtTT)) {
 			tooltip_final <- modifyList(
 				tooltip_base
@@ -370,6 +383,10 @@ echarts4r_vec_text <- function(
 	if (!as.tooltip) return(ch_html)
 
 	#800. Function as container for creating the tooltip out of current chart
+	#[IMPORTANT]
+	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
+	ech_func_name <- paste0('ttText_', as.integer(runif(length(ch_html)) * 10^7))
 	h_contain <- function(html_tag){
 		paste0(''
 			#Quote: https://www.cnblogs.com/zhuzhenwei918/p/6058457.html
@@ -381,8 +398,15 @@ echarts4r_vec_text <- function(
 		)
 	}
 
+	#890. Nest the containers when necessary
+	if (is.function(container)) {
+		container_multi <- function(html_tag){ h_contain(html_tag) %>% container() }
+	} else {
+		container_multi <- h_contain
+	}
+
 	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = h_contain, ech_name = 'ttText')
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
 
 	#999. Return the vector
 	return(ch_tooltip)

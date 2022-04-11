@@ -59,6 +59,12 @@
 #   |      |     size of RegEx in [gsub], as the size of RegEx may exceed the maximum                                                   #
 #   |      |[2] Known limitations: The size of each RegEx may still exceed the maximum when data for a single chart is extremely large  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220411        | Version | 1.22        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Corrected the conversion from JSON by setting [simplifyVector = FALSE], to avoid coercion of JS arrays into vectors,    #
+#   |      |     when they only have one element respectively                                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -68,7 +74,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |jsonlite, htmlwidgets, stringr                                                                                                 #
+#   |   |jsonlite, htmlwidgets, stringr, rlang                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -105,6 +111,13 @@ echarts4r.as.tooltip <- function(
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 	if (length(widget) == 0) return(character(0))
+	if (length(ech_name) == 1) {
+		ech_name <- rlang::rep_along(widget, ech_name)
+	} else if (length(ech_name) == 0) {
+		ech_name <- rlang::rep_along(widget, NA)
+	} else if (length(ech_name) != length(widget)) {
+		stop('[',LfuncName,'][ech_name][',length(ech_name),'] has different length to [widget][',length(widget),']!')
+	}
 
 	#100. Mark the elements that need to be converted
 	#[IMPORTANT] Please note the precise sequence of the comparison as we only need [echarts4r] widgets here
@@ -115,7 +128,7 @@ echarts4r.as.tooltip <- function(
 
 	#200. Helper functions
 	#210. Conversion for each element in the provided vector
-	h_conv <- function(v) {
+	h_conv <- function(v, v_name) {
 		#100. Convert the raw widget into character vector
 		if (all(c('echarts4r', 'htmlwidget') %in% class(v))) {
 			v_chr <- as.character.htmlwidget(v)
@@ -126,7 +139,7 @@ echarts4r.as.tooltip <- function(
 		#300. Retrieve the <division> and the <script> tags respectively
 		usr_div <- gsub('\\s*<script\\b.+$', '', v_chr, perl = T)
 		json_pre <- gsub('(?ismx)^.+\\s*<script.*?>(.+)</script>', '\\1', v_chr, perl = T)
-		json_scr <- jsonlite::fromJSON(json_pre)
+		json_scr <- jsonlite::fromJSON(json_pre, simplifyVector = FALSE)
 		json_opts <- json_scr$x$opts
 
 		#400. Retrieve the HTML ID of the widget
@@ -174,9 +187,9 @@ echarts4r.as.tooltip <- function(
 				,'function genChart(){'
 					#[IMPORTANT] The chart object must be a global object for dispatching actions via external JS
 					#Quote: https://www.cnblogs.com/journey-mk5/p/9746201.html
-					,ech_name,' = echarts.init(document.getElementById(\'',html_id,'\'));'
+					,v_name,' = echarts.init(document.getElementById(\'',html_id,'\'));'
 					,'var opts = ',func_opts,';'
-					,ech_name,'.setOption(opts);'
+					,v_name,'.setOption(opts);'
 				,'} '
 				,'setTimeout(function () {'
 					,'genChart();'
@@ -192,7 +205,7 @@ echarts4r.as.tooltip <- function(
 
 	#500. Conversion upon the masked elements
 	rstOut <- widget
-	rstOut[mask_conv] <- sapply(rstOut[mask_conv], h_conv)
+	rstOut[mask_conv] <- mapply(h_conv, rstOut[mask_conv], ech_name[mask_conv])
 
 	#999. Return the result explicitly
 	return( rstOut )

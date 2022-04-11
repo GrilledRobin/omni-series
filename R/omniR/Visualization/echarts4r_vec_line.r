@@ -77,6 +77,9 @@
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
 #   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
+#   |                 nested HTML tags                                                                                                  #
+#   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -92,6 +95,11 @@
 #   | Date |    20211223        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [xAxis.zoom] to allow adding zoom tools to x-axis                                              #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220411        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -153,6 +161,7 @@ echarts4r_vec_line <- function(
 	,fmtTTSym = NULL
 	,xAxis.zoom = TRUE
 	,as.tooltip = TRUE
+	,container = function(html_tag){html_tag}
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -284,10 +293,9 @@ echarts4r_vec_line <- function(
 					,'function(params){'
 						,'return('
 							,'\'<strong>',disp_sym,'</strong>\''
-							,'+ " : " + parseFloat(params.value[1]).',jsFmtFloat
+							,'+ \' : \' + parseFloat(params.value[1]).',jsFmtFloat
 						,');'
-					#[IMPORTANT] We must place such remark to ensure [echarts4r.as.tooltip] can locate this function correctly
-					,'/*EndFunc*/}'
+					,'}'
 				))
 			)
 		)
@@ -350,7 +358,7 @@ echarts4r_vec_line <- function(
 							,'rotate = 180;'
 						,'} '
 						,'return(rotate);'
-					,'/*EndFunc*/}'
+					,'}'
 				))
 				,label = list(
 					fontFamily = fontFamily
@@ -368,7 +376,7 @@ echarts4r_vec_line <- function(
 							,'return('
 								,'placeholder + parseFloat(params.value).',jsFmtFloat
 							,');'
-						,'/*EndFunc*/}'
+						,'}'
 					))
 				)
 				,itemStyle = list(
@@ -425,7 +433,7 @@ echarts4r_vec_line <- function(
 							,'return('
 								,'echarts.format.formatTime(\'yyyy-MM-dd\', params.value)'
 							,');'
-						,'/*EndFunc*/}'
+						,'}'
 					))
 					,color = coltheme[['color']][['chart-markpoint']]
 					,borderColor = rgba2rgb(col_line, alpha_in = 0.7)
@@ -460,7 +468,7 @@ echarts4r_vec_line <- function(
 						,'return('
 							,'value.',jsFmtFloat
 						,');'
-					,'/*EndFunc*/}'
+					,'}'
 				))
 			)
 			,axisLine = list(
@@ -489,7 +497,7 @@ echarts4r_vec_line <- function(
 							,'return('
 								,'parseFloat(params.value).',jsFmtFloat
 							,');'
-						,'/*EndFunc*/}'
+						,'}'
 					))
 					,color = coltheme[['color']][['chart-markpoint']]
 					,borderColor = rgba2rgb(col_line, alpha_in = 0.7)
@@ -588,7 +596,7 @@ echarts4r_vec_line <- function(
 						,'return('
 							,'echarts.format.formatTime(\'yyyy-MM-dd\', value)'
 						,');'
-					,'/*EndFunc*/}'
+					,'}'
 				))
 				,textStyle = list(
 					fontFamily = fontFamily
@@ -640,6 +648,10 @@ echarts4r_vec_line <- function(
 	if (!as.tooltip) return(ch_html)
 
 	#800. Function as container for creating the tooltip out of current chart
+	#[IMPORTANT]
+	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
+	ech_func_name <- paste0('ttLine_', as.integer(runif(length(ch_html)) * 10^7))
 	h_contain <- function(html_tag){
 		if (!xAxis.zoom) return(html_tag)
 		paste0(''
@@ -660,11 +672,10 @@ echarts4r_vec_line <- function(
 						,styles_btn
 					,'</style>'
 					,paste0(
-						sapply(
-							zoom_cfg
-							,function(x){
+						mapply(
+							function(x,x_name){
 								js_callback <- paste0(''
-									,'ttChart.dispatchAction({'
+									,x_name,'.dispatchAction({'
 										#[IMPORTANT] We cannot use double quotes here, as there will be two consecutive calls
 										#             of [shQuote] in the following steps (the other is in [echarts4r.as.tooltip]),
 										#             which causes syntax error on multiple double-quotes
@@ -683,6 +694,8 @@ echarts4r_vec_line <- function(
 									,'</button>'
 								)
 							}
+							,zoom_cfg
+							,ech_func_name
 						)
 						,collapse = ''
 					)
@@ -691,8 +704,15 @@ echarts4r_vec_line <- function(
 		)
 	}
 
+	#890. Nest the containers when necessary
+	if (is.function(container)) {
+		container_multi <- function(html_tag){ h_contain(html_tag) %>% container() }
+	} else {
+		container_multi <- h_contain
+	}
+
 	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = h_contain, ech_name = 'ttChart')
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
 
 	#999. Return the vector
 	return(ch_tooltip)

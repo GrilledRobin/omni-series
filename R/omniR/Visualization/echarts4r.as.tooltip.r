@@ -1,7 +1,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to Convert the [echarts4r] widget into a JS function for [echarts.tooltip.formatter], so that this       #
+#   |This function is intended to Convert the [echarts4r] widget into a JS function for <echarts.tooltip.formatter>, so that this       #
 #   | widget can be rendered within the tooltip of an [echarts] object inside an HTML                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
@@ -26,10 +26,19 @@
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |ech_name    :   Name of the global [echart] object upon which to dispatch actions via external JS                                  #
 #   |                 [ttChart     ] <Default> One can change it to any valid JS variable name                                          #
+#   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
+#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                                           <echarts:tooltip> respectively                                                          #
+#   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>       :   Character vector of the JS scripts                                                                                 #
+#   |<various>   :   The output depends on the argument [as.parts]                                                                      #
+#   |                 [FALSE       ] <Default> Character vector in the same length as [widget], representing JS function to be invoked  #
+#   |                 [TRUE        ]           data.frame with two columns: [js_func] and [html_tags], in the same length as [widget],  #
+#   |                                           representing the function to create <echarts> object and the HTML tags that contain the #
+#   |                                           object respectively. This is useful if one needs to combine multiple charts into one    #
+#   |                                           tooltip of a separate <echarts> chart in a vectorized manner.                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,6 +74,12 @@
 #   | Log  |[1] Corrected the conversion from JSON by setting [simplifyVector = FALSE], to avoid coercion of JS arrays into vectors,    #
 #   |      |     when they only have one element respectively                                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220413        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
+#   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -74,7 +89,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |jsonlite, htmlwidgets, stringr, rlang                                                                                          #
+#   |   |jsonlite, htmlwidgets, stringr, rlang, dplyr                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -99,10 +114,14 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
+#Enable big-bang <!!!> operator
+library(rlang)
+
 echarts4r.as.tooltip <- function(
 	widget = NULL
 	,container = function(html_tag){html_tag}
 	,ech_name = 'ttChart'
+	,as.parts = FALSE
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -118,6 +137,7 @@ echarts4r.as.tooltip <- function(
 	} else if (length(ech_name) != length(widget)) {
 		stop('[',LfuncName,'][ech_name][',length(ech_name),'] has different length to [widget][',length(widget),']!')
 	}
+	if (!is.logical(as.parts)) as.parts <- FALSE
 
 	#100. Mark the elements that need to be converted
 	#[IMPORTANT] Please note the precise sequence of the comparison as we only need [echarts4r] widgets here
@@ -137,8 +157,44 @@ echarts4r.as.tooltip <- function(
 		}
 
 		#300. Retrieve the <division> and the <script> tags respectively
-		usr_div <- gsub('\\s*<script\\b.+$', '', v_chr, perl = T)
-		json_pre <- gsub('(?ismx)^.+\\s*<script.*?>(.+)</script>', '\\1', v_chr, perl = T)
+		#310. Identify the <script> tag
+		#[ASSUMPTION]
+		#[1] For vectorized process, below function only generates one single vector
+		#[2] For [echarts4r] results, this vector only contains one <script> tag
+		v_script <- strBalancedGroup(
+			v_chr
+			,lBound = '<script.*?>'
+			,rBound = '</script>'
+			,rx = TRUE
+			,include = TRUE
+		)[[1]]
+
+		#330. Identify the <div> tag, which exists just before the <script> tag, as indicated by the source code of [echarts4r]
+		#331. Remove the <script> tag from the source string, and leave the <div> tags for searching
+		rx_rem_scr <- rep_along(v_script, '')
+		names(rx_rem_scr) <- re.escape(v_script)
+		v_divs <- stringr::str_replace_all(v_chr, rx_rem_scr)
+
+		#335. Extract the balanced group of <div> tags
+		div_all <- strBalancedGroup(
+			v_divs
+			,lBound = '<div.*?>'
+			,rBound = '</div>'
+			,rx = TRUE
+			,include = TRUE
+		)[[1]]
+
+		#339. Only need the <div> tag that is just followed by above <script> tag
+		usr_div <- stringr::str_extract_all(v_chr, paste0(div_all, '(?=\\s*', re.escape(v_script), ')'))
+
+		#350. Identify the JSON data, which we will transform to create HTML tags at later steps
+		json_pre <- strBalancedGroup(
+			v_chr
+			,lBound = '<script.*?>'
+			,rBound = '</script>'
+			,rx = TRUE
+			,include = FALSE
+		)[[1]]
 		json_scr <- jsonlite::fromJSON(json_pre, simplifyVector = FALSE)
 		json_opts <- json_scr$x$opts
 
@@ -181,31 +237,62 @@ echarts4r.as.tooltip <- function(
 		# func_opts <- gsub(rx_func_opts, '\\1', char_opts, perl = T)
 		func_opts <- stringr::str_replace_all(char_opts, rx_func_opts)
 
-		#900. Create the JS function
-		js_func <- paste0(
-			'function(params){'
-				,'function genChart(){'
+		#900. Create the JS function as well as the HTML tags
+		js_attr <- data.frame(
+			js_func = paste0(
+				'function(){'
 					#[IMPORTANT] The chart object must be a global object for dispatching actions via external JS
 					#Quote: https://www.cnblogs.com/journey-mk5/p/9746201.html
 					,v_name,' = echarts.init(document.getElementById(\'',html_id,'\'));'
 					,'var opts = ',func_opts,';'
 					,v_name,'.setOption(opts);'
-				,'} '
+				,'}'
+			)
+			,html_tags = container(usr_div)
+			,stringsAsFactors = F
+		)
+		#20220413 It is weird that the [names] of above data.frame is corrupted!
+		names(js_attr) <- c('js_func','html_tags')
+
+		#999. Return the object explicitly
+		return(js_attr)
+	}
+
+	#250. Combine the JS functions and HTML tags into complete JS statements
+	h_combine <- function(v_func, v_tags){
+		paste0(
+			'function(params){'
+				,'genChart = ',v_func,';'
 				,'setTimeout(function () {'
 					,'genChart();'
 				,'}, 500);'
-				,'var tthtml = ',shQuote(container(usr_div)),';'
+				,'var tthtml = ',shQuote(v_tags),';'
 				,'return(tthtml);'
 			,'}'
 		)
-
-		#999. Return the object explicitly
-		return(js_func)
 	}
 
 	#500. Conversion upon the masked elements
-	rstOut <- widget
-	rstOut[mask_conv] <- mapply(h_conv, rstOut[mask_conv], ech_name[mask_conv])
+	js_attrs <- mapply(h_conv, widget[mask_conv], ech_name[mask_conv], SIMPLIFY = FALSE) %>% dplyr::bind_rows()
+
+	#900. Determine the output
+	if (as.parts) {
+		#100. Prepare a dummy output list as placeholder
+		rstOut <- data.frame(
+			js_func = rlang::rep_along(widget, character(0))
+			,html_tags = rlang::rep_along(widget, character(0))
+			,stringsAsFactors = F
+		)
+
+		#500. Replace the valid elements with the converted ones
+		rstOut[mask_conv,] <- js_attrs
+	} else {
+		#100. Prepare the output value by ignoring the elements that are NOT [echarts4r] widgets
+		rstOut <- widget
+
+		#500. Combine the statements for the valid elements
+		rstOut[mask_conv] <- h_combine(js_attrs$js_func, js_attrs$html_tags)
+	}
 
 	#999. Return the result explicitly
 	return( rstOut )

@@ -79,10 +79,21 @@
 #   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
 #   |                 nested HTML tags                                                                                                  #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
+#   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
+#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                                           <echarts:tooltip> respectively                                                          #
+#   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   A vector of HTML widgets represented as character strings                                                           #
+#   |<various>   :   The result is determined by below arguments                                                                        #
+#   |                [1] [as.tooltip = FALSE]                                                                                           #
+#   |                    A vector of HTML widgets represented as character strings                                                      #
+#   |                [2] [as.tooltip = TRUE], the output further depends on the argument [as.parts]                                     #
+#   |                    [1] [as.parts = FALSE]                                                                                         #
+#   |                        A vector of JS functions to be invoked inside the <tooltip> of anther <echarts> object                     #
+#   |                    [2] [as.parts = TRUE]                                                                                          #
+#   |                        A data.frame with two columns [js_func] and [html_tags] for customization of HTML scripts                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -94,6 +105,12 @@
 #   | Date |    20220411        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220413        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
+#   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -158,6 +175,7 @@ echarts4r_vec_pie <- function(
 	,fmtLabel = NULL
 	,as.tooltip = TRUE
 	,container = function(html_tag){html_tag}
+	,as.parts = FALSE
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -395,9 +413,9 @@ echarts4r_vec_pie <- function(
 
 	#800. Function as container for creating the tooltip out of current chart
 	#[IMPORTANT]
-	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[1] We must set the <echarts> object names BEFORE the definition of the container, as they are referenced inside the container
 	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
-	ech_func_name <- paste0('ttPie_', as.integer(runif(length(ch_html)) * 10^7))
+	ech_obj_name <- paste0('ttPie_', gsub('\\W', '_', vfy_html_id))
 	h_contain <- function(html_tag){html_tag}
 
 	#890. Nest the containers when necessary
@@ -408,7 +426,7 @@ echarts4r_vec_pie <- function(
 	}
 
 	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_obj_name, as.parts = as.parts)
 
 	#999. Return the vector
 	return(ch_tooltip)
@@ -442,7 +460,9 @@ if (FALSE){
 					points
 					,vec_cat = period
 					,sortBy = 'input'
-					,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
+					#20220413 It is tested that if we manually set [html_id], the chart may not display when hovering over,
+					#          hence we should never (or under certain condition?) set it
+					# ,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
 					,title = 'Distribution by Period'
 					,theme = uRV$theme
 					# ,jsFmtFloat = 'toFixed(4)'

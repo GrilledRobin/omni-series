@@ -80,10 +80,21 @@
 #   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
 #   |                 nested HTML tags                                                                                                  #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
+#   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
+#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                                           <echarts:tooltip> respectively                                                          #
+#   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   A vector of HTML widgets represented as character strings                                                           #
+#   |<various>   :   The result is determined by below arguments                                                                        #
+#   |                [1] [as.tooltip = FALSE]                                                                                           #
+#   |                    A vector of HTML widgets represented as character strings                                                      #
+#   |                [2] [as.tooltip = TRUE], the output further depends on the argument [as.parts]                                     #
+#   |                    [1] [as.parts = FALSE]                                                                                         #
+#   |                        A vector of JS functions to be invoked inside the <tooltip> of anther <echarts> object                     #
+#   |                    [2] [as.parts = TRUE]                                                                                          #
+#   |                        A data.frame with two columns [js_func] and [html_tags] for customization of HTML scripts                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -100,6 +111,12 @@
 #   | Date |    20220411        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220413        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
+#   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -162,6 +179,7 @@ echarts4r_vec_line <- function(
 	,xAxis.zoom = TRUE
 	,as.tooltip = TRUE
 	,container = function(html_tag){html_tag}
+	,as.parts = FALSE
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -273,7 +291,7 @@ echarts4r_vec_line <- function(
 			,'color' %>% h_attr('btn-inact')
 			,'font-weight: 100;'
 			,'line-height: 1;'
-			,'width:',btn_width,'px;'
+			,'width:',btn_width,'px !important;'
 		,'}'
 		,'.dt_btn_as_tooltip:hover {'
 			,'background' %>% h_attr('btn-inact-hover')
@@ -649,9 +667,9 @@ echarts4r_vec_line <- function(
 
 	#800. Function as container for creating the tooltip out of current chart
 	#[IMPORTANT]
-	#[1] We must set the function names BEFORE the definition of the container, as they are referenced inside the container
+	#[1] We must set the <echarts> object names BEFORE the definition of the container, as they are referenced inside the container
 	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
-	ech_func_name <- paste0('ttLine_', as.integer(runif(length(ch_html)) * 10^7))
+	ech_obj_name <- paste0('ttLine_', gsub('\\W', '_', vfy_html_id))
 	h_contain <- function(html_tag){
 		if (!xAxis.zoom) return(html_tag)
 		paste0(''
@@ -695,7 +713,7 @@ echarts4r_vec_line <- function(
 								)
 							}
 							,zoom_cfg
-							,ech_func_name
+							,ech_obj_name
 						)
 						,collapse = ''
 					)
@@ -712,7 +730,7 @@ echarts4r_vec_line <- function(
 	}
 
 	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_func_name)
+	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_obj_name, as.parts = as.parts)
 
 	#999. Return the vector
 	return(ch_tooltip)
@@ -750,7 +768,9 @@ if (FALSE){
 				,ech_line = echarts4r_vec_line(
 					Price
 					,xAxis = d_data
-					,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
+					#20220413 It is tested that if we manually set [html_id], the chart may not display when hovering over,
+					#          hence we should never (or under certain condition?) set it
+					# ,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
 					,disp_min = '历史最低'
 					,disp_max = '历史最高'
 					,disp_sym = '当日净值'
@@ -905,5 +925,58 @@ if (FALSE){
 
 			shiny::shinyApp(ui, server)
 		}
+	}
+
+	#Test [dplyr::mutate] when enabling [as.parts]
+	if (TRUE) {
+		#010. Load user defined functions
+		source('D:\\R\\autoexec.r')
+
+		#020. Simulate the private environment of Shiny App, to generalize the usage of this function
+		uRV <- list()
+
+		#050. Choose theme
+		uRV$theme <- 'BlackGold'
+		uRV$coltheme <- themeColors(uRV$theme)
+
+		#070. Load the raw data
+		myenv <- new.env()
+		load(file.path(getOption('path.omniR'), 'Visualization', 'prodprice.rdata'), envir = myenv)
+		# View(myenv$ProdPrice)
+
+		#100. Create sample data
+		ch_fundprice <- myenv$ProdPrice %>%
+			dplyr::group_by(ProdName_CN) %>%
+			dplyr::arrange(d_data) %>%
+			dplyr::summarise(
+				c_currency = dplyr::last(c_currency)
+				,pr_min = min(Price, na.rm = T)
+				,pr_max = max(Price, na.rm = T)
+				,pr_curr = dplyr::last(Price)
+				,pr_mean = mean(Price, na.rm = T)
+				,ech_line = echarts4r_vec_line(
+					Price
+					,xAxis = d_data
+					,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
+					,disp_min = '历史最低'
+					,disp_max = '历史最高'
+					,disp_sym = '当日净值'
+					,title = '净值走势'
+					,theme = uRV$theme
+					,jsFmtFloat = 'toFixed(4)'
+					,fmtTTSym = NULL
+					,as.tooltip = TRUE
+					,as.parts = TRUE
+				)
+				,.groups = 'keep'
+			) %>%
+			dplyr::ungroup()
+
+		View(ch_fundprice$ech_line)
+		class(ch_fundprice$ech_line)
+		#[ASSUMPTION]
+		#[1] [ch_fundprice$ech_line] is a data.frame when created by this function using [dplyr::mutate]
+		#[2] Columns of it show as [ech_line.xxx] when using [View], but they cannot be referenced in such name
+		#[3] The way to reference these columns should still be [ch_fundprice$ech_line$xxx]
 	}
 }

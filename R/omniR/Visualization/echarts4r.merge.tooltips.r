@@ -39,13 +39,6 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
-#   |   |   |getListNames                                                                                                               #
-#   |   |   |re.escape                                                                                                                  #
-#   |   |   |strBalancedGroup                                                                                                           #
-#   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Visualization                                                                                                            #
-#   |   |   |as.character.htmlwidget                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -89,8 +82,10 @@ echarts4r.merge.tooltips <- function(
 		,function(i){
 			dots[[i]] %>%
 				#Below JS functions will be defined as global in the web session in terms of JS syntax
-				dplyr::mutate(def_func = paste0('mrgTTChart', i, '_', dplyr::row_number(), ' = ', !!sym_func, ';')) %>%
-				dplyr::mutate(call_func = paste0('mrgTTChart', i, '_', dplyr::row_number(), '();'))
+				# dplyr::mutate(def_func = paste0('mrgTTChart', i, '_', dplyr::row_number(), ' = ', !!sym_func, ';')) %>%
+				# dplyr::mutate(call_func = paste0('mrgTTChart', i, '_', dplyr::row_number(), '();'))
+				dplyr::mutate(def_func = paste0('mrgTTChart', i, ' = ', !!sym_func, ';')) %>%
+				dplyr::mutate(call_func = paste0('mrgTTChart', i, '();'))
 		}
 	)
 
@@ -165,7 +160,7 @@ if (FALSE){
 				#Quote: https://www.runoob.com/css/css-positioning.html
 				#Quote: https://www.cnblogs.com/zhuzhenwei918/p/6058457.html
 				,'<div style=\'position:relative;display:inline-block;margin:0;padding:0;font-size:0;width:1024px;height:540px;\'>'
-					,'<div style=\'display:inherit;position:absolute;left:0;\'>'
+					,'<div style=\'display:inherit;position:relative;\'>'
 						,chart_a
 					,'</div>'
 					,'<div style=\'display:inherit;position:absolute;right:0;top:50%;\'>'

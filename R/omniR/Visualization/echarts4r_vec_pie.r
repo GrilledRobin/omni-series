@@ -36,8 +36,10 @@
 #   |width       :   Integer of the chart width                                                                                         #
 #   |                 [960         ] <Default>                                                                                          #
 #   |sliceColor  :   Character as the CSS color of the slices in current chart                                                          #
-#   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
+#   |                 [NULL        ] <Default> Use the default color from the default theme, changing in gradient against bg-color      #
+#   |                 [rgba()      ]           Can be provided in CSS syntax for the first slice, changing in gradient against bg-color #
+#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
+#   |                                           colors of slices one-by-one                                                             #
 #   |roseType    :   Logical or character vector of whether or how to display the pie in rose type                                      #
 #   |                Quote: https://echarts.apache.org/zh/option.html#series-pie.roseType                                               #
 #   |                 [FALSE       ] <Default> Display the chart in normal pie form                                                     #

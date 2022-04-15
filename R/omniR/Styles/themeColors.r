@@ -28,6 +28,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Add color configurations for [chart-area] and [chart-pie]                                                               #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220414        | Version | 1.11        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add color configurations for [chart-bar-inverse]                                                                        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -127,6 +132,7 @@ themeColors <- function(
 				,'btn-inact' = cache_BlackGold$gold$d
 				,'btn-inact-hover' = cache_BlackGold$black$d
 				,'chart-bar' = cache_BlackGold$gold$d
+				,'chart-bar-inverse' = cache_BlackGold$gold$p[[5]]
 				,'chart-line' = cache_BlackGold$gold$d
 				,'chart-area' = cache_BlackGold$gold$d
 				,'chart-pie' = cache_BlackGold$gold$d
@@ -195,6 +201,7 @@ themeColors <- function(
 				,'btn-inact' = cache_Inno$white$p[[2]]
 				,'btn-inact-hover' = cache_Inno$black$p[[4]]
 				,'chart-bar' = cache_Inno$yellow$p[[1]]
+				,'chart-bar-inverse' = cache_Inno$yellow$p[[5]]
 				,'chart-line' = cache_Inno$yellow$p[[1]]
 				,'chart-area' = cache_Inno$yellow$p[[1]]
 				,'chart-pie' = cache_Inno$yellow$p[[1]]
@@ -261,6 +268,7 @@ themeColors <- function(
 				,'btn-inact' = cache_PBI$white$d
 				,'btn-inact-hover' = cache_PBI$black$p[[4]]
 				,'chart-bar' = cache_PBI$yellow$p[[1]]
+				,'chart-bar-inverse' = cache_PBI$yellow$p[[5]]
 				,'chart-line' = cache_PBI$yellow$p[[1]]
 				,'chart-area' = cache_PBI$yellow$p[[1]]
 				,'chart-pie' = cache_PBI$yellow$p[[1]]
@@ -347,6 +355,7 @@ themeColors <- function(
 				,'btn-inact' = cache_MSOffice$white$d
 				,'btn-inact-hover' = cache_MSOffice$black$p[[4]]
 				,'chart-bar' = cache_MSOffice$gold$p[[1]]
+				,'chart-bar-inverse' = cache_MSOffice$gold$p[[5]]
 				,'chart-line' = cache_MSOffice$gold$p[[1]]
 				,'chart-area' = cache_MSOffice$gold$p[[1]]
 				,'chart-pie' = cache_MSOffice$gold$p[[1]]

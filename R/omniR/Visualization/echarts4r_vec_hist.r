@@ -25,43 +25,18 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |vec_value   :   Numeric vector to be used as [values] to draw the charts                                                           #
-#   |vec_cat     :   Vector by which to draw the bars                                                                                   #
-#   |                [IMPORTANT] Program will coerce this vector as character anyway, for the chart can only recognize the axis value   #
-#   |                             as well as the tooltip value when they are all character strings, it is weird on echarts ver.=5.3.2   #
-#   |y_min       :   Numeric as the minimum value of y-axis. It is useful to unify the y-axis of the charts                             #
-#   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
-#   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is useful for parallel comparison        #
-#   |y_max       :   Numeric as the maximum value of y-axis. It is useful to unify the y-axis of the charts                             #
-#   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
-#   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is useful for parallel comparison        #
-#   |sortBy      :   Character vector to determine how to display the bars in specific order                                            #
-#   |                 [input       ] <Default> The order follows the input sequence of [vec_cat]                                        #
-#   |                 [category    ]           Function sorts the input data by [vec_cat] in ASCENDING order and then draw the chart    #
-#   |                 [value       ]           Function sorts the input data by [vec_value] in DESCENDING order and then draw the chart #
 #   |html_id     :   Character vector of the html [id]s of each chart widget respectively, for reactive programming purpose             #
 #   |                 [NULL        ] <Default> Chart ID will be generated randomly by [echarts4r]                                       #
 #   |height      :   Integer of the chart height                                                                                        #
 #   |                 [540         ] <Default>                                                                                          #
 #   |width       :   Integer of the chart width                                                                                         #
 #   |                 [960         ] <Default>                                                                                          #
-#   |direction   :   Character vector to determine the direction of the bar                                                             #
-#   |                 [column      ] <Default> Draw the column chart                                                                    #
-#   |                 [bar         ]           Draw the bar chart, in such case, the order of the bars as indicated by [sortBy] will be #
-#   |                                           changed into below result:                                                              #
-#   |                                          [input       ] The first record is at the closest point to the category axis             #
-#   |                                          [category    ] The first among the sorted categories is at the top of the chart          #
-#   |                                          [value       ] The largest among the sorted values is at the top of the chart            #
 #   |barWidth    :   Value of the bar width, can be integer or percentage; only the first is taken if multiple values are provided      #
 #   |                Quote: https://echarts.apache.org/zh/option.html#series-bar.barWidth                                               #
 #   |                 [NULL        ] <Default> Adaptive to the chart                                                                    #
 #   |                 [<int>       ]           Absolute pixels as width                                                                 #
 #   |                 [<chr>       ]           Character string as percent, representing the proportion of automatic width              #
-#   |barColPos   :   Character as the CSS color of the bars with positive values in current chart                                       #
-#   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax for all the bars, or the tallest one if [gradient=all]     #
-#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
-#   |                                           colors of bars one-by-one                                                               #
-#   |barColNeg   :   Character as the CSS color of the bars with negative values in current chart                                       #
+#   |barColor    :   Character as the CSS color of the bars in current chart (there is no negative frequency count for histogram)       #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
 #   |                 [rgba()      ]           Can be provided in CSS syntax for all the bars, or the tallest one if [gradient=all]     #
 #   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
@@ -74,12 +49,21 @@
 #   |                                           the top of each bar and fades gradually to the closest to bg-color                      #
 #   |disp_name   :   Character as the name showing in the tooltip on the bar                                                            #
 #   |                 [Value       ] <Default> Value of current data point                                                              #
-#   |func_add    :   Function that takes <echarts4r> object as the first argument, as direct injection to the charting scripts. It can  #
-#   |                 enable charting for multiple series, such as histogram with density or pareto chart.                              #
-#   |                [IMPORTANT] Be cautious to use this as it can lead to unexpected result!                                           #
-#   |                 [<see def.>  ] <Default> No program injection                                                                     #
-#   |stack       :   Character as the name of stack when multiple series require stacking                                               #
-#   |                 [Bar         ] <Default> Use this as the name of current stack                                                    #
+#   |breaks      :   Method to bin the input data, see official document for <hist>                                                     #
+#   |                 [Sturges     ] <Default> see official document for <hist>                                                         #
+#   |include.lowest                                                                                                                     #
+#   |            :   Whether to include the lowest value for the first or last break, see official document for <hist>                  #
+#   |                 [TRUE        ] <Default> see official document for <hist>                                                         #
+#   |                 [FALSE       ]           see official document for <hist>                                                         #
+#   |right       :   Whether to draw the histogram with right-closed intervals, see official document for <hist>                        #
+#   |                 [TRUE        ] <Default> see official document for <hist>                                                         #
+#   |                 [FALSE       ]           see official document for <hist>                                                         #
+#   |density     :   Whether to add a density curve for the histogram                                                                   #
+#   |                 [FALSE       ] <Default> Only draw the chart with columns                                                         #
+#   |                 [TRUE        ]           Add a density curve to the column chart                                                  #
+#   |lineColor   :   Character as the CSS color of the density curve in current chart                                                   #
+#   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
+#   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
 #   |title       :   Character as the title of current chart, taking the first value if the vector contains multiple values             #
 #   |                 [Pie         ] <Default> Name all charts with this one                                                            #
 #   |titleSize   :   Integer of the font size of the chart title                                                                        #
@@ -97,6 +81,12 @@
 #   |                 chart respectively                                                                                                #
 #   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 2, separated by comma              #
+#   |jsFmtFreq   :   Character vector of the JS methods applied to JS:Float values of frequency count of each chart respectively        #
+#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 0, separated by comma              #
+#   |jsFmtDens   :   Character vector of the JS methods applied to JS:Float values of density of each chart respectively                #
+#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 6, separated by comma if any       #
 #   |fmtTTbar    :   Character as the formatter to tweak the [tooltip] for when mouse hovering on the bars of current chart             #
 #   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
 #   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
@@ -124,18 +114,9 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20220415        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20220418        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20220416        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [func_add] to enable direct injection of programs to tweak the chart, such as adding series    #
-#   |      |     for the chart, or adding effects. Be cautious to use this as it can lead to unexpected result.                         #
-#   |      |[2] Introduce a new argument [stack] to enable stacking of series, effective when [func_add] is in use                      #
-#   |      |[3] 20220416 [echarts=5.3.0] It is tested that function is accepted for <bar.itemStyle.color>                               #
-#   |      |     but NOT accepted for <bar.emphasis.itemStyle.color> (while it regards <func()> as valid, with no parameter given)      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -146,17 +127,16 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales, jsonlite                                                    #
+#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, purrr, jsonlite                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Styles                                                                                                                   #
 #   |   |   |themeColors                                                                                                                #
-#   |   |   |rgba2rgb                                                                                                                   #
+#   |   |   |alphaToHex                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Visualization                                                                                                            #
-#   |   |   |as.character.htmlwidget                                                                                                    #
-#   |   |   |echarts4r.as.tooltip                                                                                                       #
+#   |   |   |echarts4r_vec_bar                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -176,23 +156,20 @@ library(rlang)
 
 #Require [echarts4r >= 0.4.3]
 
-echarts4r_vec_bar <- function(
+echarts4r_vec_hist <- function(
 	vec_value
-	,vec_cat
-	,y_min = NULL
-	,y_max = NULL
-	,sortBy = c('input','category','value')
 	,html_id = NULL
 	,height = 440
 	,width = 640
-	,direction = c('column','bar')
 	,barWidth = NULL
-	,barColPos = NULL
-	,barColNeg = NULL
+	,barColor = NULL
 	,gradient = TRUE
 	,disp_name = 'Value'
-	,func_add = function(obj_echarts){obj_echarts}
-	,stack = 'Bar'
+	,breaks = 'Sturges'
+	,include.lowest = TRUE
+	,right = TRUE
+	,density = FALSE
+	,lineColor = NULL
 	,title = 'Bar'
 	,titleSize = 18
 	,theme = c('BlackGold', 'PBI', 'Inno', 'MSOffice')
@@ -200,6 +177,8 @@ echarts4r_vec_bar <- function(
 	,fontFamily = 'Microsoft YaHei'
 	,fontSize = 14
 	,jsFmtFloat = 'toLocaleString(\'en-US\', {minimumFractionDigits:2, maximumFractionDigits:2})'
+	,jsFmtFreq = 'toLocaleString(\'en-US\', {minimumFractionDigits:0, maximumFractionDigits:0})'
+	,jsFmtDens = 'toFixed(6)'
 	,fmtTTbar = NULL
 	,as.tooltip = TRUE
 	,container = function(html_tag){html_tag}
@@ -213,21 +192,9 @@ echarts4r_vec_bar <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 
 	#012. Handle the parameter buffer
-	if (length(vec_value) != length(vec_cat)) {
-		stop('[',LfuncName,'][vec_value] has different length [',length(vec_value),'] to [vec_cat] as [',length(vec_cat),']!')
-	}
-	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
-	if (length(y_min) == 0) y_min <- NULL
-	if (length(y_max) == 0) y_max <- NULL
-	sortBy <- match.arg(sortBy, c('input','category','value'))
-	direction <- match.arg(direction, c('column','bar'))
+	if (length(vec_value) == 0) return(character(0))
 	barWidth <- head(barWidth,1)
-	if (!(length(barColPos) %in% c(0,1,length(vec_cat)))) {
-		stop('[',LfuncName,'][barColPos] has length [',length(barColPos),'], which is different to the input data!')
-	}
-	if (!(length(barColNeg) %in% c(0,1,length(vec_cat)))) {
-		stop('[',LfuncName,'][barColNeg] has length [',length(barColNeg),'], which is different to the input data!')
-	}
+	barColor <- head(barColor,1)
 	choice_gradient <- c('none', 'all', 'respective')
 	gradient <- head(gradient,1)
 	if (is.character(gradient)) {
@@ -242,20 +209,23 @@ echarts4r_vec_bar <- function(
 		stop('[',LfuncName,'][gradient] should be logical or one of: [',paste0(choice_gradient, collapse = ']['),']!')
 	}
 	disp_name <- head(disp_name,1)
+	breaks <- head(breaks,1)
+	density <- head(density,1)
+	if (!is.logical(density)) density <- FALSE
+	lineColor <- head(lineColor,1)
 	fontSize <- htmltools::validateCssUnit(fontSize)
 
 	#015. Function local variables
-	if (direction == 'column') {
-		val_axis <- '1'
-	} else {
-		val_axis <- '0'
-	}
 
 	#100. Setup styles
 	#110. Retrieve the color set for the requested theme
 	coltheme <- themeColors(theme, transparent = transparent)
 	tt_theme <- themeColors(theme, transparent = F)
-	col_line <- coltheme[['color']][['chart-line']]
+	if (length(lineColor) == 0) {
+		col_histline <- coltheme[['color']][['chart-line']]
+	} else {
+		col_histline <- lineColor
+	}
 
 	#120. Create the styles of [tooltip] for this specific chart
 	tooltip <- list(
@@ -271,444 +241,204 @@ echarts4r_vec_bar <- function(
 		)
 	)
 
-	#150. Format the tooltip for current chart
-	if (length(fmtTTbar) > 0) {
-		tooltip_bar <- modifyList(tooltip, list(formatter = htmlwidgets::JS(fmtTTbar)))
-	} else {
-		tooltip_bar <- modifyList(
-			tooltip
-			,list(
-				formatter = htmlwidgets::JS(paste0(''
-					,'function(params){'
-						,'return('
-							#Quote: https://www.tutorialspoint.com/how-to-convert-a-value-to-a-string-in-javascript
-							,'\'<strong>\' + String(\'',disp_name,'\') + \'</strong>\''
-							,'+ \'<br/>\' + parseFloat(params.value[',val_axis,']).',jsFmtFloat
-						,');'
-					,'}'
-				))
-			)
-		)
-	}
-
-	#160. Determine the background color for interpolation
+	#160. Determine the background color for the symbol on the line
 	if (as.tooltip) {
 		col_bg <- coltheme[['background-color']][['tooltip']]
 	} else {
 		col_bg <- coltheme[['background-color']][['default']]
 	}
 
-	#170. Determine the number of checkpoints on the color ramp
-	#We cut the color palette into these <k> pieces, which is enough for gradient of a bar
-	k_colors <- 50
-
-	#175. Prepare the interpolation of alpha between 0.07 (the least effective value) and 1
-	alpha_interp <- round(scales::rescale(seq_len(k_colors), from = c(1,k_colors), to = c(0.07,1)), 2)
-
-	#180. Define the colors at the extreme points
-	if (length(barColPos) == 0) {
-		barColPos <- coltheme[['color']][['chart-bar']]
-	}
-	if (length(barColPos) == 1) {
-		barColPos <- rlang::rep_along(vec_cat, barColPos)
-	}
-	if (length(barColNeg) == 0) {
-		barColNeg <- coltheme[['color']][['chart-bar-inverse']]
-	}
-	if (length(barColNeg) == 1) {
-		barColNeg <- rlang::rep_along(vec_cat, barColNeg)
-	}
-
-	#300. Prepare the internal data frame to pre-process the charting options
-	df_chart <- data.frame(.ech.cat = as.character(vec_cat), .ech.value = vec_value, stringsAsFactors = F)
-
-	#307. Calculate the extreme values of the input data
-	extreme_pos <- max(df_chart$.ech.value, na.rm = T)
-	extreme_neg <- min(df_chart$.ech.value, na.rm = T)
-
-	#310. Assign the end-point colors to respective categories
-	df_chart$.ech.col <- barColPos
-	df_chart$.ech.col[df_chart$.ech.value < 0] <- barColNeg[df_chart$.ech.value < 0]
-
-	#330. Determine the display order of the bars
-	if (sortBy == 'category') {
-		if (direction == 'column') {
-			df_chart %<>% dplyr::arrange(.ech.cat)
-		} else {
-			df_chart %<>% dplyr::arrange(dplyr::desc(.ech.cat))
-		}
-	} else if (sortBy == 'value') {
-		if (direction == 'column') {
-			df_chart %<>% dplyr::arrange(dplyr::desc(.ech.value))
-		} else {
-			df_chart %<>% dplyr::arrange(.ech.value)
-		}
-	}
-
-	#350. Calculate the quantile of each value by regarding the extreme values as <k_colors>
-	df_chart$.tiles <- NA
-	df_chart$.tiles[!(df_chart$.ech.value < 0)] <- round(scales::rescale(
-		df_chart$.ech.value[!(df_chart$.ech.value < 0)]
-		, to = c(1,k_colors)
-		, from = c(0,extreme_pos)
-	))
-	df_chart$.tiles[df_chart$.ech.value < 0] <- round(scales::rescale(
-		df_chart$.ech.value[df_chart$.ech.value < 0]
-		, to = c(1,k_colors)
-		, from = c(0,extreme_neg)
-	))
-
-	#400. Override the colors when required
-	#410. Define JS helper functions
-	#How to rescale array from range [in_min, in_max] to the range [out_min, out_max]
-	#Quote: https://stackoverflow.com/questions/60673602
-	js_rescale <- paste0(''
-		,'function(num, in_min, in_max, out_min, out_max){'
-			,'return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;'
-		,'}'
+	#200. Calculate the attributes for a histogram
+	hist_inf <- hist(vec_value, plot = FALSE, breaks = breaks, include.lowest = include.lowest, right = right)
+	df_chart <- data.frame(
+		mids = hist_inf$mids
+		,mins = hist_inf$breaks[-length(hist_inf$breaks)]
+		,maxs = hist_inf$breaks[-1]
+		,counts = hist_inf$counts
+		,density = hist_inf$density
+		,c_mids = as.character(hist_inf$mids)
 	)
 
-	#430. Determine the gradient when [direction] is different
-	#Quote: (0,1,0,0) => (right, bottom, left , top)
-	if (direction == 'column') {
-		dir_grad <- '0,1,0,0'
-	} else {
-		dir_grad <- '0,0,1,0'
-	}
-
-	#450. Helper function to generate JS statements
-	js_formatter <- function(
-		col_ramp_pos
-		,col_ramp_neg
-		,k_stops
-		,rescale = js_rescale
-		,col_ramp_dim0 = ''
-	){
+	#230. Define the default formatter for tooltips
+	fmt_def <- function(jsFmt, name, val_id = 1) {
 		paste0(''
 			,'function(params){'
-				#100. Define helper function
-				,'var rescale = ',rescale,';'
+				#100. Define arrays for the boundaries to be formatted
+				,'var mins = ',jsonlite::toJSON(df_chart$mins, auto_unbox = T),';'
+				,'var maxs = ',jsonlite::toJSON(df_chart$maxs, auto_unbox = T),';'
 
-				#300. Define local arrays
-				#310. Color ramps
-				,'var col_ramp_pos = ',col_ramp_pos,';'
-				,'var col_ramp_neg = ',col_ramp_neg,';'
-
-				#330. Color stops
-				,k_stops
-				,'var col_stop = new Array(k_stops);'
-				,'for(var i=0; i<col_stop.length; i++){col_stop[i] = i + 1;};'
-				,'col_stop = col_stop.map(num=>rescale(num, 1, k_stops, 0, 1));'
-
-				#500. Create array of objects that can be referenced by <echarts.graphic.LinearGradient()>
-				#Quote: 柱状图柱体颜色渐变（每个柱体不同渐变色）
-				#Quote: https://blog.csdn.net/baidu_41327283/article/details/100114760
-				,'var col_ramp = [];'
-				,'var arr_stop = col_stop.map(function(v,i,arr){'
-					,'if (parseFloat(params.value[',val_axis,']) < 0) {'
-						,'col_ramp = col_ramp_neg;'
-					,'} else {'
-						,'col_ramp = col_ramp_pos;'
-					,'};'
-					,'return {offset:v, color:col_ramp',col_ramp_dim0,'[i]};'
-				,'});'
-
-				#900. Set the color for current data point
-				,'return new echarts.graphic.LinearGradient(',dir_grad,',arr_stop,false);'
+				#300. Create a new array to store the formatted boundaries
+				,'var names = new Array(mins.length);'
+				,'for(var i=0; i<mins.length; i++){'
+					,'txt_min = mins[i].',jsFmtFloat,';'
+					,'names[i] = \'[\' + mins[i].',jsFmtFloat,' + \'] ~ [\' + maxs[i].',jsFmtFloat,' + \']\';'
+				,'};'
+				,'return('
+					#Quote: https://www.tutorialspoint.com/how-to-convert-a-value-to-a-string-in-javascript
+					,'\'<strong>\' + ',name,' + \'</strong>\''
+					,'+ \'<br/>\' + names[params.dataIndex]'
+					,'+ \'<br/>\' + parseFloat(params.value[',val_id,']).',jsFmt
+				,');'
 			,'}'
 		)
 	}
 
-	#490. Prepare the color formatters
-	if (gradient == 'all') {
-		#100. Retrieve the color for the maximum value in the data
-		col_base_pos <- df_chart$.ech.col[df_chart$.ech.value == max(df_chart$.ech.value, na.rm = T)]
-		col_base_neg <- df_chart$.ech.col[df_chart$.ech.value == min(df_chart$.ech.value, na.rm = T)]
-
-		#500. Create the colors based on the interpolation
-		#Gradient: closer to the bg-color -> closer to the requested color
-		col_grad_pos <- rgba2rgb(col_base_pos, alpha_in = alpha_interp, color_bg = col_bg)
-		col_grad_neg <- rgba2rgb(col_base_neg, alpha_in = alpha_interp, color_bg = col_bg) %>% rev()
-
-		#700. Prepare the JS function for <echarts:formatter>
-		col_formatter <- js_formatter(
-			jsonlite::toJSON(col_grad_pos, auto_unbox = T) %>% {gsub('"','\'',.)}
-			,jsonlite::toJSON(col_grad_neg, auto_unbox = T) %>% {gsub('"','\'',.)}
-			,paste0(''
-				,'var col_tile = [',paste0(df_chart$.tiles, collapse = ','),'];'
-				,'var k_stops = col_tile[params.dataIndex];'
-			)
-			,col_ramp_dim0 = ''
-		)
-		em_formatter <- list(
-			itemStyle = list(
-				color = htmlwidgets::JS(
-					js_formatter(
-						jsonlite::toJSON(col_grad_pos %>% rev(), auto_unbox = T) %>% {gsub('"','\'',.)}
-						,jsonlite::toJSON(col_grad_neg %>% rev(), auto_unbox = T) %>% {gsub('"','\'',.)}
-						,paste0(''
-							,'var col_tile = [',paste0(df_chart$.tiles, collapse = ','),'];'
-							,'var k_stops = col_tile[params.dataIndex];'
-						)
-						,col_ramp_dim0 = ''
-					)
-				)
-			)
-		)
-	} else if (gradient == 'respective') {
-		#500. Create the colors based on the interpolation
-		#Gradient: closer to the bg-color -> closer to the requested color
-		col_grad_pos <- lapply(df_chart$.ech.col, rgba2rgb, alpha_in = alpha_interp, color_bg = col_bg)
-		col_grad_neg <- col_grad_pos %>% lapply(rev)
-
-		#700. Prepare the JS function for <echarts:formatter>
-		col_formatter <- js_formatter(
-			jsonlite::toJSON(col_grad_pos, auto_unbox = T) %>% {gsub('"','\'',.)}
-			,jsonlite::toJSON(col_grad_neg, auto_unbox = T) %>% {gsub('"','\'',.)}
-			,paste0(''
-				,'var k_stops = ',k_colors,';'
-			)
-			,col_ramp_dim0 = '[params.dataIndex]'
-		)
-		em_formatter <- list(
-			itemStyle = list(
-				color = htmlwidgets::JS(
-					js_formatter(
-						jsonlite::toJSON(col_grad_pos %>% lapply(rev), auto_unbox = T) %>% {gsub('"','\'',.)}
-						,jsonlite::toJSON(col_grad_neg %>% lapply(rev), auto_unbox = T) %>% {gsub('"','\'',.)}
-						,paste0(''
-							,'var k_stops = ',k_colors,';'
-						)
-						,col_ramp_dim0 = '[params.dataIndex]'
-					)
-				)
-			)
-		)
+	#250. Format the tooltip for current chart
+	if (length(fmtTTbar) > 0) {
+		tooltip_bar <- fmtTTbar
 	} else {
-		col_formatter <- paste0(''
-			,'function(params){'
-				#300. Define local arrays
-				#350. Color choices
-				,'var col_choice = ',jsonlite::toJSON(df_chart$.ech.col, auto_unbox = T) %>% {gsub('"','\'',.)},';'
+		tooltip_bar <- fmt_def(jsFmtFreq, name = paste0('String(\'',disp_name,'\')'))
+	}
 
-				#900. Set the color for current data point
-				,'return col_choice[params.dataIndex];'
-			,'}'
+	#260. Format the tooltip for density curve
+	tooltip_sym = modifyList(
+		tooltip
+		,list(
+			formatter = htmlwidgets::JS(fmt_def(jsFmtDens, name = paste0('String(\'',disp_name,'\') + \' - \' + params.seriesName')))
 		)
-		em_formatter <- list()
+	)
+
+	#300. Prepare scripts to draw additional line as density curve for the injection of [echarts4r_vec_bar]
+	if (!density) {
+		func_line <- function(ech, df, x, y){ech}
+	} else {
+		func_line <- function(ech, df, x, y){
+			eval(rlang::expr(
+				ech %>%
+					echarts4r::e_data(df, !!rlang::sym(x)) %>%
+					#100. Draw a line
+					echarts4r::e_line(
+						!!rlang::sym(y)
+						,x_index = 0
+						,y_index = 1
+						,name = 'density'
+						,tooltip = tooltip_sym
+						,symbol = 'circle'
+						#If we do not set [showSymbol], the tooltip also cannot display
+						,showSymbol = TRUE
+						,smooth = TRUE
+						,smoothMonotone = 'x'
+						,itemStyle = list(
+							#This color results in the same in [legend]
+							color = col_bg
+							,borderColor = paste0(col_histline, alphaToHex(0.5))
+							,borderWidth = 1
+						)
+						,lineStyle = list(
+							#This color is different from that in [legend]
+							color = paste0(col_histline, alphaToHex(0.5))
+							,width = 1
+						)
+					) %>%
+					echarts4r::e_y_axis(
+						index = 1
+						,gridIndex = 0
+						,type = 'value'
+						,splitLine = list(
+							show = FALSE
+						)
+						,minorSplitLine = list(
+							show = FALSE
+						)
+						,axisLabel = list(
+							fontFamily = fontFamily
+							,fontSize = fontSize
+							,formatter = htmlwidgets::JS(paste0(''
+								,'function(value, index){'
+									,'return('
+										,'value.',jsFmtDens
+									,');'
+								,'}'
+							))
+						)
+						,axisLine = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,axisTick = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,minorTick = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,axisPointer = list(
+							show = FALSE
+							,triggerTooltip = FALSE
+						)
+					) %>%
+					#[echarts4r ver=4.3] It is weird that we MUST set a new xAxis with [id=1] to ensure the chart is correctly drawn,
+					# although our line chart belongs to xAxis=0
+					echarts4r::e_x_axis(
+						index = 1
+						,gridIndex = 0
+						,type = 'category'
+						,axisLabel = list(
+							fontFamily = fontFamily
+							,fontSize = fontSize
+							,hideOverlap = TRUE
+						)
+						,axisLine = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,axisTick = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,minorTick = list(
+							lineStyle = list(
+								color = col_histline
+							)
+						)
+						,axisPointer = list(
+							show = FALSE
+							,triggerTooltip = FALSE
+						)
+					)
+			))
+		}
 	}
 
 	#500. Create the charting script
-	ch_html <- eval(rlang::expr(
-		df_chart %>%
-		#[IMPORTANT] It is tested that the size of [canvas] is unexpected if we set [width] or [height] for [e_charts]
-		echarts4r::e_charts(.ech.cat, elementId = html_id) %>%
-		echarts4r::e_grid(
-			index = 0
-			, top = 40, right = 8, bottom = 40, left = 8
-			, height = height - 48, width = width - 16
-			, containLabel = TRUE
-		) %>%
-		#300. Draw the chart
-		echarts4r::e_bar(
-			.ech.value
-			,x_index = 0
-			,y_index = 0
-			,stack = stack
-			,name = disp_name
-			,barWidth = barWidth
-			,legend = list(
-				show = FALSE
-			)
-			,label = list(
-				show = FALSE
-				# ,position = 'top'
-				,fontFamily = fontFamily
-				,fontSize = fontSize
-				,borderWidth = 0
-				,color = coltheme[['color']][['header']]
-			)
-			,itemStyle = list(
-				borderWidth = 0
-				#We must use [htmlwidgets::JS()] to embrace the character string for it to take effect, when [as.tooltip=FALSE]
-				,color = htmlwidgets::JS(col_formatter)
-			)
-			,emphasis = list(
-				label = list(
-					show = FALSE
-				)
-				# ,!!!em_formatter
-				# ,itemStyle = list(
-				# 	color = 'auto'
-				# )
-			)
-		) %>%
-		#400. Setup the axes
-		echarts4r::e_x_axis(
-			index = 0
-			,gridIndex = 0
-			,type = 'category'
-			,data = df_chart$.ech.cat
-			,axisLabel = list(
-				fontFamily = fontFamily
-				,fontSize = fontSize
-				,hideOverlap = TRUE
-			)
-			,axisLine = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,minorTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisPointer = list(
-				show = FALSE
-				,triggerTooltip = FALSE
-			)
-		) %>%
-		echarts4r::e_y_axis(
-			index = 0
-			,gridIndex = 0
-			,type = 'value'
-			,min = y_min
-			,max = y_max
-			,splitLine = list(
-				lineStyle = list(
-					color = paste0(col_line, alphaToHex(0.1))
-					,type = 'dotted'
-				)
-			)
-			,minorSplitLine = list(
-				show = FALSE
-			)
-			,axisLabel = list(
-				fontFamily = fontFamily
-				,fontSize = fontSize
-				,formatter = htmlwidgets::JS(paste0(''
-					,'function(value, index){'
-						,'return('
-							,'value.',jsFmtFloat
-						,');'
-					,'}'
-				))
-			)
-			,axisLine = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,minorTick = list(
-				lineStyle = list(
-					color = col_line
-				)
-			)
-			,axisPointer = list(
-				show = FALSE
-				,triggerTooltip = FALSE
-			)
-		) %>%
-		#500. Setup the title
-		echarts4r::e_title(
-			text = title
-			,left = 8
-			,top = 4
-			,textStyle = list(
-				fontFamily = fontFamily
-				,fontSize = titleSize
-				,color = coltheme[['color']][['header']]
-			)
-		) %>%
-		#700. Setup the legend
-		echarts4r::e_legend(
-			show = FALSE
-			,textStyle = list(
-				fontFamily = fontFamily
-				,fontSize = fontSize
-				,color = coltheme[['color']][['header']]
-			)
-		) %>%
-		#800. Extra configurations
-		#820. Show a loading animation when the chart is re-drawn
-		echarts4r::e_show_loading() %>%
-		#880. Enable the tooltip triggered by mouse over the bars
-		echarts4r::e_tooltip(
-			trigger = 'item'
-			,confine = TRUE
-			,appendToBody = TRUE
-			,enterable = FALSE
-			,axisPointer = list(
-				show = FALSE
-			)
-			,!!!tooltip_bar
-		)
-	))
-
-	#509. Conduct program injection
-	ch_html %<>% func_add()
-
-	#520. Flip the coordinates
-	if (direction == 'bar') {
-		ch_html %<>%
-			echarts4r::e_flip_coords()
-	}
-
-	#580. Convert the htmlwiget into character vector
-	#581. Conversion
-	ch_html %<>%
-		#900. Convert to character vector
-		as.character.htmlwidget()
-
-	#583. Search for the HTML ID
-	vfy_html_id <- stringr::str_extract_all(ch_html, '(?<=<div\\sid=("|\'))(.+?)(?=\\1)')[[1]][[1]]
-
-	#589. Overwrite the original rect
-	ch_html %<>%
-		#920. Setup the shape of the canvas
-		{gsub(
-			paste0('(?<=<div\\sid=("|\')',vfy_html_id,'\\1\\sstyle=("|\'))width:(\\d+(%|px));\\s*height:(\\d+(%|px));')
-			,paste0(''
-				,'width:',width,'px !important;'
-				,'height:',height,'px !important;'
-			)
-			,.
-			,perl = T
-		)}
-
-	#590. Directly return if no need to convert it to tooltip
-	if (!as.tooltip) return(ch_html)
-
-	#800. Function as container for creating the tooltip out of current chart
-	#[IMPORTANT]
-	#[1] We must set the <echarts> object names BEFORE the definition of the container, as they are referenced inside the container
-	#[2] Program will automatically search for the variable by stacks, hence there is no need to worry about the environment nesting
-	ech_obj_name <- paste0('ttBar_', gsub('\\W', '_', vfy_html_id))
-	h_contain <- function(html_tag){html_tag}
-
-	#890. Nest the containers when necessary
-	if (is.function(container)) {
-		container_multi <- function(html_tag){ h_contain(html_tag) %>% container() }
-	} else {
-		container_multi <- h_contain
-	}
-
-	#900. Convert the widget into tooltip
-	ch_tooltip <- echarts4r.as.tooltip(ch_html, container = container_multi, ech_name = ech_obj_name, as.parts = as.parts)
+	ch_html <- echarts4r_vec_bar(
+		df_chart$counts
+		,df_chart$c_mids
+		,y_min = NULL
+		,y_max = NULL
+		,sortBy = 'input'
+		,html_id = html_id
+		,height = height
+		,width = width
+		,direction = 'column'
+		,barWidth = barWidth
+		,barColPos = barColor
+		,barColNeg = NULL
+		,gradient = gradient
+		,disp_name = disp_name
+		,func_add = purrr::partial(func_line, df = df_chart, x = 'c_mids', y = 'density')
+		,stack = 'Bar'
+		,title = title
+		,titleSize = titleSize
+		,theme = theme
+		,transparent = transparent
+		,fontFamily = fontFamily
+		,fontSize = fontSize
+		,jsFmtFloat = jsFmtFreq
+		,fmtTTbar = tooltip_bar
+		,as.tooltip = as.tooltip
+		,container = container
+		,as.parts = as.parts
+	)
 
 	#999. Return the vector
-	return(ch_tooltip)
+	return(ch_html)
 }
 
 #[Full Test Program;]
@@ -726,67 +456,45 @@ if (FALSE){
 		uRV$coltheme <- themeColors(uRV$theme)
 
 		#100. Create sample data
-		ch_scoring <- lubridate::lakers %>%
-			dplyr::mutate(col_period = ifelse(period == 3, '#FF0000', uRV$coltheme[['color']][['default']])) %>%
-			dplyr::group_by(opponent, period) %>%
+		ch_iris <- iris %>%
+			dplyr::group_by(Species) %>%
 			dplyr::summarise(
-				points = sum(points, na.rm = T)
-				,col_period = dplyr::first(col_period)
-				,.groups = 'keep'
-			) %>%
-			dplyr::ungroup() %>%
-			dplyr::mutate(points = ifelse(period==2, -points, points)) %>%
-			dplyr::group_by(opponent) %>%
-			dplyr::summarise(
-				score = sum(points, na.rm = T)
-				,ech_bar = echarts4r_vec_bar(
-					points
-					,vec_cat = period
-					,sortBy = 'input'
-					#20220413 It is tested that if we manually set [html_id], the chart may not display when hovering over,
-					#          hence we should never (or under certain condition?) set it
-					# ,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
-					,barColPos = col_period
+				avg_Sepal = mean(Sepal.Length, na.rm = T)
+				,ech_hist = echarts4r_vec_hist(
+					Sepal.Length
 					,gradient = TRUE
 					# ,direction = 'bar'
-					,disp_name = 'Total Score'
-					,title = 'Distribution by Period'
+					,disp_name = 'Sepal.Length'
+					,density = TRUE
+					,title = 'Distribution by Species'
 					,theme = uRV$theme
-					# ,jsFmtFloat = 'toFixed(4)'
 					,as.tooltip = TRUE
 				)
-				,ech_bar2 = echarts4r_vec_bar(
-					points
-					,vec_cat = period
-					,sortBy = 'input'
-					#20220413 It is tested that if we manually set [html_id], the chart may not display when hovering over,
-					#          hence we should never (or under certain condition?) set it
-					# ,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
-					,barColPos = col_period
-					,gradient = 'respective'
+				,ech_hist2 = echarts4r_vec_hist(
+					Sepal.Length
+					,gradient = TRUE
 					# ,direction = 'bar'
-					,disp_name = 'Total Score'
-					,title = 'Distribution by Period'
+					,disp_name = 'Sepal.Length'
+					,title = 'Distribution by Species'
 					,theme = uRV$theme
-					# ,jsFmtFloat = 'toFixed(4)'
 					,as.tooltip = FALSE
 				)
 				,.groups = 'keep'
 			) %>%
 			dplyr::ungroup() %>%
 			dplyr::mutate(
-				score_text = echarts4r_vec_text(
-					score
+				avg_Sepal_text = echarts4r_vec_text(
+					avg_Sepal
 					,width = 64
 					,theme = uRV$theme
-					,fmtTooltip = ech_bar
+					,fmtTooltip = ech_hist
 				)
 			)
 
 		#200. Create a [DT::datatable]
-		cols <- c('opponent', 'score', 'score_text', 'ech_bar2')
-		dt_scoring <- DT::datatable(
-			ch_scoring %>% dplyr::select(tidyselect::all_of(cols))
+		cols <- c('Species', 'avg_Sepal', 'avg_Sepal_text', 'ech_hist2')
+		dt_iris <- DT::datatable(
+			ch_iris %>% dplyr::select(tidyselect::all_of(cols))
 			#Only determine the columns to be displayed, rather than the columns to extract from the input data
 			,colnames = cols
 			,width = '100%'
@@ -820,7 +528,7 @@ if (FALSE){
 			htmltools::browsable()
 
 		#500. Export a standalone HTML file
-		div_scoring <- shiny::fluidRow(
+		div_iris <- shiny::fluidRow(
 			shinydashboardPlus::box(
 				width = 12
 				,shiny::tags$style(
@@ -833,19 +541,19 @@ if (FALSE){
 				)
 				,shiny::tagList(
 					theme_datatable(theme = uRV$theme, transparent = T)
-					,dt_scoring
+					,dt_iris
 				)
 			)
 		)
 
 		path_rpt <- dirname(thisfile())
-		rpt_tpl <- file.path(path_rpt, 'echarts4r_vec_pie.Rmd')
-		rpt_out <- file.path(path_rpt, 'ScoreDistribution.html')
+		rpt_tpl <- file.path(path_rpt, 'echarts4r_vec_line.Rmd')
+		rpt_out <- file.path(path_rpt, 'SepalLengthDistribution.html')
 		rmarkdown::render(
 			rpt_tpl
 			,output_file = rpt_out
 			,params = list(
-				dt = div_scoring
+				dt = div_iris
 			)
 			,envir = new.env(parent = globalenv())
 		)
@@ -896,7 +604,7 @@ if (FALSE){
 
 					shiny::tagList(
 						theme_datatable(theme = uRV$theme, transparent = T)
-						,dt_scoring
+						,dt_iris
 					)
 				})
 			}

@@ -137,6 +137,12 @@
 #   |      |[3] 20220416 [echarts=5.3.0] It is tested that function is accepted for <bar.itemStyle.color>                               #
 #   |      |     but NOT accepted for <bar.emphasis.itemStyle.color> (while it regards <func()> as valid, with no parameter given)      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220419        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Corrected the error to fail the drawing when the data point is zero or infinite or NaN, as the gradient color cannot be #
+#   |      |     calculated based on erroneous index                                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -386,6 +392,15 @@ echarts4r_vec_bar <- function(
 	){
 		paste0(''
 			,'function(params){'
+				#001. Parse the current data point
+				,'var val_curr = parseFloat(params.value[',val_axis,']);'
+
+				#009. Return nothing if current data point is equal to 0
+				#Quote: https://blog.csdn.net/m0_48459838/article/details/113800137
+				,'if ((val_curr == 0) || isNaN(val_curr) || (!isFinite(val_curr))) {'
+					,'return;'
+				,'};'
+
 				#100. Define helper function
 				,'var rescale = ',rescale,';'
 
@@ -404,12 +419,12 @@ echarts4r_vec_bar <- function(
 				#Quote: 柱状图柱体颜色渐变（每个柱体不同渐变色）
 				#Quote: https://blog.csdn.net/baidu_41327283/article/details/100114760
 				,'var col_ramp = [];'
+				,'if (val_curr < 0) {'
+					,'col_ramp = col_ramp_neg;'
+				,'} else {'
+					,'col_ramp = col_ramp_pos;'
+				,'};'
 				,'var arr_stop = col_stop.map(function(v,i,arr){'
-					,'if (parseFloat(params.value[',val_axis,']) < 0) {'
-						,'col_ramp = col_ramp_neg;'
-					,'} else {'
-						,'col_ramp = col_ramp_pos;'
-					,'};'
 					,'return {offset:v, color:col_ramp',col_ramp_dim0,'[i]};'
 				,'});'
 

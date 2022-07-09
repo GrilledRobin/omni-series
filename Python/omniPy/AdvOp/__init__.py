@@ -20,6 +20,7 @@ from .selCatVar import selCatVar
 from .selNumVar import selNumVar
 from .trimCatVar import trimCatVar
 from .getWinUILanguage import getWinUILanguage
+from .pandasPivot import pandasPivot
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup

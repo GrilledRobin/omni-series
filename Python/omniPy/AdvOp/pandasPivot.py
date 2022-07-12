@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import warnings
 import pandas as pd
 from collections.abc import Iterable
 from functools import partial
@@ -128,7 +129,7 @@ def pandasPivot(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, collections, functools, typing                                                                                    #
+#   |   |sys, warnings, pandas, collections, functools, typing                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -205,7 +206,7 @@ def pandasPivot(
     #[1] The order of values is defined automatically at this step
     dim_cols = var_rows + var_cols
     val_unique = {
-        c : { v:i for i,v in enumerate(df[c].sort_values().unique().tolist()) }
+        c : { v:i for i,v in enumerate(pd.Series(df[c].unique()).sort_values().tolist()) }
         for c in dim_cols
     }
 
@@ -277,6 +278,13 @@ def pandasPivot(
         )
         return(rstOut)
 
+    #270. Function to convert the data type of all levels within a pd.MultiIndex
+    #Quote: Get respective levels of pd.MultiIndex
+    #Quote: https://stackoverflow.com/questions/36909457
+    def h_AsObj(idx):
+        obj = [ idx.get_level_values(i).astype('object') for i in range(idx.nlevels) ]
+        return(pd.MultiIndex.from_arrays(obj))
+
     #400. Calculate totals
     #410. Row totals
     if f_totals_row:
@@ -347,6 +355,8 @@ def pandasPivot(
     #600. Merge all pieces of the stats
     #610. Add row totals if any
     if f_totals_row:
+        pvt_base.index = h_AsObj(pvt_base.index)
+        pvt_by_y.index = h_AsObj(pvt_by_y.index)
         pvt_base = pd.concat(
             [ pvt_base, pvt_by_y ]
             ,axis = 0
@@ -356,12 +366,22 @@ def pandasPivot(
 
     #640. Add column totals if any
     if f_totals_col:
-        pvt_base = pd.concat(
-            [ pvt_base, pvt_by_x ]
-            ,axis = 1
-            ,sort = False
-            ,ignore_index = False
-        )
+        pvt_base.columns = h_AsObj(pvt_base.columns)
+        pvt_by_x.columns = h_AsObj(pvt_by_x.columns)
+        #Quote: python 忽略警告（warning）的几种方法
+        #Quote: https://blog.csdn.net/time_forgotten/article/details/104792200
+        #[ASSUMPTION][pandas = 1.3.1]
+        #[1] Regardless of [sort=False], [pd.concat] still sorts the values of column labels
+        #[2] When the input values of columns levels are NOT character strings, it issues RuntimeWarning for unorderable data
+        #[3] This does not affect the result hence we ignore it to clean up the log
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category = RuntimeWarning)
+            pvt_base = pd.concat(
+                [ pvt_base, pvt_by_x ]
+                ,axis = 1
+                ,sort = False
+                ,ignore_index = False
+            )
 
     #670. Add cross-axis totals if any
     if f_totals_cross:

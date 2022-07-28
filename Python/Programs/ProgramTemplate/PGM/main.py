@@ -3,22 +3,10 @@
 
 #001. Load preliminary packages
 import os, sys, re, logging
-import datetime as dt
 from itertools import product
 from inspect import getsourcefile
 
-#002. Take the command line arguments ahead of all other processes
-#[ASSUMPTION]
-#[1] All input values will be split by [space]; hence please ensure they are properly quoted where necessary
-#[2] All input values are stored in one [list] of characters
-#[3] Script file name is always the first in this list, which we ignore for most of the scenarios
 args_in = sys.argv.copy()
-args_in.pop(0)
-#This program takes 2 arguments in below order:
-#[1] [dateEnd         ] [character       ] [yyyymmdd        ]
-#[2] [dateBgn         ] [character       ] [yyyymmdd        ]
-if len(args_in) == 0:
-    raise ValueError('No argument is detected! Program aborted!')
 
 #003. Find the location of current script
 #Quote: https://www.geeksforgeeks.org/how-to-get-directory-of-current-script-in-python/
@@ -86,8 +74,8 @@ if path_omniPy not in sys.path:
     sys.path.append( path_omniPy )
 
 #037. Enable the function to execute other scripts in the same environment
-from omniPy.AdvOp import exec_file
-from omniPy.FileSystem import getMemberByStrPattern, winReg_QueryValue
+from omniPy.AdvOp import exec_file, modifyDict
+from omniPy.Dates import UserCalendar, ObsDates, intnx
 
 #039. Load useful user-defined environment
 #Check the [__doc__] of below script for its detailed output
@@ -95,28 +83,45 @@ exec_file(file_autoexec)
 
 #050. Define local environment
 #051. Period of dates for current script
-#[IMPORTANT] Due to definition of [omniPy.Dates.UserCalendar], we have to set [dateBgn] ahead of [dateEnd]
-f_has_dateBgn = False
-if len(args_in) == 2:
-    if len(args_in[-1]):
-        f_has_dateBgn = True
+#[ASSUMPTION]
+#[1] Take the command line arguments ahead of the rest processes
+#[2] All input values will be split by [space]; hence please ensure they are properly quoted where necessary
+#[3] All input values are stored in one [list] of characters
+#[4] Script file name is always the first in this list, which we ignore for most of the scenarios
+#[5] If any argument is provided, we should reset [G_clndr] and [G_obsDates] as their period coverage may have been extended
+args_in.pop(0)
+#This program may take up to 2 arguments in below order:
+#[1] [dateEnd         ] [character       ] [yyyymmdd        ]
+#[2] [dateBgn         ] [character       ] [yyyymmdd        ]
+if len(args_in):
+    #010. Verify the number of input arguments
+    f_has_dateBgn = False
+    if len(args_in) == 2:
+        if len(args_in[-1]):
+            f_has_dateBgn = True
 
-if f_has_dateBgn:
-    G_clndr.dateBgn = args_in[-1]
-else:
-    #010. Declare the logic
-    #[ASSUMPTION]
-    #[1] Using [logging.info] will only write the message into the log file
-    #[2] Using [logger.info] will write the message both into the log file and the command console
-    logger.info('<dateBgn> is not provided, use <Current Quarter Beginning> instead.')
+    #100. Determine the beginning and ending of the request
+    argEnd = args_in[0]
+    if f_has_dateBgn:
+        argBgn = args_in[-1]
+    else:
+        #010. Declare the logic
+        #[ASSUMPTION]
+        #[1] Using [logging.info] will only write the message into the log file
+        #[2] Using [logger.info] will write the message both into the log file and the command console
+        logger.info('<dateBgn> is not provided, set the period coverage as 3 months counting backwards.')
 
-    #100. Prepare to observe the date originated from the first input argument
-    G_obsDates.values = args_in[0]
+        #100. Shift the ending date to its 2nd previous month beginning
+        argBgn = intnx('month', argEnd, -2, 'b')
 
-    #500. Retrieve <Current Quarter Beginning> by adding 1 calendar day to the <Last Calendar Day of the Previous Quarter>
-    G_clndr.dateBgn = G_obsDates.prevQtrLCD[0] + dt.timedelta(days = 1)
+    #300. Modify the default arguments to create calendars
+    args_cln_mod = modifyDict(getOption['args.Calendar'], {'clnBgn' : argBgn, 'clnEnd' : argEnd})
 
-G_clndr.dateEnd = args_in[0]
+    #500. Create a fresh new calendar
+    G_clndr = UserCalendar(**args_cln_mod)
+
+    #700. Create a fresh new date observer
+    G_obsDates = ObsDates(obsDate = argEnd, **args_cln_mod)
 
 #052. Directories for current process
 dir_proc = os.path.dirname(dir_curr)
@@ -134,38 +139,28 @@ dir_DM_src = os.path.join(dir_DM, 'SRC')
 dir_DM_T1 = os.path.join(dir_DM, 'custlvl')
 dir_DM_T2 = os.path.join(dir_DM_db, '08Digital Banking')
 
-#057. Prepare R parameters, in case one has to call RScript.exe for interaction
-rKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R64'
-rVal = r'InstallPath'
-R_HOME = winReg_QueryValue(rKey, rVal) or ''
-R_EXE = os.path.join(R_HOME, 'bin', 'Rscript.exe')
-
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
 #[ASSUMPTION]
 #[1] There is no need to quote the commands in shell, as [subprocess] will do the implicit quoting
 #Quote: https://stackoverflow.com/questions/14928860/passing-double-quote-shell-commands-in-python-to-subprocess-popen
-sasVer = '9.4'
-sasKey = os.path.join(r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System', sasVer)
-sasVal = r'DefaultRoot'
-SAS_HOME = winReg_QueryValue(sasKey, sasVal) or ''
+SAS_HOME = r'C:\SASHome\SASFoundation\9.4'
+#SAS_HOME = r'C:\Program Files\SASHome\x86\SASFoundation\9.4'
 SAS_EXE = os.path.join(SAS_HOME, 'sas.exe')
 SAS_CFG_ZH = os.path.join(SAS_HOME, 'nls', 'zh', 'sasv9.cfg')
 SAS_CFG_INIT = ['-CONFIG', SAS_CFG_ZH, '-MEMSIZE', '0', '-NOLOGO', '-ICON']
 SAS_omnimacro = [ d for d in paths_omnimacro if os.path.isdir(d) ][0]
 
 #100. Find all subordinate scripts that are to be called within current session
-pgms_curr = getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
+pgms_curr = opy.FileSystem.getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
 i_len = len(pgms_curr)
 
 #700. Print configurations into the log for debug
 #701. Prepare lists of parameters
 key_args = {
-    'dateBgn' : G_clndr.dateBgn.strftime('%Y-%m-%d')
-    ,'dateEnd' : G_clndr.dateEnd.strftime('%Y-%m-%d')
+    'rundate' : G_obsDates.values[0].strftime('%Y-%m-%d')
 }
 key_dirs = {
     'Process Home' : dir_curr
-    ,'SAS Home' : SAS_HOME
     ,'SAS omnimacro' : SAS_omnimacro
 }
 key_tolog = {**key_args, **key_dirs}
@@ -192,10 +187,54 @@ if not all([ os.path.isdir(v) for v in key_dirs.values() ]):
 logger.info('-' * 80)
 logger.info('Subordinate scripts to be located at:')
 logger.info(dir_curr)
-logger.info('-' * 80)
 if i_len == 0:
     raise RuntimeError('No available subordinate script is found! Program terminated!')
 
+#780. Verify the process control file to minimize the system calculation effort
+fname_ctrl = r'proc_ctrl' + G_obsDates.values[0].strftime('%Y%m%d') + '.txt'
+proc_ctrl = os.path.join(dir_curr, fname_ctrl)
+
+#781. Remove any control files that were created on other dates
+cln_ctrls = opy.FileSystem.getMemberByStrPattern(
+    dir_curr
+    ,r'^proc_ctrl\d{8}\.txt$'
+    ,exclRegExp = r'^' + fname_ctrl + r'$'
+    ,chkType = 1
+    ,FSubDir = False
+)
+if len(cln_ctrls):
+    for f in cln_ctrls:
+        os.remove(f[0])
+
+#785. Read the content of the process control file, which represents the previously executed scripts
+pgm_executed = []
+if os.path.isfile(proc_ctrl):
+    #100. Read all lines into a list
+    with open(proc_ctrl, 'r') as f:
+        pgm_executed = f.readlines()
+
+    #500. Exclude those beginning with a semi-colon [;], resembling the syntax of [MS DOS]
+    pgm_executed = [ f.strip() for f in pgm_executed if not f.startswith(';') ]
+
+#787. Exclude the previously executed scripts from the full list for current session
+if pgm_executed:
+    #010. Remove duplicates from this list
+    pgm_executed_dedup = sorted(list(set(pgm_executed)))
+
+    #100. Prepare the log
+    logger.info('-' * 80)
+    logger.info('Below scripts have been executed today, thus are excluded.')
+    for f in pgm_executed_dedup:
+        logger.info('<' + f + '>')
+
+    #900. Exclusion
+    pgms_curr = [ o for o in pgms_curr if os.path.basename(o[0]) not in pgm_executed_dedup ]
+    i_len = len(pgms_curr)
+    if i_len == 0:
+        logger.info('All scripts have been executed previously. Program completed.')
+        sys.exit()
+
+logger.info('-' * 80)
 logger.info('Subordinate scripts to be called in below order:')
 i_nums = len(str(i_len))
 mlen_pgms = max([ len(os.path.basename(p[0])) for p in pgms_curr ])
@@ -209,16 +248,23 @@ for i in range(i_len):
 #800. Call the subordinate scripts that are previously found
 logger.info('-' * 80)
 logger.info('Calling subordinate scripts...')
-logger.info('-' * 40)
 for pgm in pgms_curr:
-    #001. Declare which script is called at this step
-    logger.info('<' + os.path.basename(pgm[0]) + '> Beginning...')
+    #001. Get the file name of the script
+    fname_scr = os.path.basename(pgm[0])
 
-    #990. Call the dedicated program
+    #100. Declare which script is called at this step
+    logger.info('-' * 40)
+    logger.info('<' + fname_scr + '> Beginning...')
+
+    #500. Call the dedicated program
     exec_file(pgm[0])
 
-    #999. Mark completion of current step
-    logger.info('<' + os.path.basename(pgm[0]) + '> Complete!')
-    logger.info('-' * 40)
+    #700. Write current script to the process control file for another call of the same process
+    with open(proc_ctrl, 'a') as f:
+        f.writelines(fname_scr + '\n')
 
+    #999. Mark completion of current step
+    logger.info('<' + fname_scr + '> Complete!')
+
+logger.info('-' * 80)
 logger.info('Process Complete!')

@@ -1,14 +1,5 @@
 #002. Take the command line arguments ahead of all other processes
-#[ASSUMPTION]
-#[1] All input values will be split by [space]; hence please ensure they are properly quoted where necessary
-#[2] All input values are stored in one [character vector]
 args_in <- commandArgs(T)
-#This program takes 2 arguments in below order:
-#[1] [dateEnd         ] [character       ] [yyyymmdd        ]
-#[2] [dateBgn         ] [character       ] [yyyymmdd        ]
-if (length(args_in) == 0) {
-	stop('ERROR: ',Sys.time(),' No argument is detected! Program aborted!')
-}
 
 #010. Prepare logging
 #Quote: https://community.rstudio.com/t/creating-log-files-in-r/71541/2
@@ -74,26 +65,43 @@ logger.critical <- function(...){log4r::fatal(my_logger, paste0(..., collapse = 
 
 #050. Define local environment
 #051. Period of dates for current script
-#[IMPORTANT] Due to definition of [omniPy.Dates.UserCalendar], we have to set [dateBgn] ahead of [dateEnd]
-f_has_dateBgn <- F
-if (length(args_in) == 2) {
-	if (length(args_in[[2]]) > 0) {
-		f_has_dateBgn <- T
+#[ASSUMPTION]
+#[1] All input values will be split by [space]; hence please ensure they are properly quoted where necessary
+#[2] All input values are stored in one [character vector]
+#[3] If any argument is provided, we should reset [G_clndr] and [G_obsDates] as their period coverage may have been extended
+#This program takes 2 arguments in below order:
+#[1] [dateEnd         ] [character       ] [yyyymmdd        ]
+#[2] [dateBgn         ] [character       ] [yyyymmdd        ]
+if (length(args_in) > 0) {
+	#010. Verify the number of input arguments
+	f_has_dateBgn <- F
+	if (length(args_in) == 2) {
+		if (length(args_in[[2]]) > 0) {
+			f_has_dateBgn <- T
+		}
 	}
-}
-if (f_has_dateBgn) {
-	G_clndr$dateBgn <- args_in[[2]]
-} else {
-	#010. Declare the logic
-	logger.info('<dateBgn> is not provided, use <Current Quarter Beginning> instead.')
 
-	#100. Prepare to observe the date originated from the first input argument
-	G_obsDates$values <- args_in[[1]]
+	#100. Determine the beginning and ending of the request
+	argEnd <- args_in[[1]]
+	if (f_has_dateBgn) {
+		argBgn <- args_in[[2]]
+	} else {
+		#010. Declare the logic
+		logger.info('<dateBgn> is not provided, set the period coverage as 3 months counting backwards.')
 
-	#500. Retrieve <Current Quarter Beginning> by adding 1 calendar day to the <Last Calendar Day of the Previous Quarter>
-	G_clndr$dateBgn <- G_obsDates$prevQtrLCD + as.difftime(1, units = 'days')
+		#100. Shift the ending date to its 2nd previous month beginning
+		argBgn <- intnx('month', argEnd, -2, 'b')
+	}
+
+	#300. Modify the default arguments to create calendars
+	args_cln_mod <- modifyList(getOption('args.Calendar'), list(clnBgn = argBgn, clnEnd = argEnd))
+
+	#500. Create a fresh new calendar
+	G_clndr <- do.call(UserCalendar$new, args_cln_mod)
+
+	#700. Create a fresh new date observer
+	G_obsDates <- do.call(ObsDates$new, c(list(obsDate = argEnd), args_cln_mod))
 }
-G_clndr$dateEnd <- args_in[[1]]
 
 #052. Directories for current process
 dir_proc <- dirname(dir_curr)

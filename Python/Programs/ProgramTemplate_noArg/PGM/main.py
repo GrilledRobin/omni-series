@@ -205,7 +205,8 @@ if pgm_executed:
 logger.info('-' * 80)
 logger.info('Subordinate scripts to be called in below order:')
 i_nums = len(str(i_len))
-mlen_pgms = max([ len(os.path.basename(p[0])) for p in pgms_curr ])
+#Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
+mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
 for i in range(i_len):
     #100. Pad the sequence numbers by leading zeros, to make the log audience-friendly
     i_char = str(i+1).zfill(i_nums)

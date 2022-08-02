@@ -69,6 +69,8 @@ def gen_locals( **kw ) -> 'Assign values to variables in the same frame as the c
     #    https://stackoverflow.com/questions/1373164/how-do-i-create-variable-variables
     #[4] Default behavior when calling this function results the variables to be defined among [globals()], see:
     #    https://stackoverflow.com/questions/8178633/can-you-assign-to-a-variable-defined-in-a-parent-function
+    #[5] Prior to Python<=3.13 as indicated by PEP667, this function will not work as it is designed to:
+    #    https://peps.python.org/pep-0667/
     sys._getframe(1).f_locals.update(kw)
     #frame.f_locals.update(kw)
 #End gen_locals

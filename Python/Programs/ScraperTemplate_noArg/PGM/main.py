@@ -81,7 +81,7 @@ exec_file(file_autoexec)
 
 #040. Load user defined functions
 from omniPy.AdvOp import getWinUILanguage
-from omniPy.FileSystem import winKnownFolders
+from omniPy.FileSystem import winKnownFolders, getMemberByStrPattern, winReg_QueryValue
 
 #050. Define local environment
 #051. Variables that can be used at different steps
@@ -106,19 +106,27 @@ dir_DM_src = os.path.join(dir_DM, 'SRC')
 dir_DM_T1 = os.path.join(dir_DM, 'custlvl')
 dir_DM_T2 = os.path.join(dir_DM_db, '08Digital Banking')
 
+#057. Prepare R parameters, in case one has to call RScript.exe for interaction
+rKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R64'
+rVal = r'InstallPath'
+R_HOME = winReg_QueryValue(rKey, rVal) or ''
+R_EXE = os.path.join(R_HOME, 'bin', 'Rscript.exe')
+
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
 #[ASSUMPTION]
 #[1] There is no need to quote the commands in shell, as [subprocess] will do the implicit quoting
 #Quote: https://stackoverflow.com/questions/14928860/passing-double-quote-shell-commands-in-python-to-subprocess-popen
-SAS_HOME = r'C:\SASHome\SASFoundation\9.4'
-#SAS_HOME = r'C:\Program Files\SASHome\x86\SASFoundation\9.4'
+sasVer = '9.4'
+sasKey = os.path.join(r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System', sasVer)
+sasVal = r'DefaultRoot'
+SAS_HOME = winReg_QueryValue(sasKey, sasVal) or ''
 SAS_EXE = os.path.join(SAS_HOME, 'sas.exe')
 SAS_CFG_ZH = os.path.join(SAS_HOME, 'nls', 'zh', 'sasv9.cfg')
 SAS_CFG_INIT = ['-CONFIG', SAS_CFG_ZH, '-MEMSIZE', '0', '-NOLOGO', '-ICON']
 SAS_omnimacro = [ d for d in paths_omnimacro if os.path.isdir(d) ][0]
 
 #100. Find all subordinate scripts that are to be called within current session
-pgms_curr = opy.FileSystem.getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
+pgms_curr = getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
 i_len = len(pgms_curr)
 
 #700. Print configurations into the log for debug
@@ -163,7 +171,7 @@ fname_ctrl = r'proc_ctrl' + G_obsDates.values[0].strftime('%Y%m%d') + '.txt'
 proc_ctrl = os.path.join(dir_curr, fname_ctrl)
 
 #781. Remove any control files that were created on other dates
-cln_ctrls = opy.FileSystem.getMemberByStrPattern(
+cln_ctrls = getMemberByStrPattern(
     dir_curr
     ,r'^proc_ctrl\d{8}\.txt$'
     ,exclRegExp = r'^' + fname_ctrl + r'$'
@@ -205,7 +213,8 @@ if pgm_executed:
 logger.info('-' * 80)
 logger.info('Subordinate scripts to be called in below order:')
 i_nums = len(str(i_len))
-mlen_pgms = max([ len(os.path.basename(p[0])) for p in pgms_curr ])
+#Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
+mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
 for i in range(i_len):
     #100. Pad the sequence numbers by leading zeros, to make the log audience-friendly
     i_char = str(i+1).zfill(i_nums)

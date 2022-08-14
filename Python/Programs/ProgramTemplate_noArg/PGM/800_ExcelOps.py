@@ -14,7 +14,7 @@ from xlwings.constants import BordersIndex as bds
 L_stpflnm = os.path.join(dir_out, 'xlOps.xlsx')
 xlsh_name = 'test'
 
-testdf = pd.DataFrame({'a':[1,3,5], 'b':[2,4,6]})
+testdf = pd.DataFrame({'a':[1,3,5], 'b':[2,4,1234567.89]})
 
 if os.path.isfile(L_stpflnm): os.remove(L_stpflnm)
 
@@ -61,7 +61,8 @@ with xw.App( visible = False, add_book = False ) as xlapp:
     xlrng_val = xlsh.range('B2', (xlrng_used.last_cell.row, xlrng_used.last_cell.column))
     #Quote: python xlwings API接口之NumberFormat用法
     #Quote: https://www.cnblogs.com/aziji/p/13916129.html
-    xlrng_val.api.NumberFormat = '#,##0_ '
+    #Quote: [#,##0.0,,"M"] 1,234,567.89 -> 1.2M
+    xlrng_val.api.NumberFormat = '#,##0.0,,"M"'
 
     #399. Autofit the width
     xlsh.autofit()

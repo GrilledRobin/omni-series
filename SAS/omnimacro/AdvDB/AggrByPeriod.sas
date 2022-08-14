@@ -121,6 +121,11 @@
 |	| Log  |[1] Add declaration when the parameter [inClndrPfx] is NOT provided.														|
 |	|      |[2] Introduce the system option [MINOPERATOR] during the verification of the acceptable functions.							|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20220814		| Version |	1.40		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |[1] Fix a bug when [dnChkEnd]<[dnChkBgn]																					|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -220,6 +225,7 @@
 %let	d_CalcBgn	=	%sysfunc(inputn( &dnDateBgn. , yymmdd10. ));
 %let	d_CalcEnd	=	%sysfunc(inputn( &dnDateEnd. , yymmdd10. ));
 %let	d_ChkBgn	=	%sysfunc(inputn( &dnChkBgn. , yymmdd10. ));
+%let	PeriodChk	=	0;
 %let	fLeadCalc	=	0;
 %let	fUsePrev	=	0;
 %let	nCalcDays	=	0;
@@ -343,7 +349,9 @@ run;
 %*We also determine the [PeriodOut] and [PeriodChk] here.;
 %if	&fCalcOnWD.	=	1	%then %do;
 	%let	PeriodOut	=	&ABPCakWkDay.;
-	%let	PeriodChk	=	&ABPChkWkDay.;
+	%if	&dnChkBgn.	<=	&dnChkEnd.	%then %do;
+		%let	PeriodChk	=	&ABPChkWkDay.;
+	%end;
 	%let	pdCalcBgn	=	%PrevWorkDateOf( inDATE = &d_CalcBgn. , inCalendar = &procLIB..ABP_Clndr );
 	%let	pdCalcEnd	=	%PrevWorkDateOf( inDATE = &d_CalcEnd. , inCalendar = &procLIB..ABP_Clndr );
 	%let	pdChkBgn	=	%PrevWorkDateOf( inDATE = &d_ChkBgn. , inCalendar = &procLIB..ABP_Clndr );
@@ -351,7 +359,9 @@ run;
 %end;
 %else %do;
 	%let	PeriodOut	=	&ABPCakClnDay.;
-	%let	PeriodChk	=	&ABPChkClnDay.;
+	%if	&dnChkBgn.	<=	&dnChkEnd.	%then %do;
+		%let	PeriodChk	=	&ABPChkClnDay.;
+	%end;
 	%let	pdCalcBgn	=	%eval( &d_CalcBgn. - 1 );
 	%let	pdCalcEnd	=	%eval( &d_CalcEnd. - 1 );
 	%let	pdChkBgn	=	%eval( &d_ChkBgn. - 1 );

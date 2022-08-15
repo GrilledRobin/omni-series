@@ -124,7 +124,8 @@
 |	|___________________________________________________________________________________________________________________________________|
 |	| Date |	20220814		| Version |	1.40		| Updater/Creator |	Lu Robin Bin												|
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
-|	| Log  |[1] Fix a bug when [dnChkEnd]<[dnChkBgn]																					|
+|   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in	|
+|   |      |     such case																												|
 |	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
@@ -453,6 +454,12 @@ run;
 %*220.	Skip the determination if [ChkDatPfx<yyyymmdd>] does not exist.;
 %if	%sysfunc(exist( &ChkDatPfx.&dnChkEnd. ))	=	0	%then %do;
 	%put	%str(N)OTE: [&L_mcrLABEL.]The data [ChkDatPfx<yyyymmdd>=&ChkDatPfx.&dnChkEnd.] does not exist. Skip to leverage the data in the previous cycle of calculation.;
+	%goto	EndOfUsePrev;
+%end;
+
+%*230.	Skip the determination if [dnChkBgn] > [dnChkEnd], which indicates a non-existing period to be involved.;
+%if	&dnChkBgn.	>	&dnChkEnd.	%then %do;
+	%put	%str(N)OTE: [&L_mcrLABEL.]Procedure will not conduct calculation in Checking Period since [dnChkBgn=&dnChkBgn.] > [dnChkEnd=&dnChkEnd.].;
 	%goto	EndOfUsePrev;
 %end;
 

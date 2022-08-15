@@ -204,6 +204,12 @@
 #   |      |[2] If multiple [inDatPtn] are provided, each one must exist in at least one among the candidate paths                      #
 #   |      |[3] Now execute in silent mode by default. If one needs to see the calculation progress, switch to [fDebug = TRUE]          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220815        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in  #
+#   |      |     such case                                                                                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -618,6 +624,14 @@ aggrByPeriod <- function(
 				,' Skip the calculation for Checking Period'
 			)
 		}
+	} else if (chkBgn > chkEnd) {
+		#001. Debug mode
+		if (fDebug){
+			message(
+				'[',LfuncName,']','Procedure will not conduct calculation in Checking Period'
+				,' since [chkBgn=',chkBgn,'] > [chkEnd=',chkEnd,']'
+			)
+		}
 	} else if ((dateBgn==chkBgn) | fLeadCalc) {
 		#001. Debug mode
 		if (fDebug){
@@ -1023,6 +1037,7 @@ If any of below conditions is tiggered, we will NOT take the Leading Period into
 If any of below conditions is tiggered, we will NOT take the Checking Period into account.
 [1] : [chkDatPtn] is NOT provided.
 [2] : Resolved [chkDatPtn] DOES NOT exist as a data source.
+[3] : [chkBgn] > [chkEnd] which indicates a non-existing period to be involved.
 
 %*--  Calculation Process  ---------------------------------------------------------------------------------------------------;
 [1] : If [L] should be involved, call the same macro to calculate the aggregation summary for [L], for later subtraction.

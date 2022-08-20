@@ -162,6 +162,11 @@ def DBuse_SetKPItoInf(
 #   | Log  |[1] Change the output into a [dict] to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220820        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fix a bug that causes duplication when there are more than 1 KPI stored in the same data file during retrieval          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -329,9 +334,14 @@ def DBuse_SetKPItoInf(
 
     #555. Concatenate [C_KPI_ID] for each unique absolute file path
     #Quote: https://stackoverflow.com/questions/27298178/concatenate-strings-from-several-rows-using-pandas-groupby
-    files_prep = files_exist.copy(deep=True)
-    files_prep['kpis'] = files_prep.groupby(files_prep_names, as_index = False).transform( '|'.join )
-    files_prep = files_prep.reset_index().drop(columns=['index'])
+    files_prep = (
+        files_exist
+        .copy(deep=True)
+        .groupby(files_prep_names)
+        .agg({ 'C_KPI_ID' : '|'.join })
+        .reset_index()
+        .rename(columns = { 'C_KPI_ID' : 'kpis' })
+    )
     n_files = len(files_prep)
 
     #570. Define the function to be called in parallel

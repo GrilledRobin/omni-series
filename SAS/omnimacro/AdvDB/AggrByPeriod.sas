@@ -127,6 +127,11 @@
 |   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in	|
 |   |      |     such case																												|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20220917		| Version |	1.50		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|   | Log  |[1] Fixed a bug of duplication when data as of holidays are to be created from their respective previous workdays			|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -156,6 +161,7 @@
 |	|	|PrevWorkDateOf																													|
 |	|	|getMthWithinPeriod																												|
 |	|	|isWorkDay																														|
+|	|	|usFUN_isWDorPredate																											|
 \*-------------------------------------------------------------------------------------------------------------------------------------*/
 
 %*010.	Set parameters.;
@@ -486,26 +492,6 @@ run;
 	%let	d_ActBgn	=	&d_CalcBgn.;
 %end;
 
-%*320.	We reset it to its Previous Workday if it is not Workday while [genPHbyWD] is implied to calculate based on all Workdays.;
-%*All of below conditions have to be TRUE:;
-%*[1] Only the data as of Workdays are retrieved to resemble the ones on Holidays.;
-%*[2] Apply aggregation function on all Calendar Days instead of only Workdays. If only Workdays are taken into account, we do not have to predate the beginning.;
-%*[3] The beginning of actual calculation is NOT Workday.;
-%if		&genPHbyWD.	=	1
-	and	&fCalcOnWD.	=	0
-	and	%isWorkDay( inDATE = &d_ActBgn. , inCalendar = &procLIB..ABP_Clndr )	=	0
-	%then %do;
-	%*100.	Reset the beginning as its previous Workday.;
-	%let	d_ActBgn	=	%PrevWorkDateOf( inDATE = &d_ActBgn. , inCalendar = &procLIB..ABP_Clndr );
-
-	%*200.	Reset the multiplier on its aggregation as 0, for it will be outside the actual calculation period.;
-	%*It will be incremented to at least 1 anyway in later steps.;
-	%let	nInterval	=	0;
-
-	%*300.	Reset the initial number of datasets to be involved as 1.;
-	%let	nCalcDays	=	1;
-%end;
-
 %*330.	Format it into <yyyymmdd>.;
 %let	dnActBgn	=	%sysfunc(putn( &d_ActBgn. , yymmddN8. ));
 
@@ -529,84 +515,52 @@ run;
 )
 
 %*355.	Create necessary macro variables for calculation in the actually required period.;
-%do Di=1 %to &ABPActkClnDay.;
-	%*010.	Create the temporary macro variable holding the value of all Available Days within the period.;
-	%local	AvailDate&Di.;
-	%let	AvailDate&Di.	=	&&ABPActdn_AllCD&Di..;
-
-	%*050.	Verify whether current date is Workday.;
-	%let	f_ActIsWD	=	%isWorkDay( inDATE = &&AvailDate&Di.. , inDateFmt = %str(yymmdd10.) , inCalendar = &procLIB..ABP_Clndr );
-
-	%*100.	Assign the date value to a temporary macro variable by replacing the Calendar Day with its Previous Workday.;
-	%if	&f_ActIsWD.	=	0	%then %do;
-		%let	AvailDate&Di.	=	%PrevWorkDateOf( inDATE = &&AvailDate&Di.. , inDateFmt = %str(yymmdd10.) , inCalendar = &procLIB..ABP_Clndr , outDateFmt = %str(yymmddN8.) );
+%if	&fCalcOnWD.	=	1	%then %do;
+	%let	nCalcDays	=	&ABPActkWkDay.;
+	%do	Di=1	%to	&nCalcDays.;
+		%let	CalcDate&Di.	=	&&ABPActdn_AllWD&Di..;
+		%let	CalcMult&Di.	=	1;
 	%end;
+%end;
+%else	%if	&genPHbyWD.	=	1	%then %do;
+	%*100.	Create a dataset to handle unique values, since macro facility is less effective or reader-friendly for such calculation.;
+	data &procLIB..__calcdates_pre;
+		format	d_avail	d_calc	yymmddD10.;
+		do	i=1	to	&ABPActkClnDay.;
+			d_avail	=	symgetn(cats("ABPActdn_AllCD",i));
+			%*Shift it to its previous workday if it is not, since the request indicates to resemble its data by is previous workday where necessary.;
+			d_calc	=	isWDorPredate("&procLIB..ABP_Clndr","D_DATE","F_WORKDAY",d_avail);
+			output;
+		end;
+	run;
 
-	%*200.	Increment the multiplier by 1 for each Holiday within current calculation period.;
-	%*There could be some days outside the calculation period due to holidays, hence we only increment it when current date is within the period.;
-	%if	&f_ActIsWD.	=	0	%then %do;
-		%if	&&ABPActdn_AllCD&Di..	>=	&dnDateBgn.	%then %do;
-			%let	nInterval	=	%eval( &nInterval. + 1 );
-		%end;
+	%*500.	Calculate the number of occurences of all unique dates, on which to retrieve source data.;
+	proc freq
+		data=&procLIB..__calcdates_pre
+		noprint
+	;
+		tables
+			d_calc
+			/out=&procLIB..__calcdates
+		;
+	run;
+
+	%*900.	Create lists of macro variables for later steps.;
+	data _NULL_;
+		set &procLIB..__calcdates end=EOF;
+		call symputx(cats("CalcDate",_N_),put(d_calc,yymmddN8.),"F");
+		call symputx(cats("CalcMult",_N_),strip(COUNT),"F");
+		if	EOF	then do;
+			call symputx("nCalcDays",_N_,"F");
+		end;
+	run;
+%end;
+%else %do;
+	%let	nCalcDays	=	&ABPActkClnDay.;
+	%do	Di=1	%to	&nCalcDays.;
+		%let	CalcDate&Di.	=	&&ABPActdn_AllCD&Di..;
+		%let	CalcMult&Di.	=	1;
 	%end;
-
-	%*300.	Skip the identification if current date is outside the calculation period.;
-	%if	&&ABPActdn_AllCD&Di..	<	&dnDateBgn.	%then %do;
-		%goto	EndOfIter;
-	%end;
-
-	%*400.	Skip the identification if it is implied to calculate only the Workdays by [fCalcOnWD].;
-	%if		&fCalcOnWD.	=	1
-		and	&f_ActIsWD.	=	0
-		%then %do;
-		%goto	EndOfIter;
-	%end;
-
-	%*500.	Create the macro variable holding the value as suffix of the dataset to be set together.;
-	%*510.	When it is implied to replicate the datasets on Workdays to resemble the ones on Holidays.;
-	%if	&genPHbyWD.	=	1	%then %do;
-		%*100.	Only create new macro variable if current date is Workday.;
-		%if	&f_ActIsWD.	=	1	%then %do;
-			%let	nCalcDays	=	%eval( &nCalcDays. + 1 );
-			%local	CalcDate&nCalcDays.	CalcMult&nCalcDays.;
-			%let	nInterval	=	1;
-		%end;
-
-		%*200.	Set the current date to be iterated as its Previous Workday when necessary.;
-		%let	CalcDate&nCalcDays.	=	&&AvailDate&Di..;
-
-		%*300.	Set the multiplier to the one incremented in the previous step.;
-		%let	CalcMult&nCalcDays.	=	&nInterval.;
-	%end;
-
-	%*520.	When datasets on all Calendar Days are to be used.;
-	%else %do;
-		%*100.	Increment the number of days to be calculated.;
-		%let	nCalcDays	=	%eval( &nCalcDays. + 1 );
-
-		%*200.	Create new variables.;
-		%local	CalcDate&nCalcDays.	CalcMult&nCalcDays.;
-
-		%*300.	Set current date as the one for calculation.;
-		%let	CalcDate&nCalcDays.	=	&&ABPActdn_AllCD&Di..;
-
-		%*400.	Set the multiplier as 1 for each day.;
-		%let	CalcMult&nCalcDays.	=	1;
-	%end;
-
-	%*600.	Reset the multiplier for certain situations.;
-	%*610.	Reset all multiplier to 1 if it is implied to calculate only the Workdays by [fCalcOnWD].;
-	%if		&fCalcOnWD.	=	1	%then %do;
-		%let	CalcMult&nCalcDays.	=	1;
-	%end;
-
-	%*620.	Reset all multiplier to 1 if the aggregation method is NOT [MEAN] or [SUM].;
-	%if		&LFuncAggr.	^=	SUM	%then %do;
-		%let	CalcMult&nCalcDays.	=	1;
-	%end;
-
-	%*900.	Mark the end of current iteration.;
-	%EndOfIter:
 %end;
 
 %*400.	Print the necessary information for testing.;
@@ -925,6 +879,22 @@ options
 		"D:\SAS\omnimacro\FileSystem"
 	)
 	mautosource
+;
+options
+	cmplib=_NULL_
+;
+proc FCmp
+	outlib=work.fso.dates
+;
+
+	%usFUN_isWorkDay
+	%usFUN_prevWorkday
+	%usFUN_isWDorPredate
+
+run;
+quit;
+options
+	cmplib=work.fso
 ;
 
 %*100.	Data Preparation.;

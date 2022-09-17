@@ -210,6 +210,11 @@
 #   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in  #
 #   |      |     such case                                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220917        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Removed excessive calculation for Actual Calculation Period to simplify the logic                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -476,6 +481,13 @@ aggrByPeriod <- function(
 		pdChkEnd <- ABP_ObsDates$prevTradeDay[4]
 	}
 
+	#075. Define the multiplier for Checking Period
+	if (identical(funcAggr,mean)) {
+		multiplier_CP <- periodChk
+	} else {
+		multiplier_CP <- 1
+	}
+
 	#080. Calculate the difference of # date coverage by the implication of [calcInd]
 	periodDif <- periodOut - periodChk
 
@@ -655,23 +667,6 @@ aggrByPeriod <- function(
 		actBgn <- dateBgn
 	}
 
-	#320. We reset it to its Previous Workday if it is not one, while [genPHMul] implies to calculate based on all Calendar Days
-	#Assumptions:
-	#[1] In such case, we never know whether to predate the beginning of the actual calculation period by Workdays or Tradedays
-	#[2] # Workdays is more than # Tradedays in the same period, hence we only resemble the data on holidays with the data
-	#     on Workdays
-	#[3] When there is absolute requirement to resemble the data on holidays by that on Tradedays, try to modify the Calendar
-	#     Adjustment data by setting all Workdays to the same as Tradedays BEFORE using this function
-	#All of below conditions have to be TRUE:
-	#[1] Only the data as of Workdays are retrieved to resemble the ones on Holidays
-	#[2] Apply aggregation function on all Calendar Days instead of only Workdays. If only Workdays are taken into account,
-	#     we do not have to predate the beginning
-	#[3] The beginning of actual calculation is NOT Workday
-	ABP_ObsDates$values <- actBgn
-	if (genPHMul & (calcInd=='C')) {
-		actBgn <- ABP_ObsDates$shiftDays(kshift = -1, preserve = T, daytype = 'W')
-	}
-
 	#329. Debug mode
 	if (fDebug){
 		message('[',LfuncName,']','Actual Calculation Period: [actBgn=',actBgn,'][dateEnd=',dateEnd,']')
@@ -687,28 +682,53 @@ aggrByPeriod <- function(
 	if (calcInd=='W') {
 		#This situation has nothing to do with the parameter [genPHMul]
 		calcDate <- ABP_Clndr$d_AllWD
-		calcDate <- calcDate[calcDate>=dateBgn]
 	} else if (calcInd=='T') {
 		#This situation has nothing to do with the parameter [genPHMul]
 		calcDate <- ABP_Clndr$d_AllTD
-		calcDate <- calcDate[calcDate>=dateBgn]
 	} else if (genPHMul) {
 		ABP_ObsDates$values <- ABP_Clndr$d_AllCD
-		#Below step has the same reason as when setting value for [actBgn]
+		#Assumptions:
+		#[1] In such case, we never know whether to predate the beginning of the actual calculation period by Workdays or Tradedays
+		#[2] # Workdays is more than # Tradedays in the same period, hence we only resemble the data on holidays with the data
+		#     on Workdays
+		#[3] When there is absolute requirement to resemble the data on holidays by that on Tradedays, try to modify the Calendar
+		#     Adjustment data by setting all Workdays to the same as Tradedays BEFORE using this function
 		availDate <- ABP_ObsDates$shiftDays(kshift = -1, preserve = T, daytype = 'W')
-		availDate <- availDate[ABP_ObsDates$values >= dateBgn]
 		calcDate <- sort(unique(availDate))
 		calcMult <- sapply(calcDate, function(x){sum(availDate==x)})
 		names(calcMult) <- calcDate %>% strftime('%Y%m%d')
 	} else {
 		calcDate <- ABP_Clndr$d_AllCD
-		calcDate <- calcDate[calcDate>=dateBgn]
 	}
 
 	#357. Reset the multiplier for data on each date for special cases
 	if ((!genPHMul) | (calcInd!='C') | !identical(LFuncAggr,sum)) {
 		calcMult <- sapply(calcDate, function(x){1})
 		names(calcMult) <- calcDate %>% strftime('%Y%m%d')
+	}
+
+	#399. Print necessary information for debugging purpose
+	if (fDebug){
+		#100. Print the necessities for Leading Period
+		if (fLeadCalc) {
+			message('[',LfuncName,']','[Leading Period] Dataset to use: [ABP_LeadPeriod]')
+		}
+
+		#400. Print the necessities for Checking Period
+		if (fUsePrev) {
+			message('[',LfuncName,']','[Checking Period] Dataset to use: [',chkDat,']')
+			message('[',LfuncName,']','[Checking Period] Data multiplier: [',multiplier_CP,']')
+		}
+
+		#700. Print the necessities for Actual Calculation Period
+		message('[',LfuncName,']','[Actual Calculation Period] Dataset to use: [',inDatCfg,']')
+		for (i in seq_along(calcDate)) {
+			message(
+				'[',LfuncName,'][Actual Calculation Period]'
+				,' Date[',i,']: [',calcDate[[i]],']'
+				,', Multiplier[',i,']: [',calcMult[[i]],']'
+			)
+		}
 	}
 
 	#400. Verify the existence of the data files that are actually required
@@ -941,7 +961,7 @@ aggrByPeriod <- function(
 				.Period = 'C'
 				,.date = 'Checking'
 				,.N_ORDER = 0
-				,.Tmp_Val = ifelse(identical(funcAggr,mean), !!chkDatSym * periodChk, !!chkDatSym)
+				,.Tmp_Val = !!chkDatSym * multiplier_CP
 			)
 	} else {
 		ABP_set_CP <- NULL

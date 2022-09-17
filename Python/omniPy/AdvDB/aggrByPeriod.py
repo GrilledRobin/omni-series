@@ -269,6 +269,11 @@ def aggrByPeriod(
 #   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in  #
 #   |      |     such case                                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20220917        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Removed excessive calculation for Actual Calculation Period to simplify the logic                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -523,6 +528,9 @@ def aggrByPeriod(
         ABP_ObsDates.values = [dateBgn, dateEnd, chkBgn, chkEnd]
         pdCalcBgn, pdCalcEnd, pdChkBgn, pdChkEnd = ABP_ObsDates.prevTradeDay
 
+    #075. Define the multiplier for Checking Period
+    multiplier_CP = periodChk if funcAggr in func_means else 1
+
     #080. Calculate the difference of # date coverage by the implication of [calcInd]
     periodDif = periodOut - periodChk
 
@@ -685,22 +693,6 @@ def aggrByPeriod(
         #We set the actual beginning date as of the date [dateBgn] if there is no previous result to leverage
         actBgn = dateBgn
 
-    #320. We reset it to its Previous Workday if it is not one, while [genPHMul] implies to calculate based on all Calendar Days
-    #Assumptions:
-    #[1] In such case, we never know whether to predate the beginning of the actual calculation period by Workdays or Tradedays
-    #[2] # Workdays is more than # Tradedays in the same period, hence we only resemble the data on holidays with the data
-    #     on Workdays
-    #[3] When there is absolute requirement to resemble the data on holidays by that on Tradedays, try to modify the Calendar
-    #     Adjustment data by setting all Workdays to the same as Tradedays BEFORE using this function
-    #All of below conditions have to be TRUE:
-    #[1] Only the data as of Workdays are retrieved to resemble the ones on Holidays
-    #[2] Apply aggregation function on all Calendar Days instead of only Workdays. If only Workdays are taken into account,
-    #     we do not have to predate the beginning
-    #[3] The beginning of actual calculation is NOT Workday
-    ABP_ObsDates.values = actBgn
-    if genPHMul & (calcInd=='C'):
-        actBgn = ABP_ObsDates.shiftDays(kshift = -1, preserve = True, daytype = 'W')[0]
-
     #329. Debug mode
     if fDebug:
         print('['+LfuncName+']'+'Actual Calculation Period: [actBgn='+str(actBgn)+'][dateEnd='+str(dateEnd)+']')
@@ -715,26 +707,47 @@ def aggrByPeriod(
     if calcInd=='W':
         #This situation has nothing to do with the parameter [genPHMul]
         calcDate = ABP_Clndr.d_AllWD
-        calcDate = [ d for d in calcDate if d >= dateBgn ]
     elif calcInd=='T':
         #This situation has nothing to do with the parameter [genPHMul]
         calcDate = ABP_Clndr.d_AllTD
-        calcDate = [ d for d in calcDate if d >= dateBgn ]
     elif genPHMul:
         ABP_ObsDates.values = ABP_Clndr.d_AllCD
-        #Below step has the same reason as when setting value for [actBgn]
+        #Assumptions:
+        #[1] In such case, we never know whether to predate the beginning of the actual calculation period by Workdays or Tradedays
+        #[2] # Workdays is more than # Tradedays in the same period, hence we only resemble the data on holidays with the data
+        #     on Workdays
+        #[3] When there is absolute requirement to resemble the data on holidays by that on Tradedays, try to modify the Calendar
+        #     Adjustment data by setting all Workdays to the same as Tradedays BEFORE using this function
         availDate = ABP_ObsDates.shiftDays(kshift = -1, preserve = True, daytype = 'W')
-        availDate = [ d for i,d in enumerate(availDate) if ABP_ObsDates.values[i] >= dateBgn ]
         #Quote[#312]: https://stackoverflow.com/questions/12282232/how-do-i-count-unique-values-inside-a-list
         calcMult = Counter(availDate)
         calcDate = list(calcMult.keys())
     else:
         calcDate = ABP_Clndr.d_AllCD
-        calcDate = [ d for d in calcDate if d >= dateBgn ]
 
     #357. Reset the multiplier for data on each date for special cases
     if (not genPHMul) | (calcInd!='C') | (LFuncAggr != np.nansum):
         calcMult = { d:1 for d in calcDate }
+
+    #399. Print necessary information for debugging purpose
+    if fDebug:
+        #100. Print the necessities for Leading Period
+        if fLeadCalc:
+            print('['+LfuncName+']'+'[Leading Period] Dataset to use: [ABP_LeadPeriod]')
+
+        #400. Print the necessities for Checking Period
+        if fUsePrev:
+            print('['+LfuncName+']'+'[Checking Period] Dataset to use: [{0}]'.format(chkDat))
+            print('['+LfuncName+']'+'[Checking Period] Data multiplier: [{0}]'.format(multiplier_CP))
+
+        #700. Print the necessities for Actual Calculation Period
+        print('['+LfuncName+']'+'[Actual Calculation Period] Dataset to use: [{0}]'.format(inDatCfg))
+        for i,d in enumerate(calcDate):
+            print(
+                '['+LfuncName+'][Actual Calculation Period]'
+                +' Date[{0}]: [{1}]'.format(i, d)
+                +', Multiplier[{0}]: [{1}]'.format(i,calcMult.get(d))
+            )
 
     #400. Verify the existence of the data files that are actually required
     #410. Parse the naming pattern into the physical file path
@@ -753,10 +766,10 @@ def aggrByPeriod(
     exist_calcDat = (
         parse_calcDat
         .loc[parse_calcDat[indat_col_parse + '.chkExist']]
-        .copy(deep=True)
         .sort_values([indat_col_file, indat_col_date, indat_col_dirseq])
         .groupby([indat_col_file, indat_col_date], as_index = False)
         .head(1)
+        .copy(deep=True)
     )
     n_files = len(exist_calcDat)
 
@@ -850,13 +863,14 @@ def aggrByPeriod(
             .loc[:, select_at].copy(deep=True)
             #300. Fill [NaN] values with 0 to avoid meaningless results
             .fillna(value = { aggrVar : 0 })
+            #900. Create identifier of current data within the time series
+            .assign(**{
+                '.Period' : 'A'
+                ,'.date' : L_d_curr
+                ,'.N_ORDER' : i
+                ,'.Tmp_Val' : lambda x: x[aggrVar].mul(calcMult[L_date])
+            })
         )
-
-        #595. Create identifier of current data within the time series
-        imp_data['.Period'] = 'A'
-        imp_data['.date'] = L_d_curr
-        imp_data['.N_ORDER'] = i
-        imp_data['.Tmp_Val'] = imp_data[aggrVar] * calcMult[L_date]
 
         #700. Assign additional attributes to the data frame for column class check
         imp_dict = {
@@ -894,7 +908,8 @@ def aggrByPeriod(
         mypool.clear()
         mypool.close()
         mypool.join()
-        #Quote[#5]: https://stackoverflow.com/questions/44587669/python-multiprocessing-how-to-close-the-multiprocessing-pool-on-exception
+        #How to close the multiprocessing pool on exception:
+        #Quote[#5]: https://stackoverflow.com/questions/44587669/
         mypool.terminate()
     else:
         #900. Read the files sequentially
@@ -953,14 +968,18 @@ def aggrByPeriod(
         sel_LP = list(Counter(sel_LP).keys())
 
         #500. Only retrieve certain columns for Leading Period
-        ABP_set_LP = ABP_LeadPeriod.get('data').loc[:, sel_LP].copy(deep=True)
-
-        #800. Mutate columns
-        ABP_set_LP['.CalcLead.'].fillna(0, inplace = True)
-        ABP_set_LP['.Period'] = 'L'
-        ABP_set_LP['.date'] = 'Leading'
-        ABP_set_LP['.N_ORDER'] = -1
-        ABP_set_LP['.Tmp_Val'] = -ABP_set_LP['.CalcLead.']
+        ABP_set_LP = (
+            ABP_LeadPeriod.get('data')
+            .loc[:, sel_LP]
+            .copy(deep=True)
+            .fillna(value = { '.CalcLead.' : 0 })
+            .assign(**{
+                '.Period' : 'L'
+                ,'.date' : 'Leading'
+                ,'.N_ORDER' : -1
+                ,'.Tmp_Val' : lambda x: x['.CalcLead.'].mul(-1)
+            })
+        )
     else:
         ABP_set_LP = None
 
@@ -1017,17 +1036,15 @@ def aggrByPeriod(
         ABP_set_CP = (
             imp_func[chkDatType]['_func'](**imp_func[chkDatType]['_opt'])
             #100. Only select necessary columns
-            .loc[:, sel_CP].copy(deep=True)
+            .loc[:, sel_CP]
+            .copy(deep=True)
+            .assign(**{
+                '.Period' : 'C'
+                ,'.date' : 'Checking'
+                ,'.N_ORDER' : 0
+                ,'.Tmp_Val' : lambda x: x[chkDatVar].mul(multiplier_CP)
+            })
         )
-
-        #595. Create identifier of current data
-        ABP_set_CP['.Period'] = 'C'
-        ABP_set_CP['.date'] = 'Checking'
-        ABP_set_CP['.N_ORDER'] = 0
-        if funcAggr in func_means:
-            ABP_set_CP['.Tmp_Val'] = ABP_set_CP[chkDatVar] * periodChk
-        else:
-            ABP_set_CP['.Tmp_Val'] = ABP_set_CP[chkDatVar]
     else:
         ABP_set_CP = None
 
@@ -1081,17 +1098,13 @@ def aggrByPeriod(
         .agg(out_Aggr)
         #900. Reset index
         .reset_index(drop = True)
+        #910. Correct the output value for the function [mean]
+        .assign(**{
+            outVar : lambda x: x['.Tmp_Val'].div(periodOut if funcAggr in func_means else 1)
+        })
+        #999. Drop excessive columns
+        .drop(columns = ['.Tmp_Val'])
     )
-
-    #795. Correct the output value for the function [mean]
-    if funcAggr in func_means:
-        outDat[outVar] = outDat['.Tmp_Val'] / periodOut
-    else:
-        outDat[outVar] = outDat['.Tmp_Val']
-
-    #799. Drop excessive columns
-    outDat.drop(columns = ['.Tmp_Val'], inplace = True)
-#    outDat.drop(columns = outDat.columns.str.starswith('.').to_list(), inplace = True)
 
     #999. Return the table
     outDict.update({ 'data' : outDat })
@@ -1221,6 +1234,7 @@ if __name__=='__main__':
     #010. Create envionment.
     import sys, os
     import numpy as np
+    import pandas as pd
     import datetime as dt
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:

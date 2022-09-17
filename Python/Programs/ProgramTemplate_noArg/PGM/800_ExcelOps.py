@@ -14,7 +14,7 @@ from xlwings.constants import BordersIndex as bds
 L_stpflnm = os.path.join(dir_out, 'xlOps.xlsx')
 xlsh_name = 'test'
 
-testdf = pd.DataFrame({'a':[1,3,5], 'b':[2,4,1234567.89]})
+testdf = pd.DataFrame({'a':[1,-3,5], 'b':[2,4,1234567.89]})
 
 if os.path.isfile(L_stpflnm): os.remove(L_stpflnm)
 
@@ -58,11 +58,31 @@ with xw.App( visible = False, add_book = False ) as xlapp:
         xlrng_used.api.Borders(border_id).Weight = 2
 
     #330. Number format
+    #Quote: EXCEL number format codes
+    #Quote: https://support.microsoft.com/en-us/office/number-format-codes-5026bbd6-04bc-48cd-bf33-80f18b4eae68
+    #[1] EXCEL custom format is comprised of 4 parts, separated by semicolons
     xlrng_val = xlsh.range('B2', (xlrng_used.last_cell.row, xlrng_used.last_cell.column))
     #Quote: python xlwings API接口之NumberFormat用法
     #Quote: https://www.cnblogs.com/aziji/p/13916129.html
     #Quote: [#,##0.0,,"M"] 1,234,567.89 -> 1.2M
-    xlrng_val.api.NumberFormat = '#,##0.0,,"M"'
+    xlrng_val.api.NumberFormat = u'_( ¥* #,##0.00,,"M"_) ;[红色]_ (¥* #,##0.00,,"M")_ ;_( ¥* "-"??_) ;_ @_ '
+#    xlrng_val.api.NumberFormat = u'_( ¥* #,##0.00,,"M"_) ;[Red]_ (¥* #,##0.00,,"M")_ ;_( ¥* "-"??_) ;_ @_ '
+    #English version of Windows OS
+    #The above format indicates:
+    #[1] Display in millions with a prefix of [¥] and 2 decimals, shown in red enclosed by parentheses when negative
+    #[2] Fill blanks between the prefix and the numbers and 1 white space after the formatted values
+    #[3] Align the position of positive numbers to the negative values by recognizing the parentheses
+    #[4] Fill a hyphen with the same prefix for zero values and also align their positions to the negative ones (see [??])
+
+    #We can set a proper format for Percentage as below (on Chinese version of Windows OS)
+#    xlrng_val.api.NumberFormat = u'_ * #,##0.00%_) ;[红色]_ * (#,##0.00%)_ ;_ * "-"??_ ;_ @_ '
+    #English version of Windows OS
+#    xlrng_val.api.NumberFormat = '_ * #,##0.00%_) ;[Red]_ * (#,##0.00%)_ ;_ * "-"??_ ;_ @_ '
+    #The above format indicates:
+    #[1] A percentage with 2 decimals, shown in red enclosed by parentheses when negative
+    #[2] Fill blanks ahead of the numbers and 1 white space after the formatted values
+    #[3] Align the position of positive numbers to the negative values by recognizing the parentheses
+    #[4] Fill a hyphen for zero values and also align its position to the negative ones (see [??])
 
     #399. Autofit the width
     xlsh.autofit()

@@ -425,13 +425,13 @@ def aggrByPeriod(
     func_nans = { getattr(np, ptn_nan.sub(r'\1', f)):getattr(np, f) for f in dir(np) if ptn_nan.fullmatch(f) }
     re.purge()
     #Identify the provided function within above list
-    chkfunc = [ v for k,v in func_nans.items() if funcAggr == k ]
+    chkfunc = func_nans.get(funcAggr, None)
     #Determine the function to use internally
     if funcAggr in (func_means + [sum, np.sum, math.fsum]):
         LFuncAggr = np.nansum
-    elif chkfunc:
+    elif chkfunc is not None:
         #Change all [numpy] functions into [numpy.nan<funcs>] to make the output result reasonable
-        LFuncAggr = chkfunc[0]
+        LFuncAggr = chkfunc
     else:
         LFuncAggr = funcAggr
 

@@ -226,6 +226,7 @@
 	fLeadCalc	fUsePrev
 	dnActBgn	d_ActBgn	f_ActIsWD
 	nCalcDays	nInterval
+	multiplier_CP
 	Yi	Di	Dj
 ;
 %let	VldFuncLst	=	%str( WSUM WMEAN WMIN WMAX CSUM CMEAN CMIN CMAX );
@@ -375,6 +376,14 @@ run;
 	%let	pdChkEnd	=	%eval( &d_ChkEnd. - 1 );
 %end;
 
+%*075.	Define the multiplier for Checking Period.;
+%if	%substr( &FuncAggr. , 2 )	=	MEAN	%then %do;
+	%let	multiplier_CP	=	&periodChk.;
+%end;
+%else %do;
+	%let	multiplier_CP	=	1;
+%end;
+
 %*080.	Calculate the difference of # date coverages by the implication of [fCalcOnWD].;
 %let	PeriodDif	=	%eval( &PeriodOut. - &PeriodChk. );
 
@@ -519,7 +528,6 @@ run;
 	%let	nCalcDays	=	&ABPActkWkDay.;
 	%do	Di=1	%to	&nCalcDays.;
 		%let	CalcDate&Di.	=	&&ABPActdn_AllWD&Di..;
-		%let	CalcMult&Di.	=	1;
 	%end;
 %end;
 %else	%if	&genPHbyWD.	=	1	%then %do;
@@ -559,6 +567,12 @@ run;
 	%let	nCalcDays	=	&ABPActkClnDay.;
 	%do	Di=1	%to	&nCalcDays.;
 		%let	CalcDate&Di.	=	&&ABPActdn_AllCD&Di..;
+	%end;
+%end;
+
+%*357.	Reset the multiplier for data on each date for special cases.;
+%if	(&genPHbyWD. = 0)	or	(&fCalcOnWD. = 1)	or	(&LFuncAggr. ^= SUM)	%then %do;
+	%do	Di=1	%to	&nCalcDays.;
 		%let	CalcMult&Di.	=	1;
 	%end;
 %end;
@@ -572,7 +586,7 @@ run;
 
 	%*200.	Print the Checking Dataset.;
 	%if	&fUsePrev.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.][fUsePrev=1] Dataset to use: [&ChkDatPfx.&dnChkEnd.], multiplier: [%sysfunc(ifc( %substr( &FuncAggr. , 2 ) = MEAN , &PeriodChk. , 1 ))].;
+		%put	%str(I)NFO: [&L_mcrLABEL.][fUsePrev=1] Dataset to use: [&ChkDatPfx.&dnChkEnd.], multiplier: [&multiplier_CP.].;
 	%end;
 
 	%*300.	Print the datasets in the actual calculation period.;
@@ -648,7 +662,7 @@ data &procLIB..ABP_setall;
 %if	&fUsePrev.	=	1	%then %do;
 	if	j	then do;
 		__N_ORDER	=	0;
-		__Tmp_Val	=	%sysfunc(ifc( %substr( &FuncAggr. , 2 ) = MEAN , _CalcChk_ * &PeriodChk. , _CalcChk_ ));
+		__Tmp_Val	=	_CalcChk_ * &multiplier_CP.;
 	end;
 %end;
 %do Dj=1 %to &nCalcDays.;
@@ -671,7 +685,7 @@ run;
 
 	%*300.	What is the actual function applied to the value in Checking Period.;
 	%if	&fUsePrev.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.]Function to apply on Checking Period: [__Tmp_Val = %sysfunc(ifc( %substr( &FuncAggr. , 2 ) = MEAN , _CalcChk_ * &PeriodChk. , _CalcChk_ ))];
+		%put	%str(I)NFO: [&L_mcrLABEL.]Function to apply on Checking Period: [__Tmp_Val = _CalcChk_ * &multiplier_CP.];
 	%end;
 %end;
 

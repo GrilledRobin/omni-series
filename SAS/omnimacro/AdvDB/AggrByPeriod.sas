@@ -535,7 +535,7 @@ run;
 	data &procLIB..__calcdates_pre;
 		format	d_avail	d_calc	yymmddD10.;
 		do	i=1	to	&ABPActkClnDay.;
-			d_avail	=	symgetn(cats("ABPActdn_AllCD",i));
+			d_avail	=	symgetn(cats("ABPActd_AllCD",i));
 			%*Shift it to its previous workday if it is not, since the request indicates to resemble its data by is previous workday where necessary.;
 			d_calc	=	isWDorPredate("&procLIB..ABP_Clndr","D_DATE","F_WORKDAY",d_avail);
 			output;

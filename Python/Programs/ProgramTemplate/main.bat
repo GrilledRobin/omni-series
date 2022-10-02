@@ -7,7 +7,7 @@ set /p PROC_BGN=[Optional]Please input period beginning(YYYYMMDD):
 REM #######################################################################
 ::100. Below for setting up system variables
 ::Quote: https://www.cnblogs.com/harlanc/p/5656535.html
-set v_PyCore=3.7
+set v_PyCore=3.9
 set HK_PyCore="HKLM\SOFTWARE\Python\PythonCore\%v_PyCore%\InstallPath"
 for /f "tokens=1,2 delims=:" %%a in (
 	'reg query %HK_PyCore% /ve'

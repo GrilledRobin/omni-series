@@ -5,6 +5,7 @@
 import os, sys, re, logging
 from itertools import product
 from inspect import getsourcefile
+from packaging import version
 
 args_in = sys.argv.copy()
 
@@ -76,7 +77,7 @@ if path_omniPy not in sys.path:
 #037. Enable the function to execute other scripts in the same environment
 from omniPy.AdvOp import exec_file, modifyDict
 from omniPy.Dates import UserCalendar, ObsDates, intnx
-from omniPy.FileSystem import getMemberByStrPattern, winReg_QueryValue
+from omniPy.FileSystem import getMemberByStrPattern, winReg_getInfByStrPattern
 
 #039. Load useful user-defined environment
 #Check the [__doc__] of below script for its detailed output
@@ -143,17 +144,28 @@ dir_DM_T2 = os.path.join(dir_DM_db, '08Digital Banking')
 #057. Prepare R parameters, in case one has to call RScript.exe for interaction
 rKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\R-core\R64'
 rVal = r'InstallPath'
-R_HOME = winReg_QueryValue(rKey, rVal) or ''
+r_install = winReg_getInfByStrPattern(rKey, rVal)
+if len(r_install):
+    R_HOME = r_install[0]['value']
+else:
+    R_HOME = ''
+
 R_EXE = os.path.join(R_HOME, 'bin', 'Rscript.exe')
 
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
 #[ASSUMPTION]
 #[1] There is no need to quote the commands in shell, as [subprocess] will do the implicit quoting
 #Quote: https://stackoverflow.com/questions/14928860/passing-double-quote-shell-commands-in-python-to-subprocess-popen
-sasVer = '9.4'
-sasKey = os.path.join(r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System', sasVer)
-sasVal = r'DefaultRoot'
-SAS_HOME = winReg_QueryValue(sasKey, sasVal) or ''
+sasKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
+#The names of the direct sub-keys are the version numbers of all installed [SAS] software
+sasVers = winReg_getInfByStrPattern(sasKey, inRegExp = r'^.*$', chkType = 2)
+if len(sasVers):
+    sasVers_comp = [ version.parse(v.get('name', None)) for v in sasVers ]
+    sasVer = sasVers[sasVers_comp.index(max(sasVers_comp))].get('name', None)
+    SAS_HOME = winReg_getInfByStrPattern(os.path.join(sasKey, sasVer), 'DefaultRoot')[0]['value']
+else:
+    SAS_HOME = ''
+
 SAS_EXE = os.path.join(SAS_HOME, 'sas.exe')
 SAS_CFG_ZH = os.path.join(SAS_HOME, 'nls', 'zh', 'sasv9.cfg')
 SAS_CFG_INIT = ['-CONFIG', SAS_CFG_ZH, '-MEMSIZE', '0', '-NOLOGO', '-ICON']
@@ -170,7 +182,7 @@ key_args = {
 }
 key_dirs = {
     'Process Home' : dir_curr
-    ,'SAS omnimacro' : SAS_omnimacro
+    # ,'SAS omnimacro' : SAS_omnimacro
 }
 key_tolog = {**key_args, **key_dirs}
 mlen_prms = max([ len(k) for k in key_tolog.keys() ])

@@ -12,6 +12,7 @@ from .getMSDNKnownFolderIDDoc import getMSDNKnownFolderIDDoc
 from .winKnownFolders import winKnownFolders
 from .winUserShellFolders import winUserShellFolders
 from .winReg_QueryValue import winReg_QueryValue
+from .winReg_getInfByStrPattern import winReg_getInfByStrPattern
 
 #200.   Define available resources.
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     ,'winKnownFolders'
     ,'winUserShellFolders'
     ,'winReg_QueryValue'
+    ,'winReg_getInfByStrPattern'
 ]

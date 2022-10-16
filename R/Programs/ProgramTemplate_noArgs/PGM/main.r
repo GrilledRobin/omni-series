@@ -77,11 +77,30 @@ dir_DM_src <- file.path(dir_DM, 'SRC')
 dir_DM_T1 <- file.path(dir_DM, 'custlvl')
 dir_DM_T2 <- file.path(dir_DM_db, '08Digital Banking')
 
-#058. Prepare SAS parameters, in case one has to call SAS for interaction
 #[ASSUMPTION]
 #[1] We have to [shQuote] any valid system paths for calling [system] function
-SAS_HOME <- 'C:/SASHome/SASFoundation/9.4'
-#SAS_HOME <- 'C:/Program Files/SASHome/x86/SASFoundation/9.4'
+#056. Prepare Python parameters, in case one has to call python.exe for interaction
+pyKey <- 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore'
+#The names of the direct sub-keys are the version numbers of all installed [Python] software
+pyVers <- winReg_getInfByStrPattern(pyKey, inRegExp = '^.*$', chkType = 2)
+if (length(pyVers) > 0) {
+	pyVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, pyVers)[['name']]
+	PYTHON_HOME <- winReg_getInfByStrPattern(file.path(pyKey, pyVer, 'InstallPath', fsep = '\\'))[[1]][['value']]
+} else {
+	PYTHON_HOME <- ''
+}
+PYTHON_EXE <- shQuote(file.path(PYTHON_HOME, 'python.exe'))
+
+#058. Prepare SAS parameters, in case one has to call SAS for interaction
+sasKey <- 'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
+#The names of the direct sub-keys are the version numbers of all installed [SAS] software
+sasVers <- winReg_getInfByStrPattern(sasKey, inRegExp = '^.*$', chkType = 2)
+if (length(sasVers) > 0) {
+	sasVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, sasVers)[['name']]
+	SAS_HOME <- winReg_getInfByStrPattern(file.path(sasKey, sasVer, fsep = '\\'), 'DefaultRoot')[[1]][['value']]
+} else {
+	SAS_HOME <- ''
+}
 SAS_EXE <- shQuote(file.path(SAS_HOME, 'sas.exe'))
 SAS_CFG_ZH <- shQuote(file.path(SAS_HOME, 'nls', 'zh', 'sasv9.cfg'))
 SAS_CFG_INIT <- paste('-CONFIG', SAS_CFG_ZH, '-MEMSIZE', '0', '-NOLOGO', '-ICON')

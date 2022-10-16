@@ -26,6 +26,13 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221016        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace [shell] with [Sys.getenv] to increase the query speed                                                           #
+#   |      |[2] Introduce package [stringi] to replace the references of Windows Environment Variables with their respective values     #
+#   |      |[3] Introduce a function [winReg_getInfByStrPattern] to query the Windows Registry                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -35,11 +42,27 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |base                                                                                                                           #
+#   |   |magrittr, stringi                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$FileSystem                                                                                                               #
+#   |   |   |winReg_getInfByStrPattern                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
+
+#001. Append the list of required packages to the global environment
+#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
+lst_pkg <- deparse(substitute(c(
+	magrittr, stringi
+)))
+#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
+lst_pkg <- paste0(lst_pkg, collapse = '')
+lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
+lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
+lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
+options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
+
+library(magrittr)
 
 winReg_UserShellFolders <- function(){
 	#001. Handle parameters
@@ -54,38 +77,45 @@ winReg_UserShellFolders <- function(){
 	reg_key <- 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders'
 
 	#150. Query the key from Windows Registry and return a list
-	reg_cmd <- system(paste0('REG QUERY "',reg_key,'"'), intern = T)
-
-	#190. Clean the result from direct query
-	reg_cln <- sapply(
-		reg_cmd
-		,function(x){
-			if(!nchar(x)==0 & x != reg_key){
-				tmp <- unlist(strsplit(x,'\\s{4}', perl = T))
-				tmp <- tmp[nchar(tmp)!=0]
-				return(tmp)
-			}
-		}
-		,USE.NAMES = F
-	)
-	#[Quote: https://stackoverflow.com/questions/33004238/r-removing-null-elements-from-a-list ]
-	reg_cln <- Filter(Negate(is.null), reg_cln)
+	reg_cln <- winReg_getInfByStrPattern(reg_key, inRegExp = '.*')
 
 	#500. Create a list as output
-	#When we retrieve the un-masked values, we need to use [shell] instead of [system]
-	#[Quote: https://stackoverflow.com/questions/33646816/r-system-functions-always-returns-error-127 ]
 	out_lst <- lapply(
 		reg_cln
 		,function(x){
-			vec <- list(
-				reg_tp = x[[2]]
-				,value_mask = x[[3]]
-				#Below step is quite slow, about 3 seconds!
-				,value = shell(paste('echo',x[[3]]), intern = T)
+			x_val <- x[['value']]
+			# x_val <- reg_cln[[20]][['value']]
+			#100. Parse the references of Windows Environment Variables
+			#[ASSUMPTION]
+			#[1] There is only one value to be processed at a time, hence [pos_ev] only needs one item
+			pos_ev <- stringi::stri_locate_all_regex(x_val, '%[[:alpha:]].*?%')[[1]]
+			val_ev <- stringi::stri_extract_all_regex(x_val, '%[[:alpha:]].*?%') %>%
+				sapply(
+					function(y){
+						Sys.getenv(substr(y, 2, nchar(y) - 1))
+					}
+					,simplify = F
+				)
+
+			#500. Replace the references of Windows Environment Variables with their respective values
+			val <- do.call(
+				stringi::stri_sub_replace_all
+				,list(
+					x_val
+					,pos_ev[,'start']
+					,pos_ev[,'end']
+					,replacement = val_ev
+				)
 			)
+
+			#900. Construct result
+			return(list(
+				reg_tp = x[['type']]
+				,value = val
+			))
 		}
 	)
-	names(out_lst) <- sapply(reg_cln,function(x){x[[1]]})
+	names(out_lst) <- sapply(reg_cln, '[[', 'name')
 
 	#999. Return the list
 	return(out_lst)

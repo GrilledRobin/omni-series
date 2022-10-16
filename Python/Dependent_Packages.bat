@@ -3,12 +3,14 @@ title Python Installation Batch
 @set CurDir=%~dp0
 
 ::Dependency for [pandas]
-pip install numpy==1.21.5
+::An upgrade of [numpy] is a must, or the BAT call for Python will fail!
+::UserWarning: mkl-service package failed to import
+pip install numpy==1.23.4
 pip install tables==3.6.1
 pip install numexpr==2.8.1
 pip install pandas==1.4.2
 
-pip install scipy==1.7.3
+pip install scipy==1.9.2
 
 ::Dependency for [pathos]
 ::pip install dill>=0.3.5.1
@@ -31,8 +33,8 @@ pip install xlwings==0.27.15
 
 ::Dependency for [requests]
 pip install pathlib>=1.0.1
-pip install ruamel.yaml.clib>=0.2.6
-pip install ruamel-yaml>=0.17.21
+pip install ruamel.yaml.clib==0.2.6
+pip install ruamel-yaml==0.17.21
 pip install requests==2.28.1
 
 ::Dependency for [selenium]
@@ -49,7 +51,7 @@ pip install beautifulsoup4==4.11.1
 pip install h5py==3.7.0
 
 ::Dependency for [progressbar2]
-pip install python-u::tils>=3.0.0
+pip install python-utils==3.3.3
 pip install progressbar2==4.0.0
 
 @pause

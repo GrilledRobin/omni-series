@@ -2,12 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #001.   Import necessary functions for processing.
-import datetime as dt
-import math
-import collections as clt
-import numpy as np
-import pandas as pd
-import os
 
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 

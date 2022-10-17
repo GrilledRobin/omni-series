@@ -38,7 +38,7 @@
 #   |                 [<str>       ]           Any valid character string as column name                                                #
 #   |col_weekday :   Column name representing the record flag of [weekday] in the output calendar                                       #
 #   |                Column attributes:                                                                                                 #
-#   |                 [dtype       ][logical     ]                                                                                       #
+#   |                 [dtype       ][logical     ]                                                                                      #
 #   |                Valid inputs:                                                                                                      #
 #   |                 [.ical_wday. ] <Default> The default column name                                                                  #
 #   |                 [<str>       ]           Any valid character string as column name                                                #
@@ -59,6 +59,11 @@
 #   | Date |    20211204        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now return the same data frame for all [itype]s, to unify the calculation for all [span]s in the related functions      #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221017        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when Saturday is Workday and the requested interval is Workweek                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -142,12 +147,12 @@ intCalendar <- function(
 
 	#100. Prepare helper functions
 	#110. Function to create period indexes and their respective relative date indexes
-	h_dateidx <- function(df, func) {
+	h_dateidx <- function(df, firstrec) {
 		#001. Create a copy of the input data frame
 		rst <- df
 
 		#100. Set the starting date
-		rst[['.firstrec.']] <- func(rst[[col_out]])
+		rst[['.firstrec.']] <- firstrec
 		rst[1, '.firstrec.'] <- T
 		rst[[col_period]] <- cumsum(rst[['.firstrec.']])
 
@@ -218,37 +223,42 @@ intCalendar <- function(
 		#800. Create the field of [Period], which is the same as [Row Index] for such case
 		outRst[[col_period]] <- outRst[[col_rowidx]]
 		outRst[[col_prdidx]] <- 1
+	} else if ((dict_attr[['name']] %in% c('week', 'dtweek')) & (daytype %in% c('W', 'T'))) {
+		outRst <- h_dateidx(
+			outRst
+			,outRst[[dict_adjcol[[daytype]]]] & !(outRst[[dict_adjcol[[daytype]]]] %>% dplyr::lag(default = F))
+		)
 	} else {
 		#100. Create intervals for different scenarios
 		if (dict_attr[['name']] %in% c('week', 'dtweek')) {
-			outRst <- h_dateidx( outRst, function(x){lubridate::wday(x) %in% c(1)} )
+			outRst <- h_dateidx( outRst, lubridate::wday(outRst[[col_out]]) %in% c(1) )
 		} else if (dict_attr[['name']] %in% c('tenday', 'dttenday')) {
-			outRst <- h_dateidx( outRst, function(x){lubridate::day(x) %in% c(1,11,21)} )
+			outRst <- h_dateidx( outRst, lubridate::day(outRst[[col_out]]) %in% c(1,11,21) )
 		} else if (dict_attr[['name']] %in% c('semimonth', 'dtsemimonth')) {
-			outRst <- h_dateidx( outRst, function(x){lubridate::day(x) %in% c(1,16)} )
+			outRst <- h_dateidx( outRst, lubridate::day(outRst[[col_out]]) %in% c(1,16) )
 		} else if (dict_attr[['name']] %in% c('month', 'dtmonth')) {
-			outRst <- h_dateidx( outRst, function(x){lubridate::day(x) %in% c(1)} )
+			outRst <- h_dateidx( outRst, lubridate::day(outRst[[col_out]]) %in% c(1) )
 		} else if (dict_attr[['name']] %in% c('qtr', 'dtqtr')) {
 			outRst <- h_dateidx(
 				outRst
-				,function(x){(lubridate::day(x) %in% c(1)) & (lubridate::month(x) %in% c(1,4,7,10))}
+				,(lubridate::day(outRst[[col_out]]) %in% c(1)) & (lubridate::month(outRst[[col_out]]) %in% c(1,4,7,10))
 			)
 		} else if (dict_attr[['name']] %in% c('semiyear', 'dtsemiyear')) {
 			outRst <- h_dateidx(
 				outRst
-				,function(x){(lubridate::day(x) %in% c(1)) & (lubridate::month(x) %in% c(1,7))}
+				,(lubridate::day(outRst[[col_out]]) %in% c(1)) & (lubridate::month(outRst[[col_out]]) %in% c(1,7))
 			)
 		} else if (dict_attr[['name']] %in% c('year', 'dtyear')) {
 			outRst <- h_dateidx(
 				outRst
-				,function(x){(lubridate::day(x) %in% c(1)) & (lubridate::month(x) %in% c(1))}
+				,(lubridate::day(outRst[[col_out]]) %in% c(1)) & (lubridate::month(outRst[[col_out]]) %in% c(1))
 			)
 		} else if (dict_attr[['name']] %in% c('minute', 'dtminute')) {
-			outRst <- h_dateidx( outRst, function(x){lubridate::second(x) %in% c(0)} )
+			outRst <- h_dateidx( outRst, lubridate::second(outRst[[col_out]]) %in% c(0) )
 		} else if (dict_attr[['name']] %in% c('hour', 'dthour')) {
 			outRst <- h_dateidx(
 				outRst
-				,function(x){(lubridate::second(x) %in% c(0)) & (lubridate::minute(x) %in% c(0))}
+				,(lubridate::second(outRst[[col_out]]) %in% c(0)) & (lubridate::minute(outRst[[col_out]]) %in% c(0))
 			)
 		}
 	}

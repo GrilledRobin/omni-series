@@ -95,6 +95,11 @@ def intCalendar(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now return the same data frame for all [itype]s, to unify the calculation for all [span]s in the related functions      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221017        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when Saturday is Workday and the requested interval is Workweek                                             #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -155,12 +160,12 @@ def intCalendar(
 
     #100. Prepare helper functions
     #110. Function to create period indexes and their respective relative date indexes
-    def h_dateidx(df, func):
+    def h_dateidx(df, firstrec):
         #001. Create a copy of the input data frame
         rst = df.copy(deep=True)
 
         #100. Set the starting date
-        rst['_firstrec_'] = rst[col_out].apply( func )
+        rst['_firstrec_'] = firstrec
         rst.iat[0, rst.columns.get_loc('_firstrec_')] = True
         rst[col_period] = rst['_firstrec_'].cumsum().astype(int)
 
@@ -214,26 +219,31 @@ def intCalendar(
         #800. Create the field of [Period], which is the same as [Row Index] for such case
         outRst[col_period] = outRst[col_rowidx]
         outRst[col_prdidx] = outRst[col_rowidx].apply(lambda x: 0)
+    elif (dict_attr['name'] in ['week', 'dtweek']) & (daytype in ['W', 'T']):
+        outRst = h_dateidx(
+            outRst
+            ,outRst[dict_adjcol[daytype]].eq(True) & outRst[dict_adjcol[daytype]].shift(1, fill_value = False).eq(False)
+        )
     else:
         #100. Create intervals for different scenarios
         if dict_attr['name'] in ['week', 'dtweek']:
-            outRst = h_dateidx( outRst, lambda x: x.isoweekday() == 7 )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: x.isoweekday() == 7 ) )
         elif dict_attr['name'] in ['tenday', 'dttenday']:
-            outRst = h_dateidx( outRst, lambda x: x.day in [1,11,21] )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: x.day in [1,11,21] ) )
         elif dict_attr['name'] in ['semimonth', 'dtsemimonth']:
-            outRst = h_dateidx( outRst, lambda x: x.day in [1,16] )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: x.day in [1,16] ) )
         elif dict_attr['name'] in ['month', 'dtmonth']:
-            outRst = h_dateidx( outRst, lambda x: x.day in [1] )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: x.day in [1] ) )
         elif dict_attr['name'] in ['qtr', 'dtqtr']:
-            outRst = h_dateidx( outRst, lambda x: (x.day in [1]) and (x.month in [1,4,7,10]) )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: (x.day in [1]) and (x.month in [1,4,7,10]) ) )
         elif dict_attr['name'] in ['semiyear', 'dtsemiyear']:
-            outRst = h_dateidx( outRst, lambda x: (x.day in [1]) and (x.month in [1,7]) )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: (x.day in [1]) and (x.month in [1,7]) ) )
         elif dict_attr['name'] in ['year', 'dtyear']:
-            outRst = h_dateidx( outRst, lambda x: (x.day in [1]) and (x.month in [1]) )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: (x.day in [1]) and (x.month in [1]) ) )
         elif dict_attr['name'] in ['minute', 'dtminute']:
-            outRst = h_dateidx( outRst, lambda x: x.second in [0] )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: x.second in [0] ) )
         elif dict_attr['name'] in ['hour', 'dthour']:
-            outRst = h_dateidx( outRst, lambda x: (x.second in [0]) and (x.minute in [0]) )
+            outRst = h_dateidx( outRst, outRst[col_out].apply( lambda x: (x.second in [0]) and (x.minute in [0]) ) )
 
     #999. Output
     return(outRst)

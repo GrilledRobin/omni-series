@@ -120,6 +120,11 @@ def pandasPivot(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221024        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when there is only a single column involved in either [index] or [columns] dimensions                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -193,6 +198,11 @@ def pandasPivot(
     #050. Local parameters
     var_rows = kw_proc.get('index', [])
     var_cols = kw_proc.get('columns', [])
+    if isinstance(var_rows, str):
+        var_rows = [var_rows]
+    if isinstance(var_cols, str):
+        var_cols = [var_cols]
+    reorder_stats = []
     f_rows = len(var_rows) > 0
     f_cols = len(var_cols) > 0
     f_totals_row = f_rows & ( fRowTot | fRowSubt )
@@ -282,8 +292,11 @@ def pandasPivot(
     #Quote: Get respective levels of pd.MultiIndex
     #Quote: https://stackoverflow.com/questions/36909457
     def h_AsObj(idx):
-        obj = [ idx.get_level_values(i).astype('object') for i in range(idx.nlevels) ]
-        return(pd.MultiIndex.from_arrays(obj))
+        if isinstance(idx, pd.MultiIndex):
+            obj = [ idx.get_level_values(i).astype('object') for i in range(idx.nlevels) ]
+            return(pd.MultiIndex.from_arrays(obj))
+        else:
+            return(idx.astype('object'))
 
     #400. Calculate totals
     #410. Row totals
@@ -407,8 +420,12 @@ def pandasPivot(
     pvt_base.columns.set_names(name_vals, inplace = True, level = 0)
     if pvt_base.columns.nlevels == len(var_cols) + 2:
         pvt_base.columns.set_names(name_stats, inplace = True, level = 1)
+        reorder_stats = [name_stats]
 
-    #842. Extract the y-axis index from the pivot table
+    #842. Re-assign the column indexes before sorting
+    pvt_base.columns = pvt_base.columns.reorder_levels(var_cols + [name_vals] + reorder_stats)
+
+    #843. Extract the y-axis index from the pivot table
     idx_cols = pvt_base.columns
 
     #844. Helper callable as [key] for sorting

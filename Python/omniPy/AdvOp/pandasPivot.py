@@ -125,6 +125,12 @@ def pandasPivot(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when there is only a single column involved in either [index] or [columns] dimensions                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221026        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Changed the behavior of the native argument [observed] for pd.pivot_table() to indicate whether only to embed the       #
+#   |      |     observed combinations in the result for dimensions other than categorical type                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -446,6 +452,58 @@ def pandasPivot(
 
     #849. Assign the new columns as the final result
     pvt_base = pvt_base.copy(deep = True).reindex(idx_cols_sorted, axis = 'columns')
+
+    #860. Remove combinations of dimensions that are not observed
+    if kw_proc.get('observed', False):
+        #400. On axis-0
+        if len(var_rows):
+            #100. Different number of dimensions
+            if len(var_rows) == 1:
+                func_idx = pd.Index
+                get_row = var_rows[0]
+            else:
+                func_idx = pd.MultiIndex.from_frame
+                get_row = var_rows
+
+            #500. Flag the rows to be kept for output
+            #510. Validate the existing combinations of these dimensions
+            mask_idx = pvt_base.index.isin(func_idx(df[get_row].drop_duplicates()))
+
+            #540. Validate the subtotals on current axis
+            if f_totals_row:
+                mask_idx |= pvt_base.index.isin(pvt_by_y.index)
+
+            #570. Validate the Totals on current axis
+            if f_totals_cross:
+                mask_idx |= pvt_base.index.isin(pvt_totals.index)
+
+            #900. Subset the data
+            pvt_base = pvt_base.loc[mask_idx].copy(deep = True)
+
+        #700. On axis-1
+        if len(var_cols):
+            #100. Different number of dimensions
+            if len(var_cols) == 1:
+                func_idx = pd.Index
+                get_col = var_cols[0]
+            else:
+                func_idx = pd.MultiIndex.from_frame
+                get_col = var_cols
+
+            #500. Flag the rows to be kept for output
+            #510. Validate the existing combinations of these dimensions
+            mask_col = pvt_base.columns.droplevel([name_vals] + reorder_stats).isin(func_idx(df[get_col].drop_duplicates()))
+
+            #540. Validate the subtotals on current axis
+            if f_totals_col:
+                mask_col |= pvt_base.columns.isin(pvt_by_x.columns)
+
+            #570. Validate the Totals on current axis
+            if f_totals_cross:
+                mask_col |= pvt_base.columns.isin(pvt_totals.columns)
+
+            #900. Subset the data
+            pvt_base = pvt_base.loc[:, mask_col].copy(deep = True)
 
     #999. Output
     return(pvt_base)

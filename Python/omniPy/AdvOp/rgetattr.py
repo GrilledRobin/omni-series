@@ -41,7 +41,6 @@ def rgetattr(
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
 #   |               [dict       ]           In the form: {subattr1:{'attr.call':True/False,'pos':tuple(),'kw':dict()},...}              #
 #   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]                       #
-#   |                                       [attr.call   ] Whether to call current attribute before recursive process                   #
 #   |                                       [pos         ] Positional arguments to current [callable], can be 0-tuple or None           #
 #   |                                       [kw          ] Keyword arguments to current [callable], can be 0-dict or None               #
 #   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
@@ -87,17 +86,18 @@ def rgetattr(
     #100. Helper functions
     #110. Get attribute and call it when applicable
     def _getattr(obj, attr):
-        #100. Obtain the possible arguments for current sub-attribute
-        args_curr = args.get(attr, {})
-
         #300. Identify whether it should be called during nesting
-        f_call = args_curr.get('attr.call', False)
+        f_call = args.get(attr, None) is not None
 
         #500. Obtain current sub-attribute
         obj_curr = getattr(obj, attr)
 
         #700. Call it when applicable
         if callable(obj_curr) and f_call:
+            #100. Obtain the possible arguments for current sub-attribute
+            args_curr = args.get(attr, {})
+
+            #900. Call with possible arguments
             obj_curr = obj_curr(*args_curr.get('pos', tuple()), **args_curr.get('kw', dict()))
 
         #900. Return the new object
@@ -158,8 +158,7 @@ if __name__=='__main__':
             ,'api.Borders.LineStyle'
             ,args = {
                 'Borders' : {
-                    'attr.call' : True
-                    ,'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
+                    'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
                 }
             }
         )

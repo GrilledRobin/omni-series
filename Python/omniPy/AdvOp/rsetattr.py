@@ -43,7 +43,6 @@ def rsetattr(
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
 #   |               [dict       ]           In the form: {subattr1:{'attr.call':True/False,'pos':tuple(),'kw':dict()},...}              #
 #   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]                       #
-#   |                                       [attr.call   ] Whether to call current attribute before recursive process                   #
 #   |                                       [pos         ] Positional arguments to current [callable], can be 0-tuple or None           #
 #   |                                       [kw          ] Keyword arguments to current [callable], can be 0-dict or None               #
 #   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
@@ -136,8 +135,7 @@ if __name__=='__main__':
             ,xw.constants.LineStyle.xlSlantDashDot
             ,args = {
                 'Borders' : {
-                    'attr.call' : True
-                    ,'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
+                    'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
                 }
             }
         )

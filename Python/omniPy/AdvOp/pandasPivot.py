@@ -467,7 +467,7 @@ def pandasPivot(
 
             #500. Flag the rows to be kept for output
             #510. Validate the existing combinations of these dimensions
-            mask_idx = pvt_base.index.isin(func_idx(df[get_row].drop_duplicates()))
+            mask_idx = pvt_base.index.isin(func_idx(df[get_row].drop_duplicates().astype('object')))
 
             #540. Validate the subtotals on current axis
             if f_totals_row:
@@ -492,7 +492,11 @@ def pandasPivot(
 
             #500. Flag the rows to be kept for output
             #510. Validate the existing combinations of these dimensions
-            mask_col = pvt_base.columns.droplevel([name_vals] + reorder_stats).isin(func_idx(df[get_col].drop_duplicates()))
+            mask_col = (
+                pvt_base.columns
+                .droplevel([name_vals] + reorder_stats)
+                .isin(func_idx(df[get_col].drop_duplicates().astype('object')))
+            )
 
             #540. Validate the subtotals on current axis
             if f_totals_col:

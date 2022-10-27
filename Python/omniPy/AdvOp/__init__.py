@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #001.   Import necessary functions for processing.
-import os
 
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
@@ -21,6 +20,8 @@ from .selNumVar import selNumVar
 from .trimCatVar import trimCatVar
 from .getWinUILanguage import getWinUILanguage
 from .pandasPivot import pandasPivot
+from .rgetattr import rgetattr
+from .rsetattr import rsetattr
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup
@@ -32,5 +33,7 @@ __all__ = [
     , 'modifyDict'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage'
+    , 'pandasPivot'
+    , 'rgetattr' , 'rsetattr'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
 ]

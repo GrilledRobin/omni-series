@@ -17,8 +17,8 @@ def xwDfToRange(
     ,index : bool = True
     ,index_name : bool = True
     ,header : bool = True
-    ,mergeIdx : Union[bool, int, Iterable[Optional[int]]] = False
-    ,mergeHdr : Union[bool, int, Iterable[Optional[int]]] = False
+    ,mergeIdx : Union[bool, int, Iterable[Optional[int]]] = True
+    ,mergeHdr : Union[bool, int, Iterable[Optional[int]]] = True
     ,stripe : bool = True
     ,theme : str = 'BlackGold'
     ,fmtRow : List[dict] = []
@@ -53,17 +53,17 @@ def xwDfToRange(
 #   |                [False       ]           Do not export [df.columns]                                                                #
 #   |mergeIdx    :   Various value indicating whether to merge vertically adjacent cells with the same values in [df.index], or such    #
 #   |                 cells in any provided [levels] of [df.index]                                                                      #
-#   |                [False       ] <Default> Do not merge the adjacent cells                                                           #
-#   |                [True        ]           Merge cells on all levels other than [levels[-1]] in [df.index], indicating a pivot table #
+#   |                [True        ] <Default> Merge cells on all levels other than [levels[-1]] in [df.index], indicating a pivot table #
+#   |                [False       ]           Do not merge the adjacent cells                                                           #
 #   |                [<int>       ]           Merge cells on the dedicated level id                                                     #
 #   |                [<str>       ]           Merge cells on the dedicated level name                                                   #
 #   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
 #   |                                          pd.Index                                                                                 #
 #   |mergeHdr    :   Various value indicating whether to merge horizontally adjacent cells with the same values in [df.columns], or such#
 #   |                 cells in any provided [levels] of [df.columns]                                                                    #
-#   |                [False       ] <Default> Do not merge the adjacent cells                                                           #
-#   |                [True        ]           Merge cells on all levels other than [levels[-1]] in [df.columns], indicating a pivot     #
+#   |                [True        ] <Default> Merge cells on all levels other than [levels[-1]] in [df.columns], indicating a pivot     #
 #   |                                          table                                                                                    #
+#   |                [False       ]           Do not merge the adjacent cells                                                           #
 #   |                [<int>       ]           Merge cells on the dedicated level id                                                     #
 #   |                [<str>       ]           Merge cells on the dedicated level name                                                   #
 #   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
@@ -386,6 +386,7 @@ def xwDfToRange(
             raise TypeError('[' + LfuncName + f'][fmtRow]:[{str(k)}] cannot be used to slice df.index!' )
 
         #500. Set the styles row by row (since the slicer may not be continuous)
+        row_to_fmt = [ i for i in row_to_fmt if i in range(len(df)) ]
         for f_row in row_to_fmt:
             #100. Identify the range
             row_rng = xlsh.range(
@@ -415,7 +416,8 @@ def xwDfToRange(
         else:
             raise TypeError('[' + LfuncName + f'][fmtCol]:[{str(k)}] cannot be used to slice df.columns!' )
 
-        #500. Set the styles row by row (since the slicer may not be continuous)
+        #500. Set the styles column by column (since the slicer may not be continuous)
+        col_to_fmt = [ i for i in col_to_fmt if i in range(len(df.columns)) ]
         for f_col in col_to_fmt:
             #100. Identify the range
             col_rng = xlsh.range(

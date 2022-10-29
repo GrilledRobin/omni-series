@@ -39,8 +39,12 @@ def rgetattr(
 #   |               IMPORTANT: It represents the same argument in the native function [getattr()]                                       #
 #   |args       :   A nested dict for any [callable] sub-attribute to call, see examples for the usage                                  #
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
-#   |               [dict       ]           In the form: {subattr1:{'attr.call':True/False,'pos':tuple(),'kw':dict()},...}              #
-#   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]                       #
+#   |               [dict       ]           In the form: {subattr1:{'pos':tuple(),'kw':dict()},...}                                     #
+#   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]. (updated) Since some #
+#   |                                                       attribute names may exist in the nested search, e.g. [aa.bb.cc.bb.dd], we   #
+#   |                                                       should use their respective full names to identify the correct call, i.e.   #
+#   |                                                       for above case [aa.bb] and [aa.bb.cc.bb] should be provided respectively    #
+#   |                                                       for the correct call to them.                                               #
 #   |                                       [pos         ] Positional arguments to current [callable], can be 0-tuple or None           #
 #   |                                       [kw          ] Keyword arguments to current [callable], can be 0-dict or None               #
 #   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
@@ -82,15 +86,17 @@ def rgetattr(
 
     #050. Local parameters
     attrs = attr.split(sep)
+    attrs_cum = [ sep.join(attrs[:(i+1)]) for i in range(len(attrs)) ]
 
     #100. Helper functions
     #110. Get attribute and call it when applicable
     def _getattr(obj, attr):
         #300. Identify whether it should be called during nesting
         f_call = args.get(attr, None) is not None
+        prev, _, curr = attr.rpartition(sep)
 
         #500. Obtain current sub-attribute
-        obj_curr = getattr(obj, attr)
+        obj_curr = getattr(obj, curr)
 
         #700. Call it when applicable
         if callable(obj_curr) and f_call:
@@ -105,7 +111,7 @@ def rgetattr(
 
     #900. Try to obtain the attribute and raise if otherwise
     try:
-        return reduce(_getattr, attrs, obj)
+        return reduce(_getattr, attrs_cum, obj)
     except AttributeError:
         if default:
             return default[0]
@@ -152,12 +158,12 @@ if __name__=='__main__':
         #[ASSUMPTION]
         #[1] 'Borders' attribute is a callable, for which we should provide the BorderIndex as identification
         #[2] Usually we get the attribute by: xlrng.api.Borders(xw.constants.BordersIndex.xlEdgeTop).LineStyle
-        #[3] Here we pass strings for its retrieval, which provides parametrical functionality
+        #[3] Here we pass strings for its retrieval, which provides parametric functionality
         btm_bd_style = rgetattr(
             xlrng
             ,'api.Borders.LineStyle'
             ,args = {
-                'Borders' : {
+                'api.Borders' : {
                     'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
                 }
             }

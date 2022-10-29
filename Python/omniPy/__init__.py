@@ -12,6 +12,7 @@ from . import Dates
 from . import FileSystem
 from . import RPA
 from . import Stats
+from . import Styles
 
 #200.   Define available resources.
 __all__ = []
@@ -21,3 +22,4 @@ __all__.extend(Dates.__all__)
 __all__.extend(FileSystem.__all__)
 __all__.extend(RPA.__all__)
 __all__.extend(Stats.__all__)
+__all__.extend(Styles.__all__)

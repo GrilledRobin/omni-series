@@ -107,6 +107,7 @@ if __name__=='__main__':
 
     #200. Set the font name from a cell in an EXCEL file
     xlfile = os.path.join(dir_omniPy, 'omniPy', 'AdvOp', 'test.xlsx')
+    if os.path.isfile(xlfile): os.remove(xlfile)
     with xw.App( visible = False, add_book = True ) as xlapp:
         #010. Set options
         xlapp.display_alerts = False
@@ -128,7 +129,7 @@ if __name__=='__main__':
         #[ASSUMPTION]
         #[1] 'Borders' attribute is a callable, for which we should provide the BorderIndex as identification
         #[2] Usually we set the attribute by: xlrng.api.Borders(xw.constants.BordersIndex.xlEdgeTop).LineStyle
-        #[3] Here we pass strings for its retrieval, which provides parametrical functionality
+        #[3] Here we pass strings for its retrieval, which provides parametric functionality
         rsetattr(
             xlrng
             ,'api.Borders.LineStyle'
@@ -144,6 +145,8 @@ if __name__=='__main__':
         xlwb.save(xlfile)
         xlwb.close()
         xlapp.screen_updating = True
+
+    if os.path.isfile(xlfile): os.remove(xlfile)
 
 #-Notes- -End-
 '''

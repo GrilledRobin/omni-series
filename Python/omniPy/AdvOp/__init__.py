@@ -22,6 +22,7 @@ from .getWinUILanguage import getWinUILanguage
 from .pandasPivot import pandasPivot
 from .rgetattr import rgetattr
 from .rsetattr import rsetattr
+from .xwDfToRange import xwDfToRange
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup
@@ -35,5 +36,6 @@ __all__ = [
     , 'getWinUILanguage'
     , 'pandasPivot'
     , 'rgetattr' , 'rsetattr'
+    , 'xwDfToRange'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
 ]

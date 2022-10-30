@@ -165,8 +165,7 @@ def xwDfToRange(
     seq_ranges = ['table','data.int','data.float','data','index','index.merge','header','header.merge','box','stripe']
     row_adj = df.columns.nlevels if header else 0
     col_adj = df.index.nlevels if index else 0
-    xlsh = rng.sheet
-    table_top, table_left = rng.row, rng.column
+    table_top, table_left = 0,0
     table_bottom = table_top + row_adj + len(df) - 1
     table_right = table_left + col_adj + len(df.columns) - 1
     data_top = table_top + row_adj
@@ -174,6 +173,21 @@ def xwDfToRange(
     box_bottom = data_top - 1
     box_right = data_left - 1
     xlrng = {}
+
+    #090. Export the data to the entire range
+    if not asformatter:
+        #001. Resize the range to ensure the slicing is successful
+        rng = rng.resize(len(df) + row_adj, len(df.columns) + col_adj)
+
+        #100. Create a copy of the data frame to avoid modification on the original object
+        df_copy = df.copy(deep = True)
+
+        #300. Remove the names of [df.index] during the export
+        if not (index & header & index_name):
+            df_copy.index.names = [ None for i in range(len(df_copy.index.names)) ]
+
+        #900. Write the data
+        rng.value = df_copy
 
     #100. Helper functions
     #110. Function to identify the adjacent rows/columns to merge in terms of [attr]
@@ -188,9 +202,9 @@ def xwDfToRange(
     #210. Merged indexes
     merged_idx = { i:h_idx_merge_grp(i, 'index') for i in idx_to_merge }
     xlmerge_idx = [
-        xlsh.range(
-            (data_top + pos[0] - 1, table_left + k)
-            ,(data_top + pos[-1] - 1, table_left + k)
+        (
+            slice(data_top + pos[0] - 1, data_top + pos[-1] - 1 + 1, None)
+            ,slice(table_left + k, table_left + k + 1, None)
         )
         for k,v in merged_idx.items()
         for pos in v
@@ -199,9 +213,9 @@ def xwDfToRange(
     #220. Merged headers
     merged_hdr = { i:h_idx_merge_grp(i, 'columns') for i in hdr_to_merge }
     xlmerge_hdr = [
-        xlsh.range(
-            (table_top + k, data_left + pos[0] - 1)
-            ,(table_top + k, data_left + pos[-1] - 1)
+        (
+            slice(table_top + k, table_top + k + 1, None)
+            ,slice(data_left + pos[0] - 1, data_left + pos[-1] - 1 + 1, None)
         )
         for k,v in merged_hdr.items()
         for pos in v
@@ -210,9 +224,9 @@ def xwDfToRange(
     #400. Define dedicated ranges
     #410. Range for the entire table
     xlrng['table'] = [
-        xlsh.range(
-            (table_top, table_left)
-            ,(table_bottom, table_right)
+        (
+            slice(table_top, table_bottom + 1, None)
+            ,slice(table_left, table_right + 1, None)
         )
     ]
 
@@ -225,9 +239,9 @@ def xwDfToRange(
         if col_int_flag[i]
     ]
     xlrng['data.int'] = [
-        xlsh.range(
-            (data_top, col)
-            ,(table_bottom, col)
+        (
+            slice(data_top, table_bottom + 1, None)
+            ,slice(col, col + 1, None)
         )
         for col in col_int
     ]
@@ -240,9 +254,9 @@ def xwDfToRange(
         if col_float_flag[i]
     ]
     xlrng['data.float'] = [
-        xlsh.range(
-            (data_top, col)
-            ,(table_bottom, col)
+        (
+            slice(data_top, table_bottom + 1, None)
+            ,slice(col, col + 1, None)
         )
         for col in col_float
     ]
@@ -250,9 +264,9 @@ def xwDfToRange(
     #430. Ranges expanded from the merged ones
     #431. Ranges expanded from the vertically merged index levels
     xlrng['index.merge'] = [
-        xlsh.range(
-            (data_top + pos[0] - 1, table_left + k)
-            ,(data_top + pos[-1] - 1, table_right)
+        (
+            slice(data_top + pos[0] - 1, data_top + pos[-1] - 1 + 1, None)
+            ,slice(table_left + k, table_right + 1, None)
         )
         for k,v in merged_idx.items()
         for pos in v
@@ -260,9 +274,9 @@ def xwDfToRange(
 
     #432. Ranges expanded from the horizontally merged column levels
     xlrng['header.merge'] = [
-        xlsh.range(
-            (table_top + k, data_left + pos[0] - 1)
-            ,(table_bottom, data_left + pos[-1] - 1)
+        (
+            slice(table_top + k, table_bottom + 1, None)
+            ,slice(data_left + pos[0] - 1, data_left + pos[-1] - 1 + 1, None)
         )
         for k,v in merged_hdr.items()
         for pos in v
@@ -271,9 +285,9 @@ def xwDfToRange(
     #440. Range for the box crossing index and header
     if index & header:
         xlrng['box'] = [
-            xlsh.range(
-                (table_top, table_left)
-                ,(box_bottom, box_right)
+            (
+                slice(table_top, box_bottom + 1, None)
+                ,slice(table_left, box_right + 1, None)
             )
         ]
     else:
@@ -281,18 +295,18 @@ def xwDfToRange(
 
     #450. Range for the data part
     xlrng['data'] = [
-        xlsh.range(
-            (data_top, data_left)
-            ,(table_bottom, table_right)
+        (
+            slice(data_top, table_bottom + 1, None)
+            ,slice(data_left, table_right + 1, None)
         )
     ]
 
     #460. Header
     if header:
         xlrng['header'] = [
-            xlsh.range(
-                (table_top, data_left)
-                ,(box_bottom, table_right)
+            (
+                slice(table_top, box_bottom + 1, None)
+                ,slice(data_left, table_right + 1, None)
             )
         ]
     else:
@@ -301,9 +315,9 @@ def xwDfToRange(
     #470. Index
     if index:
         xlrng['index'] = [
-            xlsh.range(
-                (data_top, table_left)
-                ,(table_bottom, box_right)
+            (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(table_left, box_right + 1, None)
             )
         ]
     else:
@@ -313,9 +327,9 @@ def xwDfToRange(
     #481. Identify the levels to create stripes within [df.index] range
     lvl_stripe = [ i for i in range(df.index.nlevels) if i not in idx_to_merge ]
     xlstripe_idx = [
-        xlsh.range(
-            (data_top, table_left + i)
-            ,(table_bottom, table_left + i)
+        (
+            slice(data_top, table_bottom + 1, None)
+            ,slice(table_left + i, table_left + i + 1, None)
         )
         for i in lvl_stripe
     ]
@@ -325,18 +339,6 @@ def xwDfToRange(
         xlrng['stripe'] = xlstripe_idx + xlrng['data']
     else:
         xlrng['stripe'] = []
-
-    #500. Export the data to the entire range
-    if not asformatter:
-        #100. Create a copy of the data frame to avoid modification on the original object
-        df_copy = df.copy(deep = True)
-
-        #300. Remove the names of [df.index] during the export
-        if not (index & header & index_name):
-            df_copy.index.names = [ None for i in range(len(df_copy.index.names)) ]
-
-        #900. Write the data
-        rng.value = df_copy
 
     #600. Setup styles for the predefined ranges
     #610. Retrieve the theme as requested
@@ -354,17 +356,17 @@ def xwDfToRange(
         #500. Differentiate the scenarios
         # print(k)
         for r in v:
+            # print(rng.__getitem__(r).address)
             for debugname, attr in item_theme.items():
-                # print([r.row, r.column])
+                #Quote: https://gaopinghuang0.github.io/2018/11/17/python-slicing
                 # print(debugname)
                 if k in ['stripe']:
-                    # print(r.address)
                     #Quote: https://docs.xlwings.org/en/latest/converters.html
-                    for ix, row in enumerate(r.rows):
+                    for ix, row in enumerate(rng.__getitem__(r).rows):
                         if ix % 2 == 0:
                             rsetattr(row, **attr)
                 else:
-                    rsetattr(r, **attr)
+                    rsetattr(rng.__getitem__(r), **attr)
 
     #700. Set the styles of the requested ranges
     #710. Specific rows of the data part
@@ -389,14 +391,14 @@ def xwDfToRange(
         row_to_fmt = [ i for i in row_to_fmt if i in range(len(df)) ]
         for f_row in row_to_fmt:
             #100. Identify the range
-            row_rng = xlsh.range(
-                (data_top + f_row, data_left)
-                ,(data_top + f_row, table_right)
+            row_rng = (
+                slice(data_top + f_row, data_top + f_row + 1, None)
+                ,slice(data_left, table_right + 1, None)
             )
 
             #500. Set the styles
             for attr in v.values():
-                rsetattr(row_rng, **attr)
+                rsetattr(rng.__getitem__(row_rng), **attr)
 
     #720. Specific columns of the data part
     for m in fmtCol:
@@ -420,18 +422,18 @@ def xwDfToRange(
         col_to_fmt = [ i for i in col_to_fmt if i in range(len(df.columns)) ]
         for f_col in col_to_fmt:
             #100. Identify the range
-            col_rng = xlsh.range(
-                (data_top, data_left + f_col)
-                ,(table_bottom, data_left + f_col)
+            col_rng = (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(data_left + f_col, data_left + f_col + 1, None)
             )
 
             #500. Set the styles
             for attr in v.values():
-                rsetattr(col_rng, **attr)
+                rsetattr(rng.__getitem__(col_rng), **attr)
 
     #800. Merge the ranges as requested
     for r in xlmerge_idx + xlmerge_hdr:
-        r.merge()
+        rng.__getitem__(r).merge()
 #End xwDfToRange
 
 '''

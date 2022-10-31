@@ -4,7 +4,12 @@
 import sys
 import pandas as pd
 import numpy as np
+#We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
+#It is weird but works!
+#Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
+import pywintypes
 import xlwings as xw
+import itertools as itt
 from collections.abc import Iterable
 from collections import OrderedDict
 from typing import Union, List, Optional
@@ -21,8 +26,11 @@ def xwDfToRange(
     ,mergeHdr : Union[bool, int, Iterable[Optional[int]]] = True
     ,stripe : bool = True
     ,theme : str = 'BlackGold'
+    ,fmtIdx : List[dict] = []
     ,fmtRow : List[dict] = []
+    ,fmtHdr : List[dict] = []
     ,fmtCol : List[dict] = []
+    ,fmtCell : List[dict] = []
     ,asformatter : bool = False
 ) -> 'Export the data frame to the specified xw.Range with certain theme':
     #000.   Info.
@@ -74,6 +82,16 @@ def xwDfToRange(
 #   |theme       :   Theme of styles for the exported range, see details in [omniPy.Styles.theme_xwtable]                               #
 #   |                [BlackGold   ] <Default> Default theme                                                                             #
 #   |                [<str>       ]           Other predefined theme name                                                               #
+#   |fmtIdx      :   List of dicts, in which the items represent various value indicating which items to be patched on index:           #
+#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
+#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
+#   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
+#   |                                          pd.MultiIndex                                                                            #
+#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
+#   |                                          pd.Index                                                                                 #
 #   |fmtRow      :   List of dicts, in which the items represent various value indicating which rows to be patched by what formats:     #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
 #   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
@@ -81,6 +99,16 @@ def xwDfToRange(
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
 #   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
+#   |                                          pd.MultiIndex                                                                            #
+#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
+#   |                                          pd.Index                                                                                 #
+#   |fmtHdr      :   List of dicts, in which the items represent various value indicating which items to be patched on column names:    #
+#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
+#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
+#   |                [<str>       ]           Index of columns to be formatted, must be at least one tuple enclosed by a list for a     #
 #   |                                          pd.MultiIndex                                                                            #
 #   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
 #   |                                          pd.Index                                                                                 #
@@ -92,6 +120,16 @@ def xwDfToRange(
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
 #   |                [<str>       ]           Index of columns to be formatted, must be at least one tuple enclosed by a list for a     #
+#   |                                          pd.MultiIndex                                                                            #
+#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
+#   |                                          pd.Index                                                                                 #
+#   |fmtCell     :   List of dicts, in which the items represent various value indicating which cells to be patched:                    #
+#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
+#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
+#   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
 #   |                                          pd.MultiIndex                                                                            #
 #   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
 #   |                                          pd.Index                                                                                 #
@@ -197,6 +235,32 @@ def xwDfToRange(
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
         pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
+
+    #150. Function to standardize the indexers
+    def h_getindexer(idx, args, logname):
+        if isinstance(args, str):
+            if args == '.all.':
+                rst = list(range(len(idx)))
+            else:
+                rst = idx.get_indexer([args])
+        elif isinstance(args, int):
+            rst = [args]
+        elif isinstance(args, slice):
+            bgn, stop, step = args.indices(len(idx))
+            if step != 1:
+                raise ValueError('[' + LfuncName + f'][{logname}]Slice steps not supported.')
+            rst = list(range(bgn, stop, step))
+        elif isinstance(args, Iterable):
+            if np.all(list(map(lambda x: isinstance(x, int), args))):
+                rst = args
+            else:
+                rst = idx.get_indexer(args)
+        else:
+            raise TypeError('[' + LfuncName + f'][{logname}]:[{str(k)}] cannot be used to slice [{type(idx)}]!' )
+
+        rstOut = [ i for i in rst if i in range(len(idx)) ]
+
+        return(rstOut)
 
     #200. Identify the areas to be merged
     #210. Merged indexes
@@ -369,26 +433,41 @@ def xwDfToRange(
                     rsetattr(rng.__getitem__(r), **attr)
 
     #700. Set the styles of the requested ranges
-    #710. Specific rows of the data part
-    for m in fmtRow:
-        #001. Extract the members
+    #710. Specific rows of the [index] part
+    for m in fmtIdx:
+        #001. Skip if not applicable
+        if (not index) | (len(df.index) == 0): break
+
+        #005. Extract the members
         k,v = m.get('slicer'), m.get('attrs')
 
         #100. Translate the indexer
-        if k == '.all.':
-            row_to_fmt = list(range(len(df.index)))
-        elif isinstance(k, int):
-            row_to_fmt = [k]
-        elif isinstance(k, Iterable):
-            if np.all(list(map(lambda x: isinstance(x, int), k))):
-                row_to_fmt = k
-            else:
-                row_to_fmt = df.index.get_indexer([k] if isinstance(k, str) else k)
-        else:
-            raise TypeError('[' + LfuncName + f'][fmtRow]:[{str(k)}] cannot be used to slice df.index!' )
+        idx_to_fmt = h_getindexer(df.index, k, 'fmtIdx')
 
         #500. Set the styles row by row (since the slicer may not be continuous)
-        row_to_fmt = [ i for i in row_to_fmt if i in range(len(df)) ]
+        for f_row in idx_to_fmt:
+            #100. Identify the range
+            idx_rng = (
+                slice(data_top + f_row, data_top + f_row + 1, None)
+                ,slice(table_left, box_right + 1, None)
+            )
+
+            #500. Set the styles
+            for attr in v.values():
+                rsetattr(rng.__getitem__(idx_rng), **attr)
+
+    #730. Specific rows of the [data] part
+    for m in fmtRow:
+        #001. Skip if not applicable
+        if (len(df.index) == 0) | (len(df.columns) == 0): break
+
+        #005. Extract the members
+        k,v = m.get('slicer'), m.get('attrs')
+
+        #100. Translate the indexer
+        row_to_fmt = h_getindexer(df.index, k, 'fmtRow')
+
+        #500. Set the styles row by row (since the slicer may not be continuous)
         for f_row in row_to_fmt:
             #100. Identify the range
             row_rng = (
@@ -400,26 +479,41 @@ def xwDfToRange(
             for attr in v.values():
                 rsetattr(rng.__getitem__(row_rng), **attr)
 
-    #720. Specific columns of the data part
-    for m in fmtCol:
-        #001. Extract the members
+    #750. Specific columns of the [columns] part
+    for m in fmtHdr:
+        #001. Skip if not applicable
+        if (not header) | (len(df.columns) == 0): break
+
+        #005. Extract the members
         k,v = m.get('slicer'), m.get('attrs')
 
         #100. Translate the indexer
-        if k == '.all.':
-            col_to_fmt = list(range(len(df.columns)))
-        elif isinstance(k, int):
-            col_to_fmt = [k]
-        elif isinstance(k, Iterable):
-            if np.all(list(map(lambda x: isinstance(x, int), k))):
-                col_to_fmt = k
-            else:
-                col_to_fmt = df.columns.get_indexer([k] if isinstance(k, str) else k)
-        else:
-            raise TypeError('[' + LfuncName + f'][fmtCol]:[{str(k)}] cannot be used to slice df.columns!' )
+        hdr_to_fmt = h_getindexer(df.columns, k, 'fmtHdr')
 
         #500. Set the styles column by column (since the slicer may not be continuous)
-        col_to_fmt = [ i for i in col_to_fmt if i in range(len(df.columns)) ]
+        for f_col in hdr_to_fmt:
+            #100. Identify the range
+            hdr_rng = (
+                slice(table_top, box_bottom + 1, None)
+                ,slice(data_left + f_col, data_left + f_col + 1, None)
+            )
+
+            #500. Set the styles
+            for attr in v.values():
+                rsetattr(rng.__getitem__(hdr_rng), **attr)
+
+    #770. Specific columns of the [data] part
+    for m in fmtCol:
+        #001. Skip if not applicable
+        if (len(df.index) == 0) | (len(df.columns) == 0): break
+
+        #005. Extract the members
+        k,v = m.get('slicer'), m.get('attrs')
+
+        #100. Translate the indexer
+        col_to_fmt = h_getindexer(df.columns, k, 'fmtCol')
+
+        #500. Set the styles column by column (since the slicer may not be continuous)
         for f_col in col_to_fmt:
             #100. Identify the range
             col_rng = (
@@ -430,6 +524,35 @@ def xwDfToRange(
             #500. Set the styles
             for attr in v.values():
                 rsetattr(rng.__getitem__(col_rng), **attr)
+
+    #790. Specific cells of the [data] part
+    for m in fmtCell:
+        #001. Skip if not applicable
+        if (len(df.index) == 0) | (len(df.columns) == 0): break
+
+        #005. Extract the members
+        k,v = m.get('slicer'), m.get('attrs')
+
+        #009. Raise error if the requested slicer is invalid
+        if not isinstance(k, tuple):
+            raise TypeError('[' + LfuncName + f'][fmtCell]:[{str(k)}] must be 2-tuple!')
+        if len(k) != 2:
+            raise TypeError('[' + LfuncName + f'][fmtCell]:[{str(k)}] must be 2-tuple!')
+
+        #100. Translate the indexer
+        cell_to_fmt = list(itt.product(h_getindexer(df.index, k[0], 'fmtCell'), h_getindexer(df.columns, k[-1], 'fmtCell')))
+
+        #500. Set the styles row by row (since the slicer may not be continuous)
+        for f_row, f_col in cell_to_fmt:
+            #100. Identify the range
+            cell_rng = (
+                slice(data_top + f_row, data_top + f_row + 1, None)
+                ,slice(data_left + f_col, data_left + f_col + 1, None)
+            )
+
+            #500. Set the styles
+            for attr in v.values():
+                rsetattr(rng.__getitem__(cell_rng), **attr)
 
     #800. Merge the ranges as requested
     for r in xlmerge_idx + xlmerge_hdr:
@@ -445,6 +568,10 @@ if __name__=='__main__':
     import sys
     import numpy as np
     import pandas as pd
+    #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
+    #It is weird but works!
+    #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
+    import pywintypes
     import xlwings as xw
     from functools import partial
     dir_omniPy : str = r'D:\Python\ '.strip()
@@ -472,8 +599,44 @@ if __name__=='__main__':
         ,'mergeHdr' : True
         ,'stripe' : True
         ,'theme' : 'BlackGold'
-        ,'fmtRow' : []
+        #Set font color as red for the first row of index
+        ,'fmtIdx' : [
+            {
+                'slicer' : 0
+                ,'attrs' : {
+                    'Font.Color' : {
+                        'attr' : 'api.Font.Color'
+                        ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#FF0000'))
+                    }
+                }
+            }
+        ]
+        #Set bold font for the entire last row
+        ,'fmtRow' : [
+            {
+                'slicer' : len(upvt) - 1
+                ,'attrs' : {
+                    'Font.Bold' : {
+                        'attr' : 'api.Font.Bold'
+                        ,'val' : True
+                    }
+                }
+            }
+        ]
+        #Set font color as green for the list of column headers
+        ,'fmtHdr' : [
+            {
+                'slicer' : [2,6]
+                ,'attrs' : {
+                    'Font.Color' : {
+                        'attr' : 'api.Font.Color'
+                        ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#00FF00'))
+                    }
+                }
+            }
+        ]
         ,'fmtCol' : [
+            #Set below columns as millions
             {
                 'slicer' : [1,5]
                 ,'attrs' : {
@@ -483,12 +646,26 @@ if __name__=='__main__':
                     }
                 }
             }
+            #Set below column as percentage
             ,{
                 'slicer' : [('large', 7)]
                 ,'attrs' : {
                     'NumberFormat' : {
                         'attr' : 'api.NumberFormat'
                         ,'val' : '_( * #,##0.00%_) ;_ (* #,##0.00%)_ ;_( * "-"??_) ;_ @_ '
+                    }
+                }
+            }
+        ]
+        #Set font as italic for the list of cells
+        #Quote: https://docs.xlwings.org/en/latest/api.html#font
+        ,'fmtCell' : [
+            {
+                'slicer' : ([0,3], slice(2,5,None))
+                ,'attrs' : {
+                    'Font.Italic' : {
+                        'attr' : 'font.italic'
+                        ,'val' : True
                     }
                 }
             }

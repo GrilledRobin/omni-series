@@ -41,10 +41,7 @@ def rsetattr(
 #   |               IMPORTANT: It represents the same argument in the native function [getattr()]                                       #
 #   |args       :   A nested dict for any [callable] sub-attribute to call, see examples for the usage                                  #
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
-#   |               [dict       ]           In the form: {subattr1:{'attr.call':True/False,'pos':tuple(),'kw':dict()},...}              #
-#   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]                       #
-#   |                                       [pos         ] Positional arguments to current [callable], can be 0-tuple or None           #
-#   |                                       [kw          ] Keyword arguments to current [callable], can be 0-dict or None               #
+#   |               [dict       ]           See arguments for function [omniPy.AdvOp.rgetattr]                                          #
 #   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
 #   |               [<see def.> ] <Default> See function definition                                                                     #
 #   |               [<str>      ]           Single character to be used for separation                                                  #
@@ -99,6 +96,10 @@ if __name__=='__main__':
     import os
     import sys
     import datetime as dt
+    #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
+    #It is weird but works!
+    #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
+    import pywintypes
     import xlwings as xw
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
@@ -135,7 +136,7 @@ if __name__=='__main__':
             ,'api.Borders.LineStyle'
             ,xw.constants.LineStyle.xlSlantDashDot
             ,args = {
-                'Borders' : {
+                'api.Borders' : {
                     'pos' : (xw.constants.BordersIndex.xlEdgeTop,)
                 }
             }

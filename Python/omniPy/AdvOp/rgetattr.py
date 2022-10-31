@@ -126,6 +126,10 @@ if __name__=='__main__':
     import os
     import sys
     import datetime as dt
+    #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
+    #It is weird but works!
+    #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
+    import pywintypes
     import xlwings as xw
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:

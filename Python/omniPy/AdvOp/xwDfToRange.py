@@ -157,7 +157,7 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, numpy, xlwings, collections, typing                                                                               #
+#   |   |sys, pandas, numpy, xlwings, itertools, collections, typing                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -200,7 +200,11 @@ def xwDfToRange(
         raise TypeError('[' + LfuncName + '][mergeHdr]:[{0}] cannot be processed!'.format( type(mergeHdr) ))
 
     #050. Local parameters
-    seq_ranges = ['table','data.int','data.float','data','index','index.merge','header','header.merge','box','stripe']
+    seq_ranges = [
+        'table','data.int','data.float','data'
+        ,'index','index.merge','header','header.merge','box','stripe'
+        ,'index.False','header.False'
+    ]
     row_adj = df.columns.nlevels if header else 0
     col_adj = df.index.nlevels if index else 0
     table_top, table_left = 0,0
@@ -258,6 +262,7 @@ def xwDfToRange(
         else:
             raise TypeError('[' + LfuncName + f'][{logname}]:[{str(k)}] cannot be used to slice [{type(idx)}]!' )
 
+        rst = [ (i + len(idx)) if i < 0 else i for i in rst ]
         rstOut = [ i for i in rst if i in range(len(idx)) ]
 
         return(rstOut)
@@ -358,12 +363,15 @@ def xwDfToRange(
         xlrng['box'] = []
 
     #450. Range for the data part
-    xlrng['data'] = [
-        (
-            slice(data_top, table_bottom + 1, None)
-            ,slice(data_left, table_right + 1, None)
-        )
-    ]
+    if len(df) & len(df.columns):
+        xlrng['data'] = [
+            (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(data_left, table_right + 1, None)
+            )
+        ]
+    else:
+        xlrng['data'] = []
 
     #460. Header
     if header:
@@ -373,8 +381,15 @@ def xwDfToRange(
                 ,slice(data_left, table_right + 1, None)
             )
         ]
+        xlrng['header.False'] = []
     else:
         xlrng['header'] = []
+        xlrng['header.False'] = [
+            (
+                slice(table_top, box_bottom + 1, None)
+                ,slice(table_left, table_right + 1, None)
+            )
+        ]
 
     #470. Index
     if index:
@@ -384,8 +399,15 @@ def xwDfToRange(
                 ,slice(table_left, box_right + 1, None)
             )
         ]
+        xlrng['index.False'] = []
     else:
         xlrng['index'] = []
+        xlrng['index.False'] = [
+            (
+                slice(table_top, table_bottom + 1, None)
+                ,slice(table_left, box_right + 1, None)
+            )
+        ]
 
     #480. Stripes
     #481. Identify the levels to create stripes within [df.index] range
@@ -439,18 +461,29 @@ def xwDfToRange(
         if (not index) | (len(df.index) == 0): break
 
         #005. Extract the members
-        k,v = m.get('slicer'), m.get('attrs')
+        k,v,lvl = m.get('slicer'), m.get('attrs'), m.get('levels', None)
 
         #100. Translate the indexer
         idx_to_fmt = h_getindexer(df.index, k, 'fmtIdx')
 
+        #300. Translate the indexer of levels if any
+        if lvl is not None:
+            lvl_to_fmt = h_getindexer(pd.Index(df.index.names), lvl, 'fmtIdx.levels')
+            idx_to_fmt = list(itt.product(idx_to_fmt, lvl_to_fmt))
+
         #500. Set the styles row by row (since the slicer may not be continuous)
         for f_row in idx_to_fmt:
             #100. Identify the range
-            idx_rng = (
-                slice(data_top + f_row, data_top + f_row + 1, None)
-                ,slice(table_left, box_right + 1, None)
-            )
+            if isinstance(f_row, tuple):
+                idx_rng = (
+                    slice(data_top + f_row[0], data_top + f_row[0] + 1, None)
+                    ,slice(table_left + f_row[1], table_left + f_row[1] + 1, None)
+                )
+            else:
+                idx_rng = (
+                    slice(data_top + f_row, data_top + f_row + 1, None)
+                    ,slice(table_left, box_right + 1, None)
+                )
 
             #500. Set the styles
             for attr in v.values():
@@ -490,13 +523,24 @@ def xwDfToRange(
         #100. Translate the indexer
         hdr_to_fmt = h_getindexer(df.columns, k, 'fmtHdr')
 
+        #300. Translate the indexer of levels if any
+        if lvl is not None:
+            lvl_to_fmt = h_getindexer(pd.Index(df.columns.names), lvl, 'fmtHdr.levels')
+            hdr_to_fmt = list(itt.product(lvl_to_fmt, hdr_to_fmt))
+
         #500. Set the styles column by column (since the slicer may not be continuous)
         for f_col in hdr_to_fmt:
             #100. Identify the range
-            hdr_rng = (
-                slice(table_top, box_bottom + 1, None)
-                ,slice(data_left + f_col, data_left + f_col + 1, None)
-            )
+            if isinstance(f_col, tuple):
+                hdr_rng = (
+                    slice(table_top + f_col[0], table_top + f_col[0] + 1, None)
+                    ,slice(data_left + f_col[1], data_left + f_col[1] + 1, None)
+                )
+            else:
+                hdr_rng = (
+                    slice(table_top, box_bottom + 1, None)
+                    ,slice(data_left + f_col, data_left + f_col + 1, None)
+                )
 
             #500. Set the styles
             for attr in v.values():
@@ -609,6 +653,7 @@ if __name__=='__main__':
                         ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#FF0000'))
                     }
                 }
+                ,'levels' : 'B'
             }
         ]
         #Set bold font for the entire last row
@@ -626,13 +671,14 @@ if __name__=='__main__':
         #Set font color as green for the list of column headers
         ,'fmtHdr' : [
             {
-                'slicer' : [2,6]
+                'slicer' : slice(2,4,None)
                 ,'attrs' : {
                     'Font.Color' : {
                         'attr' : 'api.Font.Color'
                         ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#00FF00'))
                     }
                 }
+                ,'levels' : -1
             }
         ]
         ,'fmtCol' : [
@@ -692,6 +738,7 @@ if __name__=='__main__':
         xlrng = xlsh.range('B2').expand().options(pd.DataFrame, index = True, header = True)
 
         #500. Export the data
+        xlsh.cells.color = xw.utils.hex_to_rgb('#202122')
         xwDfToRange(
             xlrng
             ,upvt
@@ -703,6 +750,15 @@ if __name__=='__main__':
         #20221029 It is tested that the formatter has no effect where [xlwings <= 0.27.15]
         xlrng2 = xlsh.range('B20').expand().options(pd.DataFrame, index = True, header = True, formatter = xwfmtter)
         xlrng2.value = upvt
+
+        #700. Export the raw data with SAS theme
+        xlsh2 = xlwb.sheets.add('RAW')
+        xlrng2 = xlsh2.range('B2').expand().options(pd.DataFrame, index = True, header = True)
+        xwDfToRange(
+            xlrng2
+            ,udf
+            ,theme = 'SAS'
+        )
 
         #999. Purge
         xlwb.save(xlfile)

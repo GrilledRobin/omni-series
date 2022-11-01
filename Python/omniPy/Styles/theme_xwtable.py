@@ -7,6 +7,8 @@ from xlwings.constants import LineStyle as xwLS
 from xlwings.constants import BordersIndex as xwBI
 from xlwings.constants import BorderWeight as xwBW
 from xlwings.constants import VAlign as xwVA
+from functools import reduce
+from copy import deepcopy
 
 def theme_xwtable(
     theme : str = 'BlackGold'
@@ -49,7 +51,7 @@ def theme_xwtable(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, xlwings                                                                                                                   #
+#   |   |sys, xlwings, functools, copy                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -294,6 +296,127 @@ def theme_xwtable(
             }
         }
         ,'VerticalAlignment' : {
+            'attr' : 'api.VerticalAlignment'
+            ,'val' : xwVA.xlVAlignTop
+        }
+    }
+
+    #Ranges when [index] is not to be exported
+    themes['BlackGold']['index.False'] = {
+        'Borders.xlEdgeLeft.LineStyle' : {
+            'attr' : 'api.Borders.LineStyle'
+            ,'val' : xwLS.xlLineStyleNone
+            ,'args' : {
+                'api.Borders' : {
+                    'pos' : (xwBI.xlEdgeLeft,)
+                }
+            }
+        }
+    }
+
+    #Ranges when [columns] is not to be exported
+    themes['BlackGold']['header.False'] = {
+        'Borders.xlEdgeTop.LineStyle' : {
+            'attr' : 'api.Borders.LineStyle'
+            ,'val' : xwLS.xlLineStyleNone
+            ,'args' : {
+                'api.Borders' : {
+                    'pos' : (xwBI.xlEdgeTop,)
+                }
+            }
+        }
+    }
+
+    #200. SAS TABULATE Procedure default theme
+    color_dark = '#000000'
+    color_light = '#FFFFFF'
+    themes['SAS'] = {}
+    themes['SAS']['table'] = reduce(lambda d1,d2: {**d1,**d2}, [
+        {
+            '.'.join(['Borders',m,'LineStyle']) : {
+                'attr' : 'api.Borders.LineStyle'
+                ,'val' : xwLS.xlContinuous
+                ,'args' : {
+                    'api.Borders' : {
+                        'pos' : (getattr(xwBI, m),)
+                    }
+                }
+            }
+            ,'.'.join(['Borders',m,'Weight']) : {
+                'attr' : 'api.Borders.Weight'
+                ,'val' : xwBW.xlThin
+                ,'args' : {
+                    'api.Borders' : {
+                        'pos' : (getattr(xwBI, m),)
+                    }
+                }
+            }
+            ,'.'.join(['Borders',m,'Color']) : {
+                'attr' : 'api.Borders.Color'
+                ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#C1C1C1'))
+                ,'args' : {
+                    'api.Borders' : {
+                        'pos' : (getattr(xwBI, m),)
+                    }
+                }
+            }
+        }
+        for m in dir(xwBI)
+        if m[:2] == 'xl' and m not in ['xlDiagonalDown','xlDiagonalUp']
+    ])
+    #This is to provide compatibility to [Python < 3.8]
+    themes['SAS']['table'] = {**themes['SAS']['table'], **{
+        'Font.Name' : {
+            'attr' : 'api.Font.Name'
+            ,'val' : 'Microsoft YaHei UI'
+        }
+    }}
+
+    themes['SAS']['data.int'] = {
+        'NumberFormat' : {
+            'attr' : 'api.NumberFormat'
+            ,'val' : '_( * #,##0_) ;_ (* #,##0)_ ;_( * "-"??_) ;_ @_ '
+        }
+    }
+
+    themes['SAS']['data.float'] = {
+        'NumberFormat' : {
+            'attr' : 'api.NumberFormat'
+            ,'val' : '_( * #,##0.00_) ;_ (* #,##0.00)_ ;_( * "-"??_) ;_ @_ '
+        }
+    }
+
+    themes['SAS']['box'] = {
+        'background_color' : {
+            'attr' : 'color'
+            ,'val' : xw.utils.hex_to_rgb('#EDF2F9')
+        }
+        ,'Font.Color' : {
+            'attr' : 'api.Font.Color'
+            #[IMPORTANT] This value must be converted to [int] for above API [xlwings <= 0.27.15]
+            ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#112277'))
+        }
+        ,'Font.Bold' : {
+            'attr' : 'api.Font.Bold'
+            ,'val' : True
+        }
+    }
+
+    themes['SAS']['header'] = deepcopy(themes['SAS']['box'])
+
+    themes['SAS']['index'] = deepcopy(themes['SAS']['box'])
+
+    #Ranges expanded from the vertically merged index levels
+    themes['SAS']['index.merge'] = {
+        'VerticalAlignment' : {
+            'attr' : 'api.VerticalAlignment'
+            ,'val' : xwVA.xlVAlignTop
+        }
+    }
+
+    #Ranges expanded from the horizontally merged column levels
+    themes['SAS']['header.merge'] = {
+        'VerticalAlignment' : {
             'attr' : 'api.VerticalAlignment'
             ,'val' : xwVA.xlVAlignTop
         }

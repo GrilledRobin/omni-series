@@ -40,6 +40,11 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to export the data frame to the specified xw.Range with certain theme                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |Note:                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] If you wish to export a column with number-like characters, such as [0011], you need to apply [fmtCol] to format it as [@],    #
+#   |     otherwise EXCEL will imperatively convert it into numeric, see the examples for details                                       #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Setup universal styles when exporting multiple data frames into EXCEL                                                          #
@@ -148,6 +153,12 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221103        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed bugs when sub ranges are not applicable                                                                           #
+#   |      |[2] Now push data at the final step, so that all formats can be applied correctly                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -179,6 +190,11 @@ def xwDfToRange(
         idx_to_merge = list(range(df.index.nlevels - 1)) if (index and mergeIdx) else []
     elif isinstance(mergeIdx, int):
         idx_to_merge = [mergeIdx]
+    elif isinstance(mergeIdx, slice):
+        bgn, stop, step = mergeIdx.indices(df.index.nlevels)
+        if step != 1:
+            raise ValueError('[' + LfuncName + '][mergeIdx]Slice steps not supported.')
+        idx_to_merge = list(range(bgn, stop, step))
     elif isinstance(mergeIdx, Iterable):
         if np.all(list(map(lambda x: isinstance(x, int), mergeIdx))):
             idx_to_merge = mergeIdx
@@ -191,6 +207,11 @@ def xwDfToRange(
         hdr_to_merge = list(range(df.columns.nlevels - 1)) if (header and mergeHdr) else []
     elif isinstance(mergeHdr, int):
         hdr_to_merge = [mergeHdr]
+    elif isinstance(mergeHdr, slice):
+        bgn, stop, step = mergeHdr.indices(df.columns.nlevels)
+        if step != 1:
+            raise ValueError('[' + LfuncName + '][mergeHdr]Slice steps not supported.')
+        hdr_to_merge = list(range(bgn, stop, step))
     elif isinstance(mergeHdr, Iterable):
         if np.all(list(map(lambda x: isinstance(x, int), mergeHdr))):
             hdr_to_merge = mergeHdr
@@ -216,20 +237,9 @@ def xwDfToRange(
     box_right = data_left - 1
     xlrng = {}
 
-    #090. Export the data to the entire range
+    #090. Resize the range to ensure the slicing is successful
     if not asformatter:
-        #001. Resize the range to ensure the slicing is successful
         rng = rng.resize(len(df) + row_adj, len(df.columns) + col_adj)
-
-        #100. Create a copy of the data frame to avoid modification on the original object
-        df_copy = df.copy(deep = True)
-
-        #300. Remove the names of [df.index] during the export
-        if not (index & header & index_name):
-            df_copy.index.names = [ None for i in range(len(df_copy.index.names)) ]
-
-        #900. Write the data
-        rng.value = df_copy
 
     #100. Helper functions
     #110. Function to identify the adjacent rows/columns to merge in terms of [attr]
@@ -363,7 +373,7 @@ def xwDfToRange(
         xlrng['box'] = []
 
     #450. Range for the data part
-    if len(df) & len(df.columns):
+    if (len(df) > 0) & (len(df.columns) > 0):
         xlrng['data'] = [
             (
                 slice(data_top, table_bottom + 1, None)
@@ -386,7 +396,7 @@ def xwDfToRange(
         xlrng['header'] = []
         xlrng['header.False'] = [
             (
-                slice(table_top, box_bottom + 1, None)
+                slice(table_top, table_bottom + 1, None)
                 ,slice(table_left, table_right + 1, None)
             )
         ]
@@ -405,20 +415,23 @@ def xwDfToRange(
         xlrng['index.False'] = [
             (
                 slice(table_top, table_bottom + 1, None)
-                ,slice(table_left, box_right + 1, None)
+                ,slice(table_left, table_right + 1, None)
             )
         ]
 
     #480. Stripes
     #481. Identify the levels to create stripes within [df.index] range
-    lvl_stripe = [ i for i in range(df.index.nlevels) if i not in idx_to_merge ]
-    xlstripe_idx = [
-        (
-            slice(data_top, table_bottom + 1, None)
-            ,slice(table_left + i, table_left + i + 1, None)
-        )
-        for i in lvl_stripe
-    ]
+    if index:
+        lvl_stripe = [ i for i in range(df.index.nlevels) if i not in idx_to_merge ]
+        xlstripe_idx = [
+            (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(table_left + i, table_left + i + 1, None)
+            )
+            for i in lvl_stripe
+        ]
+    else:
+        xlstripe_idx = []
 
     #489. Combine the list of ranges to create the stripes
     if stripe:
@@ -601,6 +614,18 @@ def xwDfToRange(
     #800. Merge the ranges as requested
     for r in xlmerge_idx + xlmerge_hdr:
         rng.__getitem__(r).merge()
+
+    #999. Export the data to the entire range
+    if not asformatter:
+        #100. Create a copy of the data frame to avoid modification on the original object
+        df_copy = df.copy(deep = True)
+
+        #300. Remove the names of [df.index] during the export
+        if not (index & header & index_name):
+            df_copy.index.names = [ None for i in range(len(df_copy.index.names)) ]
+
+        #900. Write the data
+        rng.value = df_copy
 #End xwDfToRange
 
 '''
@@ -745,6 +770,7 @@ if __name__=='__main__':
             ,asformatter = False
             ,**args_xw
         )
+        xlsh.autofit()
 
         #600. Export the data as the formatter
         #20221029 It is tested that the formatter has no effect where [xlwings <= 0.27.15]
@@ -758,7 +784,20 @@ if __name__=='__main__':
             xlrng2
             ,udf
             ,theme = 'SAS'
+            ,fmtCol = [
+                #Set below columns as text
+                {
+                    'slicer' : 3
+                    ,'attrs' : {
+                        'NumberFormat' : {
+                            'attr' : 'api.NumberFormat'
+                            ,'val' : '@'
+                        }
+                    }
+                }
+            ]
         )
+        xlsh2.autofit()
 
         #999. Purge
         xlwb.save(xlfile)

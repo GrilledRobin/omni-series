@@ -226,7 +226,7 @@ def theme_xwtable(
         'background_color' : {
             'attr' : 'color'
             #rgba2rgb('#FFE8CB', alpha_in = 0.1, color_bg = '#202122')
-            ,'val' : xw.utils.hex_to_rgb('#363432')
+            ,'val' : xw.utils.rgb_to_int(xw.utils.hex_to_rgb('#363432'))
         }
     }
 

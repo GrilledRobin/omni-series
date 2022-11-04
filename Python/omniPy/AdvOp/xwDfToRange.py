@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import re
 import pandas as pd
 import numpy as np
 #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
@@ -159,6 +160,12 @@ def xwDfToRange(
 #   | Log  |[1] Fixed bugs when sub ranges are not applicable                                                                           #
 #   |      |[2] Now push data at the final step, so that all formats can be applied correctly                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221104        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now use EXCEL official API to set the zebra stripes as conditional formatting, ignoring hidden rows as special effect   #
+#   |      |[2] Convert the number-like character columns into [text] format to align the input                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -168,7 +175,7 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, numpy, xlwings, itertools, collections, typing                                                                    #
+#   |   |sys, re, pandas, numpy, xlwings, itertools, collections, typing                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -276,6 +283,43 @@ def xwDfToRange(
         rstOut = [ i for i in rst if i in range(len(idx)) ]
 
         return(rstOut)
+
+    #170. Function to create zebra stripes in terms of EXCEL official API as conditional formatting
+    #Quote: https://blog.csdn.net/pingfanren022/article/details/120383187
+    def h_stripe(rngslice, attr):
+        #100. Setup the formula
+        #Quote: https://www.myonlinetraininghub.com/excel-conditional-formatting-zebra-stripes
+        subrng = rng.__getitem__(rngslice)[0,0]
+        uf_stripe = '=MOD(SUBTOTAL(103,{0}:{1}),2)'.format(subrng.address, re.sub(r'\$(\d+)$', r'\1', subrng.address))
+
+        #300. Set conditional formatting to the sliced range
+        rng.__getitem__(rngslice).api.FormatConditions.Add(
+            xw.constants.FormatConditionType.xlExpression
+            ,xw.constants.FormatConditionOperator.xlEqual
+            ,uf_stripe
+        )
+
+        #400. Make the newly added condition as the top priority
+        #[ASSUMPTION]
+        #[1] After this step we can use [1] to reference the above rule
+        rng.__getitem__(rngslice).api.FormatConditions(rng.__getitem__(rngslice).api.FormatConditions.Count).SetFirstPriority()
+
+        #500. Remove tint and shade
+        rng.__getitem__(rngslice).api.FormatConditions(1).Font.TintAndShade = 0
+
+        #600. Set the color index to the default pattern
+        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.PatternColorIndex = xw.constants.Constants.xlAutomatic
+
+        #700. Set the stripe color
+        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.Color = attr.get('val')
+
+    #180. Function to test if an object can be coerced to float
+    def testFloat(x):
+        try:
+            _ = float(str(x))
+            return(True)
+        except:
+            return(False)
 
     #200. Identify the areas to be merged
     #210. Merged indexes
@@ -439,6 +483,32 @@ def xwDfToRange(
     else:
         xlrng['stripe'] = []
 
+    #500. Find ranges with numbers stored as [text] and set their NumberFormat as [text] with intention
+    if len(xlrng['data']) > 0:
+        #100. Identify all columns with numbers stored as [text]
+        #[ASSUMPTION]
+        #[1] Identify the columns by either [dtype==object] or [dtype==string]
+        #[2] Identify any cell that stores pure digits among above columns
+        #[3] Identify columns with all values are NULL (but not pd.NaT, as it indicates a datetime column) among above ones
+        #[4] Set [2] or [3] as what we need
+        cols_obj = df.columns[df.dtypes.apply(lambda x: pd.api.types.is_object_dtype(x) or pd.api.types.is_string_dtype(x))]
+        cols_numlike = df[cols_obj].applymap(testFloat).apply(pd.Series.any)
+        cols_allnull = df[cols_obj].applymap(lambda x: pd.isnull(x) and (x is not pd.NaT)).apply(pd.Series.all)
+        cols_totext = cols_obj[cols_numlike | cols_allnull]
+        colnum_totext = h_getindexer(df.columns, cols_totext, 'txtCol')
+
+        #500. Set the NumberFormat for each column identified above
+        for i in colnum_totext:
+            txt_rng = (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(data_left + i, data_left + i + 1, None)
+            )
+            rsetattr(
+                rng.__getitem__(txt_rng)
+                ,attr = 'api.NumberFormat'
+                ,val = '@'
+            )
+
     #600. Setup styles for the predefined ranges
     #610. Retrieve the theme as requested
     table_theme = theme_xwtable(theme)
@@ -460,10 +530,7 @@ def xwDfToRange(
                 #Quote: https://gaopinghuang0.github.io/2018/11/17/python-slicing
                 # print(debugname)
                 if k in ['stripe']:
-                    #Quote: https://docs.xlwings.org/en/latest/converters.html
-                    for ix, row in enumerate(rng.__getitem__(r).rows):
-                        if ix % 2 == 0:
-                            rsetattr(row, **attr)
+                    h_stripe(r, attr)
                 else:
                     rsetattr(rng.__getitem__(r), **attr)
 
@@ -659,6 +726,7 @@ if __name__=='__main__':
         }
     )
     upvt = pd.pivot_table(udf, values='D', index=['A', 'B'],columns=['C','D'], aggfunc=np.sum, fill_value = 0)
+    udf2 = udf.copy(deep=True).assign(**{ 'F' : lambda x: pd.Series(np.random.randn(len(x)), dtype = 'string') })
 
     #200. Set the universal parameters
     args_xw = {
@@ -782,7 +850,7 @@ if __name__=='__main__':
         xlrng2 = xlsh2.range('B2').expand().options(pd.DataFrame, index = True, header = True)
         xwDfToRange(
             xlrng2
-            ,udf
+            ,udf2
             ,theme = 'SAS'
             ,fmtCol = [
                 #Set below columns as text

@@ -4,7 +4,6 @@
 import sys
 import re
 import pandas as pd
-import numpy as np
 #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
@@ -14,7 +13,7 @@ import itertools as itt
 from collections.abc import Iterable
 from collections import OrderedDict
 from typing import Union, List, Optional
-from omniPy.AdvOp import rsetattr
+from omniPy.AdvOp import rsetattr, pandasParseIndexer
 from omniPy.Styles import theme_xwtable
 
 def xwDfToRange(
@@ -33,6 +32,7 @@ def xwDfToRange(
     ,fmtCol : List[dict] = []
     ,fmtCell : List[dict] = []
     ,asformatter : bool = False
+    ,idxall : str = '.all.'
 ) -> 'Export the data frame to the specified xw.Range with certain theme':
     #000.   Info.
     '''
@@ -143,6 +143,9 @@ def xwDfToRange(
 #   |                 to set the parameters other than [rng] and [df] in order to use it in such case                                   #
 #   |                [False       ] <Default> Call this function to export [df] to the predefined [rng] directly                        #
 #   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
+#   |idxall      :   When matching the provision of [indexer], generate a full indexer for the provided pd.Index                        #
+#   |                [.all.       ] <Default> When [indexer=='.all.'], generate a full indexer                                          #
+#   |                [<str>       ]           Provide a unique value that is non-existing in [df.index] and [df.columns]                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -166,6 +169,11 @@ def xwDfToRange(
 #   | Log  |[1] Now use EXCEL official API to set the zebra stripes as conditional formatting, ignoring hidden rows as special effect   #
 #   |      |[2] Convert the number-like character columns into [text] format to align the input                                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221105        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce function [pandasParseIndexer] to parse the indexers                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -175,12 +183,13 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, pandas, numpy, xlwings, itertools, collections, typing                                                                #
+#   |   |sys, re, pandas, xlwings, itertools, collections, typing                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |rsetattr                                                                                                                   #
+#   |   |   |pandasParseIndexer                                                                                                         #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Styles                                                                                                                  #
 #   |   |   |theme_xwtable                                                                                                              #
@@ -195,37 +204,13 @@ def xwDfToRange(
     #012. Parameter buffer
     if isinstance(mergeIdx, bool):
         idx_to_merge = list(range(df.index.nlevels - 1)) if (index and mergeIdx) else []
-    elif isinstance(mergeIdx, int):
-        idx_to_merge = [mergeIdx]
-    elif isinstance(mergeIdx, slice):
-        bgn, stop, step = mergeIdx.indices(df.index.nlevels)
-        if step != 1:
-            raise ValueError('[' + LfuncName + '][mergeIdx]Slice steps not supported.')
-        idx_to_merge = list(range(bgn, stop, step))
-    elif isinstance(mergeIdx, Iterable):
-        if np.all(list(map(lambda x: isinstance(x, int), mergeIdx))):
-            idx_to_merge = mergeIdx
-        else:
-            idx_to_merge = pd.Index(df.index.names).get_indexer([mergeIdx] if isinstance(mergeIdx, str) else mergeIdx)
     else:
-        raise TypeError('[' + LfuncName + '][mergeIdx]:[{0}] cannot be processed!'.format( type(mergeIdx) ))
+        idx_to_merge = pandasParseIndexer(pd.Index(df.index.names), mergeIdx, idxall = idxall, logname = 'mergeIdx')
 
     if isinstance(mergeHdr, bool):
         hdr_to_merge = list(range(df.columns.nlevels - 1)) if (header and mergeHdr) else []
-    elif isinstance(mergeHdr, int):
-        hdr_to_merge = [mergeHdr]
-    elif isinstance(mergeHdr, slice):
-        bgn, stop, step = mergeHdr.indices(df.columns.nlevels)
-        if step != 1:
-            raise ValueError('[' + LfuncName + '][mergeHdr]Slice steps not supported.')
-        hdr_to_merge = list(range(bgn, stop, step))
-    elif isinstance(mergeHdr, Iterable):
-        if np.all(list(map(lambda x: isinstance(x, int), mergeHdr))):
-            hdr_to_merge = mergeHdr
-        else:
-            hdr_to_merge = pd.Index(df.columns.names).get_indexer([mergeHdr] if isinstance(mergeHdr, str) else mergeHdr)
     else:
-        raise TypeError('[' + LfuncName + '][mergeHdr]:[{0}] cannot be processed!'.format( type(mergeHdr) ))
+        hdr_to_merge = pandasParseIndexer(pd.Index(df.columns.names), mergeHdr, idxall = idxall, logname = 'mergeHdr')
 
     #050. Local parameters
     seq_ranges = [
@@ -256,33 +241,6 @@ def xwDfToRange(
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
         pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
-
-    #150. Function to standardize the indexers
-    def h_getindexer(idx, args, logname):
-        if isinstance(args, str):
-            if args == '.all.':
-                rst = list(range(len(idx)))
-            else:
-                rst = idx.get_indexer([args])
-        elif isinstance(args, int):
-            rst = [args]
-        elif isinstance(args, slice):
-            bgn, stop, step = args.indices(len(idx))
-            if step != 1:
-                raise ValueError('[' + LfuncName + f'][{logname}]Slice steps not supported.')
-            rst = list(range(bgn, stop, step))
-        elif isinstance(args, Iterable):
-            if np.all(list(map(lambda x: isinstance(x, int), args))):
-                rst = args
-            else:
-                rst = idx.get_indexer(args)
-        else:
-            raise TypeError('[' + LfuncName + f'][{logname}]:[{str(k)}] cannot be used to slice [{type(idx)}]!' )
-
-        rst = [ (i + len(idx)) if i < 0 else i for i in rst ]
-        rstOut = [ i for i in rst if i in range(len(idx)) ]
-
-        return(rstOut)
 
     #170. Function to create zebra stripes in terms of EXCEL official API as conditional formatting
     #Quote: https://blog.csdn.net/pingfanren022/article/details/120383187
@@ -495,7 +453,7 @@ def xwDfToRange(
         cols_numlike = df[cols_obj].applymap(testFloat).apply(pd.Series.any)
         cols_allnull = df[cols_obj].applymap(lambda x: pd.isnull(x) and (x is not pd.NaT)).apply(pd.Series.all)
         cols_totext = cols_obj[cols_numlike | cols_allnull]
-        colnum_totext = h_getindexer(df.columns, cols_totext, 'txtCol')
+        colnum_totext = pandasParseIndexer(df.columns, cols_totext, idxall = idxall, logname = 'txtCol')
 
         #500. Set the NumberFormat for each column identified above
         for i in colnum_totext:
@@ -544,11 +502,11 @@ def xwDfToRange(
         k,v,lvl = m.get('slicer'), m.get('attrs'), m.get('levels', None)
 
         #100. Translate the indexer
-        idx_to_fmt = h_getindexer(df.index, k, 'fmtIdx')
+        idx_to_fmt = pandasParseIndexer(df.index, k, logname = 'fmtIdx')
 
         #300. Translate the indexer of levels if any
         if lvl is not None:
-            lvl_to_fmt = h_getindexer(pd.Index(df.index.names), lvl, 'fmtIdx.levels')
+            lvl_to_fmt = pandasParseIndexer(pd.Index(df.index.names), lvl, idxall = idxall, logname = 'fmtIdx.levels')
             idx_to_fmt = list(itt.product(idx_to_fmt, lvl_to_fmt))
 
         #500. Set the styles row by row (since the slicer may not be continuous)
@@ -578,7 +536,7 @@ def xwDfToRange(
         k,v = m.get('slicer'), m.get('attrs')
 
         #100. Translate the indexer
-        row_to_fmt = h_getindexer(df.index, k, 'fmtRow')
+        row_to_fmt = pandasParseIndexer(df.index, k, idxall = idxall, logname = 'fmtRow')
 
         #500. Set the styles row by row (since the slicer may not be continuous)
         for f_row in row_to_fmt:
@@ -601,11 +559,11 @@ def xwDfToRange(
         k,v = m.get('slicer'), m.get('attrs')
 
         #100. Translate the indexer
-        hdr_to_fmt = h_getindexer(df.columns, k, 'fmtHdr')
+        hdr_to_fmt = pandasParseIndexer(df.columns, k, logname = 'fmtHdr')
 
         #300. Translate the indexer of levels if any
         if lvl is not None:
-            lvl_to_fmt = h_getindexer(pd.Index(df.columns.names), lvl, 'fmtHdr.levels')
+            lvl_to_fmt = pandasParseIndexer(pd.Index(df.columns.names), lvl, idxall = idxall, logname = 'fmtHdr.levels')
             hdr_to_fmt = list(itt.product(lvl_to_fmt, hdr_to_fmt))
 
         #500. Set the styles column by column (since the slicer may not be continuous)
@@ -635,7 +593,7 @@ def xwDfToRange(
         k,v = m.get('slicer'), m.get('attrs')
 
         #100. Translate the indexer
-        col_to_fmt = h_getindexer(df.columns, k, 'fmtCol')
+        col_to_fmt = pandasParseIndexer(df.columns, k, idxall = idxall, logname = 'fmtCol')
 
         #500. Set the styles column by column (since the slicer may not be continuous)
         for f_col in col_to_fmt:
@@ -664,7 +622,10 @@ def xwDfToRange(
             raise TypeError('[' + LfuncName + f'][fmtCell]:[{str(k)}] must be 2-tuple!')
 
         #100. Translate the indexer
-        cell_to_fmt = list(itt.product(h_getindexer(df.index, k[0], 'fmtCell'), h_getindexer(df.columns, k[-1], 'fmtCell')))
+        cell_to_fmt = list(itt.product(
+            pandasParseIndexer(df.index, k[0], idxall = idxall, logname = 'fmtCell.row')
+            ,pandasParseIndexer(df.columns, k[-1], idxall = idxall, logname = 'fmtCell.col')
+        ))
 
         #500. Set the styles row by row (since the slicer may not be continuous)
         for f_row, f_col in cell_to_fmt:
@@ -733,7 +694,7 @@ if __name__=='__main__':
         'index' : True
         ,'header' : True
         ,'mergeIdx' : True
-        ,'mergeHdr' : True
+        ,'mergeHdr' : 'C'
         ,'stripe' : True
         ,'theme' : 'BlackGold'
         #Set font color as red for the first row of index

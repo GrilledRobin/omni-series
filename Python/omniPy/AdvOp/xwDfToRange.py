@@ -4,7 +4,7 @@
 import sys
 import re
 import pandas as pd
-#We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings <= 0.27.15] and [Python <= 3.8]
+#We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings < 0.27.15] and [Python <= 3.7]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
 import pywintypes
@@ -174,6 +174,11 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce function [pandasParseIndexer] to parse the indexers                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221107        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when merging indexes with special values, such as [True]                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -237,7 +242,14 @@ def xwDfToRange(
     #110. Function to identify the adjacent rows/columns to merge in terms of [attr]
     def h_idx_merge_grp(i, attr):
         idx_reset = getattr(df, attr).get_level_values(i).to_series().reset_index(drop = True)
-        idx_tail = idx_reset.ne(idx_reset.shift(1, fill_value = True)).cumsum().value_counts().sort_index().cumsum()
+        idx_tail = (
+            idx_reset
+            .ne(idx_reset.shift(1, fill_value = '-' + str(idx_reset.iat[0])))
+            .cumsum()
+            .value_counts()
+            .sort_index()
+            .cumsum()
+        )
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
         pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
@@ -263,7 +275,7 @@ def xwDfToRange(
         rng.__getitem__(rngslice).api.FormatConditions(rng.__getitem__(rngslice).api.FormatConditions.Count).SetFirstPriority()
 
         #500. Remove tint and shade
-        rng.__getitem__(rngslice).api.FormatConditions(1).Font.TintAndShade = 0
+        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.TintAndShade = 0
 
         #600. Set the color index to the default pattern
         rng.__getitem__(rngslice).api.FormatConditions(1).Interior.PatternColorIndex = xw.constants.Constants.xlAutomatic

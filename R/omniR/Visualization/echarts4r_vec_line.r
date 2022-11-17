@@ -62,8 +62,9 @@
 #   |                 [FALSE       ]           Use the theme color                                                                      #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
-#   |                 [14p       ] <Default> Common font size                                                                           #
+#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
+#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
+#   |                 [14          ] <Default> Common font size                                                                         #
 #   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_min], [vec_max] and [vec_sym] for  #
 #   |                 this function) of each chart respectively                                                                         #
 #   |                 [IMPORTANT] If [formatter] is provided in [tooltip], this option will no longer take effect                       #
@@ -117,6 +118,13 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
 #   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -196,7 +204,8 @@ echarts4r_vec_line <- function(
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
 	}
-	fontSize <- htmltools::validateCssUnit(fontSize)
+	fontSize_css <- htmltools::validateCssUnit(fontSize)
+	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
 	#012. Handle the parameter buffer
 	if ((length(vec_value) == 0) | (length(xAxis) == 0)) return(character(0))
@@ -259,7 +268,7 @@ echarts4r_vec_line <- function(
 	tooltip <- list(
 		textStyle = list(
 			fontFamily = fontFamily
-			,fontSize = fontSize
+			,fontSize = fontSize_ech
 			,color = tt_theme[['color']][['tooltip']]
 		)
 		,backgroundColor = tt_theme[['background-color']][['tooltip-inverse']]
@@ -285,7 +294,7 @@ echarts4r_vec_line <- function(
 			,'cursor: pointer;'
 			,'border-radius: 2px;'
 			,'font-family: ',fontFamily_css,';'
-			,'font-size: ',fontSize,';'
+			,'font-size: ',fontSize_css,';'
 			,'background' %>% h_attr('btn-inact')
 			,'border' %>% h_attr('btn-inact')
 			,'color' %>% h_attr('btn-inact')
@@ -380,7 +389,7 @@ echarts4r_vec_line <- function(
 				))
 				,label = list(
 					fontFamily = fontFamily
-					,fontSize = fontSize
+					,fontSize = fontSize_ech
 					,color = coltheme[['color']][['chart-markpoint']]
 					,backgroundColor = rgba2rgb(col_line, alpha_in = 0.7)
 					,borderColor = col_line
@@ -422,7 +431,7 @@ echarts4r_vec_line <- function(
 			,type = 'time'
 			,axisLabel = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,formatter = '{yyyy}-{MM}-{dd}'
 				,hideOverlap = TRUE
 			)
@@ -446,7 +455,7 @@ echarts4r_vec_line <- function(
 				,triggerTooltip = FALSE
 				,label = list(
 					fontFamily = fontFamily
-					,fontSize = fontSize
+					,fontSize = fontSize_ech
 					,formatter = htmlwidgets::JS(paste0(''
 						,'function(params){'
 							,'return('
@@ -481,7 +490,7 @@ echarts4r_vec_line <- function(
 			)
 			,axisLabel = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,formatter = htmlwidgets::JS(paste0(''
 					,'function(value, index){'
 						,'return('
@@ -510,7 +519,7 @@ echarts4r_vec_line <- function(
 				,triggerTooltip = FALSE
 				,label = list(
 					fontFamily = fontFamily
-					,fontSize = fontSize
+					,fontSize = fontSize_ech
 					,formatter = htmlwidgets::JS(paste0(''
 						,'function(params){'
 							,'return('
@@ -544,7 +553,7 @@ echarts4r_vec_line <- function(
 			show = FALSE
 			,textStyle = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,color = coltheme[['color']][['header']]
 			)
 		) %>%
@@ -619,7 +628,7 @@ echarts4r_vec_line <- function(
 				))
 				,textStyle = list(
 					fontFamily = fontFamily
-					,fontSize = fontSize
+					,fontSize = fontSize_ech
 					,color = col_line
 				)
 				,brushStyle = list(
@@ -684,7 +693,7 @@ echarts4r_vec_line <- function(
 				,'width:',width,'px;'
 				,'height:',height,'px;'
 			,'\'>'
-				,'<div style=\'display:inherit;font-size:',fontSize,';width:',width,'px;height:',height,'px;\'>'
+				,'<div style=\'display:inherit;font-size:',fontSize_css,';width:',width,'px;height:',height,'px;\'>'
 					,html_tag
 				,'</div>'
 				,'<div style=\''

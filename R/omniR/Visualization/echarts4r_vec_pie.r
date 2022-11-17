@@ -66,7 +66,8 @@
 #   |                 [FALSE       ]           Use the theme color                                                                      #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
+#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
+#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
 #   |                 [14          ] <Default> Common font size                                                                         #
 #   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
 #   |                 chart respectively                                                                                                #
@@ -113,6 +114,13 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
 #   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -192,7 +200,8 @@ echarts4r_vec_pie <- function(
 		stop('[',LfuncName,'][width] is too small!')
 	}
 	sortBy <- match.arg(sortBy, c('input','category','value'))
-	fontSize <- htmltools::validateCssUnit(fontSize)
+	fontSize_css <- htmltools::validateCssUnit(fontSize)
+	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
 	#012. Handle the parameter buffer
 	if (length(vec_value) != length(vec_cat)) {
@@ -219,7 +228,7 @@ echarts4r_vec_pie <- function(
 	tooltip <- list(
 		textStyle = list(
 			fontFamily = fontFamily
-			,fontSize = fontSize
+			,fontSize = fontSize_ech
 			,color = tt_theme[['color']][['tooltip']]
 		)
 		,backgroundColor = tt_theme[['background-color']][['tooltip-inverse']]
@@ -369,7 +378,7 @@ echarts4r_vec_pie <- function(
 			,orient = 'vertical'
 			,textStyle = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,color = coltheme[['color']][['header']]
 			)
 		) %>%

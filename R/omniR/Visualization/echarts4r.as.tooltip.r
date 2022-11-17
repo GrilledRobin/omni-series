@@ -80,6 +80,12 @@
 #   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
 #   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Change all automatically generated double quotes into single quotes inside the HTML tags, to minimize the debug effort  #
+#   |      |[2] Remove all escape characters preceding slashes as they are redundant                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -185,7 +191,9 @@ echarts4r.as.tooltip <- function(
 		)[[1]]
 
 		#339. Only need the <div> tag that is just followed by above <script> tag
-		usr_div <- stringr::str_extract_all(v_chr, paste0(div_all, '(?=\\s*', re.escape(v_script), ')'))
+		usr_div <- stringr::str_extract_all(v_chr, paste0(div_all, '(?=\\s*', re.escape(v_script), ')')) %>%
+			{gsub('"','\'', .)} %>%
+			{gsub('\\\\\'','\'', .)}
 
 		#350. Identify the JSON data, which we will transform to create HTML tags at later steps
 		json_pre <- strBalancedGroup(
@@ -209,7 +217,8 @@ echarts4r.as.tooltip <- function(
 			jsonlite::toJSON(auto_unbox = T) %>%
 			{gsub(paste0('"(', paste0(name_opts, collapse = '|') , ')":'), '\\1:', ., perl = T)} %>%
 			{gsub('"','\'', .)} %>%
-			{gsub('\\\\\'','\'', .)}
+			{gsub('\\\\\'','\'', .)} %>%
+			{gsub('\\\\+/','/', .)}
 
 		#700. Convert the [formatter] part, when a function is introduced rather than a character string
 		# func_opts <- gsub(paste0('\'(function\\s*\\(.*?\\)\\s*{.+?/\\*EndFunc\\*/})\''), '\\1', char_opts, perl = T)

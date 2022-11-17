@@ -27,8 +27,9 @@
 #   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
-#   |                 [14        ] <Default> Common font size                                                                           #
+#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
+#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
+#   |                 [14          ] <Default> Common font size                                                                         #
 #   |fontColor   :   Character vector of the CSS colors of the labels in each chart respectively                                        #
 #   |                 [NULL        ] <Default> Use the default font color from the default theme                                        #
 #   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
@@ -83,6 +84,13 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
 #   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -140,8 +148,9 @@ echarts4r_vec_text <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	fontHeight <- fontSize
-	fontSize <- htmltools::validateCssUnit(fontSize)
+	fontSize_css <- htmltools::validateCssUnit(fontSize)
+	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
+	fontHeight <- fontSize_ech
 
 	#012. Handle the parameter buffer
 	if (length(vec_value) == 0) return(character(0))
@@ -160,7 +169,7 @@ echarts4r_vec_text <- function(
 		,appendToBody = TRUE
 		,textStyle = list(
 			fontFamily = fontFamily
-			,fontSize = fontSize
+			,fontSize = fontSize_ech
 			,color = coltheme[['color']][['tooltip']]
 		)
 		,backgroundColor = coltheme[['background-color']][['tooltip']]
@@ -312,7 +321,7 @@ echarts4r_vec_text <- function(
 						,rotate = 0
 						,color = col_font
 						,fontFamily = fontFamily
-						,fontSize = fontSize
+						,fontSize = fontSize_ech
 						# ,align = 'left'
 						# ,verticalAlign = 'top'
 						,borderWidth = 0
@@ -409,7 +418,7 @@ echarts4r_vec_text <- function(
 		paste0(''
 			#Quote: https://www.cnblogs.com/zhuzhenwei918/p/6058457.html
 			,'<div style=\'display:inline-block;margin:0;padding:0;font-size:0;width:',width,'px;height:',height,'px;\'>'
-				,'<div style=\'display:inherit;font-size:',fontSize,';width:',width,'px;height:',height,'px;\'>'
+				,'<div style=\'display:inherit;font-size:',fontSize_css,';width:',width,'px;height:',height,'px;\'>'
 					,html_tag
 				,'</div>'
 			,'</div>'

@@ -91,7 +91,8 @@
 #   |                 [FALSE       ]           Use the theme color                                                                      #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
+#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
+#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
 #   |                 [14          ] <Default> Common font size                                                                         #
 #   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
 #   |                 chart respectively                                                                                                #
@@ -142,6 +143,13 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Corrected the error to fail the drawing when the data point is zero or infinite or NaN, as the gradient color cannot be #
 #   |      |     calculated based on erroneous index                                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -248,7 +256,8 @@ echarts4r_vec_bar <- function(
 		stop('[',LfuncName,'][gradient] should be logical or one of: [',paste0(choice_gradient, collapse = ']['),']!')
 	}
 	disp_name <- head(disp_name,1)
-	fontSize <- htmltools::validateCssUnit(fontSize)
+	fontSize_css <- htmltools::validateCssUnit(fontSize)
+	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
 	#015. Function local variables
 	if (direction == 'column') {
@@ -267,7 +276,7 @@ echarts4r_vec_bar <- function(
 	tooltip <- list(
 		textStyle = list(
 			fontFamily = fontFamily
-			,fontSize = fontSize
+			,fontSize = fontSize_ech
 			,color = tt_theme[['color']][['tooltip']]
 		)
 		,backgroundColor = tt_theme[['background-color']][['tooltip-inverse']]
@@ -539,7 +548,7 @@ echarts4r_vec_bar <- function(
 				show = FALSE
 				# ,position = 'top'
 				,fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,borderWidth = 0
 				,color = coltheme[['color']][['header']]
 			)
@@ -566,7 +575,7 @@ echarts4r_vec_bar <- function(
 			,data = df_chart$.ech.cat
 			,axisLabel = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,hideOverlap = TRUE
 			)
 			,axisLine = list(
@@ -606,7 +615,7 @@ echarts4r_vec_bar <- function(
 			)
 			,axisLabel = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,formatter = htmlwidgets::JS(paste0(''
 					,'function(value, index){'
 						,'return('
@@ -651,7 +660,7 @@ echarts4r_vec_bar <- function(
 			show = FALSE
 			,textStyle = list(
 				fontFamily = fontFamily
-				,fontSize = fontSize
+				,fontSize = fontSize_ech
 				,color = coltheme[['color']][['header']]
 			)
 		) %>%

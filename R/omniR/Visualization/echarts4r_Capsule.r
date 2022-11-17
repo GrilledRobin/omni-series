@@ -49,8 +49,9 @@
 #   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
 #   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
-#   |                 [14        ] <Default> Common font size                                                                           #
+#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
+#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
+#   |                 [14          ] <Default> Common font size                                                                         #
 #   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_min], [vec_max] and [vec_sym] for  #
 #   |                 this function) of each chart respectively                                                                         #
 #   |                 [IMPORTANT] If [formatter] is provided in [tooltip], this option will no longer take effect                       #
@@ -131,6 +132,13 @@
 #   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
 #   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   |      |     retain the compatibility.                                                                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -200,7 +208,8 @@ echarts4r_Capsule <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	fontSize <- htmltools::validateCssUnit(fontSize)
+	fontSize_css <- htmltools::validateCssUnit(fontSize)
+	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
 	#012. Handle the parameter buffer
 	if ((length(vec_min) == 0) | (length(vec_max) == 0) | (length(vec_sym) == 0)) return(character(0))
@@ -227,7 +236,7 @@ echarts4r_Capsule <- function(
 		,appendToBody = TRUE
 		,textStyle = list(
 			fontFamily = fontFamily
-			,fontSize = fontSize
+			,fontSize = fontSize_ech
 			,color = coltheme[['color']][['tooltip']]
 		)
 		,backgroundColor = coltheme[['background-color']][['tooltip']]

@@ -9,7 +9,18 @@ params:
   dt: NULL
 ---
 \textbf{ Quote: https://bookdown.org/yihui/rmarkdown-cookbook/html-css.html }
+```{r references, include=FALSE}
+#Hide everything within a block of codes
+#Quote: https://bookdown.org/yihui/rmarkdown-cookbook/hide-all.html
+#How to override the page width of Rmarkdown output
+#Quote: https://stackoverflow.com/questions/38367392/override-rmarkdown-theme-in-order-to-change-html-page-width/38373846#38373846
+```
+
 ```{css, echo=FALSE}
+.main-container {
+  width: 100%;
+  max-width: unset;
+}
 body {
   background-color: #202122;
   color: #FFE8CB;

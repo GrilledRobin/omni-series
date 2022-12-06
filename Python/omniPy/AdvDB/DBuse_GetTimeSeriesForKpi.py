@@ -607,7 +607,7 @@ def DBuse_GetTimeSeriesForKpi(
         if len(InfDat_miss):
             #001. Print messages
             print('['+LfuncName+']'+'Below files of Information Table are requested but do not exist in the parsed path(s).')
-            print(InfDat_miss['datPtn', 'datPtn.Parsed'])
+            print(InfDat_miss[['datPtn', 'datPtn.Parsed']])
 
             #500. Output a global data frame storing the information of the missing files
             # sys._getframe(1).f_globals.update({ miss_files : InfDat_miss })

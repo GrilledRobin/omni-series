@@ -169,7 +169,7 @@ echarts4r_vec_funnel <- function(
 	,vec_basecol = NULL
 	,name_base = 'Expected'
 	,gradient = TRUE
-	,sortBy = c('input','category','value')
+	,sortBy = c('input','category','value','base')
 	,sort = c('descending','ascending')
 	,html_id = NULL
 	,height = 440
@@ -205,8 +205,8 @@ echarts4r_vec_funnel <- function(
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
 	}
-	sortBy <- match.arg(sortBy, c('input','category','value','base'))
-	sort <- match.arg(sort, c('descending','ascending'))
+	sortBy <- match.arg(sortBy)
+	sort <- match.arg(sort)
 	fontSize_css <- htmltools::validateCssUnit(fontSize)
 	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
@@ -779,6 +779,7 @@ if (FALSE){
 				,ech_funnel2 = echarts4r_vec_funnel(
 					stage
 					,vec_value = actual
+					,vec_valuecol = c('#dd6b66','#759aa0','#e69d87','#8dc1a9','#ea7e53')
 					,vec_base = expected
 					,sortBy = 'input'
 					,sort = 'descending'

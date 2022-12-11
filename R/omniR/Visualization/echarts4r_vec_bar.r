@@ -151,6 +151,11 @@
 #   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221211        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Leverage the default behavior of [match.arg] to simplify the function definition                                        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -233,8 +238,8 @@ echarts4r_vec_bar <- function(
 	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
 	if (length(y_min) == 0) y_min <- NULL
 	if (length(y_max) == 0) y_max <- NULL
-	sortBy <- match.arg(sortBy, c('input','category','value'))
-	direction <- match.arg(direction, c('column','bar'))
+	sortBy <- match.arg(sortBy)
+	direction <- match.arg(direction)
 	barWidth <- head(barWidth,1)
 	if (!(length(barColPos) %in% c(0,1,length(vec_cat)))) {
 		stop('[',LfuncName,'][barColPos] has length [',length(barColPos),'], which is different to the input data!')

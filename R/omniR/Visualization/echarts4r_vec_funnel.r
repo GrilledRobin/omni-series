@@ -121,6 +121,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -199,11 +205,39 @@ echarts4r_vec_funnel <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+	if ((length(vec_cat) == 0) | (length(vec_value) == 0)) return(character(0))
+	name_value <- head(name_value,1)
+	name_base <- head(name_base,1)
+	gradient <- head(gradient,1)
+	if (!is.logical(gradient)) {
+		stop('[',LfuncName,'][gradient] must be logical!')
+	}
+	sortBy <- head(sortBy,1)
+	sort <- head(sort,1)
+	height <- head(height,1)
+	width <- head(width,1)
 	if (height <= 124) {
 		stop('[',LfuncName,'][height] is too small!')
 	}
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
+	}
+	orient <- head(orient,1)
+	label_show <- head(label_show,1)
+	label_pos <- head(label_pos,1)
+	title <- head(title,1)
+	titleSize <- head(titleSize,1)
+	theme <- head(theme,1)
+	transparent <- head(transparent,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	fmtLbl_value <- head(fmtLbl_value,1)
+	fmtLbl_base <- head(fmtLbl_base,1)
+	fmtEmp_value <- head(fmtEmp_value,1)
+	fmtEmp_base <- head(fmtEmp_base,1)
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
 	}
 	sortBy <- match.arg(sortBy)
 	sort <- match.arg(sort)
@@ -214,7 +248,6 @@ echarts4r_vec_funnel <- function(
 	if (length(vec_value) != length(vec_cat)) {
 		stop('[',LfuncName,'][vec_value] has different length [',length(vec_value),'] to [vec_cat] as [',length(vec_cat),']!')
 	}
-	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
 	if (!is.null(vec_valuecol)) {
 		if (length(vec_valuecol) != length(vec_cat)) {
 			stop('[',LfuncName,'][vec_valuecol] has different length [',length(vec_valuecol),'] to [vec_cat] as [',length(vec_cat),']!')

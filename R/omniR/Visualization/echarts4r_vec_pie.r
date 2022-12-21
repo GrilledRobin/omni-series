@@ -127,6 +127,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Leverage the default behavior of [match.arg] to simplify the function definition                                        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -198,11 +204,32 @@ echarts4r_vec_pie <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
+	sortBy <- head(sortBy,1)
+	height <- head(height,1)
+	width <- head(width,1)
 	if (height <= 124) {
 		stop('[',LfuncName,'][height] is too small!')
 	}
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
+	}
+	roseType <- head(roseType,1)
+	avoidLabelOverlap <- head(avoidLabelOverlap,1)
+	label_show <- head(label_show,1)
+	label_pos <- head(label_pos,1)
+	rad_inner <- head(rad_inner,1)
+	rad_outer <- head(rad_outer,1)
+	title <- head(title,1)
+	titleSize <- head(titleSize,1)
+	theme <- head(theme,1)
+	transparent <- head(transparent,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	fmtLabel <- head(fmtLabel,1)
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
 	}
 	sortBy <- match.arg(sortBy)
 	fontSize_css <- htmltools::validateCssUnit(fontSize)
@@ -212,7 +239,6 @@ echarts4r_vec_pie <- function(
 	if (length(vec_value) != length(vec_cat)) {
 		stop('[',LfuncName,'][vec_value] has different length [',length(vec_value),'] to [vec_cat] as [',length(vec_cat),']!')
 	}
-	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
 	if (!(length(sliceColor) %in% c(0,1,length(vec_cat)))) {
 		stop('[',LfuncName,'][sliceColor] has length [',length(sliceColor),'], which is different to the input data!')
 	}

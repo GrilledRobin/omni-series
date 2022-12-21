@@ -156,6 +156,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Leverage the default behavior of [match.arg] to simplify the function definition                                        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -236,8 +242,12 @@ echarts4r_vec_bar <- function(
 		stop('[',LfuncName,'][vec_value] has different length [',length(vec_value),'] to [vec_cat] as [',length(vec_cat),']!')
 	}
 	if ((length(vec_value) == 0) | (length(vec_cat) == 0)) return(character(0))
-	if (length(y_min) == 0) y_min <- NULL
-	if (length(y_max) == 0) y_max <- NULL
+	y_min <- head(y_min,1)
+	y_max <- head(y_max,1)
+	sortBy <- head(sortBy,1)
+	height <- head(height,1)
+	width <- head(width,1)
+	direction <- head(direction,1)
 	sortBy <- match.arg(sortBy)
 	direction <- match.arg(direction)
 	barWidth <- head(barWidth,1)
@@ -247,6 +257,8 @@ echarts4r_vec_bar <- function(
 	if (!(length(barColNeg) %in% c(0,1,length(vec_cat)))) {
 		stop('[',LfuncName,'][barColNeg] has length [',length(barColNeg),'], which is different to the input data!')
 	}
+	direction <- head(direction,1)
+	direction <- match.arg(direction)
 	choice_gradient <- c('none', 'all', 'respective')
 	gradient <- head(gradient,1)
 	if (is.character(gradient)) {
@@ -261,6 +273,21 @@ echarts4r_vec_bar <- function(
 		stop('[',LfuncName,'][gradient] should be logical or one of: [',paste0(choice_gradient, collapse = ']['),']!')
 	}
 	disp_name <- head(disp_name,1)
+	if (!is.function(func_add)) {
+		func_add <- head(func_add,1)[[1]]
+	}
+	stack <- head(stack,1)
+	title <- head(title,1)
+	titleSize <- head(titleSize,1)
+	theme <- head(theme,1)
+	transparent <- head(transparent,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	fmtTTbar <- head(fmtTTbar,1)
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
+	}
 	fontSize_css <- htmltools::validateCssUnit(fontSize)
 	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 

@@ -86,6 +86,11 @@
 #   | Log  |[1] Change all automatically generated double quotes into single quotes inside the HTML tags, to minimize the debug effort  #
 #   |      |[2] Remove all escape characters preceding slashes as they are redundant                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Ensure the JS simple function call like [new echarts.graphic.LinearGradient(...)] to be parsed correctly                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -215,7 +220,8 @@ echarts4r.as.tooltip <- function(
 		char_opts <- json_opts %>%
 			#Quote: https://stackoverflow.com/questions/56053108/tojson-without-outer-square-brackets
 			jsonlite::toJSON(auto_unbox = T) %>%
-			{gsub(paste0('"(', paste0(name_opts, collapse = '|') , ')":'), '\\1:', ., perl = T)} %>%
+			{gsub(paste0('"(\\w+)":'), '\\1:', ., perl = T)} %>%
+			# {gsub(paste0('"(', paste0(name_opts, collapse = '|') , ')":'), '\\1:', ., perl = T)} %>%
 			{gsub('"','\'', .)} %>%
 			{gsub('\\\\\'','\'', .)} %>%
 			{gsub('\\\\+/','/', .)}
@@ -246,6 +252,29 @@ echarts4r.as.tooltip <- function(
 		# func_opts <- gsub(rx_func_opts, '\\1', char_opts, perl = T)
 		func_opts <- stringr::str_replace_all(char_opts, rx_func_opts)
 
+		#800. Convert the [formatter] part, when a simple function call is introduced rather than a character string
+		#810. Extract all balanced groups of contents embraced by round parentheses [()]
+		paren_opts <- strBalancedGroup(
+			char_opts
+			,lBound = '('
+			,rBound = ')'
+			,rx = FALSE
+			,include = TRUE
+		)[[1]]
+
+		#850. Prepare the regular expression for conversion
+		#[ASSUMPTION]
+		#[1] JS simple function calls are defined in this way: [new echarts.graphic.LinearGradient(...)]
+		#[2] Parameters of Echarts JS functions can only contain: [\\w\\s,] characters
+		#[3] In [char_opts] all the function definitions are quoted by single quotation marks
+		rx_sfunc_opts <- rep_along(paren_opts, '\\1')
+		names(rx_sfunc_opts) <- paste0('\'(new\\s+\\w+(\\.\\w+)*\\s*', re.escape(paren_opts), ')\'')
+
+		#890. Remove the outer-most single quotation marks from the JS function definitions
+		#[ASSUMPTION]
+		#[1] When the data for Echarts is relatively large, the RegEx may exceed the acceptable size in characters
+		sfunc_opts <- stringr::str_replace_all(func_opts, rx_sfunc_opts)
+
 		#900. Create the JS function as well as the HTML tags
 		js_attr <- data.frame(
 			js_func = paste0(
@@ -253,7 +282,7 @@ echarts4r.as.tooltip <- function(
 					#[IMPORTANT] The chart object must be a global object for dispatching actions via external JS
 					#Quote: https://www.cnblogs.com/journey-mk5/p/9746201.html
 					,v_name,' = echarts.init(document.getElementById(\'',html_id,'\'));'
-					,'var opts = ',func_opts,';'
+					,'var opts = ',sfunc_opts,';'
 					,v_name,'.setOption(opts);'
 				,'}'
 			)

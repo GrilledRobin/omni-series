@@ -126,6 +126,12 @@
 #   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -201,6 +207,8 @@ echarts4r_vec_hist <- function(
 
 	#012. Handle the parameter buffer
 	if (length(vec_value) == 0) return(character(0))
+	height <- head(height,1)
+	width <- head(width,1)
 	barWidth <- head(barWidth,1)
 	barColor <- head(barColor,1)
 	choice_gradient <- c('none', 'all', 'respective')
@@ -221,6 +229,19 @@ echarts4r_vec_hist <- function(
 	density <- head(density,1)
 	if (!is.logical(density)) density <- FALSE
 	lineColor <- head(lineColor,1)
+	title <- head(title,1)
+	titleSize <- head(titleSize,1)
+	theme <- head(theme,1)
+	transparent <- head(transparent,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	jsFmtFreq <- head(jsFmtFreq,1)
+	jsFmtDens <- head(jsFmtDens,1)
+	fmtTTbar <- head(fmtTTbar,1)
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
+	}
 	fontSize_css <- htmltools::validateCssUnit(fontSize)
 	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 

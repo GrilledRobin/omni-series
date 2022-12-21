@@ -40,6 +40,9 @@
 #   |lineColor   :   Character as the CSS color of the line in current chart                                                            #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
 #   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
+#   |gradient    :   Whether to draw the line with gradient color effect                                                                #
+#   |                 [TRUE        ] <Default> Draw the line with gradient color effect                                                 #
+#   |                 [FALSE       ]           Draw the line with the provided color                                                    #
 #   |symSize     :   Integer as the size of the markers in current chart                                                                #
 #   |                 [4           ] <Default>                                                                                          #
 #   |symColor    :   Character as the CSS color of the markers in current chart                                                         #
@@ -126,6 +129,13 @@
 #   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |      |[2] Add new argument [gradient] to provide gradient effect of the line                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -135,7 +145,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr                                                                      #
+#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -150,7 +160,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr
+	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -171,6 +181,7 @@ echarts4r_vec_line <- function(
 	,height = 540
 	,width = 960
 	,lineColor = NULL
+	,gradient = TRUE
 	,symSize = 4
 	,symColor = NULL
 	,disp_min = 'Min'
@@ -195,20 +206,46 @@ echarts4r_vec_line <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+	if ((length(vec_value) == 0) | (length(xAxis) == 0)) return(character(0))
 	if (!all(class(xAxis) %in% c('Date'))) {
 		stop('[',LfuncName,'][xAxis] must be an object of class [Date]!')
 	}
+	y_min <- head(y_min,1)
+	y_max <- head(y_max,1)
+	height <- head(height,1)
+	width <- head(width,1)
 	if (height <= 124) {
 		stop('[',LfuncName,'][height] is too small!')
 	}
 	if (width <= 108) {
 		stop('[',LfuncName,'][width] is too small!')
 	}
+	lineColor <- head(lineColor,1)
+	gradient <- head(gradient,1)
+	if (!is.logical(gradient)) {
+		stop('[',LfuncName,'][gradient] must be logical!')
+	}
+	symSize <- head(symSize,1)
+	symColor <- head(symColor,1)
+	disp_min <- head(disp_min,1)
+	disp_max <- head(disp_max,1)
+	disp_sym <- head(disp_sym,1)
+	title <- head(title,1)
+	titleSize <- head(titleSize,1)
+	theme <- head(theme,1)
+	transparent <- head(transparent,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	fmtTTSym <- head(fmtTTSym,1)
+	xAxis.zoom <- head(xAxis.zoom,1)
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
+	}
 	fontSize_css <- htmltools::validateCssUnit(fontSize)
 	fontSize_ech <- fontSize_css %>% {gsub('^(((\\d+)?\\.)?\\d+).*$','\\1', .)} %>% as.numeric()
 
 	#012. Handle the parameter buffer
-	if ((length(vec_value) == 0) | (length(xAxis) == 0)) return(character(0))
 	if (length(y_min) == 0) y_min <- 'dataMin'
 	if (length(y_max) == 0) y_max <- 'dataMax'
 
@@ -252,19 +289,49 @@ echarts4r_vec_line <- function(
 	)
 	btn_width <- ifelse(xAxis.zoom, 48, 0)
 	zoom_height <- ifelse(xAxis.zoom, 32, 0)
+	k_grad <- 20
 
 	#100. Retrieve the color set for the requested theme
 	coltheme <- themeColors(theme, transparent = transparent)
 	tt_theme <- themeColors(theme, transparent = F)
 
-	#200. Setup styles
-	#201. Function to paste the attribute names with their respective values
+	#200. Helper functions
+	#210. Function to calculate the color ramp on vectorized basis
+	fn_colramp <- function(v_bgn,v_end,a_bgn,a_end,k = k_grad) {
+		v_alphas <- seq(a_bgn,a_end,length.out = k)
+		v_col <- rgba2rgb(v_bgn, alpha_in = v_alphas, color_bg = v_end)
+		js_stop <- round(scales::rescale(seq_len(k), from = c(1,k), to = c(a_bgn,a_end)), 2)
+		v_col_stop <- mapply(
+			function(o,c){list(offset = o, color = c)}
+			,js_stop,v_col
+			,SIMPLIFY = F
+		)
+		rstOut <- jsonlite::toJSON(v_col_stop, auto_unbox = T) %>%
+			{gsub(paste0('"(\\w+)":'), '\\1:', ., perl = T)} %>%
+			{gsub('"','\'',.)}
+		return(rstOut)
+	}
+
+	#230. Function to paste the attribute names with their respective values
 	h_attr <- function(attr, atype, important = FALSE, theme = tt_theme) {
 		imp <- ifelse(important, ' !important', '')
 		paste0(paste0(attr, ': ', theme[[attr]][[atype]], imp, ';'), collapse = '')
 	}
 
-	#210. Create the styles of [tooltip] for this specific chart
+	#300. Setup styles
+	#301. Override the colors when required
+	if (length(lineColor) == 0) {
+		col_line <- coltheme[['color']][['chart-line']]
+	} else {
+		col_line <- lineColor
+	}
+	if (length(symColor) == 0) {
+		col_sym <- coltheme[['color']][['chart-sym']]
+	} else {
+		col_sym <- symColor
+	}
+
+	#310. Create the styles of [tooltip] for this specific chart
 	tooltip <- list(
 		textStyle = list(
 			fontFamily = fontFamily
@@ -278,7 +345,7 @@ echarts4r_vec_line <- function(
 		)
 	)
 
-	#220. Define button styles
+	#320. Define button styles
 	fontFamily_css <- paste0(
 		sapply(fontFamily, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('\'',m,'\'') else m})
 		,collapse = ','
@@ -309,7 +376,25 @@ echarts4r_vec_line <- function(
 		,'}'
 	)
 
-	#250. Format the tooltip for current chart
+	#330. Line color
+	#Quote: https://blog.csdn.net/qq_27387133/article/details/104775683
+	if (!gradient) {
+		lineStyle_color <- col_line
+	} else {
+		col_ramp <- fn_colramp(
+			col_line
+			,coltheme[['background-color']][['default']]
+			,0.1
+			,1
+			,k_grad
+		)
+		#20221221 It is tested for [echarts <= 5.4.1], lineStyle.color only accepts Function Call, instead of Function Definition
+		lineStyle_color <- paste0(''
+			,'new echarts.graphic.LinearGradient(0,1,0,0,',col_ramp,')'
+		)
+	}
+
+	#350. Format the tooltip for current chart
 	if (length(fmtTTSym) > 0) {
 		tooltip_sym <- modifyList(tooltip, list(formatter = htmlwidgets::JS(fmtTTSym)))
 	} else {
@@ -326,18 +411,6 @@ echarts4r_vec_line <- function(
 				))
 			)
 		)
-	}
-
-	#300. Override the colors when required
-	if (length(lineColor) == 0) {
-		col_line <- coltheme[['color']][['chart-line']]
-	} else {
-		col_line <- lineColor
-	}
-	if (length(symColor) == 0) {
-		col_sym <- coltheme[['color']][['chart-sym']]
-	} else {
-		col_sym <- symColor
 	}
 
 	#500. Create the charting script
@@ -369,7 +442,7 @@ echarts4r_vec_line <- function(
 			)
 			,lineStyle = list(
 				#This color is different from that in [legend]
-				color = col_line
+				color = lineStyle_color
 				,width = 1
 			)
 			,markPoint = list(

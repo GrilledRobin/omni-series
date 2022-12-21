@@ -815,6 +815,7 @@ if __name__=='__main__':
 
         #600. Export the data as the formatter
         #20221029 It is tested that the formatter has no effect where [xlwings <= 0.27.15]
+        #20221214 It is tested that the formatter works for [xlwings == 0.28.5] and maybe afterwards for all
         xlrng2 = xlsh.range('B20').expand().options(pd.DataFrame, index = True, header = True, formatter = xwfmtter)
         xlrng2.value = upvt
 

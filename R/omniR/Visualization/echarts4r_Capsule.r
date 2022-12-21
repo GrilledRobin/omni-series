@@ -139,6 +139,12 @@
 #   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20221221        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
+#   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -218,6 +224,28 @@ echarts4r_Capsule <- function(
 	if (length(html_id) == 0) html_id <- NA
 	if (length(fmtTTBar) == 0) fmtTTBar <- NA
 	if (length(fmtTTSym) == 0) fmtTTSym <- NA
+	y_min <- head(y_min,1)
+	y_max <- head(y_max,1)
+	barHeight <- head(barHeight,1)
+	barWidth <- head(barWidth,1)
+	symSize <- head(symSize,1)
+	disp_min <- head(disp_min,1)
+	disp_max <- head(disp_max,1)
+	disp_sym <- head(disp_sym,1)
+	theme <- head(theme,1)
+	fontFamily <- head(fontFamily,1)
+	fontSize <- head(fontSize,1)
+	jsFmtFloat <- head(jsFmtFloat,1)
+	fmtTTBar <- head(fmtTTBar,1)
+	fmtTTSym <- head(fmtTTSym,1)
+	barShowBG <- head(barShowBG,1)
+	gradient <- head(gradient,1)
+	if (!is.logical(gradient)) {
+		stop('[',LfuncName,'][gradient] must be logical!')
+	}
+	if (!is.function(container)) {
+		container <- head(container,1)[[1]]
+	}
 
 	#015. Function local variables
 	barBorderRadius <- max(1, floor(barHeight / 2))

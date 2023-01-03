@@ -31,6 +31,11 @@
 |	| Log  |Add a step to unhide the sheets before activating them, to avoid the (e)rror messages being unable to retrieve the			|
 |	|      | attributes of the respective sheets.																						|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20230103		| Version |	1.40		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |Close the PIPE connection in the same DATA Step, since the subsequent processes would fail for relatively small input file	|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -200,6 +205,9 @@ data %unquote(&outDAT.);
 		sheet	=	substr( sheet_pre, length("&L_BRK_SAS.") + 1, LenShNm );
 		output;
 	end;
+
+	%*800.	Close the PIPE connection to facilitate subsequent processes on the same file.;
+	file	dummy3;
 	stop;
 
 	keep

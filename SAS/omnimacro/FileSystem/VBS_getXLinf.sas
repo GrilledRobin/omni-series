@@ -36,6 +36,11 @@
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
 |	| Log  |Close the PIPE connection in the same DATA Step, since the subsequent processes would fail for relatively small input file	|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20230105		| Version |	1.41		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |It is tested the pseudo-disconnection fails hence we use dirty patch (sleep) to finish the task								|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -56,6 +61,8 @@
 %local
 	L_mcrLABEL
 	Lohno
+	tmpref
+	rc_ref
 ;
 %let	L_mcrLABEL	=	&sysMacroName.;
 %let	Lohno		=	%str(E)RROR: [&L_mcrLABEL.]Process failed due to %str(e)rrors!;
@@ -207,7 +214,6 @@ data %unquote(&outDAT.);
 	end;
 
 	%*800.	Close the PIPE connection to facilitate subsequent processes on the same file.;
-	file	dummy3;
 	stop;
 
 	keep
@@ -218,6 +224,10 @@ data %unquote(&outDAT.);
 		columns
 	;
 run;
+
+%let	tmpref	=	dummy3;
+%let	rc_ref	=	%sysfunc(filename(tmpref));
+%let	rc_ref	=	%sysfunc(sleep(5,1));
 
 %EndOfProc:
 %sysexec	del /Q %qsysfunc(quote(&delscript1.)) %qsysfunc(quote(&delscript2.)) %qsysfunc(quote(&LVBS_StrLen.)) & exit;

@@ -215,6 +215,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Removed excessive calculation for Actual Calculation Period to simplify the logic                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230111        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when [inDatCfg] is provided a pd.DataFrame while [in_df] is not specified                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -388,6 +393,7 @@ aggrByPeriod <- function(
 		indat_col_type <- 'FileType'
 		indat_col_df <- 'DF_NAME'
 	}
+	f_get_in_df <- indat_col_df %in% colnames(inDatCfg)
 	#Below function supports to force variable names on its LHS, see [!!!] in [rlang]
 	outDict = rlang::list2(
 		'data' = NULL
@@ -811,7 +817,11 @@ aggrByPeriod <- function(
 
 		#100. Set parameters
 		inDat <- parse_calcDat[i, paste0(indat_col_parse, '.Parsed')]
-		inDat_df <- parse_calcDat[i, indat_col_df]
+		if (f_get_in_df) {
+			inDat_df <- parse_calcDat[i, indat_col_df]
+		} else {
+			inDat_df <- NULL
+		}
 		inDat_type <- parse_calcDat[i, indat_col_type]
 		L_d_curr<- parse_calcDat[i, 'dates'] %>% strftime('%Y%m%d')
 

@@ -179,6 +179,11 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when merging indexes with special values, such as [True]                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230111        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when the input data is empty                                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -233,6 +238,7 @@ def xwDfToRange(
     box_bottom = data_top - 1
     box_right = data_left - 1
     xlrng = {}
+    f_empty = (len(df) == 0) or (len(df.columns) == 0)
 
     #090. Resize the range to ensure the slicing is successful
     if not asformatter:
@@ -331,13 +337,16 @@ def xwDfToRange(
         for i,v in enumerate(df.columns)
         if col_int_flag[i]
     ]
-    xlrng['data.int'] = [
-        (
-            slice(data_top, table_bottom + 1, None)
-            ,slice(col, col + 1, None)
-        )
-        for col in col_int
-    ]
+    if f_empty:
+        xlrng['data.int'] = []
+    else:
+        xlrng['data.int'] = [
+            (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(col, col + 1, None)
+            )
+            for col in col_int
+        ]
 
     #422. Floats
     col_float_flag = df.dtypes.apply(pd.api.types.is_float_dtype)
@@ -346,13 +355,16 @@ def xwDfToRange(
         for i,v in enumerate(df.columns)
         if col_float_flag[i]
     ]
-    xlrng['data.float'] = [
-        (
-            slice(data_top, table_bottom + 1, None)
-            ,slice(col, col + 1, None)
-        )
-        for col in col_float
-    ]
+    if f_empty:
+        xlrng['data.float'] = []
+    else:
+        xlrng['data.float'] = [
+            (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(col, col + 1, None)
+            )
+            for col in col_float
+        ]
 
     #430. Ranges expanded from the merged ones
     #431. Ranges expanded from the vertically merged index levels
@@ -387,15 +399,15 @@ def xwDfToRange(
         xlrng['box'] = []
 
     #450. Range for the data part
-    if (len(df) > 0) & (len(df.columns) > 0):
+    if f_empty:
+        xlrng['data'] = []
+    else:
         xlrng['data'] = [
             (
                 slice(data_top, table_bottom + 1, None)
                 ,slice(data_left, table_right + 1, None)
             )
         ]
-    else:
-        xlrng['data'] = []
 
     #460. Header
     if header:
@@ -542,7 +554,7 @@ def xwDfToRange(
     #730. Specific rows of the [data] part
     for m in fmtRow:
         #001. Skip if not applicable
-        if (len(df.index) == 0) | (len(df.columns) == 0): break
+        if f_empty: break
 
         #005. Extract the members
         k,v = m.get('slicer'), m.get('attrs')
@@ -599,7 +611,7 @@ def xwDfToRange(
     #770. Specific columns of the [data] part
     for m in fmtCol:
         #001. Skip if not applicable
-        if (len(df.index) == 0) | (len(df.columns) == 0): break
+        if f_empty: break
 
         #005. Extract the members
         k,v = m.get('slicer'), m.get('attrs')
@@ -622,7 +634,7 @@ def xwDfToRange(
     #790. Specific cells of the [data] part
     for m in fmtCell:
         #001. Skip if not applicable
-        if (len(df.index) == 0) | (len(df.columns) == 0): break
+        if f_empty: break
 
         #005. Extract the members
         k,v = m.get('slicer'), m.get('attrs')

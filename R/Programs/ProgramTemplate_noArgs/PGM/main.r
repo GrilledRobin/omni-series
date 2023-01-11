@@ -52,7 +52,7 @@ logger.info <- function(...){
 	msg <- gsub('^simpleMessage in\\s+[\\.[:alpha:]]\\w*\\(.*?\\):\\s+', '', msg)
 	log4r::info(my_logger, msg)
 }
-logger.warn <- function(...){
+logger.warning <- function(...){
 	msg <- paste0(..., collapse = '')
 	msg <- gsub('^simpleWarning in\\s+[\\.[:alpha:]]\\w*\\(.*?\\):\\s+', '', msg)
 	log4r::warn(my_logger, msg)
@@ -234,7 +234,7 @@ for (pgm in pgms_curr) {
 	withCallingHandlers(
 		source(pgm)
 		,message = function(m){logger.info(m)}
-		,warning = function(w){logger.warn(w)}
+		,warning = function(w){logger.warning(w)}
 		,error = function(e){logger.error(e)}
 		,abort = function(e){logger.critical(e)}
 	)

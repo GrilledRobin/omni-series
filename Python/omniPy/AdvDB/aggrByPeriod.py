@@ -274,6 +274,11 @@ def aggrByPeriod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Removed excessive calculation for Actual Calculation Period to simplify the logic                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230111        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when [inDatCfg] is provided a pd.DataFrame while [in_df] is not specified                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -401,10 +406,11 @@ def aggrByPeriod(
     indat_col_date = 'dates'
     if isinstance(inDatPtn, pd.DataFrame):
         indat_col_type = inDatType
-        indat_col_df = in_df if in_df else '.nulcol.'
+        indat_col_df = in_df if in_df is not None else '.nulcol.'
     else:
         indat_col_type = 'FileType'
         indat_col_df = 'DF_NAME'
+    f_get_in_df = indat_col_df in inDatCfg.columns
 
     outDict = {
         'data' : None
@@ -821,7 +827,10 @@ def aggrByPeriod(
         #100. Set parameters
         #We use [df.iat()] in case its index is nonlexical i.e. non-ordinal
         inDat = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(indat_col_parse + '.Parsed')]
-        inDat_df = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(indat_col_df)]
+        if f_get_in_df:
+            inDat_df = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(indat_col_df)]
+        else:
+            inDat_df = None
         inDat_type = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(indat_col_type)]
         L_date = exist_calcDat.iat[i, exist_calcDat.columns.get_loc('dates')]
         L_d_curr = L_date.strftime('%Y%m%d')

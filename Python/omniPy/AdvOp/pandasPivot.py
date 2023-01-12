@@ -131,6 +131,12 @@ def pandasPivot(
 #   | Log  |[1] Changed the behavior of the native argument [observed] for pd.pivot_table() to indicate whether only to embed the       #
 #   |      |     observed combinations in the result for dimensions other than categorical type                                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230112        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when no [columns] is provided and [aggfunc] only contain one field with one aggregation method              #
+#   |      |[2] Now set the placeholder for subtotals as a single white space to facilitate EXCEL formatting where necessary            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -216,6 +222,7 @@ def pandasPivot(
     f_totals_cross = f_totals_row & f_totals_col
     name_vals = '.pivot.values.'
     name_stats = '.pivot.stats.'
+    reorder_vals = []
 
     #060. Calculate levels of all dimensions for later sorting
     #[ASSUMPTION]
@@ -277,7 +284,7 @@ def pandasPivot(
     def h_dim(obj, i, val_total, val_subtotal):
         placeholder = val_total if i == 0 else val_subtotal
         rstOut = {
-            v : (placeholder if j == i else '')
+            v : (placeholder if j == i else ' ')
             for j,v in enumerate(obj)
             if j >= i
         }
@@ -419,17 +426,24 @@ def pandasPivot(
     )
 
     #817. Sort by above [key]
-    pvt_base.sort_values(pvt_base.index.names, inplace = True, ascending = rowSortAsc, key = h_sort_row)
+    if f_rows:
+        pvt_base.sort_values(pvt_base.index.names, inplace = True, ascending = rowSortAsc, key = h_sort_row)
 
     #840. Sort columns
     #841. Set the names for special levels
-    pvt_base.columns.set_names(name_vals, inplace = True, level = 0)
-    if pvt_base.columns.nlevels == len(var_cols) + 2:
+    vfy_cols = [ c for c in pvt_base.columns.names if c not in var_cols ]
+    if len(vfy_cols) > 0:
+        setlvl = None if pvt_base.columns.nlevels == 1 else 0
+        pvt_base.columns.set_names(name_vals, inplace = True, level = setlvl)
+        reorder_vals = [name_vals]
+
+    if len(vfy_cols) == 2:
         pvt_base.columns.set_names(name_stats, inplace = True, level = 1)
         reorder_stats = [name_stats]
 
     #842. Re-assign the column indexes before sorting
-    pvt_base.columns = pvt_base.columns.reorder_levels(var_cols + [name_vals] + reorder_stats)
+    if isinstance(pvt_base.columns, pd.MultiIndex):
+        pvt_base.columns = pvt_base.columns.reorder_levels(var_cols + reorder_vals + reorder_stats)
 
     #843. Extract the y-axis index from the pivot table
     idx_cols = pvt_base.columns

@@ -508,7 +508,7 @@ def pandasPivot(
             #510. Validate the existing combinations of these dimensions
             mask_col = (
                 pvt_base.columns
-                .droplevel([name_vals] + reorder_stats)
+                .droplevel(reorder_vals + reorder_stats)
                 .isin(func_idx(df[get_col].drop_duplicates().astype('object')))
             )
 

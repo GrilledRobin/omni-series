@@ -215,6 +215,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now support input as a table-like object (W-D, can be flagged by [omniR$AdvOp$isDF])                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -233,6 +238,7 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
+#   |   |   |match.arg.x                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -360,7 +366,7 @@ ObsDates <- R6::R6Class('ObsDates'
 				warning('[',private$classname,']Multiple values provided for [preserve], only the first one is used.')
 				preserve <- head(preserve, 1)
 			}
-			daytype <- match.arg(toupper(daytype), c('W','T'))
+			daytype <- match.arg.x(daytype, arg.func = toupper)
 
 			#100. Local variables
 			#We set the actual shift days as [-1] if [kshift] is not provided or provided as [0]
@@ -488,9 +494,9 @@ ObsDates <- R6::R6Class('ObsDates'
 			,.period = c('MONTH','QUARTER','WEEK','YEAR')
 		){
 			#001. Handle parameters
-			daytype <- match.arg(toupper(daytype), c('W','T'))
-			.bound <- match.arg(tolower(.bound), c('head','tail'))
-			.period <- match.arg(toupper(.period), c('MONTH','QUARTER','WEEK','YEAR'))
+			daytype <- match.arg.x(daytype, arg.func = toupper)
+			.bound <- match.arg.x(.bound, arg.func = tolower)
+			.period <- match.arg.x(.period, arg.func = toupper)
 
 			#100. Local variables
 			col_filter <- list('W' = 'F_WORKDAY', 'T' = 'F_TradeDay')

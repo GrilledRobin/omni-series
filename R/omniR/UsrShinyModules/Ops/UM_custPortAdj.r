@@ -106,6 +106,11 @@
 #   | Log  |[1] Add a parameter [observer_pfx] to name the observers                                                                    #
 #   |      |[2] Store all necessary observers into [session$userData] for garbage collection                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -119,13 +124,16 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$AdvOp]                                                                                                       #
+#   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |scaleNum                                                                                                                   #
-#   |   |Directory: [omniR$UsrShinyModules]                                                                                             #
+#   |   |   |match.arg.x                                                                                                                #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$UsrShinyModules                                                                                                          #
 #   |   |   |echarts_ext_utils.js      [Quote: This is a JS function library! Please use [tags$script] to activate it!]                 #
 #   |   |   |vue.js                    [Quote: This is a JS function library! Please use [tags$script] to activate it!]                 #
 #   |   |   |shinyjsExtension.js       [Quote: This is a JS function library! Please use [shinyextendjs] to activate it!]               #
-#   |   |Directory: [omniR$Visualization]                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$Visualization                                                                                                            #
 #   |   |   |Widget_SliderGroup.html   [Quote: This is an HTML widget powered by [vue.js]!]                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |500.   Dependent user-defined Modules                                                                                              #
@@ -175,7 +183,7 @@ UM_CPA_ui_Advise <- function(id){
 UM_custPortAdj_svr <- function(input,output,session
 	,CustData = NULL,f_loadstate = T
 	,lang_cfg = NULL,color_cfg = NULL
-	,lang_disp = 'CN',font_disp = 'Microsoft YaHei'
+	,lang_disp = c('CN','EN'),font_disp = c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
 	,Ech_ext_utils = NULL,Wg_SliderGrp = NULL
 	,observer_pfx = 'uObs'
 	,fDebug = FALSE){
@@ -186,15 +194,16 @@ UM_custPortAdj_svr <- function(input,output,session
 	#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
 	if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
 	if (!is.logical(f_loadstate)) stop(ns(paste0('[001]Crucial parameter [f_loadstate] is not logical!')))
-	lang_disp <- match.arg(lang_disp,c('CN','EN'))
+	lang_disp <- match.arg.x(lang_disp, arg.func = toupper)
 	#We must ensure the prefix of the observers exist, otherwise all the similar observers will be destroyed!
 	if (length(observer_pfx) == 0) observer_pfx <- 'uObs'
-	uRV$font_list <- c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
+	formal.args <- formals(sys.function(sysP <- sys.parent()))
+	uRV$font_list <- eval(formal.args$font_disp, envir = sys.frame(sysP))
 	uRV$font_list_css <- paste0(
-		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('"',m,'"') else m})
+		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) dQuote(m, q = F) else m})
 		,collapse = ','
 	)
-	font_disp <- match.arg(font_disp,uRV$font_list)
+	font_disp <- match.arg.x(font_disp)
 	if (is.null(Ech_ext_utils)) warning(ns(paste0('[001]Crucial parameter [Ech_ext_utils] is missing! Printing may fail!')))
 	#Below is the list of important stages to trigger the increment of initial progress bar
 	uRV$pb_k <- list(

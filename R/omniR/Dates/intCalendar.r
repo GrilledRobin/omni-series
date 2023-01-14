@@ -65,6 +65,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when Saturday is Workday and the requested interval is Workweek                                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -81,6 +86,9 @@
 #   |   |omniR$Dates                                                                                                                    #
 #   |   |   |getDateIntervals                                                                                                           #
 #   |   |   |UserCalendar                                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |   |match.arg.x                                                                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -101,7 +109,7 @@ intCalendar <- function(
 	interval
 	,cal_bgn
 	,cal_end
-	,daytype = 'C'
+	,daytype = c('C','W','T')
 	,col_rowidx = '.ical_row.'
 	,col_period = '.ical_prd.'
 	,col_prdidx = '.ical_rprd.'
@@ -122,7 +130,7 @@ intCalendar <- function(
 	isDict <- function(x) vctrs::vec_is_list(x) && rlang::is_dictionaryish(x)
 
 	#012. Handle the parameter buffer
-	daytype <- match.arg(toupper(daytype), c('C','W','T'))
+	daytype <- match.arg.x(daytype, arg.func = toupper)
 
 	#020. Remove possible items that conflict the internal usage from the [kw_cal]
 	kw_cal_fnl <- kw_cal[!(names(kw_cal) %in% c('dateBgn', 'dateEnd', 'clnBgn', 'clnEnd'))]

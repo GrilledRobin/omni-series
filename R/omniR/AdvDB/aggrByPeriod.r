@@ -220,6 +220,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when [inDatCfg] is provided a pd.DataFrame while [in_df] is not specified                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -242,6 +247,7 @@
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |debug_comp_datcols                                                                                                         #
 #   |   |   |isDF                                                                                                                       #
+#   |   |   |match.arg.x                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvDB                                                                                                                    #
 #   |   |   |std_read_R                                                                                                                 #
@@ -328,7 +334,7 @@ aggrByPeriod <- function(
 	} else {
 		if (length(inDatPtn)==0) stop('[',LfuncName,']','[inDatPtn] is not provided!')
 		if ((!is.character(inDatPtn)) | (length(inDatPtn)!=1)) stop('[',LfuncName,']','[inDatPtn] must be a single character string!')
-		inDatType <- match.arg(toupper(inDatType), c('SAS','R','RAM'))
+		inDatType <- match.arg.x(inDatType, arg.func = toupper)
 		if (inDatType=='R') {
 			if (length(in_df)==0) stop('[',LfuncName,']','[in_df] is not provided for [inDatType=',inDatType,']!')
 		}
@@ -353,7 +359,7 @@ aggrByPeriod <- function(
 			stop('[',LfuncName,']','[chkDatPtn] must be a single character string!')
 		}
 	}
-	chkDatType <- match.arg(toupper(chkDatType), c('SAS','R','RAM'))
+	chkDatType <- match.arg.x(chkDatType, arg.func = toupper)
 	if (length(chkBgn)==0) {
 		message('[',LfuncName,']','[chkBgn] is not provided. It will be set the same as [dateBgn].')
 		chkBgn <- dateBgn
@@ -373,7 +379,7 @@ aggrByPeriod <- function(
 		)
 		genPHMul <- T
 	}
-	calcInd <- match.arg(toupper(calcInd), c('C','W','T'))
+	calcInd <- match.arg.x(calcInd, arg.func = toupper)
 	if (!is.function(funcAggr)) stop('[',LfuncName,']','[funcAggr] should be provided a function!')
 	if (!is.logical(fDebug)) fDebug <- F
 	if (length(outVar)==0) outVar <- 'A_VAL_OUT'

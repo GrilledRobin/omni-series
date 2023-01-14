@@ -90,6 +90,11 @@
 #   | Log  |[1] Add a parameter [observer_pfx] to name the observers                                                                    #
 #   |      |[2] Store all necessary observers into [session$userData] for garbage collection                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -103,6 +108,9 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |   |match.arg.x                                                                                                                #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Styles                                                                                                                   #
 #   |   |   |rgba2rgb                                                                                                                   #
 #   |   |   |bg_gradient                                                                                                                #
@@ -152,7 +160,7 @@ UM_CPD_ui_CTT <- function(id){
 UM_custPortDash_svr <- function(input,output,session
 	,CustData = NULL
 	,lang_cfg = NULL,color_cfg = NULL
-	,lang_disp = 'CN',font_disp = 'Microsoft YaHei'
+	,lang_disp = c('CN','EN'),font_disp = c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
 	,observer_pfx = 'uObs'
 	,fDebug = FALSE){
 	ns <- session$ns
@@ -161,13 +169,14 @@ UM_custPortDash_svr <- function(input,output,session
 	uRV <- shiny::reactiveValues()
 	#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
 	if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
-	lang_disp <- match.arg(lang_disp,c('CN','EN'))
-	uRV$font_list <- c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
+	lang_disp <- match.arg.x(lang_disp, arg.func = toupper)
+	formal.args <- formals(sys.function(sysP <- sys.parent()))
+	uRV$font_list <- eval(formal.args$font_disp, envir = sys.frame(sysP))
 	uRV$font_list_css <- paste0(
-		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('"',m,'"') else m})
+		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) dQuote(m, q = F) else m})
 		,collapse = ','
 	)
-	font_disp <- match.arg(font_disp,uRV$font_list)
+	font_disp <- match.arg.x(font_disp)
 	#Define the list of data.frames to be displayed as [data.table]
 	lst_drawDT <- c('Prod_Dep','Prod_Inv','Prod_MF','Prod_Bnc')
 	#Below is the list of important stages to trigger the increment of initial progress bar

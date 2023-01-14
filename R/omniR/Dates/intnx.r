@@ -92,6 +92,11 @@
 #   | Log  |[1] Fixed a bug: [intnx('day', '20211231', 1, daytype = 'w')] returns [NA]. This was due to the calendar span is not set    #
 #   |      |     enough for calculation                                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -107,6 +112,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
+#   |   |   |match.arg.x                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Dates                                                                                                                    #
 #   |   |   |intCalendar                                                                                                                #
@@ -136,8 +142,8 @@ intnx <- function(
 	interval
 	,indate
 	,increment = 0
-	,alignment = 'b'
-	,daytype = 'C'
+	,alignment = c('beginning','middle','end','same')
+	,daytype = c('C','W','T')
 	,cal = NULL
 	,kw_d = formals(asDates)[!(names(formals(asDates)) %in% c('indate'))]
 	,kw_dt = formals(asDatetimes)[!(names(formals(asDatetimes)) %in% c('indate'))]
@@ -160,7 +166,7 @@ intnx <- function(
 	}
 
 	#012. Handle the parameter buffer
-	daytype <- match.arg(toupper(daytype), c('C','W','T'))
+	daytype <- match.arg.x(daytype, arg.func = toupper)
 
 	#015. Function local variables
 	col_rowidx <- '.ical_row.'
@@ -249,14 +255,6 @@ intnx <- function(
 	vfy_cal <- F
 	if (isDF(cal)) if (nrow(cal) > 0) vfy_cal <- T
 
-	#056. Dictionary for [alignment]
-	dict_align <- list(
-		'b' = 'beginning'
-		,'m' = 'middle'
-		,'e' = 'end'
-		,'s' = 'same'
-	)
-
 	#057. Column names for different request types for dates
 	dict_adjcol <- c('W' = 'F_WORKDAY', 'T' = 'F_TradeDay')
 
@@ -288,7 +286,7 @@ intnx <- function(
 	}
 
 	#070. Standardize the [alignment]
-	dict_attr[['alignment']] <- names(match.arg(alignment, unlist(dict_align)))
+	dict_attr[['alignment']] <- match.arg.x(alignment, arg.func = tolower)
 
 	#080. Define interim column names for call of helper functions
 	if (dict_attr[['itype']] %in% c('d', 'dt')) {
@@ -606,7 +604,7 @@ intnx <- function(
 		#700. Calculate the alignment based on the request
 		if (dict_attr[['span']] == 1) {
 			rst %<>% dplyr::left_join(cal_full, by = c('.gti_newprd.' = col_period))
-		} else if (alignment == 'b') {
+		} else if (alignment == 'beginning') {
 			#100. Identify the beginning of each period
 			prd_bgn <- cal_full %>%
 				dplyr::group_by_at(tidyselect::all_of(col_period)) %>%
@@ -616,7 +614,7 @@ intnx <- function(
 
 			#900. Add the special series to the result as a new column
 			rst %<>% dplyr::left_join(prd_bgn, by = c('.gti_newprd.' = col_period))
-		} else if (alignment == 'e') {
+		} else if (alignment == 'end') {
 			#100. Identify the ending of each period
 			prd_end <- cal_full %>%
 				dplyr::group_by_at(tidyselect::all_of(col_period)) %>%
@@ -628,7 +626,7 @@ intnx <- function(
 			#900. Add the special series to the result as a new column
 			rst %<>% dplyr::left_join(prd_end, by = c('.gti_newprd.' = col_period))
 			# print(rst[c(col_keys, col_out)])
-		} else if (alignment == 's') {
+		} else if (alignment == 'same') {
 			#100. Identify the ending of each period and only retrieve the relative index of its unit
 			#This is because we only have to compare its index to the one we calculated
 			prd_end <- cal_full %>%

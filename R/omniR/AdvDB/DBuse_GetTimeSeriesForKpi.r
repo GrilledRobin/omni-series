@@ -202,6 +202,11 @@
 #   | Log  |[1] Fixed a bug that always raise error when there are multiple paths provided for [InfDatCfg] and [InfDat] does not exist  #
 #   |      |     in any among them                                                                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -217,6 +222,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |debug_comp_datcols                                                                                                         #
+#   |   |   |match.arg.x                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvDB                                                                                                                    #
 #   |   |   |std_read_R                                                                                                                 #
@@ -314,8 +320,8 @@ DBuse_GetTimeSeriesForKpi <- function(
 		stop('[',LfuncName,']','Some values among [dnDates] cannot be converted to dates! [',paste0(invdates, collapse = ']['),']')
 	}
 	if (length(ColRecDate)==0) ColRecDate <- 'D_RecDate'
-	MergeProc <- match.arg(toupper(MergeProc), c('SET','MERGE'))
-	SetAsBase <- match.arg(toupper(SetAsBase), c('I','K','B','F'))
+	MergeProc <- match.arg.x(MergeProc, arg.func = toupper)
+	SetAsBase <- match.arg.x(SetAsBase, arg.func = toupper)
 	if (!is.logical(KeepInfCol)) KeepInfCol <- F
 	KeepInfCol <- KeepInfCol[[1]]
 	if (!is.logical(.parallel)) .parallel <- F
@@ -361,7 +367,10 @@ DBuse_GetTimeSeriesForKpi <- function(
 
 	#060. Handle the configuration for Information Tables
 	cfg_local <- InfDatCfg
-	DatType <- match.arg(cfg_local$DatType, c('RAM','R','SAS'))
+	formal.args <- formals(sys.function(sysP <- sys.parent()))
+	dattype_choices <- eval(formal.args$InfDatCfg$DatType, envir = sys.frame(sysP))
+	DatType <- match.arg.x(cfg_local$DatType, dattype_choices, arg.func = toupper)
+	# DatType <- match.arg(cfg_local$DatType, c('RAM','R','SAS'))
 	if (DatType %in% c('R')) imp_df <- cfg_local$DF_NAME
 	else imp_df <- NULL
 	if (is.null(cfg_local$.trans)) cfg_local$.trans <- fTrans

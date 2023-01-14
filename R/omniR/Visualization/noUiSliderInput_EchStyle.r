@@ -58,7 +58,7 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
 noUiSliderInput_EchStyle <- function(handleStyle = c('circle','rect'),handleScale = 1, ...){
 	#010. Collect related parameters
-	handleStyle <- match.arg(handleStyle,c('circle','rect'))
+	handleStyle <- match.arg(handleStyle)
 	def_ori <- c('horizontal', 'vertical')
 	def_dir <- c('ltr', 'rtl')
 	params <- list(...)

@@ -91,6 +91,11 @@
 #   | Log  |[1] Add a parameter [observer_pfx] to name the observers                                                                    #
 #   |      |[2] Store all necessary observers into [session$userData] for garbage collection                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -108,22 +113,26 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$Styles]                                                                                                      #
+#   |   |omniR$Styles                                                                                                                   #
 #   |   |   |rgba2rgb                                                                                                                   #
-#   |   |Directory: [omniR$AdvOp]                                                                                                       #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |scaleNum                                                                                                                   #
+#   |   |   |match.arg.x                                                                                                                #
 #   |   |   |gc_shiny_module                                                                                                            #
 #   |   |   |   |rem_shiny_inputs      [Dependency of above function]                                                                   #
-#   |   |Directory: [omniR$UsrShinyModules]                                                                                             #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$UsrShinyModules                                                                                                          #
 #   |   |   |echarts_ext_utils.js      [Quote: This is a JS function library! Please use [tags$script] to activate it!]                 #
 #   |   |   |vue.js                    [Quote: This is a JS function library! Please use [tags$script] to activate it!]                 #
 #   |   |   |shinyjsExtension.js       [Quote: This is a JS function library! Please use [shinyextendjs] to activate it!]               #
-#   |   |Directory: [omniR$Visualization]                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$Visualization                                                                                                            #
 #   |   |   |Widget_SliderGroup.html   [Quote: This is an HTML widget powered by [vue.js]!]                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |500.   Dependent user-defined Modules                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$UsrShinyModules$Ops]                                                                                         #
+#   |   |omniR$UsrShinyModules$Ops                                                                                                      #
 #   |   |   |UM_custPortDash                                                                                                            #
 #   |   |   |UM_FundExp                                                                                                                 #
 #   |   |   |   |UM_FundCompare (called by above module)                                                                                #
@@ -184,7 +193,7 @@ UM_CPM_ui_PnLAdvise <- function(id){
 UM_custPortMgmt_svr <- function(input,output,session
 	,CustData = NULL
 	,lang_cfg = NULL,color_cfg = NULL
-	,font_disp = 'Microsoft YaHei'
+	,font_disp = c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
 	,observer_pfx = 'uObs'
 	,fDebug = FALSE,...){
 	ns <- session$ns
@@ -194,12 +203,13 @@ UM_custPortMgmt_svr <- function(input,output,session
 	#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
 	if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
 	uRV$lang_disp <- 'CN'
-	uRV$font_list <- c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
+	formal.args <- formals(sys.function(sysP <- sys.parent()))
+	uRV$font_list <- eval(formal.args$font_disp, envir = sys.frame(sysP))
 	uRV$font_list_css <- paste0(
-		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('"',m,'"') else m})
+		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) dQuote(m, q = F) else m})
 		,collapse = ','
 	)
-	font_disp <- match.arg(font_disp,uRV$font_list)
+	font_disp <- match.arg.x(font_disp)
 	params_ext <- list(...)
 	#Duplicate the input as it is designed to be able to 'rollback' any actions
 	#[chb] : Charting Base

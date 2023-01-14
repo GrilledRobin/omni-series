@@ -85,6 +85,11 @@
 #   | Log  |[1] Add a parameter [observer_pfx] to name the observers                                                                    #
 #   |      |[2] Store all necessary observers into [session$userData] for garbage collection                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -98,7 +103,11 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$Styles]                                                                                                      #
+#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |   |scaleNum                                                                                                                   #
+#   |   |   |match.arg.x                                                                                                                #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$Styles                                                                                                                   #
 #   |   |   |rgba2rgb                                                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -139,7 +148,7 @@ UM_FundCmp_ui_FundPnL <- function(id){
 UM_FundCompare_svr <- function(input,output,session
 	,FundForComp = NULL,ObsDate = NULL,VarComp = NULL
 	,lang_cfg = NULL,color_cfg = NULL
-	,lang_disp = 'CN',font_disp = 'Microsoft YaHei'
+	,lang_disp = c('CN','EN'),font_disp = c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
 	,observer_pfx = 'uObs'
 	,fDebug = FALSE){
 	ns <- session$ns
@@ -155,13 +164,14 @@ UM_FundCompare_svr <- function(input,output,session
 	uRV$Var_Types <- VarComp
 	if (is.null(uRV$Var_Names) | length(uRV$Var_Names) != length(VarComp))
 		stop(ns('[Module][UM_FundCompare][VarComp] must be provided a fully named vector!'))
-	lang_disp <- match.arg(lang_disp,c('CN','EN'))
-	uRV$font_list <- c('Microsoft YaHei','Helvetica','sans-serif','Arial','宋体')
+	lang_disp <- match.arg.x(lang_disp, arg.func = toupper)
+	formal.args <- formals(sys.function(sysP <- sys.parent()))
+	uRV$font_list <- eval(formal.args$font_disp, envir = sys.frame(sysP))
 	uRV$font_list_css <- paste0(
-		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) paste0('"',m,'"') else m})
+		sapply(uRV$font_list, function(m){if (length(grep('\\W',m,perl = T))>0) dQuote(m, q = F) else m})
 		,collapse = ','
 	)
-	font_disp <- match.arg(font_disp,uRV$font_list)
+	font_disp <- match.arg.x(font_disp)
 
 	uRV$df_CostPnL <- FundForComp %>% dplyr::filter(FC_Holding == 'Yes')
 	pnllst <- uRV$df_CostPnL[[paste0('ProdName_',lang_disp)]] %>% unique()
@@ -575,7 +585,7 @@ UM_FundCompare_svr <- function(input,output,session
 	drawCH_FundPrice <- function(field,charttitle,fmt = c('price','percent')){
 		#001. Handle parameters
 		if (is.null(charttitle)) stop('Chart Title is not provided!')
-		fmt <- match.arg(fmt,c('price','percent'))
+		fmt <- match.arg.x(fmt)
 		val_item <- list(
 			axisLabel = 'value'
 			,axisPointer = 'params.value'

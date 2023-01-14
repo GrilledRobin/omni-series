@@ -62,7 +62,7 @@ themeColors <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	theme <- match.arg(theme, c('BlackGold', 'PBI', 'Inno', 'MSOffice'))
+	theme <- match.arg(theme)
 
 	#015. Function local variables
 	cache_BlackGold <- themePalette('BlackGold')

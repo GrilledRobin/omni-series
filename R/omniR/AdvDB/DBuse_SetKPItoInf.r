@@ -115,6 +115,11 @@
 #   |      |[4] Change the output into a [list] to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230114        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -137,6 +142,7 @@
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |rmObjAttr                                                                                                                  #
 #   |   |   |debug_comp_datcols                                                                                                         #
+#   |   |   |match.arg.x                                                                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -192,7 +198,7 @@ DBuse_SetKPItoInf <- function(
 		if (err_keyvar) stop('[',LfuncName,']','[keyvar] is not provided for mapping to [InfDat]!')
 		keyvar <- toupper(unname(unlist(keyvar)))
 	}
-	SetAsBase <- match.arg(toupper(SetAsBase), c('I','K','B','F'))
+	SetAsBase <- match.arg.x(SetAsBase, arg.func = toupper)
 	if (!is.logical(KeepInfCol)) KeepInfCol <- F
 	KeepInfCol <- KeepInfCol[[1]]
 	if (!is.logical(.parallel)) .parallel <- F

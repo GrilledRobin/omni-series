@@ -16,6 +16,8 @@
 #   |choices      :   A character vector of candidate values, see [match.arg]                                                           #
 #   |arg.func     :   Function to be applied to [arg] as the first (and only) argument before matching it to [choices]                  #
 #   |                 [f<x>==x        ]  <Default> Do not mutate [arg]                                                                  #
+#   |choices.func :   Function to be applied to [choices] as the first (and only) argument before matching it for [arg]                 #
+#   |                 [f<x>==x        ]  <Default> Do not mutate [choices]                                                              #
 #   |...          :   Any other arguments that are required by [match.arg]                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -47,6 +49,7 @@ match.arg.x <- function(
 	arg
 	,choices
 	,arg.func = function(x){x}
+	,choices.func = function(x){x}
 	,...
 ){
 	#001. Handle parameters
@@ -57,6 +60,9 @@ match.arg.x <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 	if (!is.function(arg.func)) {
 		stop('[',LfuncName,'][arg.func] must be a function!')
+	}
+	if (!is.function(choices.func)) {
+		stop('[',LfuncName,'][choices.func] must be a function!')
 	}
 
 	#100. Determine the choices from the parent frame as a function when it is missing
@@ -69,11 +75,46 @@ match.arg.x <- function(
 		choices <- eval(formal.args[[as.character(substitute(arg))]], envir = sys.frame(sysP))
 	}
 
-	#500. Execute the customized function taking [arg] as the first argument
+	#200. Execute the customized function taking [arg] as the first argument
 	arg_mutate <- arg.func(arg)
 
-	#900. Match the mutated [arg] with the choices
-	return(match.arg(arg_mutate, choices, ...))
+	#300. Execute the customized function taking [choices] as the first argument
+	choices_mutate <- choices.func(choices)
+	choices.no.change <- identical(choices, choices_mutate)
+
+	#500. Match the mutated [arg] with the choices
+	#[ASSUMPTION]
+	#[1] Since there is a specific message guiding the program caller on available choices,
+	#     we should catch it and replace it with the original [choices]
+	#[2] The message pattern as replacement is extracted from the official function definition [match.arg]
+	#510. Prepare function to handle [error]
+	hdl_err <- function(...){
+		msg <- paste0(..., collapse = '\n')
+		vfy_msg <- paste(dQuote(choices_mutate), collapse = ', ')
+		rep_msg <- paste(dQuote(choices), collapse = ', ')
+		if (grepl(vfy_msg, msg, fixed = T)) {
+			stop(gsub(vfy_msg, rep_msg, ..., fixed = T), domain = NA)
+		} else {
+			stop(...)
+		}
+	}
+
+	#590. Try the process
+	tryCatch(
+		rstOut <- match.arg(arg_mutate, choices_mutate, ...)
+		,error = hdl_err
+	)
+
+	#900. Differ the output
+	if (choices.no.change) {
+		return(rstOut)
+	} else {
+		#100. Find the indexes of the result in the mutated [choices]
+		choices.pos <- match(rstOut, choices_mutate)
+
+		#900. Return the values from indexing the original [choices]
+		return(choices[choices.pos])
+	}
 }
 
 #[Full Test Program;]
@@ -110,16 +151,46 @@ if (FALSE){
 
 	#Simple test
 	if (TRUE){
-		#100. Prepare a function
+		#100. Prepare a function to mutate the strings into Proper Case
+		#See official document for [toupper]
+		toproper <- function(s, strict = FALSE) {
+			cap <- function(s) paste(
+				toupper(substring(s, 1, 1))
+				,{s <- substring(s, 2); if(strict) tolower(s) else s}
+				,sep = ""
+				,collapse = " "
+			)
+			sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
+		}
+
+		#200. Test the argument checker with Proper Case
 		testfunc <- function(a = c('Ignore','The','Case'), ...){
-			a <- match.arg.x(a, arg.func = toupper, ...)
+			a <- match.arg.x(a, arg.func = purrr::partial(toproper, strict = TRUE), ...)
 			message(a)
 		}
 
-		#200. Input in lower case
+		#210. Input in lower case
 		testfunc('i')
 
-		#300. Allow several matches
-		testfunc(c('case','t'), several.ok = TRUE)
+		#220. Allow several matches
+		testfunc(c('caSe','t'), several.ok = TRUE)
+
+		#500. Test the argument checker ignoring cases of both [arg] and [choices]
+		testfunc2 <- function(a = c('igNore','tHe','casE'), ...){
+			a <- match.arg.x(a, arg.func = tolower, choices.func = tolower, ...)
+			message(a)
+		}
+
+		#510. Input in mixed case
+		testfunc2('iGnoRe')
+
+		#520. Allow several matches
+		testfunc2(c('caSe','thE'), several.ok = TRUE)
+
+		#580. Test error message when more than one [arg] is provided while [several.ok = FALSE]
+		testfunc2(c('case','the'))
+
+		#590. Test error message when there is no valid match
+		testfunc2('abc')
 	}
 }

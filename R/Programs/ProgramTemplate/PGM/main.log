@@ -1,0 +1,38 @@
+INFO: 2021-06-30 11:42:28 <dateBgn> is not provided, use <Current Quarter Beginning> instead.
+INFO: 2021-06-30 11:42:28 --------------------------------------------------------------------------------
+INFO: 2021-06-30 11:42:28 Process Parameters:
+INFO: 2021-06-30 11:42:28 <dateBgn      >: <2021-01-01>
+INFO: 2021-06-30 11:42:28 <dateEnd      >: <2021-03-31>
+INFO: 2021-06-30 11:42:28 <Process Home >: <C:/R/Programs/ProgramTemplate/PGM>
+INFO: 2021-06-30 11:42:28 <SAS omnimacro>: <C:/SAS/omnimacro>
+INFO: 2021-06-30 11:42:28 --------------------------------------------------------------------------------
+INFO: 2021-06-30 11:42:28 Existence of above key locations:
+INFO: 2021-06-30 11:42:28 <Process Home >: <TRUE>
+INFO: 2021-06-30 11:42:28 <SAS omnimacro>: <TRUE>
+INFO: 2021-06-30 11:42:28 --------------------------------------------------------------------------------
+INFO: 2021-06-30 11:42:28 Subordinate scripts to be located at:
+INFO: 2021-06-30 11:42:28 C:/R/Programs/ProgramTemplate/PGM
+INFO: 2021-06-30 11:42:28 --------------------------------------------------------------------------------
+INFO: 2021-06-30 11:42:28 Subordinate scripts to be called in below order:
+INFO: 2021-06-30 11:42:28 <1>: <100_src.r   >
+INFO: 2021-06-30 11:42:28 <2>: <200_runsas.r>
+INFO: 2021-06-30 11:42:28 <3>: <300_final.r >
+INFO: 2021-06-30 11:42:28 --------------------------------------------------------------------------------
+INFO: 2021-06-30 11:42:28 Calling subordinate scripts...
+INFO: 2021-06-30 11:42:28 ----------------------------------------
+INFO: 2021-06-30 11:42:28 <100_src.r> Beginning...
+INFO: 2021-06-30 11:42:28 step 1
+INFO: 2021-06-30 11:42:28 test info
+
+
+WARN: 2021-06-30 11:42:28 test warning
+
+WARN: 2021-06-30 11:42:28 warning from my_logger
+INFO: 2021-06-30 11:42:29 <100_src.r> Complete!
+INFO: 2021-06-30 11:42:29 ----------------------------------------
+INFO: 2021-06-30 11:42:29 <200_runsas.r> Beginning...
+INFO: 2021-06-30 11:42:29 step 2
+INFO: 2021-06-30 11:42:29 Executing below SAS program...
+INFO: 2021-06-30 11:42:29 <"C:/R/Programs/ProgramTemplate/PGM/testrun.sas">
+ERROR: 2021-06-30 11:42:29 Error in system(L_cmd, intern = T, minimized = T): '"C:/SASHome/SASFoundation/9.4/sas.exe"' not found
+

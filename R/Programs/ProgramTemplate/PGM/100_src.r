@@ -13,5 +13,5 @@ message('test info')
 warning('test warning')
 #> WARN: 2021-06-30 11:21:13 test warning
 
-logger.warn('warning from my_logger')
+logger.warning('warning from my_logger')
 #> WARN: 2021-06-30 11:21:13 warning from my_logger

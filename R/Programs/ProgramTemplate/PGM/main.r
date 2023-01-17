@@ -134,11 +134,12 @@ if (length(pyVers) > 0) {
 PYTHON_EXE <- shQuote(file.path(PYTHON_HOME, 'python.exe'))
 
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
-sasKey <- 'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
+sasKey <- 'HKEY_LOCAL_MACHINE\\SOFTWARE\\SAS Institute Inc.\\The SAS System'
 #The names of the direct sub-keys are the version numbers of all installed [SAS] software
 sasVers <- winReg_getInfByStrPattern(sasKey, inRegExp = '^.*$', chkType = 2)
 if (length(sasVers) > 0) {
-	sasVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, sasVers)[['name']]
+	sasVers_comp <- Filter(function(x){tryCatch({numeric_version(x[['name']]);T;}, error = function(e){F})}, sasVers)
+	sasVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, sasVers_comp)[['name']]
 	SAS_HOME <- winReg_getInfByStrPattern(file.path(sasKey, sasVer, fsep = '\\'), 'DefaultRoot')[[1]][['value']]
 } else {
 	SAS_HOME <- ''
@@ -197,10 +198,57 @@ if (!all(dir.exists(key_dirs))) {
 logger.info(strrep('-', 80))
 logger.info('Subordinate scripts to be located at:')
 logger.info(dir_curr)
-logger.info(strrep('-', 80))
 if (i_len == 0) {
 	stop(logger.error('No available subordinate script is found! Program terminated!'))
 }
+
+#780. Verify the process control file to minimize the system calculation effort
+fname_ctrl <- paste0('proc_ctrl', G_obsDates$values %>% strftime('%Y%m%d'), '.txt')
+proc_ctrl <- file.path(dir_curr, fname_ctrl)
+
+#781. Remove any control files that were created on other dates
+#Quote: https://stackoverflow.com/questions/31590730/list-files-in-r-that-do-not-match-a-pattern
+cln_ctrls <- list.files(
+	dir_curr
+	,'^proc_ctrl\\d{8}\\.txt$'
+	,full.names = T
+	,ignore.case = T
+	,recursive = F
+	,include.dirs = F
+) %>%
+	grep(pattern = paste0(.Platform$file.sep, fname_ctrl, '$'), invert=TRUE, value=TRUE)
+
+if (length(cln_ctrls) > 0) file.remove(cln_ctrls)
+
+#785. Read the content of the process control file, which represents the previously executed scripts
+pgm_executed <- character(0)
+if (file.exists(proc_ctrl)) {
+	pgm_executed <- readLines(proc_ctrl) %>%
+		#500. Exclude those beginning with a semi-colon [;], resembling the syntax of [MS DOS]
+		{Filter(function(x){!startsWith(x, ';')}, .)}
+}
+
+#787. Exclude the previously executed scripts from the full list for current session
+if (length(pgm_executed) > 0) {
+	#010. Remove duplicates from this list
+	pgm_executed_dedup <- sort(unique(pgm_executed))
+
+	#100. Prepare the log
+	logger.info(strrep('-', 80))
+	logger.info('Below scripts have been executed today, thus are excluded.')
+	for (f in pgm_executed_dedup) {
+		logger.info('<',f,'>')
+	}
+
+	#900. Exclusion
+	pgms_curr <- pgms_curr[!(basename(pgms_curr) %in% pgm_executed_dedup)]
+	i_len <- length(pgms_curr)
+	if (i_len == 0) {
+		logger.info('All scripts have been executed previously. Program completed.')
+		q()
+	}
+}
+
 logger.info('Subordinate scripts to be called in below order:')
 i_nums <- nchar(as.character(i_len))
 mlen_pgms <- max(nchar(basename(pgms_curr)))
@@ -216,22 +264,28 @@ for (i in seq_len(i_len)) {
 logger.info(strrep('-', 80))
 logger.info('Calling subordinate scripts...')
 for (pgm in pgms_curr) {
-	#001. Declare which script is called at this step
-	logger.info(strrep('-', 40))
-	logger.info('<',basename(pgm),'> Beginning...')
+	#001. Get the file name of the script
+	fname_scr <- basename(pgm)
 
-	#990. Call the dedicated program
+	#100. Declare which script is called at this step
+	logger.info(strrep('-', 40))
+	logger.info('<',fname_scr,'> Beginning...')
+
+	#500. Call the dedicated program
 	#Quote: https://www.r-bloggers.com/2012/10/error-handling-in-r/
 	withCallingHandlers(
-		source(pgm)
+		source(pgm, encoding = head(readr::guess_encoding(pgm), 1))
 		,message = function(m){logger.info(m)}
 		,warning = function(w){logger.warning(w)}
 		,error = function(e){logger.error(e)}
 		,abort = function(e){logger.critical(e)}
 	)
 
+	#700. Write current script to the process control file for another call of the same process
+	write(fname_scr, proc_ctrl, append = T)
+
 	#999. Mark completion of current step
-	logger.info('<',basename(pgm),'> Complete!')
+	logger.info('<',fname_scr,'> Complete!')
 }
 logger.info(strrep('-', 80))
 logger.info('Process Complete!')

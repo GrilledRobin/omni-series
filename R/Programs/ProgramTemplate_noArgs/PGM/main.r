@@ -92,11 +92,12 @@ if (length(pyVers) > 0) {
 PYTHON_EXE <- shQuote(file.path(PYTHON_HOME, 'python.exe'))
 
 #058. Prepare SAS parameters, in case one has to call SAS for interaction
-sasKey <- 'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
+sasKey <- 'HKEY_LOCAL_MACHINE\\SOFTWARE\\SAS Institute Inc.\\The SAS System'
 #The names of the direct sub-keys are the version numbers of all installed [SAS] software
 sasVers <- winReg_getInfByStrPattern(sasKey, inRegExp = '^.*$', chkType = 2)
 if (length(sasVers) > 0) {
-	sasVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, sasVers)[['name']]
+	sasVers_comp <- Filter(function(x){tryCatch({numeric_version(x[['name']]);T;}, error = function(e){F})}, sasVers)
+	sasVer <- Reduce(function(a,b){if (compareVersion(a[['name']],b[['name']]) >= 0) a else b}, sasVers_comp)[['name']]
 	SAS_HOME <- winReg_getInfByStrPattern(file.path(sasKey, sasVer, fsep = '\\'), 'DefaultRoot')[[1]][['value']]
 } else {
 	SAS_HOME <- ''

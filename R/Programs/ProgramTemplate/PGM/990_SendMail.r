@@ -18,13 +18,14 @@ library(RDCOMClient)
 L_srcflnm <- file.path(dir_data_raw, 'emailbody.txt')
 
 #200. Load the mail body text
-mailBody <- readLines(L_srcflnm)
+mailBody <- readLines(L_srcflnm) %>% paste0(collapse = '<br>')
 
 #300. Dispatch the API
 outlook <- COMCreate('Outlook.Application')
 mail <- outlook$CreateItem(0)
 
 #500. Set the mail specs
+mail[['SentOnBehalfOfName']] <- 'onbehalfofname@domain.com'
 mail[['To']] <- 'recipient@domain.com'
 mail[['CC']] <- 'more email addresses here'
 mail[['BCC']] <- 'more email addresses here'

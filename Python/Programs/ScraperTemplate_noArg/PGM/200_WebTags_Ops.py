@@ -15,6 +15,7 @@ import progressbar
 import datetime as dt
 import subprocess as sp
 from selenium import webdriver
+from selenium.webdriver.ie.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -66,6 +67,15 @@ user_agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Ge
 ie_options = webdriver.IeOptions()
 ie_options.add_argument('user-agent=' + user_agent)
 ie_options.add_argument('require_window_focus')
+#Below options are to enable IE Mode in MS Edge, in case IE is no longer available while website only supports visiting via IE
+#Quote: https://github.com/microsoft/edge-selenium-tools/issues/57
+#Quote: https://learn.microsoft.com/en-us/microsoft-edge/webdriver-chromium/ie-mode?tabs=python
+ie_options.attach_to_edge_chrome = True
+ie_options.edge_executable_path = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+
+#With this setting, one can place the IE driver in any path regardless of system PATH
+#Quote: https://www.selenium.dev/documentation/webdriver/getting_started/install_drivers/
+ie_service = Service(executable_path = '/path/to/iedriver')
 
 attr_IE = {
     '10' : {
@@ -132,7 +142,7 @@ logger.info('100. Login to the dedicated website')
 #Quote: https://www.thepythoncode.com/article/automate-login-to-websites-using-selenium-in-python
 #101. Initialize the IE driver
 #[executable_path] is deprecated at [selenium=4.0.0]
-driver = webdriver.Ie(options = ie_options)
+driver = webdriver.Ie(service = ie_service, options = ie_options)
 #driver.implicitly_wait(5)
 
 #110. Open the login page

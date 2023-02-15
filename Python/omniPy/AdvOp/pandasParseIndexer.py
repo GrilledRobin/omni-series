@@ -55,6 +55,11 @@ def pandasParseIndexer(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230216        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when the type of input data is [np.integer] instead of [int]                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -82,7 +87,7 @@ def pandasParseIndexer(
             rst = list(range(len(idx)))
         else:
             rst = idx.get_indexer([indexer])
-    elif isinstance(indexer, int):
+    elif isinstance(indexer, (int, np.integer)):
         rst = [indexer]
     elif isinstance(indexer, slice):
         bgn, stop, step = indexer.indices(len(idx))
@@ -95,11 +100,11 @@ def pandasParseIndexer(
                 rst = idx.get_indexer([indexer])
         elif len(indexer) == 0:
             rst = []
-        elif np.all(list(map(lambda x: isinstance(x, bool), indexer))):
+        elif np.all(list(map(lambda x: isinstance(x, (bool, np.bool_)), indexer))):
             if len(idx) != len(indexer):
                 raise ValueError(f'[{LfuncName}][{logname}]:Boolean [indexer] has different length to [idx]!' )
             rst = [ i for i in range(len(idx)) if indexer[i] ]
-        elif np.all(list(map(lambda x: isinstance(x, int), indexer))):
+        elif np.all(list(map(lambda x: isinstance(x, (int, np.integer)), indexer))):
             rst = indexer
         else:
             rst = idx.get_indexer(indexer)

@@ -6,6 +6,8 @@
 #[2] Send an email on behalf of another account with attachments
 #[3] Embed the pictures into HTML mail body
 #Quote: https://win32com.goermezer.de/microsoft/ms-office/send-email-with-outlook-and-python.html
+#MS official document for the COM API:
+#Quote: https://learn.microsoft.com/en-us/previous-versions/office/dn320330(v=office.15)?redirectedfrom=MSDN
 logger.info('Send Email')
 import os
 from win32com.client import Dispatch
@@ -23,6 +25,9 @@ msg.BCC = 'more email addresses here'
 msg.Subject = 'The subject of you mail'
 
 msg.SentOnBehalfOfName = 'onbehalfofname@domain.com'
+
+#Quote: https://stackoverflow.com/questions/21466180/sending-high-importance-email-through-outlook-using-python
+msg.Importance = 2
 
 attachment1 = 'Path to attachment no. 1'
 attachment2 = 'Path to attachment no. 2'

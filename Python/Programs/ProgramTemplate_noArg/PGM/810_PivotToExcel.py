@@ -157,8 +157,8 @@ pos_tops = np.stack(np.where(maxval <= 3), axis = 1)
 #590. Translate the locations into the positions in the final pivot table
 pos_tops_pvt = [
     (
-        udf_pvt.index.get_indexer(udf_pvt_data.index.take([i]))
-        ,udf_pvt.columns.get_indexer(udf_pvt_data.columns.take([j]))
+        udf_pvt_data.index.take([i])
+        ,udf_pvt_data.columns.take([j])
     )
     for i,j in pos_tops
 ]

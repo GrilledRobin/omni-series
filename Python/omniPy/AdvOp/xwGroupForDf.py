@@ -125,7 +125,7 @@ def xwGroupForDf(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, numpy, xlwings, inspect, functools, collections, typing                                                                #
+#   |   |sys, pandas, numpy, xlwings, inspect, functools, collections, typing                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -184,6 +184,38 @@ def xwGroupForDf(
     data_top = table_top + row_adj
     data_left = table_left + col_adj
 
+    #070. Verify the imported arguments from the keywords
+    cand_pos = ['after','before']
+    posRowTot = args_pvtLike.get('posRowTot').lower()
+    posRowSubt = args_pvtLike.get('posRowSubt').lower()
+    posColTot = args_pvtLike.get('posColTot').lower()
+    posColSubt = args_pvtLike.get('posColSubt').lower()
+    if posRowTot not in cand_pos:
+        raise ValueError('[' + LfuncName + '][posRowTot]:[{0}] must be among: [{1}]!'.format(posRowTot, ','.join(cand_pos)))
+    if posRowSubt not in cand_pos:
+        raise ValueError('[' + LfuncName + '][posRowSubt]:[{0}] must be among: [{1}]!'.format(posRowSubt, ','.join(cand_pos)))
+    if posColTot not in cand_pos:
+        raise ValueError('[' + LfuncName + '][posColTot]:[{0}] must be among: [{1}]!'.format(posColTot, ','.join(cand_pos)))
+    if posColSubt not in cand_pos:
+        raise ValueError('[' + LfuncName + '][posColSubt]:[{0}] must be among: [{1}]!'.format(posColSubt, ','.join(cand_pos)))
+    fRowTot = args_pvtLike.get('fRowTot')
+    fRowSubt = args_pvtLike.get('fRowSubt')
+    fColTot = args_pvtLike.get('fColTot')
+    fColSubt = args_pvtLike.get('fColSubt')
+    rowTot = args_pvtLike.get('rowTot')
+    colTot = args_pvtLike.get('colTot')
+    axis = kw_asGroup.get('axis')
+    key_axis = { 0 : 'row', 1 : 'column' }
+    opt_axis = [None] + list(key_axis.keys())
+    if axis not in opt_axis:
+        raise ValueError('[{0}][axis]:[{1}] must be among [{2}]!'.format(
+            LfuncName
+            ,str(axis)
+            ,','.join(map(str, opt_axis))
+        ))
+    rowGroup = (axis is None) or (axis == 0)
+    colGroup = (axis is None) or (axis == 1)
+
     #090. Resize the range to ensure the slicing is successful
     if not asformatter:
         rng = rng.resize(len(df) + row_adj, len(df.columns) + col_adj)
@@ -227,14 +259,14 @@ def xwGroupForDf(
 
     #300. Determine the position modifiers
     #310. Row modifiers
-    if args_pvtLike.get('posRowSubt') == 'before':
+    if posRowSubt == 'before':
         mod_grp_row_head = 1
     else:
         mod_grp_row_head = 0
     mod_grp_row_tail = 1 - mod_grp_row_head
 
     #350. Column modifiers
-    if args_pvtLike.get('posColSubt') == 'before':
+    if posColSubt == 'before':
         mod_grp_col_head = 1
     else:
         mod_grp_col_head = 0
@@ -250,12 +282,12 @@ def xwGroupForDf(
         )
         for k,v in merged_idx.items()
         for h,t in v
-        if args_pvtLike.get('fRowSubt')
+        if fRowSubt
     ]
 
     #530. Grouper for totals on index
     merged_idx_totals = {
-        i:h_totals_grp(i, 'index', args_pvtLike.get('posRowTot'), args_pvtLike.get('rowTot'))
+        i:h_totals_grp(i, 'index', posRowTot, rowTot)
         for i in range(df.index.nlevels)
     }
     xlmerge_idx_totals = [
@@ -265,7 +297,7 @@ def xwGroupForDf(
         )
         for k,v in merged_idx_totals.items()
         for h,t in v
-        if args_pvtLike.get('fRowTot')
+        if fRowTot
     ]
 
     #550. Merged headers
@@ -277,11 +309,12 @@ def xwGroupForDf(
         )
         for k,v in merged_hdr.items()
         for h,t in v
+        if fColSubt
     ]
 
     #570. Grouper for totals on headers
     merged_hdr_totals = {
-        i:h_totals_grp(i, 'columns', args_pvtLike.get('posColTot'), args_pvtLike.get('colTot'))
+        i:h_totals_grp(i, 'columns', posColTot, colTot)
         for i in range(df.columns.nlevels)
     }
     xlmerge_hdr_totals = [
@@ -291,7 +324,7 @@ def xwGroupForDf(
         )
         for k,v in merged_hdr_totals.items()
         for h,t in v
-        if args_pvtLike.get('fColTot')
+        if fColTot
     ]
 
     #700. Determine the positions of outlines
@@ -301,38 +334,42 @@ def xwGroupForDf(
     #[3] If program still cannot determine the outline position, it refers to the input values as last option
     #710. Axis-0
     if len(xlmerge_idx) > 0:
-        row_asGroup = modifyDict(row_asGroup, { 'posOutline' : args_pvtLike.get('posRowSubt') })
+        row_asGroup = modifyDict(row_asGroup, { 'posOutline' : posRowSubt })
     elif len(xlmerge_idx_totals) > 0:
-        row_asGroup = modifyDict(row_asGroup, { 'posOutline' : args_pvtLike.get('posRowTot') })
+        row_asGroup = modifyDict(row_asGroup, { 'posOutline' : posRowTot })
 
     #750. Axis-1
     if len(xlmerge_hdr) > 0:
-        col_asGroup = modifyDict(col_asGroup, { 'posOutline' : args_pvtLike.get('posColSubt') })
+        col_asGroup = modifyDict(col_asGroup, { 'posOutline' : posColSubt })
     elif len(xlmerge_hdr_totals) > 0:
-        col_asGroup = modifyDict(col_asGroup, { 'posOutline' : args_pvtLike.get('posColTot') })
+        col_asGroup = modifyDict(col_asGroup, { 'posOutline' : posColTot })
 
     #800. Group the ranges as requested
     #710. Axis-0
-    for r in xlmerge_idx + xlmerge_idx_totals:
-        xwRangeAsGroup(rng.__getitem__(r), **row_asGroup)
+    if rowGroup:
+        #100. Add group and outline
+        for r in xlmerge_idx + xlmerge_idx_totals:
+            xwRangeAsGroup(rng.__getitem__(r), **row_asGroup)
 
-    #719. Display the outline level 2 as Business convention if applicable
-    if len(xlmerge_idx) > 0:
-        #Quote: https://github.com/xlwings/xlwings/issues/2115
-        #Quote: https://github.com/xlwings/xlwings/blob/main/DEVELOPER_GUIDE.md#macos
-        #[ASSUMPTION]
-        #[1] Below method seems only to work for MacOS
-        # rng_Sheet.api.outline_object.show_levels( row_levels = len(xlmerge_idx_totals) + 1 )
-        #[2] It is tested for [xlwings <= 0.29.1], below statement takes no effect without errors
-        rng_Sheet.api.Outline.ShowLevels( RowLevels = len(xlmerge_idx_totals) + 1 )
+        #900. Display the outline level 2 as Business convention if applicable
+        if len(xlmerge_idx) > 0:
+            #Quote: https://github.com/xlwings/xlwings/issues/2115
+            #Quote: https://github.com/xlwings/xlwings/blob/main/DEVELOPER_GUIDE.md#macos
+            #[ASSUMPTION]
+            #[1] Below method seems only to work for MacOS
+            # rng_Sheet.api.outline_object.show_levels( row_levels = len(xlmerge_idx_totals) + 1 )
+            #[2] It is tested for [xlwings <= 0.29.1], below statement takes no effect without errors
+            rng_Sheet.api.Outline.ShowLevels( RowLevels = len(xlmerge_idx_totals) + 1 )
 
     #750. Axis-1
-    for r in xlmerge_hdr + xlmerge_hdr_totals:
-        xwRangeAsGroup(rng.__getitem__(r), **col_asGroup)
+    if colGroup:
+        #100. Add group and outline
+        for r in xlmerge_hdr + xlmerge_hdr_totals:
+            xwRangeAsGroup(rng.__getitem__(r), **col_asGroup)
 
-    #759. Display the outline level 2 as Business convention if applicable
-    if len(xlmerge_hdr) > 0:
-        rng_Sheet.api.Outline.ShowLevels(ColumnLevels = len(xlmerge_idx_totals) + 1)
+        #900. Display the outline level 2 as Business convention if applicable
+        if len(xlmerge_hdr) > 0:
+            rng_Sheet.api.Outline.ShowLevels(ColumnLevels = len(xlmerge_idx_totals) + 1)
 
     #999. Export the data to the entire range
     if (not asformatter) and (not formatOnly):

@@ -6,17 +6,18 @@
 #[2] Export the pivot table to EXCEL
 #[3] Set the theme for the pivot table in EXCEL
 #[4] Highlight the top-3 values in the data part of the pivot table, as well as their respective axis names
+#[5] Add groups and outlines for the necessary ranges and display the outline level 2 as common reporting convention
 logger.info('Create themed pivot table in EXCEL')
 import os
 import pandas as pd
 import numpy as np
 import xlwings as xw
-from functools import reduce
+from functools import reduce, partial
 from scipy.stats import rankdata
 from xlwings.constants import LineStyle as xwLS
 from xlwings.constants import BordersIndex as xwBI
 from xlwings.constants import BorderWeight as xwBW
-from omniPy.AdvOp import pandasPivot, xwDfToRange
+from omniPy.AdvOp import pandasPivot, xwDfToRange, xwGroupForDf
 
 # scr_name = r'D:\Python\Programs\ProgramTemplate_noArg\PGM\main.py'
 
@@ -27,6 +28,7 @@ color_dark = '#202122'
 color_light = '#FFE8CB'
 #Classic green of MS PowerBI default theme
 color_highlight = '#01B8AA'
+pvt_topleft = (2,2)
 
 #Below sample is from Pandas official website:
 #Quote: https://pandas.pydata.org/docs/reference/api/pandas.pivot_table.html?highlight=pivot_table#pandas.pivot_table
@@ -92,6 +94,20 @@ xw_highlight = {
 }
 
 #300. Pivot table with customized subtotals and totals
+args_sums = {
+    'fRowTot' : True
+    ,'fRowSubt' : True
+    ,'rowTot' : 'Total'
+    ,'rowSubt' : 'Subtotal'
+    ,'posRowTot' : 'after'
+    ,'posRowSubt' : 'before'
+    ,'fColTot' : True
+    ,'fColSubt' : True
+    ,'colTot' : 'Total'
+    ,'colSubt' : 'Subtotal'
+    ,'posColTot' : 'after'
+    ,'posColSubt' : 'after'
+}
 udf_pvt_pre = pandasPivot(
     testdf
     ,index = ['A','C']
@@ -100,25 +116,14 @@ udf_pvt_pre = pandasPivot(
     ,aggfunc = { 'D' : np.nansum }
     ,fill_value = 0
     ,rowSortAsc = True
-    ,fRowTot = True
-    ,fRowSubt = True
-    ,rowTot = 'Total'
-    ,rowSubt = 'Subtotal'
-    ,posRowTot = 'after'
-    ,posRowSubt = 'before'
     ,colSortAsc = True
-    ,fColTot = True
-    ,fColSubt = True
-    ,colTot = 'Total'
-    ,colSubt = 'Subtotal'
-    ,posColTot = 'after'
-    ,posColSubt = 'after'
     ,name_vals = '.pivot.values.'
     ,name_stats = '.pivot.stats.'
     ,keyPatcher = {
         #Set [foo] ahead of [bar] in the result
         'A' : { 'foo' : 0, 'bar' : 1 }
     }
+    ,**args_sums
 )
 udf_pvt_pre.columns = udf_pvt_pre.columns.droplevel(-1)
 
@@ -164,12 +169,14 @@ pos_tops_pvt = [
 ]
 
 #600. Set the arguments for exporting data to EXCEL
-args_xw = {
+args_idx = {
     'index' : True
     ,'header' : True
     ,'mergeIdx' : True
     ,'mergeHdr' : True
-    ,'stripe' : True
+}
+args_xw = {
+    'stripe' : True
     ,'theme' : 'BlackGold'
     ,'fmtIdx' : [
         #Set style for the last row of index
@@ -219,7 +226,22 @@ args_xw = {
     ]
 }
 
-#300. Export the data into an EXCEL file with default theme
+#900. Export the data into an EXCEL file with default theme
+#901. Prepare functions for easy calls
+fmt_DfToRange = partial(
+    xwDfToRange
+    ,asformatter = True
+    ,**args_idx
+    ,**args_xw
+)
+fmt_GroupForDf = partial(
+    xwGroupForDf
+    ,asformatter = False
+    ,formatOnly = True
+    ,kw_pvtLike = args_sums
+    ,**args_idx
+)
+
 if os.path.isfile(L_stpflnm): os.remove(L_stpflnm)
 with xw.App( visible = False, add_book = True ) as xlapp:
     #010. Set options
@@ -233,16 +255,25 @@ with xw.App( visible = False, add_book = True ) as xlapp:
     xlsh = xlwb.sheets[0]
 
     #400. Define the range
-    xlrng = xlsh.range('B2').expand().options(pd.DataFrame, index = True, header = True)
+    xlrng = (
+        xlsh.range(pvt_topleft).expand()
+        #[ASSUMPTION]
+        #[1] It is tested that chains of [options()] only validate the last one [xlwings <= 0.28.5]
+        .options(pd.DataFrame, index = True, header = True, formatter = fmt_DfToRange)
+        # .options(formatter = fmt_bold)
+    )
 
     #500. Export the data
     xlsh.cells.color = xw.utils.hex_to_rgb(color_dark)
-    xwDfToRange(
-        xlrng
-        ,udf_pvt
-        ,asformatter = False
-        ,**args_xw
-    )
+    xlrng.value = udf_pvt
+
+    #600. Add groups and outlines
+    #[ASSUMPTION]
+    #[1] Since the column total is no longer the last column in [udf_pvt], the grouping function fails to locate it
+    #[2] We should use [udf_pvt_pre] as the model dataframe for formatting instead
+    fmt_GroupForDf(xlrng, udf_pvt_pre)
+
+    #800. More settings
     xlsh.autofit()
 
     #999. Purge

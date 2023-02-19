@@ -7,6 +7,7 @@ import pandas as pd
 from collections.abc import Iterable
 from functools import partial
 from typing import Optional
+from operator import itemgetter
 from omniPy.AdvOp import modifyDict
 
 def pandasPivot(
@@ -137,6 +138,13 @@ def pandasPivot(
 #   | Log  |[1] Fixed a bug when no [columns] is provided and [aggfunc] only contain one field with one aggregation method              #
 #   |      |[2] Now set the placeholder for subtotals as a single white space to facilitate EXCEL formatting where necessary            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230218        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Allow [keyPatcher] to have uncontinuous sequence, and if it contains equal sequence numbers, further sort the keys to   #
+#   |      |     ensure a unique sequence number for each item in the final value list                                                  #
+#   |      |[2] Correct the sequence of values in the output totals and subtotals of [columns]                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -146,7 +154,7 @@ def pandasPivot(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, warnings, pandas, collections, functools, typing                                                                          #
+#   |   |sys, warnings, pandas, collections, functools, typing, operator                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -254,33 +262,50 @@ def pandasPivot(
     pvt_base = df.copy(deep = True).pivot_table(**kw_proc)
 
     #200. Helper functions
-    #210. Function to act as key for sorting of any [pd.Series]
+    #210. Function to reorder the given dict with continuous sequence, starting from 0
+    #Quote: https://docs.python.org/3/howto/sorting.html#sortinghowto
+    #[ASSUMPTION]
+    #[1] The input [keyPatcher] could be uncontinuous
+    #[2] There could also be equal sequence numbers in the patched values, e.g. { 'a' : 1, 'b' : 1, ... }
+    #[3] We have to reorder the patched values with continuous sequence
+    #[4] In case [2] happens, we first sort the values then sort the keys to determine a unique sequence number for each
+    def h_reorderDict(d):
+        vals = sorted([ (k,v) for k,v in d.items() ], key = itemgetter(1,0))
+        return({ v[0]:i for i,v in enumerate(vals) })
+
+    #219. Reorder the patched values on axes to ensure totals and subtotals can be placed correctly
+    val_unique = { k:h_reorderDict(v) for k,v in val_unique.items() }
+
+    #230. Function to act as key for sorting of any [pd.Series]
     def h_sort(vec, ascending, pos_total, pos_subtotal, val_total, val_subtotal):
         #100. Obtain the dedicated sequence of unique values for current input vector
         vec_unique = val_unique.get(vec.name, {})
         if len(vec_unique) == 0: return(vec)
 
+        #300. Retrieve the max sequence number in the mapper
+        max_val = max(vec_unique.values())
+
         #400. Determine the position of Grand Totals and Subtotals
         if ascending:
-            rst_total = -2 if pos_total == 'before' else len(vec_unique) + 2
-            rst_subtotal = -1 if pos_subtotal == 'before' else len(vec_unique) + 1
+            rst_total = -2 if pos_total == 'before' else max_val + 2
+            rst_subtotal = -1 if pos_subtotal == 'before' else max_val + 1
         else:
-            rst_total = -2 if pos_total != 'before' else len(vec_unique) + 2
-            rst_subtotal = -1 if pos_subtotal != 'before' else len(vec_unique) + 1
+            rst_total = -2 if pos_total != 'before' else max_val + 2
+            rst_subtotal = -1 if pos_subtotal != 'before' else max_val + 1
 
         #700. Set the sequence of the values for the input vector
         rstOut = (
             vec
             .copy(deep = True)
             .map(vec_unique)
-            .where(vec != val_total, rst_total)
             .where(vec != val_subtotal, rst_subtotal)
+            .where(vec != val_total, rst_total)
         )
 
         #999. Return the final sequence
         return(rstOut)
 
-    #230. Function to prepare the combination of subtotals and grand totals
+    #250. Function to prepare the combination of subtotals and grand totals
     def h_dim(obj, i, val_total, val_subtotal):
         placeholder = val_total if i == 0 else val_subtotal
         rstOut = {
@@ -290,7 +315,7 @@ def pandasPivot(
         }
         return(rstOut)
 
-    #250. Function to mutate the data and calculate pivot
+    #270. Function to mutate the data and calculate pivot
     def h_pivot(df, ren):
         df_mutate = df.copy(deep = True)
         df_mutate.loc[:, list(ren.keys())] = df_mutate[list(ren.keys())].astype('object')
@@ -301,7 +326,7 @@ def pandasPivot(
         )
         return(rstOut)
 
-    #270. Function to convert the data type of all levels within a pd.MultiIndex
+    #290. Function to convert the data type of all levels within a pd.MultiIndex
     #Quote: Get respective levels of pd.MultiIndex
     #Quote: https://stackoverflow.com/questions/36909457
     def h_AsObj(idx):
@@ -427,7 +452,8 @@ def pandasPivot(
 
     #817. Sort by above [key]
     if f_rows:
-        pvt_base.sort_values(pvt_base.index.names, inplace = True, ascending = rowSortAsc, key = h_sort_row)
+        pvt_base.sort_index(axis = 0, inplace = True, ascending = rowSortAsc, key = h_sort_row)
+        # pvt_base.sort_values(pvt_base.index.names, inplace = True, ascending = rowSortAsc, key = h_sort_row)
 
     #840. Sort columns
     #841. Set the names for special levels
@@ -445,9 +471,6 @@ def pandasPivot(
     if isinstance(pvt_base.columns, pd.MultiIndex):
         pvt_base.columns = pvt_base.columns.reorder_levels(var_cols + reorder_vals + reorder_stats)
 
-    #843. Extract the y-axis index from the pivot table
-    idx_cols = pvt_base.columns
-
     #844. Helper callable as [key] for sorting
     #[ASSUMPTION]
     #[1] All the [values] columns are pivoted in the same dimension on y-axis, which is exactly [0]
@@ -462,10 +485,7 @@ def pandasPivot(
     )
 
     #847. Sort by above [key]
-    idx_cols_sorted = idx_cols.sort_values(ascending = colSortAsc, key = h_sort_col)
-
-    #849. Assign the new columns as the final result
-    pvt_base = pvt_base.copy(deep = True).reindex(idx_cols_sorted, axis = 'columns')
+    pvt_base.sort_index(axis = 1, inplace = True, ascending = colSortAsc, key = h_sort_col)
 
     #860. Remove combinations of dimensions that are not observed
     if kw_proc.get('observed', False):
@@ -606,7 +626,7 @@ if __name__=='__main__':
         ,keyPatcher = {
             'hinc' : { 2.0 : 1, 4.0 : 0 }
             ,'.pivot.values.' : { 'invc' : 0, 'gc' : 1 }
-            ,'.pivot.stats.' : { np.nanmean.__name__ : 0, np.nanmax.__name__ : 1 }
+            ,'.pivot.stats.' : { np.nanmean.__name__ : 9, np.nanmax.__name__ : 10 }
         }
     )
 #-Notes- -End-

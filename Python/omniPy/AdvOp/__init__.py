@@ -24,6 +24,8 @@ from .rgetattr import rgetattr
 from .rsetattr import rsetattr
 from .pandasParseIndexer import pandasParseIndexer
 from .xwDfToRange import xwDfToRange
+from .xwRangeAsGroup import xwRangeAsGroup
+from .xwGroupForDf import xwGroupForDf
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup
@@ -38,6 +40,6 @@ __all__ = [
     , 'pandasPivot'
     , 'rgetattr' , 'rsetattr'
     , 'pandasParseIndexer'
-    , 'xwDfToRange'
+    , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
 ]

@@ -4,6 +4,7 @@
 import sys
 import re
 import pandas as pd
+import numpy as np
 #We have to import [pywintypes] to activate the DLL required by [win32api] for [xlwings < 0.27.15] and [Python <= 3.7]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
@@ -32,19 +33,15 @@ def xwDfToRange(
     ,fmtCol : List[dict] = []
     ,fmtCell : List[dict] = []
     ,asformatter : bool = False
+    ,formatOnly : bool = False
     ,idxall : str = '.all.'
-) -> 'Export the data frame to the specified xw.Range with certain theme':
-    #000.   Info.
+) -> None:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to export the data frame to the specified xw.Range with certain theme                                    #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Note:                                                                                                                              #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] If you wish to export a column with number-like characters, such as [0011], you need to apply [fmtCol] to format it as [@],    #
-#   |     otherwise EXCEL will imperatively convert it into numeric, see the examples for details                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -143,6 +140,10 @@ def xwDfToRange(
 #   |                 to set the parameters other than [rng] and [df] in order to use it in such case                                   #
 #   |                [False       ] <Default> Call this function to export [df] to the predefined [rng] directly                        #
 #   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
+#   |formatOnly  :   Logical value indicating whether only to set the format to the give range while not pouring the data               #
+#   |                [IMPORTANT   ] This argument only works when [asformatter = False]                                                 #
+#   |                [False       ] <Default> Pour data into the range after formatting                                                 #
+#   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
 #   |idxall      :   When matching the provision of [indexer], generate a full indexer for the provided pd.Index                        #
 #   |                [.all.       ] <Default> When [indexer=='.all.'], generate a full indexer                                          #
 #   |                [<str>       ]           Provide a unique value that is non-existing in [df.index] and [df.columns]                #
@@ -166,7 +167,7 @@ def xwDfToRange(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221104        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Now use EXCEL official API to set the zebra stripes as conditional formatting, ignoring hidden rows as special effect   #
+#   | Log  |[1] Now use EXCEL COM API to set the zebra stripes as conditional formatting, ignoring hidden rows as special effect        #
 #   |      |[2] Convert the number-like character columns into [text] format to align the input                                         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -184,6 +185,12 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when the input data is empty                                                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230218        | Version | 1.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Ensure the zebra stripe benchmark range do not contain NA values (unless all cells and indices on a single row are NA)  #
+#   |      |[2] Introduce boolean argument [formatOnly] to handle different scenarios when [asformatter == False]                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -193,7 +200,7 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, pandas, xlwings, itertools, collections, typing                                                                       #
+#   |   |sys, re, pandas, numpy, xlwings, itertools, collections, typing                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -221,6 +228,10 @@ def xwDfToRange(
         hdr_to_merge = list(range(df.columns.nlevels - 1)) if (header and mergeHdr) else []
     else:
         hdr_to_merge = pandasParseIndexer(pd.Index(df.columns.names), mergeHdr, idxall = idxall, logname = 'mergeHdr')
+    if not isinstance(asformatter, (bool, np.bool_)):
+        raise TypeError('[{0}][asformatter]:[{1}] must be boolean!'.format(LfuncName, type(asformatter)))
+    if not isinstance(formatOnly, (bool, np.bool_)):
+        raise TypeError('[{0}][formatOnly]:[{1}] must be boolean!'.format(LfuncName, type(formatOnly)))
 
     #050. Local parameters
     seq_ranges = [
@@ -260,16 +271,52 @@ def xwDfToRange(
         pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
 
-    #170. Function to create zebra stripes in terms of EXCEL official API as conditional formatting
+    #170. Function to create zebra stripes in terms of EXCEL COM API as conditional formatting
+    #171. Determine the benchmark cell, including row indices if any, to calculate the zebra stripes
+    rng_bench = None
+    if len(df) != 0:
+        #100. Scenario when [index] is to be exported
+        if index:
+            for i in [ j for j in range(df.index.nlevels) if j not in idx_to_merge ]:
+                if df.index.get_level_values(i).notnull().all():
+                    rng_bench = rng.__getitem__((
+                        slice(data_top, data_top + 1, None)
+                        ,slice(table_left + i, table_left + i + 1, None)
+                    ))
+                    break
+
+        #500. Select the first cell in one column with no NA value as benchmark, given it is still not determined
+        if rng_bench is None:
+            for i in range(len(df.columns)):
+                if df.iloc[:, i].notnull().all():
+                    rng_bench = rng.__getitem__((
+                        slice(data_top, data_top + 1, None)
+                        ,slice(data_left + i, data_left + i + 1, None)
+                    ))
+                    break
+
+    #175. Prepare the function
     #Quote: https://blog.csdn.net/pingfanren022/article/details/120383187
     def h_stripe(rngslice, attr):
         #100. Setup the formula
         #Quote: https://www.myonlinetraininghub.com/excel-conditional-formatting-zebra-stripes
-        subrng = rng.__getitem__(rngslice)[0,0]
-        uf_stripe = '=MOD(SUBTOTAL(103,{0}:{1}),2)'.format(subrng.address, re.sub(r'\$(\d+)$', r'\1', subrng.address))
+        #110. Find the address of the benchmark cell
+        #[ASSUMPTION]
+        #[1] If the benchmark cell is still not determined, we can only use the first cell for current range as benchmark
+        #[2] If the latter choice is made, the formula fails given the column of the final benchmark cell contains NA values
+        if rng_bench is not None:
+            add_bench = rng_bench.address
+        else:
+            add_bench = rng.__getitem__(rngslice)[0,0].address
+
+        #190. Create the formula for conditional formatting
+        uf_stripe = '=MOD(SUBTOTAL(103,{0}:{1}),2)'.format(add_bench, re.sub(r'\$(\d+)$', r'\1', add_bench))
+
+        #200. Identify the sliced range
+        subrng = rng.__getitem__(rngslice)
 
         #300. Set conditional formatting to the sliced range
-        rng.__getitem__(rngslice).api.FormatConditions.Add(
+        subrng.api.FormatConditions.Add(
             xw.constants.FormatConditionType.xlExpression
             ,xw.constants.FormatConditionOperator.xlEqual
             ,uf_stripe
@@ -278,16 +325,16 @@ def xwDfToRange(
         #400. Make the newly added condition as the top priority
         #[ASSUMPTION]
         #[1] After this step we can use [1] to reference the above rule
-        rng.__getitem__(rngslice).api.FormatConditions(rng.__getitem__(rngslice).api.FormatConditions.Count).SetFirstPriority()
+        subrng.api.FormatConditions(subrng.api.FormatConditions.Count).SetFirstPriority()
 
         #500. Remove tint and shade
-        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.TintAndShade = 0
+        subrng.api.FormatConditions(1).Interior.TintAndShade = 0
 
         #600. Set the color index to the default pattern
-        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.PatternColorIndex = xw.constants.Constants.xlAutomatic
+        subrng.api.FormatConditions(1).Interior.PatternColorIndex = xw.constants.Constants.xlAutomatic
 
         #700. Set the stripe color
-        rng.__getitem__(rngslice).api.FormatConditions(1).Interior.Color = attr.get('val')
+        subrng.api.FormatConditions(1).Interior.Color = attr.get('val')
 
     #180. Function to test if an object can be coerced to float
     def testFloat(x):
@@ -302,11 +349,11 @@ def xwDfToRange(
     merged_idx = { i:h_idx_merge_grp(i, 'index') for i in idx_to_merge }
     xlmerge_idx = [
         (
-            slice(data_top + pos[0] - 1, data_top + pos[-1] - 1 + 1, None)
+            slice(data_top + h - 1, data_top + t - 1 + 1, None)
             ,slice(table_left + k, table_left + k + 1, None)
         )
         for k,v in merged_idx.items()
-        for pos in v
+        for h,t in v
     ]
 
     #220. Merged headers
@@ -314,10 +361,10 @@ def xwDfToRange(
     xlmerge_hdr = [
         (
             slice(table_top + k, table_top + k + 1, None)
-            ,slice(data_left + pos[0] - 1, data_left + pos[-1] - 1 + 1, None)
+            ,slice(data_left + h - 1, data_left + t - 1 + 1, None)
         )
         for k,v in merged_hdr.items()
-        for pos in v
+        for h,t in v
     ]
 
     #400. Define dedicated ranges
@@ -370,21 +417,21 @@ def xwDfToRange(
     #431. Ranges expanded from the vertically merged index levels
     xlrng['index.merge'] = [
         (
-            slice(data_top + pos[0] - 1, data_top + pos[-1] - 1 + 1, None)
+            slice(data_top + h - 1, data_top + t - 1 + 1, None)
             ,slice(table_left + k, table_right + 1, None)
         )
         for k,v in merged_idx.items()
-        for pos in v
+        for h,t in v
     ]
 
     #432. Ranges expanded from the horizontally merged column levels
     xlrng['header.merge'] = [
         (
             slice(table_top + k, table_bottom + 1, None)
-            ,slice(data_left + pos[0] - 1, data_left + pos[-1] - 1 + 1, None)
+            ,slice(data_left + h - 1, data_left + t - 1 + 1, None)
         )
         for k,v in merged_hdr.items()
-        for pos in v
+        for h,t in v
     ]
 
     #440. Range for the box crossing index and header
@@ -580,7 +627,7 @@ def xwDfToRange(
         if (not header) | (len(df.columns) == 0): break
 
         #005. Extract the members
-        k,v = m.get('slicer'), m.get('attrs')
+        k,v,lvl = m.get('slicer'), m.get('attrs'), m.get('levels', None)
 
         #100. Translate the indexer
         hdr_to_fmt = pandasParseIndexer(df.columns, k, logname = 'fmtHdr')
@@ -668,7 +715,7 @@ def xwDfToRange(
         rng.__getitem__(r).merge()
 
     #999. Export the data to the entire range
-    if not asformatter:
+    if (not asformatter) and (not formatOnly):
         #100. Create a copy of the data frame to avoid modification on the original object
         df_copy = df.copy(deep = True)
 
@@ -826,8 +873,12 @@ if __name__=='__main__':
         xlsh.autofit()
 
         #600. Export the data as the formatter
-        #20221029 It is tested that the formatter has no effect where [xlwings <= 0.27.15]
-        #20221214 It is tested that the formatter works for [xlwings == 0.28.5] and maybe afterwards for all
+        #[ASSUMPTION]
+        #[1] It is tested that the formatter has no effect where [xlwings <= 0.27.15]
+        #[2] It is tested that the formatter works for [xlwings == 0.28.5] and maybe afterwards for good
+        #[3] In order to validate [index] and [header] arguments when we set the function as [formatter],
+        #     we have to place it in the same call of [options()] method, see below example
+        #[4] Chains of [options()] only validate the last one [xlwings <= 0.28.5]
         xlrng2 = xlsh.range('B20').expand().options(pd.DataFrame, index = True, header = True, formatter = xwfmtter)
         xlrng2.value = upvt
 

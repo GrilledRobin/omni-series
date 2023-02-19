@@ -176,6 +176,8 @@ def xwGroupForDf(
         if s.default is not inspect._empty
     }
     args_asGroup = modifyDict(args_asGroup, kw_asGroup)
+    rowGroup = args_asGroup.get('axis') in [None,0]
+    colGroup = args_asGroup.get('axis') in [None,1]
     row_asGroup = modifyDict(args_asGroup, { 'axis' : 0 })
     col_asGroup = modifyDict(args_asGroup, { 'axis' : 1 })
     row_adj = df.columns.nlevels if header else 0
@@ -204,17 +206,6 @@ def xwGroupForDf(
     fColSubt = args_pvtLike.get('fColSubt')
     rowTot = args_pvtLike.get('rowTot')
     colTot = args_pvtLike.get('colTot')
-    axis = kw_asGroup.get('axis')
-    key_axis = { 0 : 'row', 1 : 'column' }
-    opt_axis = [None] + list(key_axis.keys())
-    if axis not in opt_axis:
-        raise ValueError('[{0}][axis]:[{1}] must be among [{2}]!'.format(
-            LfuncName
-            ,str(axis)
-            ,','.join(map(str, opt_axis))
-        ))
-    rowGroup = (axis is None) or (axis == 0)
-    colGroup = (axis is None) or (axis == 1)
 
     #090. Resize the range to ensure the slicing is successful
     if not asformatter:

@@ -356,12 +356,12 @@ def DBuse_GetTimeSeriesForKpi(
     if MergeProc == 'MERGE':
         if not AggrBy:
             raise ValueError('['+LfuncName+']'+'[AggrBy] is not provided for pivoting, as [MergeProc]==[{0}]!'.format(MergeProc))
-    if not InfDatCfg: InfDatCfg = {}
-    if InfDatCfg.get('InfDat'):
-        if not keyvar:
-            raise ValueError('['+LfuncName+']'+'[keyvar] is not provided for mapping to [InfDat]!')
-        if not isinstance(keyvar, (str, list, tuple)):
-            raise TypeError('['+LfuncName+']'+'[keyvar] should be any among [str, list, tuple]!')
+    if InfDatCfg is None: InfDatCfg = {}
+    if not isinstance(InfDatCfg, dict):
+        raise ValueError('['+LfuncName+']'+'[InfDatCfg] must be a dict!')
+    if InfDatCfg.get('InfDat') is not None:
+        if not isinstance(keyvar, Iterable):
+            raise TypeError('['+LfuncName+']'+'[keyvar] should be Iterable!')
         if isinstance(keyvar, str):
             keyvar = [keyvar.upper()]
         else:

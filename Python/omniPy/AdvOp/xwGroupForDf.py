@@ -429,7 +429,7 @@ if __name__=='__main__':
         ,'posColSubt' : 'after'
     }
     udf_pvt = pandasPivot(
-        testdf
+        udf
         ,index = ['A','C']
         ,columns = ['B']
         ,values = ['D']

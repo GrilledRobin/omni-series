@@ -176,10 +176,6 @@ def xwGroupForDf(
         if s.default is not inspect._empty
     }
     args_asGroup = modifyDict(args_asGroup, kw_asGroup)
-    rowGroup = args_asGroup.get('axis') in [None,0]
-    colGroup = args_asGroup.get('axis') in [None,1]
-    row_asGroup = modifyDict(args_asGroup, { 'axis' : 0 })
-    col_asGroup = modifyDict(args_asGroup, { 'axis' : 1 })
     row_adj = df.columns.nlevels if header else 0
     col_adj = df.index.nlevels if index else 0
     table_top, table_left = 0,0
@@ -187,6 +183,14 @@ def xwGroupForDf(
     data_left = table_left + col_adj
 
     #070. Verify the imported arguments from the keywords
+    key_axis = { 0 : 'row', 1 : 'column' }
+    opt_axis = [None] + list(key_axis.keys())
+    if args_asGroup.get('axis') not in opt_axis:
+        raise ValueError('[{0}][axis]:[{1}] must be among [{2}]!'.format(
+            LfuncName
+            ,str(args_asGroup.get('axis'))
+            ,','.join(map(str, opt_axis))
+        ))
     cand_pos = ['after','before']
     posRowTot = args_pvtLike.get('posRowTot').lower()
     posRowSubt = args_pvtLike.get('posRowSubt').lower()
@@ -206,6 +210,10 @@ def xwGroupForDf(
     fColSubt = args_pvtLike.get('fColSubt')
     rowTot = args_pvtLike.get('rowTot')
     colTot = args_pvtLike.get('colTot')
+    rowGroup = args_asGroup.get('axis') in [None,0]
+    colGroup = args_asGroup.get('axis') in [None,1]
+    row_asGroup = modifyDict(args_asGroup, { 'axis' : 0 })
+    col_asGroup = modifyDict(args_asGroup, { 'axis' : 1 })
 
     #090. Resize the range to ensure the slicing is successful
     if not asformatter:

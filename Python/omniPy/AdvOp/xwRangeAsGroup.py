@@ -110,8 +110,8 @@ def xwRangeAsGroup(
 
     #050. Local parameters
     rng_Sheet = rng.sheet
-    rowGroup = (axis is None) or (axis == 0)
-    colGroup = (axis is None) or (axis == 1)
+    rowGroup = axis in [None,0]
+    colGroup = axis in [None,1]
     opt_method = ['Group','Ungroup']
     if isinstance(method, str):
         methodRow = method

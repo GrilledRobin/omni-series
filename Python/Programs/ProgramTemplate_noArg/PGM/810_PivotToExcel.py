@@ -169,10 +169,12 @@ pos_tops_pvt = [
 ]
 
 #600. Set the arguments for exporting data to EXCEL
-args_idx = {
+args_axis = {
     'index' : True
     ,'header' : True
-    ,'mergeIdx' : True
+}
+args_idx = {
+    'mergeIdx' : True
     ,'mergeHdr' : True
 }
 args_xw = {
@@ -231,6 +233,7 @@ args_xw = {
 fmt_DfToRange = partial(
     xwDfToRange
     ,asformatter = True
+    ,**args_axis
     ,**args_idx
     ,**args_xw
 )
@@ -239,6 +242,7 @@ fmt_GroupForDf = partial(
     ,asformatter = False
     ,formatOnly = True
     ,kw_pvtLike = args_sums
+    ,**args_axis
     ,**args_idx
 )
 
@@ -259,7 +263,7 @@ with xw.App( visible = False, add_book = True ) as xlapp:
         xlsh.range(pvt_topleft).expand()
         #[ASSUMPTION]
         #[1] It is tested that chains of [options()] only validate the last one [xlwings <= 0.28.5]
-        .options(pd.DataFrame, index = True, header = True, formatter = fmt_DfToRange)
+        .options(pd.DataFrame, formatter = fmt_DfToRange, **args_axis)
         # .options(formatter = fmt_bold)
     )
 

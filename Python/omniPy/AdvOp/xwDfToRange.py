@@ -191,6 +191,11 @@ def xwDfToRange(
 #   | Log  |[1] Ensure the zebra stripe benchmark range do not contain NA values (unless all cells and indices on a single row are NA)  #
 #   |      |[2] Introduce boolean argument [formatOnly] to handle different scenarios when [asformatter == False]                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230228        | Version | 1.70        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Extract the process to create zebra stripes from the main process, to simplify the overall function                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -506,12 +511,6 @@ def xwDfToRange(
     else:
         xlstripe_idx = []
 
-    #489. Combine the list of ranges to create the stripes
-    if stripe:
-        xlrng['stripe'] = xlstripe_idx + xlrng['data']
-    else:
-        xlrng['stripe'] = []
-
     #500. Find ranges with numbers stored as [text] and set their NumberFormat as [text] with intention
     if len(xlrng['data']) > 0:
         #100. Identify all columns with numbers stored as [text]
@@ -542,6 +541,13 @@ def xwDfToRange(
     #610. Retrieve the theme as requested
     table_theme = theme_xwtable(theme)
 
+    #620. Create the stripes
+    if stripe:
+        xlrng['stripe'] = xlstripe_idx + xlrng['data']
+        for r in xlstripe_idx + xlrng['data']:
+            for debugname, attr in table_theme.get('stripe', {}).items():
+                h_stripe(r, attr)
+
     #630. Reorder the ranges so that the styles for the latters overwrite those for the formers
     xlrng = OrderedDict({ k:xlrng.get(k) for k in seq_ranges if k in xlrng })
 
@@ -558,10 +564,7 @@ def xwDfToRange(
             for debugname, attr in item_theme.items():
                 #Quote: https://gaopinghuang0.github.io/2018/11/17/python-slicing
                 # print(debugname)
-                if k in ['stripe']:
-                    h_stripe(r, attr)
-                else:
-                    rsetattr(rng.__getitem__(r), **attr)
+                rsetattr(rng.__getitem__(r), **attr)
 
     #700. Set the styles of the requested ranges
     #710. Specific rows of the [index] part
@@ -879,6 +882,8 @@ if __name__=='__main__':
         #[3] In order to validate [index] and [header] arguments when we set the function as [formatter],
         #     we have to place it in the same call of [options()] method, see below example
         #[4] Chains of [options()] only validate the last one [xlwings <= 0.28.5]
+        #[5] Using [formatter=] option will cause the removal of leading zeros from cell values [xlwings <= 0.28.5]
+        #     It is presumed that [xw.Range.value = val] will convert the numeric-like characters into numerics inadvertently
         xlrng2 = xlsh.range('B20').expand().options(pd.DataFrame, index = True, header = True, formatter = xwfmtter)
         xlrng2.value = upvt
 

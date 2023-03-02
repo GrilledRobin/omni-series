@@ -37,6 +37,8 @@
 #   |                [name          ] Name of the interval among the choices as defined for [interval]                                  #
 #   |                [span          ] Date span to extend [omniR$Dates$UserCalendar] for each of current interval during calculation    #
 #   |                [multiple      ] Multiple as input for the calculation of date incremental, default as [1]                         #
+#   |                [recycle       ] Indicator of how many periods will be recycled during the calculation, only affects the           #
+#   |                                  calculation upon [time] intervals                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -48,6 +50,11 @@
 #   | Date |    20211005        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Correct the [span] for [weekday] as 1, instead of 5, to make it a type of incremental on single units instead of period #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230302        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added attribute [recycle] in output result to indicate the span when recycling the periods                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -96,22 +103,22 @@ getDateIntervals <- function(interval){
 
 	#053. Date and time intervals
 	dict_d <- list(
-		'day' = list('span' = 1)
-		,'week' = list('span' = 7)
-		,'weekday' = list('span' = 1)
-		,'tenday' = list('span' = 10)
-		,'semimonth' = list('span' = 16)
-		,'month' = list('span' = 31)
-		,'qtr' = list('span' = 92)
-		,'semiyear' = list('span' = 183)
-		,'year' = list('span' = 366)
+		'day' = list('span' = 1, 'recycle' = 0)
+		,'week' = list('span' = 7, 'recycle' = 0)
+		,'weekday' = list('span' = 1, 'recycle' = 0)
+		,'tenday' = list('span' = 10, 'recycle' = 0)
+		,'semimonth' = list('span' = 16, 'recycle' = 0)
+		,'month' = list('span' = 31, 'recycle' = 0)
+		,'qtr' = list('span' = 92, 'recycle' = 0)
+		,'semiyear' = list('span' = 183, 'recycle' = 0)
+		,'year' = list('span' = 366, 'recycle' = 0)
 	)
 	dict_dt <- dict_d
 	names(dict_dt) <- paste0('dt', names(dict_d))
 	dict_t <- list(
-		'second' = list('span' = 1)
-		,'minute' = list('span' = 60)
-		,'hour' = list('span' = 3600)
+		'second' = list('span' = 1, 'recycle' = 86400)
+		,'minute' = list('span' = 60, 'recycle' = 1440)
+		,'hour' = list('span' = 3600, 'recycle' = 24)
 	)
 	dict_dtt <- dict_t
 	names(dict_dtt) <- paste0('dt', names(dict_t))
@@ -133,6 +140,7 @@ getDateIntervals <- function(interval){
 						'itype' = x
 						,'name' = y
 						,'span' = dict_dates[[x]][[y]][['span']]
+						,'recycle' = dict_dates[[x]][[y]][['recycle']]
 					)
 				}
 			)

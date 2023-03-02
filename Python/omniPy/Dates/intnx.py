@@ -155,6 +155,12 @@ def intnx(
 #   | Log  |[1] Fixed a bug: [intnx('day', '20211231', 1, daytype = 'w')] returns [NaT]. This was due to the calendar span is not set   #
 #   |      |     enough for calculation                                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230302        | Version | 7.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] [dt<interval>] now return the same results as the same function does in SAS                                             #
+#   |      |[2] Slightly improve the efficiency, use [.mul(-1).floordiv(1).mul(-1)] to resemble [np.ceil] behavior                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -523,7 +529,19 @@ def intnx(
         )
 
         #650. Increment by different scenarios of [time]
-        dtt_rst_time = asTimes(dtt_incr.mod(86400))
+        dtt_ntvl = re.sub(r'^dt', '', dict_attr['name'])
+        dtt_rst_time = intnx(
+            interval = dtt_ntvl
+            ,indate = df_indate[col_calc]
+            ,increment = l_incr
+            ,alignment = dict_attr['alignment']
+            ,daytype = daytype
+            ,cal = cal
+            ,kw_d = kw_d
+            ,kw_dt = kw_dt
+            ,kw_t = kw_t
+            ,kw_cal = kw_cal
+        )
 
         #700. Correction on incremental for [Work/Trade Days]
         if daytype in ['W', 'T']:
@@ -621,29 +639,15 @@ def intnx(
         df_indate[col_merge] = df_indate[col_calc].dt.floor('S', ambiguous = 'NaT')
 
         #500. Define the bound of the calendar
+        #[ASSUMPTION]
+        #[1] Only for calculation on [time], all numbers are recycled in one day
+        cal_bgn = dt.datetime.combine(dt.date.today(), dt.time(0,0,0))
         notnull_indate = df_indate[col_merge].notnull()
         if not notnull_indate.any():
             #100. Assign the minimum size of calendar data if none of the input is a valid date
-            cal_bgn = dt.datetime.combine(dt.date.today(), dt.time(0,0,0))
             cal_end = cal_bgn
         else:
-            #100. Retrieve the minimum and maximum values among the input values
-            in_min = df_indate[col_merge].loc[notnull_indate].min(skipna = True)
-            in_max = df_indate[col_merge].loc[notnull_indate].max(skipna = True)
-
-            #500. Extend the period coverage by the provided span and multiple
-            cal_bgn = (
-                in_min.replace(minute = 0, second = 0)
-                + dt.timedelta(seconds = l_cal_imin * dict_attr['multiple'] * dict_attr['span'])
-            )
-            cal_end = (
-                in_max.replace(minute = 59, second = 59)
-                + dt.timedelta(seconds = l_cal_imax * dict_attr['multiple'] * dict_attr['span'])
-            )
-
-            #800. Ensure the period cover the minimum and maximum of the input values
-            cal_bgn = min(cal_bgn, in_min)
-            cal_end = max(cal_end, in_max)
+            cal_end = dt.datetime.combine(dt.date.today(), dt.time(23,59,59))
 
     #250. [time] part for [type == dt]
     if dict_attr['itype'] in ['dt']:
@@ -670,8 +674,11 @@ def intnx(
         rst = cal_in.copy(deep=True)
 
         #500. Calculate the incremented [col_period]
-        rst['_gti_newprd_'] = rst[col_period] + rst['_intnxIncr_'] * multiple
-#        print(rst[[col_rowidx, col_period, '_gti_newprd_']])
+        rst['_gti_newprd_'] = rst[col_period].add(rst['_intnxIncr_'].mul(multiple))
+
+        #510. Handle the scenario when the calculation is over [time], i.e. recycle the periods to minimize system effort
+        if dict_attr['itype'] in ['t']:
+            rst.loc[:, '_gti_newprd_'] = rst.loc[:, '_gti_newprd_'].mod(dict_attr['recycle'])
 
         #700. Calculate the alignment based on the request
         if dict_attr['span'] == 1:
@@ -761,14 +768,18 @@ def intnx(
                 .groupby(col_period)
                 .agg({ col_prdidx : 'count' })
                 [col_prdidx]
-                .apply( lambda x: int(np.ceil(x / 2)) )
+                #Resemble the behavior of [np.ceil] while eliminate the usage of [series.apply]
+                # .apply( lambda x: int(np.ceil(x / 2)) )
+                .div(2).mul(-1).floordiv(1).mul(-1).astype(int)
                 .set_axis(prd_mid.index, axis = 0)
             )
 #            sys._getframe(2).f_globals.update({ 'vfy_mid' : prd_mid })
 
             #400. Correct above index as [second] starts from [0], while others starts from [1]
             if dict_attr['itype'] in ['t']:
-                prd_mid.loc[:, col_prdidx] += 1
+                #To resemble the same result as in SAS, we no longer need to conduct such process
+                pass
+                # prd_mid.loc[:, col_prdidx] += 1
 
             #500. Add the special series to the result as a new column
             rst.loc[:, col_prdidx] = (
@@ -875,7 +886,6 @@ if __name__=='__main__':
     from omniPy.AdvOp import exec_file
     from omniPy.Dates import intnx
     from omniPy.Dates import asDates, asDatetimes, asTimes, ObsDates, intck
-    print(intnx.__doc__)
 
     #050. Load user defined functions
     #[getOption] is from [autoexec.py]
@@ -971,7 +981,15 @@ if __name__=='__main__':
     time_end = dt.datetime.now()
     print(time_end)
     print(time_end - time_bgn)
-    # 1.9s on average
+    # 1.81s on average
+
+    time_bgn = dt.datetime.now()
+    print(time_bgn)
+    df_trns8_1 = intnx('dthour', df_ttt8, 12, 'm', daytype = 'w')
+    time_end = dt.datetime.now()
+    print(time_end)
+    print(time_end - time_bgn)
+    # 1.78s on average
 
     #900. Test special cases
     #910. [None] vs [None]

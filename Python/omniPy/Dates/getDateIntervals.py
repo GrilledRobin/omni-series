@@ -50,6 +50,8 @@ def getDateIntervals(
 #   |                [name          ] Name of the interval among the choices as defined for [interval]                                  #
 #   |                [span          ] Date span to extend [omniPy.Dates.UserCalendar] for each of current interval during calculation   #
 #   |                [multiple      ] Multiple as input for the calculation of date incremental, default as [1]                         #
+#   |                [recycle       ] Indicator of how many periods will be recycled during the calculation, only affects the           #
+#   |                                  calculation upon [time] intervals                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -76,6 +78,11 @@ def getDateIntervals(
 #   | Date |    20211120        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug: [ptn_ntvl_matchobj.all()] fails on verification; change to [ptn_ntvl_matchobj.notnull().all()]             #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230302        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added attribute [recycle] in output result to indicate the span when recycling the periods                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -110,21 +117,21 @@ def getDateIntervals(
 
     #053. Date and time intervals
     dict_d = {
-        'day' : {'span' : 1}
-        ,'week' : {'span' : 7}
-        ,'weekday' : {'span' : 1}
-        ,'tenday' : {'span' : 10}
-        ,'semimonth' : {'span' : 16}
-        ,'month' : {'span' : 31}
-        ,'qtr' : {'span' : 92}
-        ,'semiyear' : {'span' : 183}
-        ,'year' : {'span' : 366}
+        'day' : {'span' : 1, 'recycle' : 0}
+        ,'week' : {'span' : 7, 'recycle' : 0}
+        ,'weekday' : {'span' : 1, 'recycle' : 0}
+        ,'tenday' : {'span' : 10, 'recycle' : 0}
+        ,'semimonth' : {'span' : 16, 'recycle' : 0}
+        ,'month' : {'span' : 31, 'recycle' : 0}
+        ,'qtr' : {'span' : 92, 'recycle' : 0}
+        ,'semiyear' : {'span' : 183, 'recycle' : 0}
+        ,'year' : {'span' : 366, 'recycle' : 0}
     }
     dict_dt = { ('dt' + k) : v for k,v in dict_d.items() }
     dict_t = {
-        'second' : {'span' : 1}
-        ,'minute' : {'span' : 60}
-        ,'hour' : {'span' : 3600}
+        'second' : {'span' : 1, 'recycle' : 86400}
+        ,'minute' : {'span' : 60, 'recycle' : 1440}
+        ,'hour' : {'span' : 3600, 'recycle' : 24}
     }
     dict_dtt = { ('dt' + k) : v for k,v in dict_t.items() }
     dict_dates = {
@@ -140,6 +147,7 @@ def getDateIntervals(
             'itype' : x
             ,'name' : y
             ,'span' : dict_dates[x][y]['span']
+            ,'recycle' : dict_dates[x][y]['recycle']
         }
         for x in dict_dates.keys()
         for y in dict_dates[x].keys()

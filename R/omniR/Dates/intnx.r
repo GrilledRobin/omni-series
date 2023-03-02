@@ -97,6 +97,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230302        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] [dt<interval>] now return the same results as the same function does in SAS                                             #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -441,7 +446,19 @@ intnx <- function(
 		)
 
 		#650. Increment by different scenarios of [time]
-		dtt_rst_time <- asTimes(dtt_incr %% 86400)
+		dtt_ntvl <- gsub('^dt', '', dict_attr[['name']])
+		dtt_rst_time <- intnx(
+			interval = dtt_ntvl
+			,indate = df_indate %>% dplyr::pull(tidyselect::all_of(col_calc))
+			,increment = l_incr
+			,alignment = dict_attr[['alignment']]
+			,daytype = daytype
+			,cal = cal
+			,kw_d = kw_d
+			,kw_dt = kw_dt
+			,kw_t = kw_t
+			,kw_cal = kw_cal
+		)
 
 		#700. Correction on incremental for [Work/Trade Days]
 		if (daytype %in% c('W', 'T')) {
@@ -485,8 +502,15 @@ intnx <- function(
 
 		#800. Combine the parts into [datetime]
 		#810. Combine the vectors
-		dtt_rst_vec <- dtt_rst_date + dtt_rst_time
-		lubridate::tz(dtt_rst_vec) <- Sys.getenv('TZ')
+		dtt_rst_vec <- lubridate::make_datetime(
+			year = lubridate::year(dtt_rst_date)
+			,month = lubridate::month(dtt_rst_date)
+			,day = lubridate::day(dtt_rst_date)
+			,hour = lubridate::hour(dtt_rst_time)
+			,min = lubridate::minute(dtt_rst_time)
+			,sec = lubridate::second(dtt_rst_time)
+			,tz = Sys.getenv('TZ')
+		)
 
 		#890. Retrieve the attributes of the input data.frame
 		dtt_rst <- df_indate %>% dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol)))
@@ -542,32 +566,22 @@ intnx <- function(
 	} else {
 		#100. Create new column
 		df_indate[[col_merge]] <- df_indate[[col_calc]]
+		lubridate::tz(df_indate[[col_merge]]) <- Sys.getenv('TZ')
 		lubridate::second(df_indate[[col_merge]]) <- floor(lubridate::second(df_indate[[col_merge]]))
 
 		#500. Define the bound of the calendar
+		#[ASSUMPTION]
+		#[1] Only for calculation on [time], all numbers are recycled in one day
+		cal_bgn <- asDatetimes( lubridate::today() )
 		notnull_indate <- !is.na(df_indate[[col_merge]])
 		if (!any(notnull_indate)) {
 			#100. Assign the minimum size of calendar data if none of the input is a valid date
-			cal_bgn <- asDatetimes( lubridate::today() )
 			cal_end <- cal_bgn
 		} else {
-			#100. Retrieve the minimum and maximum values among the input values
-			in_min <- min(df_indate[[col_merge]], na.rm = T)
-			in_max <- max(df_indate[[col_merge]], na.rm = T)
-
-			#500. Extend the period coverage by the provided span and multiple
-			tmp_min <- in_min
-			lubridate::minute(tmp_min) <- 0
-			lubridate::second(tmp_min) <- 0
-			cal_bgn <- tmp_min + as.difftime(l_cal_imin * dict_attr[['multiple']] * dict_attr[['span']], units = 'secs')
-			tmp_max <- in_max
-			lubridate::minute(tmp_max) <- 59
-			lubridate::second(tmp_max) <- 59
-			cal_end <- tmp_max + as.difftime(l_cal_imax * dict_attr[['multiple']] * dict_attr[['span']], units = 'secs')
-
-			#800. Ensure the period cover the minimum and maximum of the input values
-			cal_bgn <- min(cal_bgn, in_min)
-			cal_end <- max(cal_end, in_max)
+			cal_end <- asDatetimes( lubridate::today() )
+			lubridate::hour(cal_end) <- 23
+			lubridate::minute(cal_end) <- 59
+			lubridate::second(cal_end) <- 59
 		}
 	}
 
@@ -600,6 +614,11 @@ intnx <- function(
 		#500. Calculate the incremented [col_period]
 		rst[['.gti_newprd.']] <- rst[[col_period]] + rst[['.intnxIncr.']] * multiple
 		# print(rst[c(col_rowidx, col_period, '.gti_newprd.')])
+
+		#510. Handle the scenario when the calculation is over [time], i.e. recycle the periods to minimize system effort
+		if (dict_attr[['itype']] %in% c('t')) {
+			rst[['.gti_newprd.']] <- rst[['.gti_newprd.']] %% dict_attr[['recycle']]
+		}
 
 		#700. Calculate the alignment based on the request
 		if (dict_attr[['span']] == 1) {
@@ -665,7 +684,8 @@ intnx <- function(
 
 			#400. Correct above index as [second] starts from [0], while others starts from [1]
 			if (dict_attr[['itype']] %in% c('t')) {
-				prd_mid[[col_prdidx]] <- prd_mid[[col_prdidx]] + 1
+				#To resemble the same result as in SAS, we no longer need to conduct such process
+				# prd_mid[[col_prdidx]] <- prd_mid[[col_prdidx]] + 1
 			}
 
 			#900. Retrieve the row at the middle of the period of interval
@@ -838,8 +858,15 @@ if (FALSE){
 		df_trns8 <- intnx('dthour', df_ttt8, 12, 's', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 1.0s
+		# 2.55s
 		View(df_trns8)
+
+		t1 <- lubridate::now()
+		df_trns8_1 <- intnx('dthour', df_ttt8, 12, 'm', daytype = 'w')
+		t2 <- lubridate::now()
+		print(t2 - t1)
+		# 2.55s
+		View(df_trns8_1)
 
 		#900. Test special cases
 		#910. [NULL] vs [NULL]

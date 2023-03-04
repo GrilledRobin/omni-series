@@ -12,6 +12,7 @@ from .debug_comp_datcols import debug_comp_datcols
 from .exec_file import exec_file
 from .gen_locals import gen_locals
 from .get_values import get_values
+from .importByStr import importByStr
 from .initCatVar import initCatVar
 from .initNumVar import initNumVar
 from .modifyDict import modifyDict
@@ -34,7 +35,7 @@ from .strBalancedGroupEval import strBalancedGroupEval
 #200.   Define available resources.
 __all__ = [
     'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
-    , 'modifyDict'
+    , 'modifyDict', 'importByStr'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage'
     , 'pandasPivot'

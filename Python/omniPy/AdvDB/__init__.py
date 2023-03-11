@@ -18,6 +18,7 @@ from .DBuse_SetKPItoInf import DBuse_SetKPItoInf
 from .DBuse_MrgKPItoInf import DBuse_MrgKPItoInf
 from .DBuse_GetTimeSeriesForKpi import DBuse_GetTimeSeriesForKpi
 from .aggrByPeriod import aggrByPeriod
+from .OpenSourceApiMeta import OpenSourceApiMeta
 
 #200.   Define available resources.
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     , 'loadSASdat', 'std_read_HDFS', 'std_read_RAM', 'std_read_SAS'
     , 'aggrByPeriod'
     , 'parseDatName'
+    , 'OpenSourceApiMeta'
 ]

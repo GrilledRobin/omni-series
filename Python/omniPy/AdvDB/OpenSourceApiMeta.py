@@ -3,10 +3,9 @@
 
 #001. Import necessary functions for processing.
 import sys
-import inspect
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from omniPy.AdvOp import get_values, importByStr
+from omniPy.AdvOp import get_values, importByStr, modifyDict
 
 #100. Definition of the class.
 class OpenSourceApiMeta(type):
@@ -17,6 +16,10 @@ class OpenSourceApiMeta(type):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This Class is intended to unify the APIs to communicate with various open sources, e.g. FTP, File System and DB Engines to <pull>  #
 #   | data or <push> data in simplified and standardized manner                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |Reference:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |Metaclass example: https://www.pythontutorial.net/python-oop/python-metaclass-example/                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Methods                                                                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -38,9 +41,6 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPkgPull        :   <str     > Name of the package from which to obtain the API function to pull the data                #
 #   |   |   |                      [None                ]<Default> Obtain the API from current session in global environment            #
 #   |   |   |                      [<str>               ]          Package name valid for function <omniPy.AdvOp.importByStr>           #
-#   |   |   |pullOnInit        :   <bool    > Whether to pull data from the API on instantiation of the newly created class             #
-#   |   |   |                      [True                ]<Default> Pull data on instantiation to simplify the usage                     #
-#   |   |   |                      [False               ]          Do not pull data on instantiation                                    #
 #   |   |   |apiPfxPull        :   <str     > Prefix of the puller API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific prefix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
@@ -53,9 +53,6 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
 #   |   |   |                      [None                ]<Default> Obtain the API from current session in global environment            #
 #   |   |   |                      [<str>               ]          Package name valid for function <omniPy.AdvOp.importByStr>           #
-#   |   |   |pushOnInit        :   <bool    > Whether to push data via the API on instantiation of the newly created class              #
-#   |   |   |                      [True                ]<Default> Push data on instantiation to simplify the usage                     #
-#   |   |   |                      [False               ]          Do not push data on instantiation                                    #
 #   |   |   |apiPfxPush        :   <str     > Prefix of the pusher API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific prefix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
@@ -116,6 +113,12 @@ class OpenSourceApiMeta(type):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230314        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Revmoed arguments <pullOnInit> and <pushOnInit> to leave the flexibility to the caller programs                         #
+#   |      |[2] Fixed bugs of incorrect scopes of the methods                                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -132,6 +135,7 @@ class OpenSourceApiMeta(type):
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |importByStr                                                                                                                #
+#   |   |   |modifyDict                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -149,12 +153,10 @@ class OpenSourceApiMeta(type):
     def __new__(
         mcs, cls, bases, attrs
         ,apiPkgPull : str = None
-        ,pullOnInit : bool = True
         ,apiPfxPull : str = ''
         ,apiSfxPull : str = ''
         ,apiPullHdl : callable = lambda x: x
         ,apiPkgPush : str = None
-        ,pushOnInit : bool = False
         ,apiPfxPush : str = ''
         ,apiSfxPush : str = ''
         ,apiPushHdl : callable = lambda x: x
@@ -170,43 +172,38 @@ class OpenSourceApiMeta(type):
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         allargs = sys._getframe().f_code.co_varnames
         mcs.__exargs__ = [ v for v in allargs if v not in ['mcs', 'cls', 'bases', 'attrs'] ]
-        mcs.__pullOnInit__ = pullOnInit
-        mcs.__pushOnInit__ = pushOnInit
 
         #200. Define dynamic data reader based on pattern: <apiPfxPull + cls + apiSfxPull>
-        mcs.apiPtnPull = str(apiPfxPull) + cls + str(apiSfxPull)
-
-        #210. Prepare the callable core for creating the reader method
-        try:
-            if apiPkgPull is None:
-                mcs.__func_pull__ = get_values(mcs.apiPtnPull)
-            else:
-                mcs.__func_pull__ = importByStr('.' + mcs.apiPtnPull, package = apiPkgPull)
-        except:
-            mcs.__func_pull__ = None
-        mcs.__pullCallable__ = callable(mcs.__func_pull__)
-
-        #250. Define checker for whether the translated name leads to a callable
-        #[ASSUMPTION]
-        #[1] The reason why we do not define this function as we define <mcs.pull>, is that it references the variables
-        #     at metaclass level, e.g. <mcs>, which only validates at <__new__> stage
-        #[2] All the metaclass-level variables referenced in below function definition are retrieved at <__new__> stage
-        #[3] Hence the entire function is registered to the newly created class as a CONSTANT
-        #[4] That is why we can set it as a method in the newly created class and call it where necessary
-        def __chkPullCallable__(self):
-            #[ASSUMPTION]
-            #[1] Similar to MACRO facility in SAS, <mcs.__pullCallable__> is translated to a boolean CONSTANT in the
-            #     newly created class
-            if not mcs.__pullCallable__:
-                raise TypeError(f'[{cls}][{mcs.apiPtnPull}] is not callable!')
-
-        #290. Create the reader method
         def pull(self, *pos, **kw):
-            #100. Verify whether the core reader is callable on the fly
-            self.__chkPullCallable__()
+            #100. Define dynamic data reader
+            apiPtnPull = str(apiPfxPull) + cls + str(apiSfxPull)
 
-            #500. Pull the data from the API
-            self.__pulled__ = apiPullHdl(mcs.__func_pull__(*pos, **kw))
+            #200. Prepare the callable core for creating the reader method
+            try:
+                if apiPkgPull is None:
+                    __func_pull__ = get_values(apiPtnPull)
+                else:
+                    __func_pull__ = importByStr('.' + apiPtnPull, package = apiPkgPull)
+            except:
+                __func_pull__ = None
+
+            #300. Verify whether the core reader is callable on the fly
+            if not callable(__func_pull__):
+                raise TypeError(f'[{cls}][{apiPtnPull}] is not callable!')
+
+            #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
+            #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+            kw_new = modifyDict(self.__inputkw__, kw)
+            kw_raw = {
+                s.name : s.default
+                for s in signature(__func_pull__).parameters.values()
+                if s.kind in [ s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD ]
+                and s.default is not s.empty
+            }
+            kw_final = { k:v for k,v in kw_new.items() if k in kw_raw }
+
+            #900. Pull the data from the API
+            self.__pulled__ = apiPullHdl(__func_pull__(*pos, **kw_final))
 
             #900. Return values
             #[ASSUMPTION]
@@ -214,112 +211,90 @@ class OpenSourceApiMeta(type):
             # return(self)
 
         #300. Define dynamic data writer based on pattern: <apiPfxPush + cls + apiSfxPush>
-        mcs.apiPtnPush = str(apiPfxPush) + cls + str(apiSfxPush)
-
-        #310. Prepare the callable core for creating the writer method
-        try:
-            if apiPkgPull is None:
-                mcs.__func_push__ = get_values(mcs.apiPtnPush)
-            else:
-                mcs.__func_push__ = importByStr('.' + mcs.apiPtnPush, package = apiPkgPush)
-        except:
-            mcs.__func_push__ = None
-        mcs.__pushCallable__ = callable(mcs.__func_push__)
-
-        #350. Define checker for whether the translated name leads to a callable
-        def __chkPushCallable__(self):
-            if not mcs.__pushCallable__:
-                raise TypeError(f'[{cls}][{mcs.apiPtnPush}] is not callable!')
-
-        #390. Create the writer method
         def push(self, *pos, **kw):
-            #100. Verify whether the core writer is callable on the fly
-            self.__chkPushCallable__()
+            #100. Define dynamic data writer
+            apiPtnPush = str(apiPfxPush) + cls + str(apiSfxPush)
 
-            #500. Push the data via the API
-            self.__pulled__ = apiPushHdl(mcs.__func_push__(*pos, **kw))
+            #200. Prepare the callable core for creating the writer method
+            try:
+                if apiPkgPush is None:
+                    __func_push__ = get_values(apiPtnPush)
+                else:
+                    __func_push__ = importByStr('.' + apiPtnPush, package = apiPkgPush)
+            except:
+                __func_push__ = None
 
-        #500. Define the <__init__> structure during instantiation of the newly created class
-        #[ASSUMPTION]
-        #[1] <*pos> here basically represent 3 variables: <cls>, <bases> and <attrs> that are passed to the metaclass
-        #[2] If we remove <*pos> in the arguments, we can only create class in below way:
-        #    aaa = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)
-        #[3] If we keep <*pos> in the arguments, we can also create class in below way:
-        #    class bbb(metaclass = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)): pass
-        #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
-        #     newly created class fails to take effect
-        def __init(self, *pos, **kw):
-            #100. Assign values to local variables
-            self.__pulled__ = None
-            self.__pushed__ = None
+            #300. Verify whether the core writer is callable on the fly
+            if not callable(__func_push__):
+                raise TypeError(f'[{cls}][{apiPtnPush}] is not callable!')
 
-            #400. Read data at initialization when requested
-            #[ASSUMPTION]
-            #[1] Similar to MACRO facility in SAS, <if mcs.__pullOnInit__:...> is translated to <if True/False:...> in
-            #     the newly created class, i.e. the condition is set as CONSTANT at metaclass level
-            if mcs.__pullOnInit__:
-                #[ASSUMPTION]
-                #[1] If we try to get signature of <self.pull>, we only get <*pos> and <**kw>, just as what we defined above
-                #[2] Hence we need to get signature of the metaclass-level method <mcs.__func_pull__> for its defaults and
-                #     set them as CONSTANT in the newly created class
-                #[3] Unlike that one defined in <self.pull>, exception should be raised before we call the reader method,
-                #     before we get the signature of <mcs.__func_pull__>, otherwise the exception raised will be different
-                #     from what we desire
-                #100. Verify whether the core reader is callable on the fly
-                self.__chkPullCallable__()
+            #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
+            #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+            kw_new = modifyDict(self.__inputkw__, kw)
+            kw_raw = {
+                s.name : s.default
+                for s in signature(__func_push__).parameters.values()
+                if s.kind in [ s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD ]
+                and s.default is not s.empty
+            }
+            kw_final = { k:v for k,v in kw_new.items() if k in kw_raw }
 
-                #400. Verify which among the keyword arguments provided are also among the core reader method
-                #410. Retrieve the signature of the core reader method
-                args_r = signature(mcs.__func_pull__).parameters.values()
+            #900. Push the data via the API
+            self.__pushed__ = apiPushHdl(__func_push__(*pos, **kw_final))
 
-                #450. Only validate the keyword arguments that are allowed by the reader method
-                kw_r_name = [ s.name for s in args_r if s.default is not inspect._empty ]
-                kw_r = { k:v for k,v in kw.items() if k in kw_r_name }
+        #400. Define the private environment of the class to be created
+        #410. Initialization structure
+        # attrs['__init__'] = __init
 
-                #700. Pull data from the API
-                self.pull(**kw_r)
+        #430. Slots to protect the privacy
+        attrs['__slots__'] = ('__pulled__','__pushed__','__inputkw__')
 
-            #700. Write data via API at initialization when requested
-            if mcs.__pushOnInit__:
-                #100. Verify whether the core reader is callable on the fly
-                self.__chkPushCallable__()
-
-                #400. Verify which among the keyword arguments provided are also among the core reader method
-                #410. Retrieve the signature of the core reader method
-                args_w = signature(mcs.__func_push__).parameters.values()
-
-                #450. Only validate the keyword arguments that are allowed by the reader method
-                kw_w_name = [ s.name for s in args_w if s.default is not inspect._empty ]
-                kw_w = { k:v for k,v in kw.items() if k in kw_w_name }
-
-                #700. Pull data from the API
-                self.push(**kw_w)
-        #End __init
-
-        #700. Define the private environment of the class to be created
-        #710. Initialization structure
-        attrs['__init__'] = __init
-
-        #730. Slots to protect the privacy
-        attrs['__slots__'] = ('__pulled__','__pushed__')
-
-        #750. Methods
-        #751. Public methods
+        #450. Methods
+        #451. Public methods
         attrs['pull'] = pull
         attrs['push'] = push
 
-        #750. Private methods
-        attrs['__chkPullCallable__'] = __chkPullCallable__
-        attrs['__chkPushCallable__'] = __chkPushCallable__
+        #450. Private methods
 
-        #800. Properties
-        #810. Read-only properties, aka active bindings
+        #460. Properties
+        #461. Read-only properties, aka active bindings
         #Quote: https://stackoverflow.com/questions/27629944/how-to-add-properties-to-a-metaclass-instance
         attrs['pulled'] = property(mcs.pulled)
         attrs['pushed'] = property(mcs.pushed)
 
-        #900. Create the new class on the fly
-        return( super().__new__(mcs, cls, bases, attrs) )
+        #500. Create the new class on the fly
+        newcls = super().__new__(mcs, cls, bases, attrs)
+
+        #600. Create the initialization structure
+        #[ASSUMPTION]
+        #[1] This step is primarily for demostration of the usage of <staticmethod>
+        #[2] <init> is defined as staticmethod of the metaclass
+        #[3] When we need to call a staticmethod, we should prepend it with the newly created class <newcls>
+        #[4] We pass the newly created class-object to the argument <clsobj> for possible reference of its private environment
+        #     created while NOT instantiated
+        setattr(newcls, '__init__', newcls.init(newcls))
+
+        #999. Export
+        return( newcls )
+
+    #500. Define the <__init__> structure during instantiation of the newly created class
+    #[ASSUMPTION]
+    #[1] <*pos> here basically represent 3 variables: <cls>, <bases> and <attrs> that are passed to the metaclass
+    #[2] If we remove <*pos> in the arguments, we can only create class in below way:
+    #    aaa = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)
+    #[3] If we keep <*pos> in the arguments, we can also create class in below way:
+    #    class bbb(metaclass = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)): pass
+    #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
+    #     newly created class fails to take effect
+    @staticmethod
+    def init(clsobj):
+        def __init__(self, *pos, **kw):
+            #100. Assign values to local variables
+            self.__pulled__ = None
+            self.__pushed__ = None
+            self.__inputkw__ = kw
+
+        return(__init__)
 
     #100. Properties that can be accessed by the newly created class
     #[ASSUMPTION]
@@ -359,30 +334,32 @@ if __name__=='__main__':
             ,'rc' : 0
         })
 
-    #200. Create a class with <pullOnInit = True> as default
+    #200. Create a class dynamically
     #[ASSUMPTION]
     #[1] The metaclass only takes 3 positional arguments: <cls>, <bases> and <attrs>
     #[2] <apiPfxPull + cls> here refers to the API name: 'api_testMeta'
-    class aaa(metaclass = OpenSourceApiMeta('testMeta', (object,), {}, apiPfxPull = 'api_')):
-        #[ASSUMPTION]
-        #[1] <__init__> has been hijacked in the metaclass, it takes no effect any more
-        def __init__(self):
-            self.bcd = 1
+    aaa = OpenSourceApiMeta('testMeta', (object,), {}, apiPfxPull = 'api_')
+    aaa_obj = aaa()
 
-    #210. Check if it is successful
+    #210. Reload data from the API
+    aaa_obj.pull()
+
+    #230. Check if it is successful
     #Return: RAM
-    aaa.pulled.get('address')
-
-    #230. Reload data from the API
-    aaa.pull()
+    aaa_obj.pulled.get('address')
 
     #250. Try to obtain a non-existing property since <__init__> is no longer effective
     #AttributeError: 'testMeta' object has no attribute 'bcd'
-    aaa.bcd
+    aaa_obj.bcd
 
-    #300. Create a class with <pullOnInit = False>
-    class bbb(metaclass = OpenSourceApiMeta('testMeta', (object,), {}, apiPfxPull = 'api_', pullOnInit = False)):
+    #300. Create a class in a conventional way
+    #Quote: https://peps.python.org/pep-0487/
+    #[ASSUMPTION]
+    #[1] By doing this, all keyword arguments for the metaclass can be passed in via below syntax
+    class testMeta(metaclass = OpenSourceApiMeta, apiPfxPull = 'api_'):
         pass
+
+    bbb = testMeta()
 
     #310. Try to obtain data from a non-existing API
     #AttributeError: 'NoneType' object has no attribute 'get'
@@ -411,7 +388,6 @@ if __name__=='__main__':
             ,args_loader = {}
         ):
             #100. Assign values to local variables
-            self.__lists__ = {}
             self.pkg_loader = pkg_loader
             self.pfx_loader = pfx_loader
             self.args_loader = args_loader
@@ -451,11 +427,15 @@ if __name__=='__main__':
             #500. Instantiate the API and read data from it at once
             obj = cls(**kw_add)
 
+            #600. Pull data via the API at initialization by default
+            #[ASSUMPTION]
+            #[1] One can change this behavior when necessary
+            obj.pull()
+
             #700. Add current API to the attribute list of current framework
             setattr(self, attr, obj)
 
             #900. Modify private environment
-            modifyDict(self.__lists__, { attr : obj.pulled.get('data', {}).get('series') }, inplace = True)
             modifyDict(self.__lists_active__, { attr : True }, inplace = True)
 
         #320. Add all available APIs to current private environment
@@ -496,7 +476,7 @@ if __name__=='__main__':
         #520. Obtain all active APIs
         @property
         def added(self):
-            return({ k:v for k,v in self.__lists__.items() if self.lists_active.get(k, False) })
+            return({ k:self.__getattr__(k).pulled.get('data', {}).get('series') for k,v in self.lists_active.items() if v })
 
         #530. Obtain the status of all APIs, active: True, inactive: False
         @property
@@ -573,6 +553,13 @@ if __name__=='__main__':
 
     #830. Check the status of registered APIs
     addAPI.lists_active
+
+    #850. Instantiate the framework with default arguments
+    addAPI = ApiOnTheFly(args_loader = diff_args)
+
+    #855. Load data from API with the modified default arguments
+    addAPI.add('fly')
+    addAPI.added
 
     #900. Try to add an API that does not exist in vain
     #TypeError: [pseudo][api_pseudo] is not callable!

@@ -194,13 +194,28 @@ class OpenSourceApiMeta(type):
             #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
             #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
             kw_new = modifyDict(self.__inputkw__, kw)
+            sig_raw = signature(__func_pull__).parameters.values()
+
+            #510. Obtain all defaults of keyword arguments of the raw API
             kw_raw = {
                 s.name : s.default
-                for s in signature(__func_pull__).parameters.values()
-                if s.kind in [ s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD ]
+                for s in sig_raw
+                if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
                 and s.default is not s.empty
             }
-            kw_final = { k:v for k,v in kw_new.items() if k in kw_raw }
+
+            #550. In case the raw API takes any variant keywords, we also identify them
+            #[ASSUMPTION]
+            #[1] This only validates when the API takes variant keywords
+            #[2] If the created class takes keyword arguments for both <pull> and <push>, there will not be KeyError raised
+            #     when we add below handler to eliminate superfluous arguments for current API
+            if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
+                kw_varkw = { k:v for k,v in kw_new.items() if k not in kw_raw }
+            else:
+                kw_varkw = {}
+
+            #590. Create the final keyword arguments for calling the API
+            kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
 
             #900. Pull the data from the API
             self.__pulled__ = apiPullHdl(__func_pull__(*pos, **kw_final))
@@ -231,13 +246,24 @@ class OpenSourceApiMeta(type):
             #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
             #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
             kw_new = modifyDict(self.__inputkw__, kw)
+            sig_raw = signature(__func_push__).parameters.values()
+
+            #510. Obtain all defaults of keyword arguments of the raw API
             kw_raw = {
                 s.name : s.default
-                for s in signature(__func_push__).parameters.values()
-                if s.kind in [ s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD ]
+                for s in sig_raw
+                if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
                 and s.default is not s.empty
             }
-            kw_final = { k:v for k,v in kw_new.items() if k in kw_raw }
+
+            #550. In case the raw API takes any variant keywords, we also identify them
+            if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
+                kw_varkw = { k:v for k,v in kw_new.items() if k not in kw_raw }
+            else:
+                kw_varkw = {}
+
+            #590. Create the final keyword arguments for calling the API
+            kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
 
             #900. Push the data via the API
             self.__pushed__ = apiPushHdl(__func_push__(*pos, **kw_final))

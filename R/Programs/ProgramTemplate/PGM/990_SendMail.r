@@ -49,11 +49,11 @@ img_id <- 'MyId1'
 att[['PropertyAccessor']]$SetProperty(PR_ATTACH_MIME_TAG, paste0('image/', att_ext))
 att[['PropertyAccessor']]$SetProperty(PR_ATTACH_CONTENT_ID, img_id)
 
-body <- paste0(
+mailbody <- paste0(
 	'<h1>Text body</h1><br><br>',mailBody,'<br><br>'
-	,'<h1>Test body with image</h1><br><br><br><br> <img src="cid:',img_id,'" height="42 width=42">'
+	,'<h1>Test body with image</h1><br><br><br><br> <img src="cid:',img_id,'" height=42 width=42>'
 )
-mail[['HTMLBody']] <- body
+mail[['HTMLBody']] <- mailbody
 
 #900. Send mail for current group
 mail$Send()

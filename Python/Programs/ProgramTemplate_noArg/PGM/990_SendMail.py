@@ -45,7 +45,7 @@ img_id = 'MyId1'
 att.PropertyAccessor.SetProperty(PR_ATTACH_MIME_TAG, 'image/' + os.path.splitext(os.path.basename(attachment2))[-1][1:])
 att.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, img_id)
 
-body = '<h1>Test body with image</h1><br><br><br><br> <img src="cid:'+img_id+'" height="42 width=42">'
-msg.HTMLBody = body
+mailbody = '<h1>Test body with image</h1><br><br><br><br> <img src="cid:'+img_id+'" height=42 width=42>'
+msg.HTMLBody = mailbody
 
 msg.Send()

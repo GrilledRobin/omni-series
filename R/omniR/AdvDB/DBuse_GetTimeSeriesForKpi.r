@@ -246,6 +246,8 @@ lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
 library(magrittr)
+#We should use [%dopar%] supported by below package
+library(foreach)
 
 DBuse_GetTimeSeriesForKpi <- function(
 	inKPICfg

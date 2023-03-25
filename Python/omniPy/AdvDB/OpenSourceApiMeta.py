@@ -119,6 +119,13 @@ class OpenSourceApiMeta(type):
 #   | Log  |[1] Revmoed arguments <pullOnInit> and <pushOnInit> to leave the flexibility to the caller programs                         #
 #   |      |[2] Fixed bugs of incorrect scopes of the methods                                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230325        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable <__init__> to be customized when creating dynamic classes                                                        #
+#   |      |[2] Should any private variables are to be created via customized <__init__>, define a customized <__slots__> to facilitate #
+#   |      |     its scoping as well, see the demo programs for detailed usage                                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -273,7 +280,11 @@ class OpenSourceApiMeta(type):
         # attrs['__init__'] = __init
 
         #430. Slots to protect the privacy
-        attrs['__slots__'] = ('__pulled__','__pushed__','__inputkw__')
+        slots = ('__pulled__','__pushed__','__inputkw__')
+        if '__slots__' in attrs:
+            attrs['__slots__'] += slots
+        else:
+            attrs['__slots__'] = slots
 
         #450. Methods
         #451. Public methods
@@ -281,6 +292,12 @@ class OpenSourceApiMeta(type):
         attrs['push'] = push
 
         #450. Private methods
+        if '__init__' in attrs:
+            attrs['__init_org__'] = attrs['__init__']
+            attrs.pop('__init__')
+        else:
+            def funcLambda(self, *pos, **kw): pass
+            attrs['__init_org__'] = funcLambda
 
         #460. Properties
         #461. Read-only properties, aka active bindings
@@ -311,10 +328,13 @@ class OpenSourceApiMeta(type):
     #[3] If we keep <*pos> in the arguments, we can also create class in below way:
     #    class bbb(metaclass = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)): pass
     #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
-    #     newly created class fails to take effect
+    #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
     def init(clsobj):
         def __init__(self, *pos, **kw):
+            #010. Hijack the original <__init__> and conduct its process ahead of the processes defined in the metaclass
+            self.__init_org__(*pos, **kw)
+
             #100. Assign values to local variables
             self.__pulled__ = None
             self.__pushed__ = None
@@ -374,7 +394,7 @@ if __name__=='__main__':
     #Return: RAM
     aaa_obj.pulled.get('address')
 
-    #250. Try to obtain a non-existing property since <__init__> is no longer effective
+    #250. Try to obtain a non-existing property since <__init__> is not customized
     #AttributeError: 'testMeta' object has no attribute 'bcd'
     aaa_obj.bcd
 
@@ -383,7 +403,12 @@ if __name__=='__main__':
     #[ASSUMPTION]
     #[1] By doing this, all keyword arguments for the metaclass can be passed in via below syntax
     class testMeta(metaclass = OpenSourceApiMeta, apiPfxPull = 'api_'):
-        pass
+        #010. Define the additional slots (as there are some pre-defined slots in the metaclass)
+        __slots__ = ('bcd',)
+
+        #100. Define the customized initialization method
+        def __init__(self):
+            self.bcd = 112
 
     bbb = testMeta()
 
@@ -397,6 +422,9 @@ if __name__=='__main__':
     #350. Now check the result
     #Return: 'test API'
     bbb.pulled.get('name')
+
+    #390. Try to obtain the customized attribute
+    bbb.bcd
 
     #400. Create a universal framework to use API dynamically
     #[ASSUMPTION]

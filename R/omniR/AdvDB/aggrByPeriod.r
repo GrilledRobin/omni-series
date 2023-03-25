@@ -272,6 +272,8 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 library(magrittr)
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
+#We should use [%dopar%] supported by below package
+library(foreach)
 
 aggrByPeriod <- function(
 	inDatPtn = NULL

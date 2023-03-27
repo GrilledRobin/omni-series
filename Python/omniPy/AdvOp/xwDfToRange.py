@@ -196,6 +196,11 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Extract the process to create zebra stripes from the main process, to simplify the overall function                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230327        | Version | 1.71        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fix the bug that causes the entire table to be colored the same way as zebra stripes                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -241,7 +246,7 @@ def xwDfToRange(
     #050. Local parameters
     seq_ranges = [
         'table','data.int','data.float','data'
-        ,'index','index.merge','header','header.merge','box','stripe'
+        ,'index','index.merge','header','header.merge','box'
         ,'index.False','header.False'
     ]
     row_adj = df.columns.nlevels if header else 0
@@ -543,7 +548,6 @@ def xwDfToRange(
 
     #620. Create the stripes
     if stripe:
-        xlrng['stripe'] = xlstripe_idx + xlrng['data']
         for r in xlstripe_idx + xlrng['data']:
             for debugname, attr in table_theme.get('stripe', {}).items():
                 h_stripe(r, attr)

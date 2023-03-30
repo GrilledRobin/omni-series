@@ -16,7 +16,7 @@ import datetime as dt
 import subprocess as sp
 from selenium import webdriver
 from selenium.webdriver.ie.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -209,6 +209,15 @@ tab_setup = div_setup.find_element(By.CSS_SELECTOR, 'a[tabIndex=1]')
 #It never works to [click] on such an <anchor>
 #tab_setup.click()
 tab_setup.send_keys(Keys.RETURN)
+
+#Quote: https://www.lambdatest.com/blog/handling-dropdown-in-selenium-webdriver-python/
+usr_selector = driver.find_element(By.CSS_SELECTOR, '//select[id*="sel-id"][class*="sel-class"]')
+usr_sel = Select(usr_selector)
+#Quote: https://stackoverflow.com/questions/43812578/selenium-select-by-visible-text-in-python
+for sel in usr_sel.options:
+    if sel.text == 'bbb':
+        usr_selected = sel.get_attribute('value')
+usr_sel.select_by_value(usr_selected)
 
 #540. Open the tab of download frame
 #[1] The tested server will block consecutive download actions in the same page, so we [get] the URL each time as refresh

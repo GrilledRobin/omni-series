@@ -580,7 +580,7 @@ def xwDfToRange(
         k,v,lvl = m.get('slicer'), m.get('attrs'), m.get('levels', None)
 
         #100. Translate the indexer
-        idx_to_fmt = pandasParseIndexer(df.index, k, logname = 'fmtIdx')
+        idx_to_fmt = pandasParseIndexer(df.index, k, idxall = idxall, logname = 'fmtIdx')
 
         #300. Translate the indexer of levels if any
         if lvl is not None:
@@ -637,7 +637,7 @@ def xwDfToRange(
         k,v,lvl = m.get('slicer'), m.get('attrs'), m.get('levels', None)
 
         #100. Translate the indexer
-        hdr_to_fmt = pandasParseIndexer(df.columns, k, logname = 'fmtHdr')
+        hdr_to_fmt = pandasParseIndexer(df.columns, k, idxall = idxall, logname = 'fmtHdr')
 
         #300. Translate the indexer of levels if any
         if lvl is not None:

@@ -23,6 +23,7 @@ from .getWinUILanguage import getWinUILanguage
 from .pandasPivot import pandasPivot
 from .rgetattr import rgetattr
 from .rsetattr import rsetattr
+from .tryProc import tryProc
 from .pandasParseIndexer import pandasParseIndexer
 from .xwDfToRange import xwDfToRange
 from .xwRangeAsGroup import xwRangeAsGroup
@@ -39,7 +40,7 @@ __all__ = [
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage'
     , 'pandasPivot'
-    , 'rgetattr' , 'rsetattr'
+    , 'rgetattr' , 'rsetattr' , 'tryProc'
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'

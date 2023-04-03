@@ -203,6 +203,9 @@ win32gui.ShowWindow( hwnd_main, win32con.SW_MAXIMIZE )
 #driver.page_source
 id_page = 'U0203009'
 #Quote: https://stackoverflow.com/questions/62320910/how-to-change-the-input-field-value-using-selenium-and-python
+#Quote: https://stackoverflow.com/questions/57262217/how-do-you-use-ec-presence-of-element-locatedby-id-mydynamicelement-excep
+#[ASSUMPTION]
+#[1] Sometimes we have to use <EC.visibility_of_element_located()> to wait for the tag to be found
 ul_setup = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'ul[id="ext-gen77"]')))
 div_setup = ul_setup.find_element(By.CSS_SELECTOR, '.x-tree-node-el[ext:tree-node-id="' + id_page + '"]')
 tab_setup = div_setup.find_element(By.CSS_SELECTOR, 'a[tabIndex=1]')

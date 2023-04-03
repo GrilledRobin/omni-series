@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import time
 from functools import wraps
 
 def tryProc(
     times : int = 1
+    ,sleep : float = 0.0
 ) -> callable:
     #000.   Info.
     '''
@@ -32,6 +34,8 @@ def tryProc(
 #   |times       :   How many times to try the decorated process                                                                        #
 #   |                 [1           ] <Default> Call the function once                                                                   #
 #   |                 [<int>       ]           Call the function by <n> times                                                           #
+#   |cal         :   <float> number of seconds to sleep before the next trials to be called, given the first call fails                 #
+#   |                 [<0.0>       ] <Default> Does not sleep between each two calls                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -42,6 +46,11 @@ def tryProc(
 #   | Date |    20230401        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230403        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add new argument <sleep> to control the interval between each try                                                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -76,6 +85,7 @@ def tryProc(
                     rstOut = fn(*pos, **kw)
                     return(rstOut)
                 except:
+                    time.sleep(sleep)
                     continue
 
             #999. Raise exception if it still fails

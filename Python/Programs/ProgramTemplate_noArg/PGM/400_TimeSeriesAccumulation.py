@@ -99,7 +99,7 @@ if len(all_PM) == 0:
     output_PM = None
     prd_bgn = bgn_Proj
 else:
-    output_PM = all_PM[-1]
+    output_PM = sorted(all_PM, key = lambda x: re.search(ptn_PM, x).group(1))[-1]
     prd_bgn = intnx('day', re.search(ptn_PM, output_PM).group(1), 1, daytype = 'w')
 
 #390. Define the dates to retrieve all time series files

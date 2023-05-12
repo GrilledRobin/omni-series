@@ -49,11 +49,7 @@ def xwGroupForDf(
         for s in signature(pandasPivot).parameters.values()
         if reduce(lambda x,y:x|y, map(lambda v: s.name.startswith(v), ['pos','row','col','fRow','fCol']))
     }
-    ,kw_asGroup : dict = {
-        s.name : s.default
-        for s in signature(xwRangeAsGroup).parameters.values()
-        if s.default is not inspect._empty
-    }
+    ,kw_asGroup : dict = {}
     ,asformatter : bool = False
     ,formatOnly : bool = False
     ,idxall : str = [
@@ -115,6 +111,11 @@ def xwGroupForDf(
 #   | Date |    20230219        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230512        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug, now <kw_asGroup> takes the user input as top priority                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -328,17 +329,22 @@ def xwGroupForDf(
 
     #700. Determine the positions of outlines
     #[ASSUMPTION]
-    #[1] We take [posRowSubt] and [posColSubt] as top priority to locate the outlines
-    #[2] If there is no [subtotals] on any axis, we then prioritize [posRowTot] and [posColTot]
-    #[3] If program still cannot determine the outline position, it refers to the input values as last option
+    #[1] We take the user input as top priority
+    #[2] If there is no user input, we take [posRowSubt] and [posColSubt] as second priority to locate the outlines
+    #[3] If there is no [subtotals] on any axis, we then prioritize [posRowTot] and [posColTot]
+    #[4] If program still cannot determine the outline position, it refers to the input values as last option
     #710. Axis-0
-    if len(xlmerge_idx) > 0:
+    if kw_asGroup.get('posOutline') is not None:
+        pass
+    elif len(xlmerge_idx) > 0:
         row_asGroup = modifyDict(row_asGroup, { 'posOutline' : posRowSubt })
     elif len(xlmerge_idx_totals) > 0:
         row_asGroup = modifyDict(row_asGroup, { 'posOutline' : posRowTot })
 
     #750. Axis-1
-    if len(xlmerge_hdr) > 0:
+    if kw_asGroup.get('posOutline') is not None:
+        pass
+    elif len(xlmerge_hdr) > 0:
         col_asGroup = modifyDict(col_asGroup, { 'posOutline' : posColSubt })
     elif len(xlmerge_hdr_totals) > 0:
         col_asGroup = modifyDict(col_asGroup, { 'posOutline' : posColTot })

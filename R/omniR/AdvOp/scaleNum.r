@@ -64,6 +64,11 @@
 #   | Log  |[1] Correct the display when the scale has different length than 1000, such as '万'                                         #
 #   |      |[2] Set the default value for [scientific] as TRUE, compromising most of the requirements                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230522        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now return the result in the same length as the input, mapping <NA> and <NULL> values to empty strings                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -73,11 +78,26 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |base                                                                                                                           #
+#   |   |rlang, magrittr                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
+
+#001. Append the list of required packages to the global environment
+#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
+lst_pkg <- deparse(substitute(c(
+	rlang, magrittr
+)))
+#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
+lst_pkg <- paste0(lst_pkg, collapse = '')
+lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
+lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
+lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
+options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
+
+#We should use the pipe operands supported by below package
+library(magrittr)
 
 scaleNum <- function(inNum,ScaleBase=1000,map_units=NULL,unify=NULL,scientific=T,...){
 	#001. Handle parameters
@@ -92,8 +112,13 @@ scaleNum <- function(inNum,ScaleBase=1000,map_units=NULL,unify=NULL,scientific=T
 		if (ScaleBase == 10000) map_units <- c('10K' = '万', '100M' = '亿', '1T' = '万亿', '10Q' = '亿亿')
 	}
 	if (is.list(inNum)) fn_apply <- lapply else fn_apply <- sapply
-	inNum <- sapply(inNum,function(m){ if (!is.null(m)) if ( !is.na(m) & !is.infinite(m) ) m })
-	calcNum <- unlist(inNum)
+	names_out <- names(inNum)
+	f_full <- Map(is.null, inNum) %>% unlist()
+	f_inf <- Map(function(x){if (is.null(x)) F else is.infinite(x)}, inNum) %>% unlist()
+	calcNum <- mapply(
+		function(num, .null, .inf){if (.null | .inf) NA else num}
+		,inNum, f_full, f_inf
+	) %>% unlist()
 	names(calcNum) <- NULL
 	out_rst <- list()
 
@@ -111,60 +136,66 @@ scaleNum <- function(inNum,ScaleBase=1000,map_units=NULL,unify=NULL,scientific=T
 		exp_int <- floor(num_log)
 	} else {
 		if (is.character(unify)) {
-			exp_int <- which( map_units == unify )
+			exp_int <- which(map_units == unify)
 		} else {
 			func_unify <- match.fun(unify)
-			num_uni <- forceAndCall( 1 , func_unify , calcNum , ... )
+			num_uni <- forceAndCall(1, func_unify, calcNum, ...)
 			#Call the same function to scale the selected number as idol
-			exp_src <- scaleNum( num_uni , ScaleBase=ScaleBase , map_units = map_units , scientific = scientific , ...)
+			exp_src <- scaleNum(num_uni, ScaleBase = ScaleBase, map_units = map_units, scientific = scientific, ...)
 			exp_int <- unlist(exp_src$parts$k_exp)
 		}
 		if (length(exp_int) > 1) stop('[',LfuncName,']More than one power scale is found during unification!')
-		exp_int <- rep(exp_int, length(calcNum))
+		exp_int <- rlang::rep_along(calcNum, exp_int)
 	}
 
 	#500. Prepare the parameters for function [base::format]
 	#510. Set the unit as suffix for the scaled result
 	if (is.character(unify)) {
-		out_unit <- rep(unify, length(calcNum))
+		out_unit <- rlang::rep_along(calcNum, unify)
 	} else {
-		out_unit <- sapply( exp_int , function(m){ if (m > 0) map_units[[m]] } )
+		out_unit <- sapply(exp_int, function(m){tryCatch(map_units[[m]], error = function(x){''})})
 	}
 
 	#520. Set the length of decimals for the scaled result
 	out_int_len <- nchar(floor(calcNum/ScaleBase^exp_int))
-	exp_dec <- sapply(
-		1:length(calcNum),
-		function(i){
+	exp_dec <- mapply(
+		function(h.calc, h.unit, h.int, h.len){
 			#Here we set the default number of decimals as [1] for most cases, to shorten the total formatted length.
 			#[out_dgt] part is to determine the total number of significant digits
-			if ( is.null(out_unit[[i]]) ) {
-				if ( exp_int[[i]] < 0 ) 1
-				else max( 0 , min( 2 , max_int - out_int_len[[i]] ) )
+			# message(glue::glue('[h.calc={h.calc}][h.unit={h.unit}][h.int={h.int}][h.len={h.len}]'))
+			if (is.na(h.calc) | is.na(h.unit)) {
+				1
+			} else if (nchar(h.unit) == 0) {
+				if ((h.int < 0) | is.na(h.int) | is.na(h.len)) 1
+				else max(0, min(2, max_int - h.len))
 			} else {
-				if ( abs( floor( log( calcNum[[i]] , base = ScaleBase ) ) ) > which( map_units == out_unit[[i]] ) ) 1
-				else max( 0 , min( 2 , max_int - out_int_len[[i]] ) )
+				if (abs(floor(log(h.calc, base = ScaleBase))) > which(map_units == h.unit)) 1
+				else if (is.na(h.len)) 1
+				else max(0, min(2, max_int - h.len))
 			}
 		}
+		,calcNum, out_unit, exp_int, out_int_len
 	)
 
 	#530. Prepare the actual numbers to format
-	out_val <- sapply(
-		1:length(calcNum),
-		function(i){
-			if ( is.null(out_unit[[i]]) & exp_int[[i]] < 0 ) calcNum[[i]]
-			else calcNum[[i]]/ScaleBase^exp_int[[i]]
+	out_val <- mapply(
+		function(h.calc, h.unit, h.int){
+			if (is.na(h.int)) NA
+			else if ((nchar(h.unit) == 0) & (h.int < 0)) h.calc
+			else h.calc/ScaleBase^h.int
 		}
+		,calcNum, out_unit, exp_int
 	)
 
 	#540. Set the number of significant digits for the scaled result
 	#Please check the R document of [base::format]
 	out_dgt <- sapply(
-		1:length(calcNum),
-		function(i){
-			tmplog <- floor(log(out_val[[i]],10))
+		out_val,
+		function(x){
+			if (is.na(x)) return(NA)
+			tmplog <- floor(log(x, 10))
 			#Within Decimal Metric System, when the number falls in (0.01,1000), there is no need to apply scientific format to it.
-			if ( log( out_val[[i]] , base = ScaleBase ) < 1 & tmplog > -3 ) max( 1 , max_int + min( 0 , tmplog ) )
+			if ((log(x, base = ScaleBase) < 1) & (tmplog > -3)) max(1, max_int + min(0, tmplog))
 			#In other conditions, we only need 2 significant digits in all except the [e+nnn] part, including decimals
 			#[exp_dec] part is to determine the total number of decimals
 			else 2
@@ -174,43 +205,46 @@ scaleNum <- function(inNum,ScaleBase=1000,map_units=NULL,unify=NULL,scientific=T
 	#550. Determine whether to format the numbers in scientific mode respectively
 	#Please check the R document of [base::format]
 	out_sci <- sapply(
-		1:length(calcNum),
-		function(i){
-			tmplog <- floor(log(out_val[[i]],10))
-			if ( log( out_val[[i]] , base = ScaleBase ) < 1 & tmplog > -3 ) F
+		out_val,
+		function(x){
+			if (is.na(x)) return(F)
+			tmplog <- floor(log(x, 10))
+			if ((log(x, base = ScaleBase) < 1) & (tmplog > -3)) F
 			else scientific
 		}
 	)
 
 	#800. Create the output result
 	out_rst$values <- fn_apply(
-		1:length(calcNum),
+		seq_along(calcNum),
 		function(i){
+			if (is.na(out_val[[i]])) return('')
 			paste0(
-				ifelse( out_sgn[[i]] < 0 , '-' , '' ),
-				format( out_val[[i]] ,
-					digits = out_dgt[[i]] , nsmall = exp_dec[[i]] , scientific = out_sci[[i]] ,
-					big.mark=',' , drop0trailing = T
-				),
-				ifelse( is.null(out_unit[[i]]) , '' , ' ' ) , out_unit[[i]]
+				ifelse(out_sgn[[i]] < 0, '-', '')
+				,format(
+					out_val[[i]]
+					,digits = out_dgt[[i]], nsmall = exp_dec[[i]], scientific = out_sci[[i]]
+					,big.mark=',', drop0trailing = T
+				)
+				,ifelse(nchar(out_unit[[i]]) == 0, '' , ' '), out_unit[[i]]
 			)
 		}
 	)
-	names(out_rst$values) <- names(inNum)
+	names(out_rst$values) <- names_out
 	#[Quote: https://stackoverflow.com/questions/9281323/zip-or-enumerate-in-r ]
 	# out_rst$parts <- mapply( list , exp_int , out_val , out_dgt , exp_dec , out_sci , out_unit , SIMPLIFY = F )
 	# names(out_rst$parts) <- names(inNum)
 	# for (i in 1:length(calcNum)) names(out_rst$parts[[i]]) <- c('k_exp','a_val','k_dgt','k_dec','f_sci','c_sfx')
 	out_rst$parts <- data.frame(
-		k_idx = seq_along(calcNum),
-		k_exp = exp_int,
-		f_sgn = out_sgn,
-		a_val = out_val,
-		k_dgt = out_dgt,
-		k_dec = exp_dec,
-		f_sci = out_sci,
-		c_sfx = sapply(out_unit,function(x) ifelse(is.null(x),'',x)),
-		stringsAsFactors = F
+		k_idx = seq_along(calcNum)
+		,k_exp = exp_int
+		,f_sgn = out_sgn
+		,a_val = out_val
+		,k_dgt = out_dgt
+		,k_dec = exp_dec
+		,f_sci = out_sci
+		,c_sfx = out_unit
+		,stringsAsFactors = F
 	)
 
 	#999. Return the list
@@ -222,7 +256,7 @@ if (FALSE){
 	#Simple test
 	if (TRUE){
 		usrnumc <- c( 1.2 , 12345 , 2468712 )
-		usrnuml <- list( a = 12345 , b = 2468712 , c = 1.2 )
+		usrnuml <- list( a = 12345 , b1 = NULL , b = 2468712 , a1 = NA , c = 1.2 )
 		usrnums <- c( 0.305 , 0.00048102 , 0.0000005846 )
 
 		#100. Scale the numbers respectively
@@ -244,9 +278,9 @@ if (FALSE){
 
 		#300. Scale the numbers into the same as one among them
 		#Below is bad practice
-		fmtfunclf <- scaleNum( usrnuml , unify = median , ScaleBase = 1000 , scientific = F )
+		fmtfunclf <- scaleNum( usrnuml , unify = median , ScaleBase = 1000 , scientific = F , na.rm = T )
 		#Below is good practice
-		fmtfunclt <- scaleNum( usrnuml , unify = median , ScaleBase = 1000 )
+		fmtfunclt <- scaleNum( usrnuml , unify = median , ScaleBase = 1000 , na.rm = T )
 
 		#Below is bad practice
 		fmtfuncsf <- scaleNum( usrnums , unify = max , ScaleBase = 1000 , scientific = F )
@@ -267,7 +301,7 @@ if (FALSE){
 
 		#500. Test the invalid numbers
 		usrerrc <- c(1.5,NA,-26737)
-		fmterrc <- scaleNum( usrerrc , unify = max )
+		fmterrc <- scaleNum( usrerrc , unify = max , na.rm = T )
 
 		#590. Check the outputs
 		fmterrc$values

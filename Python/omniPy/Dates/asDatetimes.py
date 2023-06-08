@@ -39,7 +39,7 @@ def asDatetimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |indate      :   Date-like values, can be list/tuple of date values, character strings, integers or date column of a data frame     #
 #   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
-#   |                Deprecated at version 1.3 since the method [pd.to_datetime] can handle most of the possible formats                #
+#   |                Re-introduced at v1.4, requiring caller to provide specific format, or spend lots of time during parsing           #
 #   |                 [ <list>     ] <Default> Try to match these formats for any input strings, see function definition                #
 #   |origin      :   Date-like scalar, as origin, to convert the values in the type of [int], [float], [np.integer] or [np.floating]    #
 #   |                See official document of [pd.to_datetime]                                                                          #
@@ -74,6 +74,11 @@ def asDatetimes(
 #   | Date |    20210909        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230608        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fix a bug when input valus is <str> while <fmt> is not applied                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -141,7 +146,13 @@ def asDatetimes(
             #Quote: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
             return(max(dt.datetime.min, min(dt.datetime.max, origin + dt.timedelta(**{unit:int(d)}))))
         elif isinstance(d, str):
-            return(pd.to_datetime(d, errors = 'coerce').to_pydatetime())
+            for f in fmt_fnl:
+                try:
+                    return(pd.to_datetime(d, errors = 'raise', format = f).to_pydatetime())
+                except:
+                    continue
+
+            return(pd.NaT)
         else:
             return(pd.NaT)
 
@@ -233,7 +244,7 @@ if __name__=='__main__':
     df2 = df.loc[ df['DT_DATE'] == dt.datetime.today() ]
     df2['d_date'] = asDatetimes( df2['DT_DATE'] )
     #[IMPORTANT] In below case, make sure to use [astype('object')] to avoid any subsequent problems (conflicting that when the
-    #             input data frome is NOT empty)
+    #             input data frame is NOT empty)
     df2['d_date2'] = df2['DT_DATE'].apply(asDatetimes).astype('object')
     df2.dtypes
 
@@ -260,5 +271,29 @@ if __name__=='__main__':
     print(time_end)
     print(time_end - time_bgn)
     # 1.33s on average
+
+    #Full speed test
+    #Quote: https://ehmatthes.com/blog/faster_than_strptime/
+    aaa = CFG_KPI['DT_TEST'].sample(100000, replace = True).apply(lambda x: x.strftime('%Y/%m/%d-%H %M %S'))
+
+    t0 = time.time()
+    bbb = asDatetimes(aaa)
+    print(time.time() - t0)
+    # 257.26s
+
+    t0 = time.time()
+    bbb2 = asDatetimes(aaa, fmt = '%Y/%m/%d-%H %M %S')
+    print(time.time() - t0)
+    # 9.22s
+
+    t0 = time.time()
+    bbb3 = pd.to_datetime(aaa)
+    print(time.time() - t0)
+    # ParserError: Unknown string format
+
+    t0 = time.time()
+    bbb3 = pd.to_datetime(aaa, format = '%Y/%m/%d-%H %M %S')
+    print(time.time() - t0)
+    # 0.012s
 #-Notes- -End-
 '''

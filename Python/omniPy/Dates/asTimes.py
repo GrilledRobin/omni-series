@@ -38,7 +38,7 @@ def asTimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |indate      :   Time-like values, can be list/tuple of date values, character strings, integers or date column of a data frame     #
 #   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
-#   |                Deprecated at version 1.3 since the method [pd.to_datetime] can handle most of the possible formats                #
+#   |                Re-introduced at v1.4, requiring caller to provide specific format, or spend lots of time during parsing           #
 #   |                 [ <list>     ] <Default> Try to match these formats for any input strings, see function definition                #
 #   |unit        :   Unit by which to convert the values in the type of [int], [float], [np.integer] or [np.floating]                   #
 #   |                See official document of [datetime.timedelta]                                                                      #
@@ -68,6 +68,11 @@ def asTimes(
 #   | Date |    20210909        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230608        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fix a bug when input valus is <str> while <fmt> is not applied                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -127,9 +132,15 @@ def asTimes(
             dt_anchor = dt.datetime.combine(dt.date.today(), dt.time(0,0,0))
             return((dt_anchor + dt.timedelta(**{unit:int(d)})).time())
         elif isinstance(d, str):
-            rst = pd.to_datetime(d, errors = 'coerce').to_pydatetime()
-            if pd.notnull(rst): rst = rst.time()
-            return(rst)
+            for f in fmt_fnl:
+                try:
+                    rst = pd.to_datetime(d, errors = 'raise', format = f).to_pydatetime()
+                    if pd.notnull(rst): rst = rst.time()
+                    return(rst)
+                except:
+                    continue
+
+            return(pd.NaT)
         else:
             return(pd.NaT)
 
@@ -193,7 +204,7 @@ if __name__=='__main__':
     df2 = df.loc[ df['DT_DATE'] == dt.datetime.today() ]
     df2['d_time'] = asTimes( df2['DT_DATE'] )
     #[IMPORTANT] In below case, make sure to use [astype('object')] to avoid any subsequent problems (conflicting that when the
-    #             input data frome is NOT empty)
+    #             input data frame is NOT empty)
     df2['d_date2'] = df2['DT_DATE'].apply(asTimes).astype('object')
     df2.dtypes
 

@@ -24,6 +24,14 @@ def asDates(
 #   |             [dtype] as [object] no matter the input is empty or not:                                                              #
 #   |            [1] [pd.Series.apply(asDates).astype('object')] or [pd.DataFrame.applymap(asDates).astype('object')]                   #
 #   |            [2] [asDates(pd.Series)] or [asDates(pd.DataFrame)]                                                                    #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[NOTE]                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |<strftime> on Windows OS is different from that on Mac OS at syntax <%-m> and the likes:                                           #
+#   |[1] On Win OS, use <%#m> to remove leading zeros (however, when using <strptime> this syntax still fails)                          #
+#   |[2] On Mac OS, use <%-m> to remove leading zeros (not tested when using <strptime>)                                                #
+#   |[3] Quote: https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0                                       #
+#   |[4] Quote: https://msdn.microsoft.com/en-us/library/fe06s4ak.aspx                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -198,7 +206,7 @@ if __name__=='__main__':
     df2 = df.loc[ df['DT_DATE'] == dt.datetime.today() ]
     df2['d_date'] = asDates( df2['DT_DATE'] )
     #[IMPORTANT] In below case, make sure to use [astype('object')] to avoid any subsequent problems (conflicting that when the
-    #             input data frome is NOT empty)
+    #             input data frame is NOT empty)
     df2['d_date2'] = df2['DT_DATE'].apply(asDates).astype('object')
     df2.dtypes
 

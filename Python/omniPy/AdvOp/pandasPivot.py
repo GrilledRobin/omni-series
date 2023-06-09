@@ -145,6 +145,11 @@ def pandasPivot(
 #   |      |     ensure a unique sequence number for each item in the final value list                                                  #
 #   |      |[2] Correct the sequence of values in the output totals and subtotals of [columns]                                          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230609        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug of losing <column totals> and <column subtotals> when <observed = True>                                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -222,7 +227,6 @@ def pandasPivot(
         var_rows = [var_rows]
     if isinstance(var_cols, str):
         var_cols = [var_cols]
-    reorder_stats = []
     f_rows = len(var_rows) > 0
     f_cols = len(var_cols) > 0
     f_totals_row = f_rows & ( fRowTot | fRowSubt )
@@ -231,6 +235,7 @@ def pandasPivot(
     name_vals = '.pivot.values.'
     name_stats = '.pivot.stats.'
     reorder_vals = []
+    reorder_stats = []
 
     #060. Calculate levels of all dimensions for later sorting
     #[ASSUMPTION]
@@ -459,17 +464,32 @@ def pandasPivot(
     #841. Set the names for special levels
     vfy_cols = [ c for c in pvt_base.columns.names if c not in var_cols ]
     if len(vfy_cols) > 0:
+        reorder_vals = [name_vals]
         setlvl = None if pvt_base.columns.nlevels == 1 else 0
         pvt_base.columns.set_names(name_vals, inplace = True, level = setlvl)
-        reorder_vals = [name_vals]
+        if f_totals_col:
+            pvt_by_x.columns.set_names(name_vals, inplace = True, level = setlvl)
+        if f_totals_cross:
+            pvt_totals.columns.set_names(name_vals, inplace = True, level = setlvl)
 
     if len(vfy_cols) == 2:
-        pvt_base.columns.set_names(name_stats, inplace = True, level = 1)
         reorder_stats = [name_stats]
+        pvt_base.columns.set_names(name_stats, inplace = True, level = 1)
+        if f_totals_col:
+            pvt_by_x.columns.set_names(name_stats, inplace = True, level = 1)
+        if f_totals_cross:
+            pvt_totals.columns.set_names(name_stats, inplace = True, level = 1)
 
     #842. Re-assign the column indexes before sorting
+    colReorder = var_cols + reorder_vals + reorder_stats
     if isinstance(pvt_base.columns, pd.MultiIndex):
-        pvt_base.columns = pvt_base.columns.reorder_levels(var_cols + reorder_vals + reorder_stats)
+        pvt_base.columns = pvt_base.columns.reorder_levels(colReorder)
+    if f_totals_col:
+        if isinstance(pvt_by_x.columns, pd.MultiIndex):
+            pvt_by_x.columns = pvt_by_x.columns.reorder_levels(colReorder)
+    if f_totals_cross:
+        if isinstance(pvt_totals.columns, pd.MultiIndex):
+            pvt_totals.columns = pvt_totals.columns.reorder_levels(colReorder)
 
     #844. Helper callable as [key] for sorting
     #[ASSUMPTION]
@@ -501,7 +521,7 @@ def pandasPivot(
 
             #500. Flag the rows to be kept for output
             #510. Validate the existing combinations of these dimensions
-            mask_idx = pvt_base.index.isin(func_idx(df[get_row].drop_duplicates().astype('object')))
+            mask_idx = pvt_base.index.isin(h_AsObj(func_idx(df[get_row].drop_duplicates())))
 
             #540. Validate the subtotals on current axis
             if f_totals_row:
@@ -529,7 +549,7 @@ def pandasPivot(
             mask_col = (
                 pvt_base.columns
                 .droplevel(reorder_vals + reorder_stats)
-                .isin(func_idx(df[get_col].drop_duplicates().astype('object')))
+                .isin(h_AsObj(func_idx(df[get_col].drop_duplicates())))
             )
 
             #540. Validate the subtotals on current axis

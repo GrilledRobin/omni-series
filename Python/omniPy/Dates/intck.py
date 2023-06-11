@@ -9,7 +9,9 @@ from copy import deepcopy
 from collections.abc import Iterable
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from . import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
+from itertools import repeat
+from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
 
 def intck(
     interval : str
@@ -115,6 +117,11 @@ def intck(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230610        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -124,7 +131,7 @@ def intck(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, datetime, pandas, numpy, collections, inspect                                                                         #
+#   |   |sys, re, datetime, pandas, numpy, collections, inspect, itertools                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -148,10 +155,10 @@ def intck(
 
     #012. Handle the parameter buffer
     if not isinstance(daytype, str):
-        raise ValueError('[' + LfuncName + '][daytype]:[{0}] must be character string!'.format( type(daytype) ))
+        raise ValueError(f'[{LfuncName}][daytype]:[{type(daytype)}] must be character string!')
     daytype = daytype[0].upper()
     if daytype not in ['C','W','T']:
-        raise ValueError('[' + LfuncName + '][daytype]:[{0}] must be among [C,W,T]!'.format( daytype ))
+        raise ValueError(f'[{LfuncName}][daytype]:[{daytype}] must be among [C,W,T]!')
 
     #015. Function local variables
     col_rowidx : str = '_ical_row_'
@@ -162,6 +169,10 @@ def intck(
     col_idxcol : str = '_intckKCol_'
     col_idxrow : str = '_intckKRow_'
     col_rst : str = '_intckRst_'
+    map_stack : dict = {
+        'idRow' : col_idxrow
+        ,'idCol' : col_idxcol
+    }
 
     #020. Remove possible items that conflict the internal usage from the [kw_cal]
     kw_cal_fnl = kw_cal.copy()
@@ -220,65 +231,52 @@ def intck(
 
     #100. Reshape of the input datetime values
     #110. Extract information of [date_bgn]
-    if isinstance(date_bgn, Iterable) & (not isinstance(date_bgn, str)):
-        f_bgn_df = isinstance(date_bgn, pd.DataFrame)
-        f_bgn_srs = isinstance(date_bgn, pd.Series)
-        if f_bgn_df:
-            f_bgn_single = date_bgn.shape == (1,1)
-        elif f_bgn_srs:
-            f_bgn_single = date_bgn.shape == (1,)
-        else:
-            f_bgn_single = len(date_bgn) == 1
-    else:
-        f_bgn_single = True
-        f_bgn_df = False
-        f_bgn_srs = False
+    f_bgn_df = isinstance(date_bgn, pd.DataFrame)
+    f_bgn_srs = isinstance(date_bgn, pd.Series)
+    f_bgn_idx = isinstance(date_bgn, pd.Index)
 
-    if isinstance(date_bgn, str):
-        bgn_len = int(len(date_bgn) > 0)
-    elif isinstance(date_bgn, Iterable):
-        bgn_len = len(date_bgn)
-    else:
-        bgn_len = 0 if date_bgn is None else 1
-
-    if f_bgn_df | f_bgn_srs:
+    if f_bgn_df | f_bgn_srs | isinstance(date_bgn, np.ndarray):
         bgn_shape = date_bgn.shape
+        if len(bgn_shape) == 1:
+            bgn_shape += (1,)
+    elif f_bgn_idx:
+        bgn_shape = (date_bgn.size, date_bgn.nlevels)
+    elif isinstance(date_bgn, Iterable) and (not isinstance(date_bgn, str)):
+        #We do not verify the dimensions of such object, which may lead to unexpected result
+        bgn_shape = (len(date_bgn),1)
+    elif date_bgn is None:
+        #<NoneType> has the size of 1, whic means its dimension is as below:
+        bgn_shape = (0,1)
     else:
-        bgn_shape = (bgn_len,)
+        bgn_shape = (1,1)
 
-    #We also verify the number of columns if the input is a [pd.DataFrame]
-    f_bgn_len = (bgn_len > 0) & (bgn_shape[-1] > 0)
-    f_bgn_empty = (bgn_len == 0) | (bgn_shape[-1] == 0)
+    #[ASSUMPTION]
+    #[1] <NoneType> value is considered as single
+    #[2] We also verify the number of columns if the input is a [pd.DataFrame]
+    f_bgn_single = (bgn_shape == (1,1)) or date_bgn is None
+    f_bgn_empty = (bgn_shape[0] == 0) | (bgn_shape[-1] == 0)
 
     #120. Extract information of [date_end]
-    if isinstance(date_end, Iterable) & (not isinstance(date_end, str)):
-        f_end_df = isinstance(date_end, pd.DataFrame)
-        f_end_srs = isinstance(date_end, pd.Series)
-        if f_end_df:
-            f_end_single = date_end.shape == (1,1)
-        elif f_end_srs:
-            f_end_single = date_end.shape == (1,)
-        else:
-            f_end_single = len(date_end) == 1
-    else:
-        f_end_single = True
-        f_end_df = False
-        f_end_srs = False
+    f_end_df = isinstance(date_end, pd.DataFrame)
+    f_end_srs = isinstance(date_end, pd.Series)
+    f_end_idx = isinstance(date_end, pd.Index)
 
-    if isinstance(date_end, str):
-        end_len = int(len(date_end) > 0)
-    elif isinstance(date_end, Iterable):
-        end_len = len(date_end)
-    else:
-        end_len = 0 if date_end is None else 1
-
-    if f_end_df | f_end_srs:
+    if f_end_df | f_end_srs | isinstance(date_end, np.ndarray):
         end_shape = date_end.shape
+        if len(end_shape) == 1:
+            end_shape += (1,)
+    elif f_end_idx:
+        end_shape = (date_end.size, date_end.nlevels)
+    elif isinstance(date_end, Iterable) and (not isinstance(date_end, str)):
+        #We do not verify the dimensions of such object, which may lead to unexpected result
+        end_shape = (len(date_end),1)
+    elif date_end is None:
+        end_shape = (0,1)
     else:
-        end_shape = (end_len,)
+        end_shape = (1,1)
 
-    f_end_len = (end_len > 0) & (end_shape[-1] > 0)
-    f_end_empty = (end_len == 0) | (end_shape[-1] == 0)
+    f_end_single = (end_shape == (1,1)) or date_end is None
+    f_end_empty = (end_shape[0] == 0) | (end_shape[-1] == 0)
 
     #140. Verify the shapes of the input values
     #Quote: https://pythonspot.com/binary-numbers-and-logical-operators/
@@ -290,13 +288,12 @@ def intck(
     #145. Abort if the shapes of the input values are not the same
     #After this step, if neither of the input has only one element, they must be in the same shape (e.g. both empty)
     if f_comp_err:
-        raise ValueError('[' + LfuncName + ']Input values must be in the same shape!')
+        raise ValueError(f'[{LfuncName}]Input values must be in the same shape!')
 
     #148. Create the flag of whether to change the position of [date_bgn] and [date_end] for standardization
     f_switch = f_Mto1 & f_bgn_single
 
     #150. Verify the shapes of the input values
-    f_out_len = f_bgn_len | f_end_len
     f_single_empty = f_bgn_empty ^ f_end_empty
 
     #159. Raise error if the [Iterable] among them has zero length
@@ -306,197 +303,98 @@ def intck(
     #160. Determine the attributes of the output
     f_out_df = f_bgn_df | f_end_df
     f_out_srs = f_bgn_srs | f_end_srs
-    f_out_list = not (f_out_df | f_out_srs | f_1to1)
+    f_out_idx = f_bgn_idx | f_end_idx
 
     #165. Translate the input values to [M] and [N]
     if f_switch:
         df_M = deepcopy(date_end)
         df_N = deepcopy(date_bgn)
         f_M_df = f_end_df
-        f_N_df = f_bgn_df
         f_M_srs = f_end_srs
+        f_M_idx = f_end_idx
         shape_M = end_shape
         shape_N = bgn_shape
     else:
         df_M = deepcopy(date_bgn)
         df_N = deepcopy(date_end)
         f_M_df = f_bgn_df
-        f_N_df = f_end_df
         f_M_srs = f_bgn_srs
+        f_M_idx = f_bgn_idx
         shape_M = bgn_shape
         shape_N = end_shape
 
     #167. Identify the model of [columns] and [index] for output
-    if f_out_df:
-        #In such case, [df_M] is already a [pd.DataFrame]
-        mdl_columns = df_M.columns
-        mdl_index = df_M.index
-    elif f_out_srs:
-        #In such case, at least one of [df_M] and [df_N] is already a [pd.Series]
-        #We still have to verify which one is a [pd.Series] and take [M] for granted if applicable
-        if f_M_srs:
-            mdl_columns = df_M.name
-            mdl_index = df_M.index
-        else:
-            mdl_columns = df_N.name
-            mdl_index = df_N.index
+    #[ASSUMPTION]
+    #[1] Till now, shapes of both inputs only differ in below scenarios:
+    #    [a] M and N have the same shape
+    #    [b] N has only one element, including <NoneType>
+    #[2] If M is longer than N, we model M as the output shape, e.g. when <3-tuple> vs <1-element pd.Series>, output <3-tuple>
+    #[3] Otherwise we prioritize the scenarios of pandas types
+    #[4] If no pandas structure is involved, we use the shape of M, e.g. when <1-scalar> vs <1-element array>, output <1-scalar>
+    f_force_M = shape_M[0] > shape_N[0]
+    if f_force_M:
+        mdl_out = df_M
+    elif f_out_df and (not f_M_df):
+        mdl_out = df_N
+    elif f_out_srs and (not f_M_srs):
+        mdl_out = df_N
+    elif f_out_idx and (not f_M_idx):
+        mdl_out = df_N
+    else:
+        mdl_out = df_M
 
-    #170. Prepare the helper function to return proper results
+    #170. Helper function to process the unstacked data before type conversion
+    def h_dtype(df):
+        return(df.copy(deep = True).astype(float))
+
+    #190. Prepare the helper function to return proper results
     def h_rst(rst, col):
-        if f_out_df:
-            #100. Retrieve the data
-            if shape_M[0] == 0:
-                #Only copy the dataframe structure
-                #Quote: https://stackoverflow.com/questions/27467730/
-                rstOut = pd.DataFrame(columns = mdl_columns, index = mdl_index, dtype = float)
-            elif shape_M[-1] == 1:
-                #By doing this, the index of the output is exactly the same as the input
-                rstOut = rst[[col]].copy(deep=True)
-            else:
-                #100. Unstack the data for output
-                rstOut = (
-                    rst
-                    [[col_idxrow, col_idxcol, col]]
-                    .set_index([col_idxrow, col_idxcol])
-                    .unstack(level = -1, fill_value = np.nan)
-                )
+        #500. Unstack the underlying data to the same shape as the input one
+        #[ASSUMPTION]
+        #[1] <col-id> and <row-id> do not have <NA> values
+        #[2] There can only be <NA> values in the <col>
+        #[3] Hence we have to convert <col> to <float> type as output
+        rstOut = vecUnstack(rst, valName = col, modelObj = mdl_out, funcConv = h_dtype, **map_stack)
 
-                #500. Flatten the result in case one need to combine it to another data frame
-                #Quote: (#65) https://stackoverflow.com/questions/22233488/pandas-drop-a-level-from-a-multi-level-column-index
-                rstOut.columns = rstOut.columns.droplevel(0)
-                #Quote: https://stackoverflow.com/questions/19851005/rename-pandas-dataframe-index
-                #Below attribute represents the [box] text in a pivot table, which is quite annoying here; hence we remove it.
-                rstOut.columns.names = [None]
-
-                #900. Set the index to the same as the input
-                rstOut.set_index(mdl_index, inplace = True)
-#            sys._getframe(2).f_globals.update({ 'vfy_out' : rstOut })
-
-            #300. Set the column names to the same as the input
-            rstOut.columns = mdl_columns
-
-            #999. Return
-            return(rstOut)
-        else:
-            #100. Only retrieve the single column as a [pd.Series]
-            rstOut = rst[col].fillna(np.nan).copy(deep=True)
-
-            #990. Return in terms of different input types
-            if f_out_srs:
-                rstOut.set_axis(mdl_index, axis = 0, inplace = True)
-                rstOut.name = mdl_columns
-                return(rstOut)
-            elif f_out_list:
-                return(rstOut.to_list())
-            else:
-                if f_out_len:
-                    return(rstOut.iat[0])
-                else:
-                    return(None)
+        #999. Purge
+        return(rstOut)
     #End [h_rst]
 
     #200. Re-shape the input values for calculation at later steps
     #210. Transform [M] for standardized calculation
-    if f_M_df:
-        #100. Create the data frame
-        if shape_M[-1] == 1:
-            df_M.columns = [col_calc]
-            df_M[col_idxcol] = 0
-            df_M[col_idxrow] = range(shape_M[0])
-            df_M[col_keys] = range(shape_M[0])
-        else:
-            df_M = (
-                pd.DataFrame((
-                    df_M
-                    .copy(deep = True)
-                    .rename(columns = { v : i for i,v in enumerate(df_M.columns) })
-                    .stack(dropna = False)
-                ))
-                .rename(columns = { 0 : col_calc })
-                .assign(**{
-                    col_idxcol : lambda x: [ i[-1] for i in x.index.to_list() ]
-                    ,col_idxrow : [ i for i in range(shape_M[0]) for j in range(shape_M[-1]) ]
-                    ,col_keys : lambda x: range(len(x))
-                })
-                #We MUST reset the index for a [stack], otherwise we cannot add [col_merge] correctly
-                .reset_index(drop=True)
+    df_M = (
+        vecStack(df_M, valName = col_calc, **map_stack)
+        .assign(**{
+            col_keys : lambda x: range(len(x))
+            ,col_calc : lambda x: dict_dates[dict_attr['itype']]['func'](
+                x[col_calc]
+                ,**dict_dates[dict_attr['itype']]['kw']
             )
-
-        #500. Convert the dedicated column into the requested type
-        df_M[col_calc] = dict_dates[dict_attr['itype']]['func'](
-            df_M[col_calc]
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
-    else:
-        #500. Convert it into the requested value
-        tmp_M = dict_dates[dict_attr['itype']]['func'](
-            pd.Series(deepcopy(df_M), dtype = 'object')
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
-
-        #900. Standardize the internal data frame
-        df_M = pd.DataFrame(tmp_M)
-        df_M.columns = [col_calc]
-        df_M[col_idxcol] = 0
-        df_M[col_idxrow] = range(shape_M[0])
-        df_M[col_keys] = range(shape_M[0])
+        })
+    )
 
     #250. Transform [N] for standardized calculation
-    if f_N_df:
-        #100. Create the data frame
-        if shape_N[-1] == 1:
-            df_N.columns = [col_calc]
-            df_N[col_idxcol] = 0
-            df_N[col_idxrow] = range(shape_N[0])
-            df_N[col_keys] = range(shape_N[0])
-        else:
-            df_N = (
-                pd.DataFrame((
-                    df_N
-                    .copy(deep = True)
-                    .rename(columns = { v : i for i,v in enumerate(df_N.columns) })
-                    .stack(dropna = False)
-                ))
-                .rename(columns = { 0 : col_calc })
-                .assign(**{
-                    col_idxcol : lambda x: [ i[-1] for i in x.index.to_list() ]
-                    ,col_idxrow : [ i for i in range(shape_N[0]) for j in range(shape_N[-1]) ]
-                    ,col_keys : lambda x: range(len(x))
-                })
-                #We MUST reset the index for a [stack], otherwise we cannot add [col_merge] correctly
-                .reset_index(drop=True)
+    #[ASSUMPTION]
+    #[1] For the scenario Mto1, we handle it via a helper function, see below process
+    df_N = (
+        vecStack(df_N, valName = col_calc, **map_stack)
+        .assign(**{
+            col_keys : lambda x: range(len(x))
+            ,col_calc : lambda x: dict_dates[dict_attr['itype']]['func'](
+                x[col_calc]
+                ,**dict_dates[dict_attr['itype']]['kw']
             )
+        })
+    )
 
-        #500. Convert the dedicated column into the requested type
-        df_N[col_calc] = dict_dates[dict_attr['itype']]['func'](
-            df_N[col_calc]
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
-    else:
-        #500. Convert it into the requested value
-        tmp_N = dict_dates[dict_attr['itype']]['func'](
-            pd.Series(deepcopy(df_N), dtype = 'object')
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
+    #255. Return placeholder if N has zero length
+    if len(df_N) == 0:
+        df_rst = df_M.copy(deep=True).assign(**{ col_rst : np.nan })
+        return(h_rst(df_rst, col_rst))
 
-        #900. Standardize the internal data frame
-        df_N = pd.DataFrame(tmp_N)
-        df_N.columns = [col_calc]
-        df_N[col_idxcol] = 0
-        df_N[col_idxrow] = range(shape_N[0])
-        df_N[col_keys] = range(shape_N[0])
-
-    #220. Ensure both inputs have the same index
-    if df_M.shape == df_N.shape:
-        df_N.set_index(df_M.index, inplace = True)
-
-    #280. Return placeholder if [N] has zero length
-    #After this step, there are only below pairs for the input values:
-    #[1] M to 1 (where M has at least one element)
-    #[2] M to N (where M.shape == N.shape, while M has more than one element)
-    if (not f_out_len) | (len(df_N) == 0):
-        df_rst = df_M.copy(deep=True)
-        df_rst[col_rst] = np.nan
+    #259. Return placeholder if M has zero length
+    if len(df_M) == 0:
+        df_rst = df_N.copy(deep=True).assign(**{ col_rst : np.nan })
         return(h_rst(df_rst, col_rst))
 
     #290. Calculate the incremental for [datetime] when [type] in [dt(second|minute|hour)] by calling this function in recursion
@@ -528,7 +426,7 @@ def intck(
         )
 
         #150. Increment by different scenarios of [time]
-        dtt_ntvl = re.sub(r'^dt', '', dict_attr['name'])
+        dtt_ntvl = re.sub(r'^dt', '', interval)
         dtt_rst_time = intck(
             interval = dtt_ntvl
             ,date_bgn = dtt_Mtime
@@ -598,7 +496,7 @@ def intck(
             .copy(deep=True)
             .mul(86400)
             #[IMPORTANT] We have to add the [time part] before dividing it!
-            .add(dtt_rst_time)
+            .add(dtt_rst_time.mul(dict_attr['span']).mul(dict_attr['multiple']))
         )
 
         #770. Divide the result by the span and multiple by the absolute values
@@ -650,37 +548,31 @@ def intck(
             cal_end = cal_bgn
         else:
             #100. Retrieve the minimum and maximum values among the input values
+            #For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
             in_min = srs_indate.loc[notnull_indate].min(skipna = True)
             in_max = srs_indate.loc[notnull_indate].max(skipna = True)
 
             #500. Extend the period coverage by the provided span and multiple
-            #For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
             cal_bgn = in_min + dt.timedelta(days = -15)
             cal_end = in_max + dt.timedelta(days = 15)
     else:
         #100. Create new column
         df_M[col_merge] = df_M[col_calc].dt.floor('S', ambiguous = 'NaT')
         df_N[col_merge] = df_N[col_calc].dt.floor('S', ambiguous = 'NaT')
-#        df_M[col_merge] = df_M[col_calc].apply( lambda x: x.replace(microsecond = 0, tzinfo = None, fold = 0) )
-#        df_N[col_merge] = df_N[col_calc].apply( lambda x: x.replace(microsecond = 0, tzinfo = None, fold = 0) )
 
         #300. Concatenate the date values of both input values
         srs_indate = pd.concat([df_M[col_merge], df_N[col_merge]], ignore_index = True)
 
         #500. Define the bound of the calendar
         notnull_indate = srs_indate.notnull()
+        #[ASSUMPTION]
+        #[1] Only for calculation on [time], all numbers are recycled in one day
+        cal_bgn = dt.datetime.combine(dt.date.today(), dt.time(0,0,0))
         if not notnull_indate.any():
             #100. Assign the minimum size of calendar data if none of the input is a valid date
-            cal_bgn = dt.datetime.combine(dt.date.today(), dt.time(0,0,0))
             cal_end = cal_bgn
         else:
-            #100. Retrieve the minimum and maximum values among the input values
-            in_min = srs_indate.loc[notnull_indate].min(skipna = True)
-            in_max = srs_indate.loc[notnull_indate].max(skipna = True)
-
-            #500. Extend the period coverage by the provided span and multiple
-            cal_bgn = in_min + dt.timedelta(seconds = -60)
-            cal_end = in_max + dt.timedelta(seconds = 60)
+            cal_end = dt.datetime.combine(dt.date.today(), dt.time(23,59,59))
 
     #380. [time] part for [type == dt]
     #There is no need to append [time] part for [dt], as we will only calculate the incremental by [day]
@@ -745,13 +637,12 @@ def intck(
     #Scenarios:
     #[1] Index of [df_M_in] is the same as [df_N_in]
     #[2] [df_N_in] is a [dict]
-    col_intck = col_period
-    df_M_in.loc[:, col_rst] = df_M_in[col_intck].rsub(df_N_comp[col_intck]).astype(float)
+    df_M_in.loc[:, col_rst] = df_M_in[col_period].rsub(df_N_comp[col_period]).astype(float)
+    mask_mul = df_M_in[col_rst].lt(0)
 #    sys._getframe(1).f_globals.update({ 'vfy_dat' : df_M_in.copy(deep=True) })
 
     #770. Apply [multiple] if any
     df_M_in['_intckRst_wMul_'] = df_M_in[col_rst].abs().floordiv(dict_attr['multiple'])
-    mask_mul = df_M_in[col_rst].lt(0)
     df_M_in.loc[mask_mul, '_intckRst_wMul_'] *= -1
 
     #790. Negate the incremental if the input values are switched
@@ -878,7 +769,7 @@ if __name__=='__main__':
 
     # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
     # [RAM] 64GB 2400MHz
-    #700. Test the timing of 2 * 10K dates
+    #700. Test the timing of 2 * 50K dates
     dt7_smp1 = pair4_dt1.copy(deep=True).sample(50000, replace = True)
     dt7_smp2 = pair4_dt2.copy(deep=True).sample(50000, replace = True)
 
@@ -886,9 +777,9 @@ if __name__=='__main__':
     dt7_intck1 = intck('day2', dt7_smp1, dt7_smp2, daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0.33s on average
+    # 0.18s on average
 
-    #800. Test the timing  of 2 * 10K datetimes
+    #800. Test the timing  of 2 * 50K datetimes
     dt8_smp1 = pair6_dt4.copy(deep=True).sample(50000, replace = True)
     dt8_smp2 = pair6_dt4[['d','c']].copy(deep=True).sample(50000, replace = True)
 
@@ -896,7 +787,7 @@ if __name__=='__main__':
     dt8_intck1 = intck('dthour', dt8_smp1, dt8_smp2, daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 1.60s on average
+    # 1.19s on average
 
     #900. Test special cases
     #910. [None] vs [None]
@@ -920,10 +811,16 @@ if __name__=='__main__':
     #Return: the same type as the [date_bgn] with no element
 
     #940. Empty data frames
-    emp3 = pair6_dt4.loc[[False for i in range(len(pair6_dt4))], :].copy(deep=True)
-    emp4 = pair6_dt4[['d','c']].loc[[False for i in range(len(pair6_dt4))], :].copy(deep=True)
+    emp3 = pair6_dt4.loc[pair6_dt4.index.isin(['']), :].copy(deep=True)
+    emp4 = pair6_dt4[['d','c']].loc[pair6_dt4.index.isin(['']), :].copy(deep=True)
     print(intck('dthour', emp3, emp4, daytype = 't'))
     print(intck('dthour', emp4, emp3, daytype = 't'))
+    #Return: the same type as the [date_bgn] with no element
+
+    emp5 = pair6_dt4.loc[:, pair6_dt4.columns.isin([''])].copy(deep=True)
+    emp6 = pair6_dt4[['d','c']].loc[:, pair6_dt4.columns.isin([''])].copy(deep=True)
+    print(intck('dthour', emp5, emp6, daytype = 't'))
+    print(intck('dthour', emp6, emp5, daytype = 't'))
     #Return: the same type as the [date_bgn] with no element
 
     #990. Test error cases

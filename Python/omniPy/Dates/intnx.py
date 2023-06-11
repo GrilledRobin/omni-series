@@ -10,7 +10,8 @@ from copy import deepcopy
 from collections.abc import Iterable
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from . import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
+from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
 
 def intnx(
     interval : str
@@ -161,6 +162,11 @@ def intnx(
 #   | Log  |[1] [dt<interval>] now return the same results as the same function does in SAS                                             #
 #   |      |[2] Slightly improve the efficiency, use [.mul(-1).floordiv(1).mul(-1)] to resemble [np.ceil] behavior                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230610        | Version | 7.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -174,6 +180,10 @@ def intnx(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |intCalendar                                                                                                                #
 #   |   |   |getDateIntervals                                                                                                           #
@@ -195,24 +205,21 @@ def intnx(
     #012. Handle the parameter buffer
     if isinstance(indate, Iterable):
         if len(indate) == 0:
-            if isinstance(indate, pd.DataFrame):
-                rstOut = indate.copy(deep=True).astype('object')
-                return(rstOut)
-            elif isinstance(indate, pd.Series):
+            if isinstance(indate, (pd.DataFrame, pd.Series)):
                 rstOut = indate.copy(deep=True).astype('object')
                 return(rstOut)
             elif not isinstance(indate, str):
-                return([])
+                return(deepcopy(indate))
             else:
                 return(None)
     else:
         if not indate: return(None)
 
     if not isinstance(daytype, str):
-        raise ValueError('[' + LfuncName + '][daytype]:[{0}] must be character string!'.format( type(daytype) ))
+        raise ValueError(f'[{LfuncName}][daytype]:[{type(daytype)}] must be character string!')
     daytype = daytype[0].upper()
     if daytype not in ['C','W','T']:
-        raise ValueError('[' + LfuncName + '][daytype]:[{0}] must be among [C,W,T]!'.format( daytype ))
+        raise ValueError(f'[{LfuncName}][daytype]:[{daytype}] must be among [C,W,T]!')
 
     #015. Function local variables
     intnx_flags = re.I
@@ -224,6 +231,41 @@ def intnx(
     col_calc : str = '_intnxCol_'
     col_idxcol : str = '_intnxKCol_'
     col_idxrow : str = '_intnxKRow_'
+    map_stack : dict = {
+        'idRow' : col_idxrow
+        ,'idCol' : col_idxcol
+    }
+    if isinstance(indate, pd.Index):
+        in_shape = (indate.size, indate.nlevels)
+    elif isinstance(indate, (pd.DataFrame, pd.Series, np.ndarray)):
+        in_shape = indate.shape
+        if len(in_shape) == 1:
+            in_shape += (1,)
+    elif isinstance(indate, Iterable) and (not isinstance(indate, str)):
+        #We do not verify the dimensions of such object, which may lead to unexpected result
+        in_shape = (len(indate),1)
+    elif indate is None:
+        #<NoneType> has the size of 1, whic means its dimension is as below:
+        in_shape = (0,1)
+    else:
+        in_shape = (1,1)
+
+    if isinstance(increment, pd.Index):
+        incr_shape = (increment.size, increment.nlevels)
+    elif isinstance(increment, (pd.DataFrame, pd.Series, np.ndarray)):
+        incr_shape = increment.shape
+        if len(incr_shape) == 1:
+            incr_shape += (1,)
+    elif isinstance(increment, numbers.Number):
+        incr_shape = (1,1)
+    elif isinstance(increment, Iterable) and (not isinstance(increment, str)):
+        #We do not verify the dimensions of such object, which may lead to unexpected result
+        incr_shape = (len(increment),1)
+    else:
+        raise TypeError(
+            f'[{LfuncName}][increment]:[{type(increment)}] must be of the same type as'
+            + f' [indate]:[{type(indate)}], or a scalar integer!'
+        )
 
     #020. Remove possible items that conflict the internal usage from the [kw_cal]
     kw_cal_fnl = deepcopy(kw_cal)
@@ -246,68 +288,37 @@ def intnx(
     def _convIncr(x):
         return( np.floor(np.abs(x)) * np.sign(x) )
 
+    #037. Helper function to process the unstacked data before type conversion
+    def h_dtype(df):
+        #010. Create a copy of the input data to avoid unexpected result
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        df_out = df.copy(deep = True).fillna(pd.NaT)
+
+        #100. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
+        conv_dtcol = [ c for c in df_out.columns if str(df_out.dtypes[c]).startswith('datetime') ]
+
+        #500. Re-assign the output values in terms of the request
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.unstack()] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        #[2] [pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
+        for c in conv_dtcol:
+            df_out[c] = pd.Series(df_out[c].dt.to_pydatetime(), dtype = 'object', index = df_out.index)
+
+        #999. Purge
+        return(df_out)
+
     #039. Return the result in the same shape as input
     def h_rst(rst, col):
-        if isinstance(indate, pd.DataFrame):
-            #100. Retrieve the data
-            if indate.shape[0] == 0:
-                #Only copy the dataframe structure
-                #Quote: https://stackoverflow.com/questions/27467730/
-                rstOut = pd.DataFrame(columns = indate.columns, index = indate.index, dtype = 'object')
-            elif indate.shape[-1] == 1:
-                #By doing this, the index of the output is exactly the same as the input
-                rstOut = rst[[col]].copy(deep=True)
-            else:
-                #100. Unstack the data for output
-                rstOut = (
-                    rst
-                    [[col_idxrow, col_idxcol, col]]
-                    .set_index([col_idxrow, col_idxcol])
-                    .unstack(level = -1, fill_value = pd.NaT)
-                )
+        #500. Unstack the underlying data to the same shape as the input one
+        #[ASSUMPTION]
+        #[1] <col-id> and <row-id> do not have <NA> values
+        #[2] There can only be <NA> values in the <col>
+        #[3] Hence we have to convert them to <NaT> as output
+        rstOut = vecUnstack(rst, valName = col, modelObj = indate, funcConv = h_dtype, **map_stack)
 
-                #500. Flatten the result in case one need to combine it to another data frame
-                #Quote: (#65) https://stackoverflow.com/questions/22233488/pandas-drop-a-level-from-a-multi-level-column-index
-                rstOut.columns = rstOut.columns.droplevel(0)
-                #Quote: https://stackoverflow.com/questions/19851005/rename-pandas-dataframe-index
-                #Below attribute represents the [box] text in a pivot table, which is quite annoying here; hence we remove it.
-                rstOut.columns.names = [None]
-
-                #900. Set the index to the same as the input
-                rstOut.set_index(indate.index, inplace = True)
-#            sys._getframe(2).f_globals.update({ 'vfy_out' : rstOut })
-
-            #300. Set the column names to the same as the input
-            rstOut.columns = indate.columns
-
-            #500. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
-            conv_dtcol = [ c for c in rstOut.columns if str(rstOut.dtypes[c]).startswith('datetime') ]
-
-            #510. Re-assign the output values in terms of the request
-            #[pd.DataFrame.unstack()] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
-            #[pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
-            for c in conv_dtcol:
-                rstOut[c] = pd.Series(rstOut[c].dt.to_pydatetime(), dtype = 'object', index = rstOut.index)
-
-            #999. Return
-            return(rstOut)
-        else:
-            #100. Only retrieve the single column as a [pd.Series]
-            rstOut = rst[col].fillna(pd.NaT).copy(deep=True)
-
-            #500. Re-assign the output values in terms of the request
-            if str(rstOut.dtype).startswith('datetime'):
-                rstOut = pd.Series(rstOut.dt.to_pydatetime(), dtype = 'object', index = rstOut.index)
-
-            #990. Return in terms of different input types
-            if isinstance(indate, pd.Series):
-                rstOut.set_axis(indate.index, axis = 0, inplace = True)
-                rstOut.name = indate.name
-                return(rstOut)
-            elif isinstance(indate, Iterable) and (not isinstance(indate, str)):
-                return(rstOut.to_list())
-            else:
-                return(rstOut.iat[0])
+        #999. Purge
+        return(rstOut)
     #End [h_rst]
 
     #050. Local parameters
@@ -369,8 +380,8 @@ def intnx(
                 dict_attr.update({ 'alignment' : k })
     else:
         raise ValueError(
-            '[' + LfuncName + '][alignment]:[{0}] is not accepted!'.format( alignment )
-            + '\n' + 'Valid alignments should match the pattern: {0}'.format( str_align_match )
+            f'[{LfuncName}][alignment]:[{str(alignment)}] is not accepted!'
+            + '\n' + f'Valid alignments should match the pattern: {str_align_match}'
         )
 
     #080. Define interim column names for call of helper functions
@@ -384,104 +395,48 @@ def intnx(
     #100. Standardize input data
     #101. Verify the input values
     if not isinstance(increment, numbers.Number):
-        if isinstance(indate, pd.DataFrame):
-            if isinstance(increment, pd.DataFrame):
-                if indate.shape != increment.shape:
-                    raise ValueError(
-                        '[' + LfuncName + '][indate]:[{0}] must be of the same shape as'.format( '(' + ','.join(indate.shape) + ')' )
-                        + ' [increment]:[{0}]!'.format( '(' + ','.join(increment.shape) + ')' )
-                    )
-            else:
-                #Till this step, [increment] is not a single number nor a [pd.DataFrame] in the same shape as [indate]
+        if isinstance(indate, (pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
+            if in_shape != incr_shape:
                 raise ValueError(
-                    '[' + LfuncName + '][increment]:[{0}]'.format( increment )
-                    + ' cannot be broadcast to the same shape as [indate]!'
+                    f'[{LfuncName}][indate]:[{str(indate.shape)}] must be of the same shape as'
+                    + f' [increment]:[{str(increment.shape)}]!'
                 )
-        else:
-            #010. Raise error when [increment] has different shape to it
-            if isinstance(increment, pd.DataFrame):
-                raise TypeError(
-                    '[' + LfuncName + '][increment]:[{0}] must be of the same type as'.format( type(increment) )
-                    + ' [indate]:[{0}]!'.format( type(indate) )
+
+        if isinstance(indate, (pd.DataFrame, pd.Index, pd.Series)):
+            if not indate.index.equals(increment.index):
+                raise ValueError(
+                    f'[{LfuncName}][indate] must have the same index as [increment]'
                 )
 
     #110. Transform [indate]
-    if isinstance(indate, pd.DataFrame):
-        #100. Create the data frame
-        if indate.shape[-1] == 1:
-            df_indate = indate.copy(deep = True)
-            df_indate.columns = [col_calc]
-            df_indate[col_idxcol] = 0
-            df_indate[col_idxrow] = range(len(indate))
-            df_indate[col_keys] = range(len(indate))
-        else:
-            df_indate = (
-                pd.DataFrame((
-                    indate
-                    .copy(deep = True)
-                    .rename(columns = { v : i for i,v in enumerate(indate.columns) })
-                    .stack(dropna = False)
-                ))
-                .rename(columns = { 0 : col_calc })
-                .assign(**{
-                    col_idxcol : lambda x: [ i[-1] for i in x.index.to_list() ]
-                    ,col_idxrow : [ i for i in range(len(indate)) for j in range(len(indate.columns)) ]
-                    ,col_keys : lambda x: range(len(x))
-                })
-                #We MUST reset the index for a [stack], otherwise we cannot add [col_merge] correctly
-                .reset_index(drop=True)
+    df_indate = (
+        vecStack(indate, valName = col_calc, **map_stack)
+        .assign(**{
+            col_keys : lambda x: range(len(x))
+            ,col_calc : lambda x: dict_dates[dict_attr['itype']]['func'](
+                x[col_calc]
+                ,**dict_dates[dict_attr['itype']]['kw']
             )
-
-        #500. Convert the dedicated column into the requested type
-        df_indate[col_calc] = dict_dates[dict_attr['itype']]['func'](
-            df_indate[col_calc]
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
-    else:
-        #500. Convert it into the requested value
-        tmp_indate = dict_dates[dict_attr['itype']]['func'](
-            pd.Series(indate, dtype = 'object')
-            ,**dict_dates[dict_attr['itype']]['kw']
-        )
-
-        #900. Standardize the internal data frame
-        df_indate = pd.DataFrame(tmp_indate)
-        df_indate.columns = [col_calc]
-        df_indate[col_idxcol] = 0
-        df_indate[col_idxrow] = range(len(tmp_indate))
-        df_indate[col_keys] = range(len(tmp_indate))
+        })
+    )
 
     #120. Transform [increment]
     if isinstance(increment, numbers.Number):
         l_incr = _convIncr(increment)
     else:
-        if isinstance(indate, pd.DataFrame):
-            if isinstance(increment, pd.DataFrame):
-                if increment.shape[-1] == 1:
-                    tmp_incr = increment.copy(deep = True)
-                    tmp_incr.columns = ['_intnxIncr_']
-                    tmp_incr.set_index(indate.index, inplace = True)
-                    l_incr = _convIncr(tmp_incr['_intnxIncr_']).copy(deep = True)
-                else:
-                    l_incr = _convIncr(increment.stack(dropna = False).set_axis(indate.index, axis = 0))
-                    l_incr.name = '_intnxIncr_'
-        else:
-            #100. Convert both inputs into pd.Series to verify their shape
-            l_incr = _convIncr(pd.Series(increment, dtype = 'int'))
-            l_incr.name = '_intnxIncr_'
-            len_incr, len_indate = len(l_incr), len(df_indate)
+        l_incr = (
+            vecStack(increment, valName = '_intnxIncr_', **map_stack)
+            .assign(**{
+                '_intnxIncr_' : lambda x: _convIncr(x['_intnxIncr_']).astype('int')
+            })
+            ['_intnxIncr_']
+        )
 
-            #500. Handle different cases in terms of their respective lengths
-            if len_incr == len_indate:
-                l_incr.set_axis(df_indate.index, axis = 0, inplace = True)
-            else:
-                raise ValueError(
-                    '[' + LfuncName + '][indate]:[{0}] must be of the same length as'.format( len_indate )
-                    + ' [increment]:[{0}]!'.format( len_incr )
-                )
+        if incr_shape == (1,1):
+            l_incr = int(l_incr.iat[0])
 
     #Till this step, [l_incr] can only be instance of either [pd.Series] or [np.int]
-    if isinstance(increment, numbers.Number):
+    if isinstance(l_incr, numbers.Number):
         l_cal_imin = l_incr
         l_cal_imax = l_incr
     else:
@@ -512,6 +467,10 @@ def intnx(
         #610. Retrieve the parts as [pd.Series] for simplification
         dtt_indate = df_indate[col_calc].apply( lambda x: x.date() )
         dtt_indate.name = '_dtt_date_'
+        #[ASSUMPTION]
+        #[1] Any incremental upon <NULL> date is invalid, we ensure the <increment> for them is a valid integer to avoid
+        #     type conversion error, since it will not impact the <NULL> result
+        dtt_incr_date.loc[dtt_indate.isnull()] = 0
 
         #630. Increment by [day]
         dtt_rst_date = intnx(
@@ -529,7 +488,7 @@ def intnx(
         )
 
         #650. Increment by different scenarios of [time]
-        dtt_ntvl = re.sub(r'^dt', '', dict_attr['name'])
+        dtt_ntvl = re.sub(r'^dt', '', interval)
         dtt_rst_time = intnx(
             interval = dtt_ntvl
             ,indate = df_indate[col_calc]
@@ -595,6 +554,7 @@ def intnx(
         arr_time = np.array(df_indate[col_calc])
 
         #900. Create [datetime] for the calculation of [time]
+        #We cannot set its dtype as <object>, for there will be calculation upon datetimelike values in pandas
         df_indate[col_calc] = pd.Series(v_dt_combine(dt.date.today(), arr_time), index = df_indate.index)
 
     df_indate['_intnxIncr_'] = l_incr
@@ -709,7 +669,7 @@ def intnx(
                 .reindex(rst['_gti_newprd_'])
                 .set_axis(rst.index, axis = 0)
             )
-#            sys._getframe(2).f_globals.update({ 'vfy_rst' : rst })
+            # sys._getframe(3).f_globals.update({ 'vfy_rst' : rst, 'vfg_cal' : prd_bgn })
         elif alignment == 'e':
             #100. Identify the ending of each period
             prd_end = (
@@ -841,7 +801,7 @@ def intnx(
         ,dict_attr['multiple']
         ,dict_attr['alignment']
     )
-#    sys._getframe(1).f_globals.update({ 'vfy_incr' : df_incr.copy(deep=True) })
+    # sys._getframe(2).f_globals.update({ 'vfy_cal_in' : df_cal_in.copy(deep=True) })
 
     #850. Merge the incremental back to the input data for later transformation
     col_dt = [col_keys, col_idxrow, col_idxcol]
@@ -864,7 +824,7 @@ def intnx(
     elif dict_attr['itype'] in ['t']:
         df_rst[col_out] = df_rst[col_out].dt.time
 
-#    sys._getframe(1).f_globals.update({ 'vfy_rst' : df_rst })
+    # sys._getframe(2).f_globals.update({ 'vfy_rst' : df_rst.copy(deep = True) })
 
     #990. Return
     return(h_rst(df_rst, col_out))
@@ -934,6 +894,14 @@ if __name__=='__main__':
     diff_min5 = intck('dtsecond300', t_now, t_end)
     t_chk = intnx('dtsecond300', t_now, diff_min5)
 
+    #270. Test multiple increments
+    df_incr = pd.DataFrame(
+        np.array(range(6)).reshape(3,2)
+        ,index = dt4.index
+        ,columns = dt4.columns
+    )
+    dt4_intnx3 = intnx('day', dt4, df_incr, 'e', daytype = 't')
+
     #300. Test datetime values
     dt6_intnx1 = intnx('dtday', dt6, -2, daytype = 'w')
     dt6_intnx2 = intnx('dthour', dt6, -20, daytype = 'w')
@@ -963,33 +931,29 @@ if __name__=='__main__':
 
     # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
     # [RAM] 64GB 2400MHz
-    #700. Test the timing of 2 * 10K dates
+    #700. Test the timing of 2 * 100K dates
     df_ttt = dt4.copy(deep=True).sample(100000, replace = True)
 
     time_bgn = dt.datetime.now()
     df_trns = intnx('month', df_ttt, -12, 'e', daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0.4s on average
+    # 0.26s on average
 
-    #800. Test the timing  of 2 * 10K datetimes
+    #800. Test the timing  of 2 * 100K datetimes
     df_ttt8 = dt8.copy(deep=True).sample(100000, replace = True)
 
     time_bgn = dt.datetime.now()
-    print(time_bgn)
     df_trns8 = intnx('dthour', df_ttt8, 12, 's', daytype = 'w')
     time_end = dt.datetime.now()
-    print(time_end)
     print(time_end - time_bgn)
     # 1.81s on average
 
     time_bgn = dt.datetime.now()
-    print(time_bgn)
     df_trns8_1 = intnx('dthour', df_ttt8, 12, 'm', daytype = 'w')
     time_end = dt.datetime.now()
-    print(time_end)
     print(time_end - time_bgn)
-    # 1.78s on average
+    # 1.80s on average
 
     #900. Test special cases
     #910. [None] vs [None]
@@ -1005,19 +969,23 @@ if __name__=='__main__':
     #Return: pd.NaT
 
     #930. Empty series
-    emp1 = dt3.loc[[False for i in range(len(dt3))]].copy(deep=True)
+    emp1 = dt3.loc[dt3.index.isin([''])].copy(deep=True)
     print(intnx('day', emp1, 2, daytype = 'w'))
     #Return: the same type as the [indate] with no element
 
     #940. Empty data frames
-    emp3 = dt5.loc[[False for i in range(len(dt5))], :].copy(deep=True)
+    emp3 = dt5.loc[dt5.index.isin(['']), :].copy(deep=True)
     print(intnx('week', emp3, 1, daytype = 't'))
+    #Return: the same type as the [indate] with no element
+
+    emp4 = dt5.loc[:, dt5.columns.isin([''])].copy(deep=True)
+    print(intnx('week', emp4, 1, daytype = 't'))
     #Return: the same type as the [indate] with no element
 
     #990. Test error cases
     if False:
         #100. [date] vs [None]
         print(intnx('day2', dt1, None, daytype = 'w'))
-        #Error: different lengths
+        #Error: different types
 #-Notes- -End-
 '''

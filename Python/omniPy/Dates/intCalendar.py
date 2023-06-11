@@ -7,7 +7,7 @@ import pandas as pd
 from typing import Union
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from . import UserCalendar, getDateIntervals
+from omniPy.Dates import UserCalendar, getDateIntervals
 
 def intCalendar(
     interval : Union[str, dict]
@@ -100,6 +100,11 @@ def intCalendar(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when Saturday is Workday and the requested interval is Workweek                                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230610        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when [itype == 't'] and [span > 1], the calculation results to NA when period reaches 0                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -169,12 +174,20 @@ def intCalendar(
         rst.iat[0, rst.columns.get_loc('_firstrec_')] = True
         rst[col_period] = rst['_firstrec_'].cumsum().astype(int)
 
+        #300. Subtract the period beginning by 1 for time calculation
+        #[ASSUMPTION]
+        #[1] This function is always called when [span > 1]
+        #[2] Above condition indicates <name> is not <second>
+        #[3] Hence such period starts from 0 instead of 1
+        if dict_attr['itype'] == 't':
+            rst.loc[:, col_period] = rst.loc[:, col_period].sub(1)
+
         #500. Count the records per period by the requested type of days
         if (dict_attr['itype'] in ['d', 'dt']) & (daytype in ['W', 'T']):
             rst[col_prdidx] = rst.groupby(col_period)[dict_adjcol[daytype]].cumsum().astype(int)
         else:
             #We add this index by [1] to align the same function in [R], which starts from [1] instead of [0]
-            rst[col_prdidx] = rst.groupby(col_period).cumcount().astype(int) + 1
+            rst[col_prdidx] = rst.groupby(col_period).cumcount().astype(int).add(1)
 
         #999. Return the data frame
         return(rst)

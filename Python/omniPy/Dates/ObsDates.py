@@ -5,9 +5,11 @@
 import datetime as dt
 import math
 import pandas as pd
+from copy import deepcopy
 from warnings import warn
 from collections.abc import Iterable
-from . import asDates, asQuarters, CoreUserCalendar
+from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.Dates import asDates, asQuarters, CoreUserCalendar
 
 #100. Definition of the class.
 class ObsDates( CoreUserCalendar ):
@@ -237,6 +239,11 @@ class ObsDates( CoreUserCalendar ):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now support input as a data frame (2-D)                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230612        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -246,10 +253,14 @@ class ObsDates( CoreUserCalendar ):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |datetime, math, pandas, collections, warnings                                                                                  #
+#   |   |datetime, math, pandas, collections, copy, warnings                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |asQuarters                                                                                                                 #
@@ -282,17 +293,21 @@ class ObsDates( CoreUserCalendar ):
 
         #100. Assign values to local variables
         self.fmtDateIn = fmtDateIn
+        self._map_stack_ : dict = {
+            'idRow' : '_obsKRow_'
+            ,'idCol' : '_obsKCol_'
+        }
         int_obs = self._obsDate_T(obsDate)['D_DATE'].copy(deep=True)
 
         #300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
         #310. Identify the valid dates from the input
-        int_clnBgn = asDates(pd.Series(clnBgn, dtype = 'object')).loc[lambda x: ~pd.isnull(x)]
-        int_clnEnd = asDates(pd.Series(clnEnd, dtype = 'object')).loc[lambda x: ~pd.isnull(x)]
+        int_clnBgn = asDates(pd.Series(clnBgn, dtype = 'object')).loc[lambda x: x.notnull()]
+        int_clnEnd = asDates(pd.Series(clnEnd, dtype = 'object')).loc[lambda x: x.notnull()]
 
         #340. Transform the beginning when necessary
         if (len(int_clnBgn) != 1):
             #100. Seek help from the input values
-            int_clnBgn = int_obs.loc[lambda x: ~pd.isnull(x)]
+            int_clnBgn = int_obs.loc[lambda x: x.notnull()]
 
             #500. Set it when the input values can neither help
             #For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
@@ -304,12 +319,12 @@ class ObsDates( CoreUserCalendar ):
             #900. Set it to the beginning of its previous year, which is earlier than that all existing methods can calculate
             int_clnBgn = int_clnBgn.replace(year = int_clnBgn.year - 1, month = 1, day = 1)
         else:
-            int_clnBgn = int_clnBgn.at[0]
+            int_clnBgn = int_clnBgn.iat[0]
 
         #370. Transform the ending when necessary
         if (len(int_clnEnd) != 1):
             #100. Seek help from the input values
-            int_clnEnd = int_obs.loc[lambda x: ~pd.isnull(x)]
+            int_clnEnd = int_obs.loc[lambda x: x.notnull()]
 
             #500. Set it when the input values can neither help
             if len(int_clnEnd) == 0:
@@ -320,7 +335,7 @@ class ObsDates( CoreUserCalendar ):
             #900. Set it to the end of its next year, which is later than that all existing methods can calculate
             int_clnEnd = int_clnEnd.replace(year = int_clnEnd.year + 1, month = 12, day = 31)
         else:
-            int_clnEnd = int_clnEnd.at[0]
+            int_clnEnd = int_clnEnd.iat[0]
 
         #500. Instantiate parent class
         super(ObsDates,self).__init__(
@@ -343,7 +358,7 @@ class ObsDates( CoreUserCalendar ):
 
     #005. Define the attributes that can be accessed from inside
     __slots__ = (
-        '_uniclndr_' , '_obs_df_' , '_values_df_' , '_values_srs_' , '_values_col_' , '_values_idx_', '_values_shp_'
+        '_uniclndr_' , '_inputs_' , '_obs_df_' , '_v_struct_' , '_v_index_' , '_map_stack_'
     )
 
     #010. Define the document when printing an object instantiated from current class
@@ -357,91 +372,57 @@ class ObsDates( CoreUserCalendar ):
     #Below variables cannot be set in [__slots__] due to conflict; hence they are neither able to be modified at runtime
 
     #100. Prepare helper functions
-    #110. Prepare the helper function to return proper results
+    #110. Function to process the unstacked data before type conversion
+    def _chg_dtype(self, df):
+        #010. Create a copy of the input data to avoid unexpected result
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        #[2] For scenarios other than <date> output, the caller functions will have filled NA values, hence there is no
+        #     need to worry about the <fillna> result here
+        df_out = df.copy(deep = True).fillna(pd.NaT)
+
+        #100. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
+        conv_dtcol = [ c for c in df_out.columns if str(df_out.dtypes[c]).startswith('datetime') ]
+
+        #500. Re-assign the output values in terms of the request
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.unstack()] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        #[2] [pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
+        for c in conv_dtcol:
+            df_out[c] = pd.Series(df_out[c].dt.to_pydatetime(), dtype = 'object', index = df_out.index)
+
+        #999. Purge
+        return(df_out)
+
+    #150. Prepare the helper function to return proper results
     def _rst(self, df, col) -> 'Return the result in terms of the shape of [values]':
-        if self._values_df_:
-            #100. Retrieve the data
-            if self._values_shp_[-1] == 1:
-                #By doing this, the index of the output is exactly the same as the input
-                rstOut = df[[col]].copy(deep=True)
-            else:
-                #100. Unstack the data
-                rstOut = (
-                    df.copy(deep=True)
-                    [['_obsKRow_', '_obsKCol_', col]]
-                    .set_index(['_obsKRow_', '_obsKCol_'])
-                    .unstack(level = -1)
-                    .fillna(pd.NaT)
-                )
+        #500. Unstack the underlying data to the same shape as the input one
+        #[ASSUMPTION]
+        #[1] <col-id> and <row-id> do not have <NA> values
+        #[2] There can only be <NA> values in the <col>
+        #[3] Hence we have to convert them to <NaT> where necessary
+        rstOut = vecUnstack(df, valName = col, modelObj = self._inputs_, funcConv = self._chg_dtype, **self._map_stack_)
 
-                #500. Flatten the result in case one need to combine it to another data frame
-                #Quote: (#65) https://stackoverflow.com/questions/22233488/pandas-drop-a-level-from-a-multi-level-column-index
-                rstOut.columns = rstOut.columns.droplevel(0)
-                #Quote: https://stackoverflow.com/questions/19851005/rename-pandas-dataframe-index
-                #Below attribute represents the [box] text in a pivot table, which is quite annoying here; hence we remove it.
-                rstOut.columns.names = [None]
-
-                #700. Set its index to the same as the input for [pandas] objects, to ensure the same shape
-                rstOut.set_index(self._values_idx_, inplace = True)
-
-            #300. Set the column names to the same as the input
-            rstOut.columns = self._values_col_
-        elif self._values_srs_:
-            #100. Retrieve the values
-            rstOut = df[col].copy(deep=True)
-
-            #700. Set its index to the same as the input for [pandas] objects, to ensure the same shape
-            rstOut.name = self._values_col_
+        #999. Purge
+        #For compatibility purpose, we often refer <obj.values> as an Iterable
+        if isinstance(rstOut, Iterable):
+            return(rstOut)
         else:
-            rstOut = df[col].to_list()
+            return([rstOut])
 
-        #999. Return the result
-        return(rstOut)
-
-    #130. Function to transform the input values
+    #170. Function to transform the input values
     def _obsDate_T(self, udate) -> 'Transform the input values':
-        if isinstance(udate, pd.DataFrame):
-            #100. Create the data frame
-            if udate.shape[-1] == 1:
-                tmpdate = udate.copy(deep = True)
-                tmpdate.columns = ['D_DATE']
-                tmpdate['_obsKCol_'] = 0
-                tmpdate['_obsKRow_'] = range(len(udate))
-                tmpdate['_obsKey_'] = range(len(udate))
-            else:
-                tmpdate = (
-                    pd.DataFrame((
-                        udate
-                        .copy(deep = True)
-                        .rename(columns = { v : i for i,v in enumerate(udate.columns) })
-                        .stack(dropna = False)
-                    ))
-                    .rename(columns = { 0 : 'D_DATE' })
-                    .assign(**{
-                        '_obsKCol_' : lambda x: [ i[-1] for i in x.index.to_list() ]
-                        ,'_obsKRow_' : [ i for i in range(udate.shape[0]) for j in range(udate.shape[-1]) ]
-                        ,'_obsKey_' : lambda x: range(len(x))
-                    })
-                    .reset_index(drop=True)
-                )
+        tmpdate = (
+            vecStack(udate, valName = 'D_DATE', **self._map_stack_)
+            .assign(**{
+                '_obsKey_' : lambda x: range(len(x))
+                ,'D_DATE' : lambda x: asDates(x['D_DATE'], self.fmtDateIn)
+            })
+        )
 
-            #500. Convert the dedicated column into the requested type
-            tmpdate['D_DATE'] = asDates(tmpdate['D_DATE'], self.fmtDateIn)
-        else:
-            #500. Convert it into the requested value
-            tmpsrs = asDates(pd.Series(udate, dtype = 'object'), self.fmtDateIn)
-
-            #900. Standardize the internal data frame
-            tmpdate = pd.DataFrame(tmpsrs)
-            tmpdate.columns = ['D_DATE']
-            tmpdate['_obsKCol_'] = 0
-            tmpdate['_obsKRow_'] = range(len(tmpsrs))
-            tmpdate['_obsKey_'] = range(len(tmpsrs))
-
-        #999. Return the result
         return(tmpdate)
 
-    #210. Method to shift the provided dates by certain scale
+    #200. Method to shift the provided dates by certain scale
     def shiftDays(
         self
         ,obsDate = None
@@ -506,7 +487,7 @@ class ObsDates( CoreUserCalendar ):
 
         #800. Convert the result into list for output
         #810. Create a mask on the output data which indicates the records to be formatted or not
-        mask_null = pd.isnull(df_out['D_DATE'])
+        mask_null = df_out['D_DATE'].isnull()
 
         #890. Format as string when required
         if self.DateOutAsStr:
@@ -517,7 +498,7 @@ class ObsDates( CoreUserCalendar ):
         return(self._rst(df_out, 'D_DATE'))
     #End of [shiftDays]
 
-    #210. Method to verify whether the observing dates are at the lower/upper bound of the certain period
+    #300. Method to verify whether the observing dates are at the lower/upper bound of the certain period
     def _isBoundOfPeriod(
         self
         ,daytype : str = 'W'
@@ -608,10 +589,13 @@ class ObsDates( CoreUserCalendar ):
         print( 'Beginning of the Universal Calendar:[' + self.clnBgn.strftime('%Y-%m-%d') + ']' )
         print( 'Ending of the Universal Calendar:[' + self.clnEnd.strftime('%Y-%m-%d') + ']' )
         print( 'Observing dates (first 5 ones at most):' )
-        if self._values_df_ | self._values_srs_:
-            print( self.values.info() )
+        tmpval = self.values
+        if self._v_struct_:
+            print( tmpval.info() )
+        elif self._v_index_:
+            print( tmpval.take(range(min(5, len(tmpval)))) )
         else:
-            print( self.values[:min(5, len(self.values))] )
+            print( tmpval[:min(5, len(tmpval))] )
         print( 'Country Code:[' + self.country + ']' )
         print( 'Calendar Adjustment:[' + self.clnAdj + ']' )
         print( 'How to input the strings into dates:[' + ']['.join(self.fmtDateIn) + ']' )
@@ -1045,15 +1029,9 @@ class ObsDates( CoreUserCalendar ):
 
         #900. Update the environment as per request
         #910. Retrieve the attribute of the input
-        self._values_df_ = isinstance(udate, pd.DataFrame)
-        self._values_srs_ = isinstance(udate, pd.Series)
-        if self._values_df_:
-            self._values_col_ = udate.columns
-            self._values_idx_ = udate.index
-            self._values_shp_ = udate.shape
-        elif self._values_srs_:
-            self._values_col_ = udate.name
-            self._values_idx_ = udate.index
+        self._inputs_ = deepcopy(udate)
+        self._v_struct_ = isinstance(udate, (pd.DataFrame, pd.Series))
+        self._v_index_ = isinstance(udate, pd.Index)
 
         #995. Refresh the data frame with the [obsDate] for calculation
         self._obs_df_ = tmpdate

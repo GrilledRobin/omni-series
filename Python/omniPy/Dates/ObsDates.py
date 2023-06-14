@@ -405,7 +405,7 @@ class ObsDates( CoreUserCalendar ):
 
         #999. Purge
         #For compatibility purpose, we often refer <obj.values> as an Iterable
-        if isinstance(rstOut, Iterable):
+        if isinstance(rstOut, Iterable) and (not isinstance(rstOut, str)):
             return(rstOut)
         else:
             return([rstOut])

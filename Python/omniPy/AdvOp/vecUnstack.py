@@ -12,21 +12,9 @@ from omniPy.AdvOp import vecStack
 
 def vecUnstack(
     df : pd.DataFrame
-    ,idRow : str = [
-        s.default
-        for s in signature(vecStack).parameters.values()
-        if s.name == 'idRow'
-    ][0]
-    ,idCol : str = [
-        s.default
-        for s in signature(vecStack).parameters.values()
-        if s.name == 'idCol'
-    ][0]
-    ,valName : str = [
-        s.default
-        for s in signature(vecStack).parameters.values()
-        if s.name == 'valName'
-    ][0]
+    ,idRow : str = signature(vecStack).parameters['idRow'].default
+    ,idCol : str = signature(vecStack).parameters['idCol'].default
+    ,valName : str = signature(vecStack).parameters['valName'].default
     ,modelObj : Any = None
     ,funcConv : callable = lambda x: x
 ) -> Any:
@@ -100,9 +88,9 @@ def vecUnstack(
         raise ValueError(f'[{LfuncName}][df] must be pd.DataFrame, got [{type(df)}]!')
     vfy_nans = [idRow, idCol]
     vfy_cols = vfy_nans + [valName]
-    col_exist = { col: (col not in df.columns) for col in vfy_cols }
-    if any(col_exist.values()):
-        col_error = [ k for k,v in col_exist.items() if v ]
+    col_nonexist = { col: (col not in df.columns) for col in vfy_cols }
+    if any(col_nonexist.values()):
+        col_error = [ k for k,v in col_nonexist.items() if v ]
         raise ValueError(f'[{LfuncName}]Column names [{"][".join(col_error)}] cannot be found in [df]!')
     if isinstance(modelObj, Iterable):
         if not isinstance(modelObj, (str, list, tuple, pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
@@ -178,14 +166,14 @@ def vecUnstack(
         rstPre = funcConv((
             df
             .loc[:, vfy_cols]
-            .set_index([idRow, idCol])
+            .set_index(vfy_nans)
             .sort_index()
         ))
     else:
         rstPre = funcConv((
             df
             .loc[:, vfy_cols]
-            .set_index([idRow, idCol])
+            .set_index(vfy_nans)
             .sort_index()
             .unstack(level = -1)
         ))
@@ -240,6 +228,7 @@ def vecUnstack(
 if __name__=='__main__':
     #010. Create envionment.
     import datetime as dt
+    import pandas as pd
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:

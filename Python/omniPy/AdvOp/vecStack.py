@@ -35,7 +35,7 @@ def vecStack(
 #   |idRow       :   Name of the column indicating the row (axis-0) position of the input values, in the output result                  #
 #   |                 [.idRow.     ] <Default> This column is exported to the result                                                    #
 #   |idCol       :   Name of the column indicating the column (axis-1) position of the input values, in the output result               #
-#   |                 [.idRow.     ] <Default> This column is exported to the result                                                    #
+#   |                 [.idCol.     ] <Default> This column is exported to the result                                                    #
 #   |valName     :   Name of the column storing the stacked input values, in the output result                                          #
 #   |                 [.val.       ] <Default> This column is exported to the result                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -138,6 +138,7 @@ def vecStack(
 if __name__=='__main__':
     #010. Create envionment.
     import datetime as dt
+    import pandas as pd
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:

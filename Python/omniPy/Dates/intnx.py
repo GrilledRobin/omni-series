@@ -411,8 +411,8 @@ def intnx(
     #101. Verify the input values
     if (in_shape != incr_shape) and (incr_shape != (1,1)):
         raise ValueError(
-            f'[{LfuncName}][indate]:[{str(indate.shape)}] must be of the same shape as'
-            + f' [increment]:[{str(increment.shape)}]!'
+            f'[{LfuncName}][indate]:[{str(in_shape)}] must be of the same shape as'
+            + f' [increment]:[{str(incr_shape)}]!'
         )
     elif isinstance(increment, (pd.DataFrame, pd.Series)):
         if isinstance(indate, (pd.DataFrame, pd.Series)):

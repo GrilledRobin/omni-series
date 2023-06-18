@@ -260,11 +260,10 @@ def intnx(
     elif isinstance(increment, Iterable) and (not isinstance(increment, str)):
         #We do not verify the dimensions of such object, which may lead to unexpected result
         incr_shape = (len(increment),1)
+    elif increment is None:
+        incr_shape = (0,1)
     else:
-        raise TypeError(
-            f'[{LfuncName}][increment]:[{type(increment)}] must be of the same type as'
-            + f' [indate]:[{type(indate)}], or a scalar integer!'
-        )
+        incr_shape = (1,1)
 
     #019. Directly return for empty input
     if (in_shape[0] == 0) | (in_shape[-1] == 0):
@@ -276,6 +275,12 @@ def intnx(
             return(deepcopy(indate))
         else:
             return(None)
+
+    if increment is None:
+        raise TypeError(
+            f'[{LfuncName}][increment]:[{type(increment)}] must be of the same type as'
+            + f' [indate]:[{type(indate)}], or a scalar integer!'
+        )
 
     #020. Remove possible items that conflict the internal usage from the [kw_cal]
     kw_cal_fnl = deepcopy(kw_cal)
@@ -404,15 +409,13 @@ def intnx(
 
     #100. Standardize input data
     #101. Verify the input values
-    if not isinstance(increment, numbers.Number):
-        if isinstance(indate, (pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
-            if in_shape != incr_shape:
-                raise ValueError(
-                    f'[{LfuncName}][indate]:[{str(indate.shape)}] must be of the same shape as'
-                    + f' [increment]:[{str(increment.shape)}]!'
-                )
-
-        if isinstance(indate, (pd.DataFrame, pd.Index, pd.Series)):
+    if (in_shape != incr_shape) and (incr_shape != (1,1)):
+        raise ValueError(
+            f'[{LfuncName}][indate]:[{str(indate.shape)}] must be of the same shape as'
+            + f' [increment]:[{str(increment.shape)}]!'
+        )
+    elif isinstance(increment, (pd.DataFrame, pd.Series)):
+        if isinstance(indate, (pd.DataFrame, pd.Series)):
             if not indate.index.equals(increment.index):
                 raise ValueError(
                     f'[{LfuncName}][indate] must have the same index as [increment]'

@@ -167,6 +167,11 @@ def intnx(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230618        | Version | 7.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed bugs during output for empty input                                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -204,17 +209,11 @@ def intnx(
 
     #012. Handle the parameter buffer
     if isinstance(indate, Iterable):
-        if len(indate) == 0:
-            if isinstance(indate, (pd.DataFrame, pd.Series)):
-                rstOut = indate.copy(deep=True).astype('object')
-                return(rstOut)
-            elif not isinstance(indate, str):
-                return(deepcopy(indate))
-            else:
-                return(None)
-    else:
-        if not indate: return(None)
-
+        if not isinstance(indate, (str, list, tuple, pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
+            raise TypeError(f'[{LfuncName}]Iterable type [{type(indate)}] of [indate] is not recognized!')
+    if isinstance(increment, Iterable):
+        if not isinstance(increment, (str, list, tuple, pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
+            raise TypeError(f'[{LfuncName}]Iterable type [{type(increment)}] of [increment] is not recognized!')
     if not isinstance(daytype, str):
         raise ValueError(f'[{LfuncName}][daytype]:[{type(daytype)}] must be character string!')
     daytype = daytype[0].upper()
@@ -266,6 +265,17 @@ def intnx(
             f'[{LfuncName}][increment]:[{type(increment)}] must be of the same type as'
             + f' [indate]:[{type(indate)}], or a scalar integer!'
         )
+
+    #019. Directly return for empty input
+    if (in_shape[0] == 0) | (in_shape[-1] == 0):
+        if isinstance(indate, (pd.DataFrame, pd.Series, pd.Index, np.ndarray)):
+            rstOut = deepcopy(indate).astype('object')
+            return(rstOut)
+        elif isinstance(indate, Iterable):
+            #<str> is not covered here, as empty string has shape (1,1) and thus is handled at main process
+            return(deepcopy(indate))
+        else:
+            return(None)
 
     #020. Remove possible items that conflict the internal usage from the [kw_cal]
     kw_cal_fnl = deepcopy(kw_cal)

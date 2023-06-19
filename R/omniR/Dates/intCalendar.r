@@ -70,6 +70,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230618        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when [itype == 't'] and [span > 1], the calculation results to NA when period reaches 0                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -163,6 +168,15 @@ intCalendar <- function(
 		rst[['.firstrec.']] <- firstrec
 		rst[1, '.firstrec.'] <- T
 		rst[[col_period]] <- cumsum(rst[['.firstrec.']])
+
+		#300. Subtract the period beginning by 1 for time calculation
+		#[ASSUMPTION]
+		#[1] This function is always called when [span > 1]
+		#[2] Above condition indicates <name> is not <second>
+		#[3] Hence such period starts from 0 instead of 1
+		if (dict_attr[['itype']] == 't') {
+			rst[[col_period]] <- rst[[col_period]] - 1
+		}
 
 		#500. Filter the data by the requested type of days
 		if ((dict_attr[['itype']] %in% c('d', 'dt')) & (daytype %in% c('W', 'T'))) {

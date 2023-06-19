@@ -102,6 +102,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] [dt<interval>] now return the same results as the same function does in SAS                                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230618        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -111,13 +116,16 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs                                                                    #
+#   |   |magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs, glue                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
+#   |   |   |isVEC                                                                                                                      #
 #   |   |   |match.arg.x                                                                                                                #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Dates                                                                                                                    #
 #   |   |   |intCalendar                                                                                                                #
@@ -132,7 +140,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs
+	magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs, glue
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -166,8 +174,15 @@ intnx <- function(
 	#[Quote: https://www.r-bloggers.com/doing-away-with-%e2%80%9cunknown-timezone%e2%80%9d-warnings/ ]
 	#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
 	if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
-	if (vctrs::vec_is_list(increment)) {
-		stop('[',LfuncName,'][increment] cannot be a plain list!')
+	if (!is.null(indate)) {
+		if (!(isDF(indate) | isVEC(indate) | vctrs::vec_is_list(indate))) {
+			stop(glue::glue('[{LfuncName}]Type [{paste0(class(indate), collapse = ",")}] of [indate] is not recognized!'))
+		}
+	}
+	if (!is.null(increment)) {
+		if (!(isDF(increment) | isVEC(increment) | vctrs::vec_is_list(increment))) {
+			stop(glue::glue('[{LfuncName}]Type [{paste0(class(increment), collapse = ",")}] of [increment] is not recognized!'))
+		}
 	}
 
 	#012. Handle the parameter buffer
@@ -182,6 +197,20 @@ intnx <- function(
 	col_calc <- '.intnxCol.'
 	col_idxcol <- '.intnxKCol.'
 	col_idxrow <- '.intnxKRow.'
+	map_stack <- c(
+		'idRow' = col_idxrow
+		,'idCol' = col_idxcol
+	)
+	if (isDF(indate)) {
+		in_shape <- dim(indate)
+	} else {
+		in_shape <- c(length(indate), 1)
+	}
+	if (isDF(increment)) {
+		incr_shape <- dim(increment)
+	} else {
+		incr_shape <- c(length(increment), 1)
+	}
 
 	#020. Remove possible items that conflict the internal usage from the [kw_cal]
 	kw_cal_fnl <- kw_cal[!(names(kw_cal) %in% c('dateBgn', 'dateEnd', 'clnBgn', 'clnEnd'))]
@@ -199,40 +228,11 @@ intnx <- function(
 
 	#039. Return the result in the same shape as input
 	h_rst <- function(rst, col){
-		if (isDF(indate)) {
-			#100. Retrieve the data
-			if (ncol(indate) == 1) {
-				#By doing this, the index of the output is exactly the same as the input
-				rstOut <- rst %>% dplyr::select(tidyselect::all_of(col))
-			} else {
-				#100. Unstack the data for output
-				rstOut <- rst %>%
-					dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol, col))) %>%
-					tidyr::pivot_wider(
-						id_cols = tidyselect::all_of(col_idxrow)
-						,names_from = tidyselect::all_of(col_idxcol)
-						,values_from = tidyselect::all_of(col)
-						,values_fill = NA
-					) %>%
-					dplyr::select(-tidyselect::all_of(col_idxrow)) %>%
-					as.data.frame()
-			}
+		#500. Unstack the underlying data to the same shape as the input one
+		rstOut <- do.call(vecUnstack, c(list(df = rst, valName = col, modelObj = indate), map_stack))
 
-			#300. Set the column names to the same as the input
-			names(rstOut) <- names(indate)
-			#Quote: https://stackoverflow.com/questions/20643166
-			rownames(rstOut) <- rownames(indate)
-
-			#999. Return
-			return(rstOut)
-		} else {
-			#100. Only retrieve the single column
-			rstOut <- rst %>% dplyr::pull(col)
-			names(rstOut) <- names(indate)
-
-			#999. Return
-			return(rstOut)
-		}
+		#999. Purge
+		return(rstOut)
 	}
 
 	#050. Local parameters
@@ -241,18 +241,28 @@ intnx <- function(
 		'd' = list(
 			'func' = asDates
 			,'kw' = kw_d
+			,'.class' = 'Date'
+			,'.attr' = list()
 		)
 		,'dt' = list(
 			'func' = asDatetimes
 			,'kw' = kw_dt
+			,'.class' = c('POSIXct','POSIXt')
+			,'.attr' = list()
 		)
 		,'t' = list(
 			'func' = asTimes
 			,'kw' = kw_t
+			,'.class' = 'Period'
+			,'.attr' = list(
+				'package' = 'lubridate'
+			)
 		)
 		,'dtt' = list(
 			'func' = asDatetimes
 			,'kw' = kw_dt
+			,'.class' = c('POSIXct','POSIXt')
+			,'.attr' = list()
 		)
 	)
 
@@ -267,27 +277,30 @@ intnx <- function(
 	#The result of below function is [list], while current input has only one element, hence we use the first among the result
 	dict_attr <- getDateIntervals(interval)[[1]]
 
-	#069. Return a placeholder for NULL inputs
-	if (isDF(indate)) {
-		if (nrow(indate) == 0) {
-			rstOut <- do.call(
-				dict_dates[[dict_attr[['itype']]]][['func']]
-				,modifyList(list('indate' = indate), dict_dates[[dict_attr[['itype']]]][['kw']])
-			)
+	#019. Directly return for empty input
+	if (any(in_shape == 0)) {
+		if (isDF(indate)) {
+			rstOut <- indate
+			for (cols in colnames(rstOut)) {
+				class(rstOut[[cols]]) <- dict_dates[[dict_attr[['itype']]]][['.class']]
+				attributes(rstOut[[cols]]) <- dict_dates[[dict_attr[['itype']]]][['.attr']]
+			}
 			return(rstOut)
-		} else if (ncol(indate) == 0) {
-			return(indate)
-		}
-	} else {
-		if (vctrs::vec_is_list(indate)) {
-			stop('[',LfuncName,'][indate] cannot be a plain list!')
-		} else if (length(indate) == 0) {
+		} else if (vctrs::vec_is_list(indate)) {
+			return(list())
+		} else {
 			rstOut <- do.call(
 				dict_dates[[dict_attr[['itype']]]][['func']]
 				,modifyList(list('indate' = indate), dict_dates[[dict_attr[['itype']]]][['kw']])
 			)
 			return(rstOut)
 		}
+	}
+	if (is.null(increment)) {
+		stop(glue::glue(
+			'[{LfuncName}][increment]:[{paste0(class(increment), collapse = ",")}] must be of the same type as'
+			,' [indate]:[{paste0(class(indate), collapse = ",")}], or a scalar integer!'
+		))
 	}
 
 	#070. Standardize the [alignment]
@@ -303,97 +316,41 @@ intnx <- function(
 	}
 
 	#100. Standardize input data
-	#101. Verify the shape if both are provided a table-like object
-	if (isDF(indate)) {
-		if (isDF(increment)) {
-			if (!all(dim(increment) == dim(indate))) {
-				stop(
-					'[',LfuncName,'][indate]:[(',paste0(dim(indate), collapse = ','),')] must be of the same shape as'
-					,' [increment]:[(',paste0(dim(increment), collapse = ','),')]'
-				)
-			}
-		} else {
-			len_incr <- length(increment)
-			if (len_incr != 1) {
-				if ((ncol(indate) != 1) | (nrow(indate) != len_incr)) {
-					stop(
-						'[',LfuncName,'][increment] with the length of [',len_incr,']'
-						,' cannot be broadcast to the same shape as [indate]:[(',paste0(dim(indate), collapse = ','),')]!'
-					)
-				}
-			}
-		}
-	} else {
-		if (isDF(increment)) {
-			stop(
-				'[',LfuncName,'][increment]:[',class(increment),'] must be of the same type as'
-				,' [indate]:[',class(indate),']'
-			)
-		} else {
-			len_incr <- length(increment)
-			len_indate <- length(indate)
-			if (len_incr != 1) {
-				if (len_indate != len_incr) {
-					stop(
-						'[',LfuncName,'][increment]:[',len_incr,'] must be of the same length as'
-						,' [indate]:[',len_indate,']'
-					)
-				}
+	#101. Verify the input values
+	if (!all(in_shape == incr_shape) & !all(incr_shape == 1)) {
+		stop(glue::glue(
+			'[{LfuncName}][indate]:[({paste0(in_shape, collapse = ",")})] must be of the same shape as'
+			,' [increment]:[({paste0(incr_shape, collapse = ",")})]!'
+		))
+	} else if (isDF(increment)) {
+		if (isDF(indate)) {
+			if (!all(rownames(indate) == rownames(increment))) {
+				stop(glue::glue('[{LfuncName}][indate] must have the same index/rowname as [increment]'))
 			}
 		}
 	}
 
 	#110. Transform [indate]
-	if (isDF(indate)) {
-		#010. Convert the input anyway as the underlying conversion function handles data.frame well
-		df_indate <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = indate), dict_dates[[dict_attr[['itype']]]][['kw']])
+	#111. Convert the input anyway as the underlying conversion function handles data.frame well
+	df_indate <- do.call(
+		dict_dates[[dict_attr[['itype']]]][['func']]
+		,modifyList(list('indate' = indate), dict_dates[[dict_attr[['itype']]]][['kw']])
+	)
+
+	#119. Create the data frame
+	df_indate <- do.call(vecStack, c(list(vec = df_indate, valName = col_calc), map_stack)) %>%
+		dplyr::mutate(
+			!!rlang::sym(col_keys) := dplyr::row_number()
 		)
 
-		#100. Create the data frame
-		if (ncol(indate) == 1) {
-			names(df_indate) <- col_calc
-			df_indate[[col_idxcol]] <- 1
-			df_indate[[col_idxrow]] <- seq_len(nrow(indate))
-			df_indate[[col_keys]] <- seq_len(nrow(indate))
-		} else {
-			df_indate %<>%
-				tidyr::pivot_longer(tidyselect::all_of(names(df_indate)), names_to = '.name.', values_to = col_calc) %>%
-				dplyr::mutate(
-					!!rlang::sym(col_idxcol) := rep.int(seq_len(ncol(df_indate)), nrow(df_indate))
-					,!!rlang::sym(col_idxrow) := do.call(c, sapply(seq_len(nrow(df_indate)), rep.int, ncol(df_indate), simplify = F))
-					,!!rlang::sym(col_keys) := dplyr::row_number()
-				)
-		}
-	} else {
-		#500. Convert it into the requested value
-		tmp_indate <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = indate), dict_dates[[dict_attr[['itype']]]][['kw']])
-		)
-
-		#900. Standardize the internal data frame
-		df_indate <- data.frame(tmpval = tmp_indate)
-		names(df_indate) <- col_calc
-		df_indate[[col_idxcol]] <- 1
-		df_indate[[col_idxrow]] <- seq_len(nrow(df_indate))
-		df_indate[[col_keys]] <- seq_len(nrow(df_indate))
-	}
-
-	#120. Transform [increment] into a vector instead of a data.frame
+	#120. Transform [increment]
 	#Till now all invalid pairs of inputs have been eliminated
 	#A multi-element vector with all [NA]s is NOT [numeric]!
-	if (is.numeric(increment) | all(is.na(increment))) {
-		l_incr <- .convIncr(increment)
-	} else if (ncol(increment) == 1) {
-		l_incr <- increment %>% dplyr::pull(tidyselect::all_of(names(increment))) %>% .convIncr()
-	} else {
-		#We must conduct the conversion before pivoting, to avoid NA result out of different dtypes of input
-		l_incr <- data.frame(lapply(increment, .convIncr)) %>%
-			tidyr::pivot_longer(tidyselect::all_of(names(increment)), names_to = '.name.', values_to = '.intnxIncr.') %>%
-			dplyr::pull('.intnxIncr.')
-	}
+	l_incr <- do.call(vecStack, c(list(vec = increment, valName = '_intnxIncr_'), map_stack)) %>%
+		dplyr::mutate(
+			!!rlang::sym('_intnxIncr_') := .convIncr(!!rlang::sym('_intnxIncr_'))
+		) %>%
+		dplyr::pull('_intnxIncr_')
 
 	#Retrieve the bounds of the increment, while setting them as 0 if all are [NA]
 	if (all(is.na(l_incr))) {
@@ -446,7 +403,7 @@ intnx <- function(
 		)
 
 		#650. Increment by different scenarios of [time]
-		dtt_ntvl <- gsub('^dt', '', dict_attr[['name']])
+		dtt_ntvl <- gsub('^dt', '', interval)
 		dtt_rst_time <- intnx(
 			interval = dtt_ntvl
 			,indate = df_indate %>% dplyr::pull(tidyselect::all_of(col_calc))
@@ -524,6 +481,7 @@ intnx <- function(
 	#220. Unanimous columns
 	if (dict_attr[['itype']] %in% c('t')) {
 		df_indate[[col_calc]] <- lubridate::today() + df_indate[[col_calc]]
+		lubridate::tz(df_indate[[col_calc]]) <- Sys.getenv('TZ')
 	}
 	df_indate[['.intnxIncr.']] <- l_incr
 
@@ -848,7 +806,7 @@ if (FALSE){
 		df_trns <- intnx('month', df_ttt, -12, 'e', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 0.33s
+		# 0.38s
 		View(df_trns)
 
 		#800. Test the timing  of 2 * 100K datetimes
@@ -858,14 +816,14 @@ if (FALSE){
 		df_trns8 <- intnx('dthour', df_ttt8, 12, 's', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 2.55s
+		# 2.67s
 		View(df_trns8)
 
 		t1 <- lubridate::now()
 		df_trns8_1 <- intnx('dthour', df_ttt8, 12, 'm', daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 2.55s
+		# 2.77s
 		View(df_trns8_1)
 
 		#900. Test special cases

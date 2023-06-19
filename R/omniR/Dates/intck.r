@@ -75,6 +75,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230618        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -84,13 +89,16 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs                                                                    #
+#   |   |magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs, glue                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
+#   |   |   |isVEC                                                                                                                      #
 #   |   |   |match.arg.x                                                                                                                #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniR$Dates                                                                                                                    #
 #   |   |   |intCalendar                                                                                                                #
@@ -105,7 +113,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs
+	magrittr, lubridate, rlang, dplyr, tidyr, tidyselect, vctrs, glue
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -138,12 +146,6 @@ intck <- function(
 	#[Quote: https://www.r-bloggers.com/doing-away-with-%e2%80%9cunknown-timezone%e2%80%9d-warnings/ ]
 	#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
 	if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
-	if (vctrs::vec_is_list(date_bgn)) {
-		stop('[',LfuncName,'][date_bgn] cannot be a plain list!')
-	}
-	if (vctrs::vec_is_list(date_end)) {
-		stop('[',LfuncName,'][date_end] cannot be a plain list!')
-	}
 
 	#012. Handle the parameter buffer
 	daytype <- match.arg.x(daytype, arg.func = toupper)
@@ -157,6 +159,10 @@ intck <- function(
 	col_idxcol <- '.intckKCol.'
 	col_idxrow <- '.intckKRow.'
 	col_rst <- '.intckRst.'
+	map_stack <- c(
+		'idRow' = col_idxrow
+		,'idCol' = col_idxcol
+	)
 
 	#020. Remove possible items that conflict the internal usage from the [kw_cal]
 	kw_cal_fnl <- kw_cal[!(names(kw_cal) %in% c('dateBgn', 'dateEnd', 'clnBgn', 'clnEnd'))]
@@ -211,40 +217,33 @@ intck <- function(
 	#110. Extract information of [date_bgn]
 	if (isDF(date_bgn)) {
 		f_bgn_df <- T
-		bgn_len <- nrow(date_bgn)
 		bgn_shape <- dim(date_bgn)
-		f_bgn_single <- all(bgn_shape == c(1,1))
 		f_bgn_srs <- F
 	} else {
 		f_bgn_df <- F
-		bgn_len <- length(date_bgn)
-		bgn_shape <- bgn_len
-		f_bgn_single <- bgn_len %in% c(0,1)
+		bgn_shape <- c(length(date_bgn), 1)
 		f_bgn_srs <- length(names(date_bgn)) != 0
 	}
 
-	#We also verify the number of columns if the input is table-like
-	f_bgn_len <- (bgn_len > 0) & (bgn_shape[[length(bgn_shape)]] > 0)
-	f_bgn_empty <- (bgn_len == 0) | (bgn_shape[[length(bgn_shape)]] == 0)
+	#[ASSUMPTION]
+	#[1] <NULL> value is considered as single
+	#[2] We also verify the number of columns if the input is table-like
+	f_bgn_single <- all(bgn_shape == 1) | is.null(date_bgn)
+	f_bgn_empty <- any(bgn_shape == 0)
 
 	#120. Extract information of [date_end]
 	if (isDF(date_end)) {
 		f_end_df <- T
-		end_len <- nrow(date_end)
 		end_shape <- dim(date_end)
-		f_end_single <- all(end_shape == c(1,1))
 		f_end_srs <- F
 	} else {
 		f_end_df <- F
-		end_len <- length(date_end)
-		end_shape <- end_len
-		f_end_single <- end_len %in% c(0,1)
+		end_shape <- c(length(date_end), 1)
 		f_end_srs <- length(names(date_end)) != 0
 	}
 
-	#We also verify the number of columns if the input is table-like
-	f_end_len <- (end_len > 0) & (end_shape[[length(end_shape)]] > 0)
-	f_end_empty <- (end_len == 0) | (end_shape[[length(end_shape)]] == 0)
+	f_end_single <- all(end_shape == 1) | is.null(date_end)
+	f_end_empty <- any(end_shape == 0)
 
 	#140. Verify the shapes of the input values
 	f_Mto1 <- xor(f_bgn_single, f_end_single)
@@ -255,24 +254,23 @@ intck <- function(
 	#145. Abort if the shapes of the input values are not the same
 	#After this step, if neither of the input has only one element, they must be in the same shape (e.g. both empty)
 	if (f_comp_err) {
-		stop('[',LfuncName,']Input values must be in the same shape!')
+		stop(glue::glue('[{LfuncName}]Input values must be in the same shape!'))
 	}
 
 	#148. Create the flag of whether to change the position of [date_bgn] and [date_end] for standardization
 	f_switch <- f_Mto1 & f_bgn_single
 
 	#150. Verify the shapes of the input values
-	f_out_len <- f_bgn_len | f_end_len
 	f_single_empty <- xor(f_bgn_empty, f_end_empty)
 
 	#159. Raise error if the [table-like] among them has zero length
 	if ((!f_1to1) & f_single_empty) {
-		stop('[',LfuncName,']Non-empty values vs Empty table-like object is not accepted!')
+		stop(glue::glue('[{LfuncName}]Non-empty values vs Empty table-like object is not accepted!'))
 	}
 
 	#160. Determine the attributes of the output
 	f_out_df <- f_bgn_df | f_end_df
-	#By defining below variable, we identify the [names] attribute of the output vector
+	#By defining below variable, we identify the [names] attribute of the output result
 	f_out_srs <- f_bgn_srs | f_end_srs
 
 	#165. Translate the input values to [M] and [N]
@@ -295,186 +293,73 @@ intck <- function(
 	}
 
 	#167. Identify the model of [columns] and [index] for output
-	if (f_out_df) {
-		#In such case, [df_M] is already table-like
-		mdl_columns <- names(df_M)
-		mdl_index <- rownames(df_M)
-	} else if (f_out_srs) {
-		#In such case, at least one of [df_M] and [df_N] is already a [named vector]
-		#We still have to verify which one is [named] and take [M] for granted if applicable
-		if (f_M_srs) {
-			mdl_index <- names(df_M)
-		} else {
-			mdl_index <- names(df_N)
-		}
+	#[ASSUMPTION]
+	#[1] Till now, shapes of both inputs only differ in below scenarios:
+	#    [a] M and N have the same shape
+	#    [b] N has only one element, including <NULL>
+	#[2] If M is longer than N, we model M as the output shape, e.g. when <3-named-vector> vs <1-element list>, output <3-named-vector>
+	#[3] Otherwise we prioritize the scenarios of table-like types
+	#[4] If no table structure is involved, we use the shape of M, e.g. when <1-scalar> vs <1-element list>, output <1-scalar>
+	f_force_M <- shape_M[[1]] > shape_N[[1]]
+	if (f_force_M) {
+		mdl_out <- df_M
+	} else if (f_out_df & !f_M_df) {
+		mdl_out <- df_N
+	} else if (f_out_srs & !f_M_srs) {
+		mdl_out <- df_N
+	} else {
+		mdl_out <- df_M
 	}
 
-	#170. Prepare the helper function to return proper results
-	h_rst <- function(rst, col){
-		if (f_out_df) {
-			#100. Retrieve the data
-			if (shape_M[[1]] == 0) {
-				#Only copy the dataframe structure
-				rstOut <- do.call(
-					data.frame
-					,modifyList(
-						sapply(mdl_columns, function(m){numeric(0)})
-						,list(row.names = character(0))
-					)
-				)
-			} else if (shape_M[[length(shape_M)]] == 0) {
-				#Quote: https://www.statology.org/create-empty-data-frame-in-r/
-				rstOut <- data.frame(matrix(ncol = shape_M[[length(shape_M)]], nrow = shape_M[[1]]))
-			} else if (shape_M[[length(shape_M)]] == 1) {
-				#By doing this, the index of the output is exactly the same as the input
-				rstOut <- rst %>% dplyr::select(tidyselect::all_of(col)) %>% as.data.frame()
-			} else {
-				#100. Unstack the data for output
-				rstOut <- rst %>%
-					dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol, col))) %>%
-					tidyr::pivot_wider(
-						id_cols = tidyselect::all_of(col_idxrow)
-						,names_from = tidyselect::all_of(col_idxcol)
-						,values_from = tidyselect::all_of(col)
-						,values_fill = NA
-					) %>%
-					dplyr::select(-tidyselect::all_of(col_idxrow)) %>%
-					as.data.frame()
+	#170. Helper function to process the unstacked data before type conversion
+	h_dtype <- function(df) {
+		if (nrow(df) == 0) {
+			for (cols in colnames(df)) {
+				df[[cols]] <- df[[cols]] %>% as.numeric()
 			}
-
-			#300. Set the column names to the same as the input
-			names(rstOut) <- mdl_columns
-			#Quote: https://stackoverflow.com/questions/20643166
-			rownames(rstOut) <- mdl_index
-
-			#999. Return
-			return(rstOut)
-		} else {
-			#100. Only retrieve the single column as a [vector]
-			rstOut <- rst %>% dplyr::pull(tidyselect::all_of(col))
-
-			#980. Add names to the vector if any
-			if (f_out_srs) {
-				names(rstOut) <- mdl_index
-			}
-
-			#999. Return
-			return(rstOut)
 		}
+		return(df)
+	}
+
+	#190. Prepare the helper function to return proper results
+	h_rst <- function(rst, col){
+		#500. Unstack the underlying data to the same shape as the input one
+		rstOut <- do.call(vecUnstack, c(list(df = rst, valName = col, modelObj = mdl_out, funcConv = h_dtype), map_stack))
+
+		#999. Purge
+		return(rstOut)
 	}
 
 	#200. Re-shape the input values for calculation at later steps
-	#201. Output an empty result if [M] is empty in the first place
-	if (f_out_df) if ((shape_M[[1]] == 0) | (shape_M[[length(shape_M)]] == 0)) return(h_rst(df_rst))
-
 	#210. Transform [M] for standardized calculation
-	if (f_M_df) {
-		#010. Convert the input anyway as the underlying conversion function handles data.frame well
-		tmp_M <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = df_M), dict_dates[[dict_attr[['itype']]]][['kw']])
+	df_M <- do.call(
+		dict_dates[[dict_attr[['itype']]]][['func']]
+		,modifyList(list('indate' = df_M), dict_dates[[dict_attr[['itype']]]][['kw']])
+	)
+	df_M <- do.call(vecStack, c(list(vec = df_M, valName = col_calc), map_stack)) %>%
+		dplyr::mutate(
+			!!rlang::sym(col_keys) := dplyr::row_number()
 		)
-
-		#100. Create the data frame
-		if (shape_M[[length(shape_M)]] == 1) {
-			df_M <- tmp_M %>% as.data.frame()
-			names(df_M) <- col_calc
-			df_M[[col_idxcol]] <- rep_len(1, shape_M[[1]])
-			df_M[[col_idxrow]] <- seq_len(shape_M[[1]])
-			df_M[[col_keys]] <- seq_len(shape_M[[1]])
-		} else {
-			df_M <- tmp_M %>%
-				tidyr::pivot_longer(tidyselect::all_of(names(tmp_M)), names_to = '.name.', values_to = col_calc) %>%
-				dplyr::mutate(
-					!!rlang::sym(col_idxcol) := rep.int(seq_len(shape_M[[length(shape_M)]]), shape_M[[1]])
-					,!!rlang::sym(col_idxrow) := do.call(
-						c
-						,sapply(
-							seq_len(shape_M[[1]])
-							,rep.int
-							,shape_M[[length(shape_M)]]
-							,simplify = F
-						)
-					)
-					,!!rlang::sym(col_keys) := dplyr::row_number()
-				) %>%
-				as.data.frame()
-		}
-	} else {
-		#500. Convert it into the requested value
-		tmp_M <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = df_M), dict_dates[[dict_attr[['itype']]]][['kw']])
-		)
-
-		#900. Standardize the internal data frame
-		df_M <- data.frame(tmpval = tmp_M)
-		names(df_M) <- col_calc
-		df_M[[col_idxcol]] <- rep_len(1, shape_M[[1]])
-		df_M[[col_idxrow]] <- seq_len(shape_M[[1]])
-		df_M[[col_keys]] <- seq_len(shape_M[[1]])
-	}
 
 	#250. Transform [N] for standardized calculation
-	if (f_N_df) {
-		#010. Convert the input anyway as the underlying conversion function handles data.frame well
-		tmp_N <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = df_N), dict_dates[[dict_attr[['itype']]]][['kw']])
+	df_N <- do.call(
+		dict_dates[[dict_attr[['itype']]]][['func']]
+		,modifyList(list('indate' = df_N), dict_dates[[dict_attr[['itype']]]][['kw']])
+	)
+	df_N <- do.call(vecStack, c(list(vec = df_N, valName = col_calc), map_stack)) %>%
+		dplyr::mutate(
+			!!rlang::sym(col_keys) := dplyr::row_number()
 		)
 
-		#100. Create the data frame
-		if (shape_N[[length(shape_N)]] == 1) {
-			df_N <- tmp_N %>% as.data.frame()
-			names(df_N) <- col_calc
-			df_N[[col_idxcol]] <- rep_len(1, shape_N[[1]])
-			df_N[[col_idxrow]] <- seq_len(shape_N[[1]])
-			df_N[[col_keys]] <- seq_len(shape_N[[1]])
-		} else {
-			df_N <- tmp_N %>%
-				tidyr::pivot_longer(tidyselect::all_of(names(tmp_N)), names_to = '.name.', values_to = col_calc) %>%
-				dplyr::mutate(
-					!!rlang::sym(col_idxcol) := rep.int(seq_len(shape_N[[length(shape_N)]]), shape_N[[1]])
-					,!!rlang::sym(col_idxrow) := do.call(
-						c
-						,sapply(
-							seq_len(shape_N[[1]])
-							,rep.int
-							,shape_N[[length(shape_N)]]
-							,simplify = F
-						)
-					)
-					,!!rlang::sym(col_keys) := dplyr::row_number()
-				) %>%
-				as.data.frame()
-		}
-	} else {
-		#500. Convert it into the requested value
-		tmp_N <- do.call(
-			dict_dates[[dict_attr[['itype']]]][['func']]
-			,modifyList(list('indate' = df_N), dict_dates[[dict_attr[['itype']]]][['kw']])
-		)
-
-		#900. Standardize the internal data frame
-		df_N <- data.frame(tmpval = tmp_N)
-		names(df_N) <- col_calc
-		df_N[[col_idxcol]] <- rep_len(1, shape_N[[1]])
-		df_N[[col_idxrow]] <- seq_len(shape_N[[1]])
-		df_N[[col_keys]] <- seq_len(shape_N[[1]])
+	#255. Return placeholder if N has zero length
+	if (nrow(df_N) == 0) {
+		df_rst <- df_M %>% dplyr::mutate(!!rlang::sym(col_rst) := NA)
+		return(h_rst(df_rst, col_rst))
 	}
 
-	#220. Ensure both inputs have the same index
-	if (all(shape_M == shape_N)) {
-		rownames(df_N) <- rownames(df_M)
-	}
-
-	#280. Return placeholder if [N] has zero length
-	#After this step, there are only below pairs for the input values:
-	#[1] M to 1 (where M has at least one element)
-	#[2] M to N (where M.shape == N.shape, while M has more than one element)
-	if ((!f_out_len) | (shape_N[[1]] == 0)) {
-		df_rst <- df_M
-		df_rst[[col_rst]] <- rep_len(NA, nrow(df_rst)) %>% as.numeric()
+	#259. Return placeholder if M has zero length
+	if (nrow(df_M) == 0) {
+		df_rst <- df_N %>% dplyr::mutate(!!rlang::sym(col_rst) := NA)
 		return(h_rst(df_rst, col_rst))
 	}
 
@@ -501,7 +386,7 @@ intck <- function(
 		)
 
 		#150. Increment by different scenarios of [time]
-		dtt_ntvl <- gsub('^dt', '', dict_attr[['name']])
+		dtt_ntvl <- gsub('^dt', '', interval)
 		dtt_rst_time <- intck(
 			interval = dtt_ntvl
 			,date_bgn = dtt_Mtime
@@ -579,7 +464,8 @@ intck <- function(
 		dtt_rst <- df_M %>% dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol)))
 
 		#750. Combine the date and time parts
-		dtt_srs_tmp <- dtt_rst_date * 86400 + dtt_rst_time
+		#[IMPORTANT] We have to add the [time part] before dividing it!
+		dtt_srs_tmp <- dtt_rst_date * 86400 + dtt_rst_time * dict_attr[['span']] * dict_attr[['multiple']]
 
 		#770. Divide the result by the span and multiple by the absolute values
 		dtt_rst[[col_rst]] <- floor(abs(dtt_srs_tmp) / dict_attr[['span']] / dict_attr[['multiple']])
@@ -599,6 +485,8 @@ intck <- function(
 	if (dict_attr[['itype']] %in% c('t')) {
 		df_M[[col_calc]] <- lubridate::today() + df_M[[col_calc]]
 		df_N[[col_calc]] <- lubridate::today() + df_N[[col_calc]]
+		lubridate::tz(df_M[[col_calc]]) <- Sys.getenv('TZ')
+		lubridate::tz(df_N[[col_calc]]) <- Sys.getenv('TZ')
 	}
 
 	#320. Create [col_merge] as well as the bounds of the calendar
@@ -636,9 +524,9 @@ intck <- function(
 	} else {
 		#100. Create new column
 		df_M[[col_merge]] <- df_M[[col_calc]]
-		lubridate::second(df_M[[col_merge]]) <- floor(lubridate::second(df_M[[col_merge]]))
+		df_M[[col_merge]] <- df_M[[col_merge]] %>% lubridate::floor_date()
 		df_N[[col_merge]] <- df_N[[col_calc]]
-		lubridate::second(df_N[[col_merge]]) <- floor(lubridate::second(df_N[[col_merge]]))
+		df_N[[col_merge]] <- df_N[[col_merge]] %>% lubridate::floor_date()
 
 		#300. Concatenate the date values of both input values
 		srs_indate <- c(
@@ -648,18 +536,22 @@ intck <- function(
 
 		#500. Define the bound of the calendar
 		notnull_indate <- !is.na(srs_indate)
+		#[ASSUMPTION]
+		#[1] Only for calculation on [time], all numbers are recycled in one day
+		cal_bgn <- asDatetimes( lubridate::today() )
 		if (!any(notnull_indate)) {
 			#100. Assign the minimum size of calendar data if none of the input is a valid date
-			cal_bgn <- asDatetimes( lubridate::today() )
 			cal_end <- cal_bgn
 		} else {
-			#100. Retrieve the minimum and maximum values among the input values
-			in_min <- min(srs_indate, na.rm = T)
-			in_max <- max(srs_indate, na.rm = T)
-
-			#500. Extend the period coverage by the provided span and multiple
-			cal_bgn <- in_min + as.difftime(-60, units = 'secs')
-			cal_end <- in_max + as.difftime(60, units = 'secs')
+			cal_end <- as.POSIXct(
+				lubridate::make_datetime(
+					lubridate::year(cal_bgn)
+					,lubridate::month(cal_bgn)
+					,lubridate::day(cal_bgn)
+					,23,59,59
+					,tz = Sys.getenv('TZ')
+				)
+			)
 		}
 	}
 
@@ -880,7 +772,7 @@ if (FALSE){
 		dt8_intck1 <- intck('dthour', dt8_smp1, dt8_smp2, daytype = 'w')
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 0.91s
+		# 1.69s
 		View(dt8_intck1)
 
 		#900. Test special cases

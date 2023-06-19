@@ -1,7 +1,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to validate the input as a data.frame or the likes by matching their [class]es to the predefined ones    #
+#   |This function is intended to validate the input as a normal vector by matching their [type]s to the predefined ones                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -11,18 +11,13 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector    ] :   Logical vector that indicates which ones among the provided objects are data.frame-like                           #
+#   |[vector    ] :   Logical vector that indicates which ones among the provided objects are normal vectors                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20210829        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20230617        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20230617        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] No longer flatten the input for good reason                                                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -51,7 +46,7 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-isDF <- function(...){
+isVEC <- function(...){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
 	LfuncName <- deparse(sys.call()[[1]])
@@ -61,14 +56,10 @@ isDF <- function(...){
 	#Below statements are copied from [dplyr::bind_rows]
 	dots <- rlang::list2(...)
 	in_names <- names(dots)
-	dfclass <- c(
-		'data.frame' , 'tbl_df' , 'tbl'
-		, 'groupedData' , 'nfnGroupedData' , 'nfGroupedData' , 'nmGroupedData' , 'nffGroupedData'
-		, 'table' , 'tbl_cube' , 'spec_tbl_df'
-	)
+	memclass <- c('logical','integer','double','complex','character','raw')
 
 	#500. Validate the [class] of the input objects
-	rstOut <- sapply(dots, function(x) any(class(x) %in% dfclass))
+	rstOut <- sapply(dots, function(x) typeof(x) %in% memclass)
 
 	#700. Assign the names to the result
 	names(rstOut) <- in_names
@@ -88,13 +79,13 @@ if (FALSE){
 		y2 <- 'abc'
 
 		#100. Provide the data frames as parameters
-		cls_1 <- isDF( a1 = x1, a2 = x2, y1, a3 = y2 )
+		cls_1 <- isVEC( a1 = x1, a2 = x2, y1, a3 = y2 )
 
 		#200. Provide the data frames as list
-		cls_1 <- do.call(isDF, lst_x)
+		cls_1 <- do.call(isVEC, lst_x)
 
 		#300. Test on a plain value
-		cls_2 <- isDF('aa')
+		cls_2 <- isVEC('aa')
 
 	}
 }

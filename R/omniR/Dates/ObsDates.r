@@ -220,6 +220,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230619        | Version | 3.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -229,7 +234,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |R6, magrittr, lubridate, dplyr, tidyselect, tidyr                                                                              #
+#   |   |R6, magrittr, lubridate, dplyr, tidyselect, tidyr, glue                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -239,6 +244,8 @@
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |match.arg.x                                                                                                                #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -285,6 +292,10 @@ ObsDates <- R6::R6Class('ObsDates'
 
 			#100. Assign values to local variables
 			super$fmtDateIn = fmtDateIn
+			private$map_stack <- c(
+				'idRow' = '.obsKRow.'
+				,'idCol' = '.obsKCol.'
+			)
 			int_obs <- private$.obsDate.T(obsDate) %>% dplyr::pull('D_DATE')
 
 			#300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
@@ -415,76 +426,31 @@ ObsDates <- R6::R6Class('ObsDates'
 	)
 	,private = list(
 		.uniclndr = NULL
+		,map_stack = NULL
+		,.inputs. = NULL
 		,.obs_df = NULL
-		,.values_shp. = NULL
-		,.values_df. = FALSE
-		,.values_col. = NULL
+		,.v_struct. = FALSE
 		#100. Prepare helper functions
 		#110. Prepare the helper function to return proper results
 		,.rst = function(df, col){
-			#100. Differentiate the scenarios
-			if (private$.values_df.) {
-				#100. Retrieve the data
-				if (private$.values_shp.[[length(private$.values_shp.)]] == 1) {
-					rstOut <- df %>% dplyr::select(col)
-				} else {
-					#100. Unstack the data
-					rstOut <- df %>%
-						dplyr::select('.obsKRow.', '.obsKCol.', tidyselect::all_of(col)) %>%
-						tidyr::pivot_wider(
-							id_cols = tidyselect::all_of('.obsKRow.')
-							,names_from = tidyselect::all_of('.obsKCol.')
-							,values_from = tidyselect::all_of(col)
-							,values_fill = NA
-						) %>%
-						dplyr::select(-tidyselect::all_of('.obsKRow.')) %>%
-						as.data.frame()
-				}
+			#500. Unstack the underlying data to the same shape as the input one
+			rstOut <- do.call(vecUnstack, c(list('df' = df, 'valName' = col, 'modelObj' = private$.inputs.), private$map_stack))
 
-				#300. Set the column names to the same as the input
-				colnames(rstOut) <- private$.values_col.
-			} else {
-				#500. Prepare a vector as output
-				rstOut <- df %>% dplyr::pull(tidyselect::all_of(col))
-			}
-
-			#999. Return the result
+			#999. Purge
 			return(rstOut)
 		}
 		#130. Function to transform the input values
 		,.obsDate.T = function(udate){
-			if (isDF(udate)) {
-				#100. Convert the input
-				tmpdate <- udate %>% asDates(super$fmtDateIn)
+			#100. Convert the input anyway as the underlying conversion function handles data.frame well
+			tmpdate <- udate %>% asDates(super$fmtDateIn)
 
-				#500. Add necessary columns
-				if (ncol(udate) == 1) {
-					colnames(tmpdate) <- 'D_DATE'
-					tmpdate[['.obsKCol.']] <- 0
-					tmpdate[['.obsKRow.']] <- seq_len(nrow(udate))
-					tmpdate[['.obsKey.']] <- seq_len(nrow(udate))
-				} else {
-					tmpdate %<>%
-						tidyr::pivot_longer(tidyselect::all_of(colnames(udate)), names_to = '.name.', values_to = 'D_DATE') %>%
-						dplyr::mutate(
-							'.obsKCol.' = rep.int(seq_len(ncol(udate)), nrow(udate))
-							,'.obsKRow.' = do.call(c, sapply(seq_len(nrow(udate)), rep.int, ncol(udate), simplify = F))
-							,'.obsKey.' = dplyr::row_number()
-						) %>%
-						dplyr::select(-'.name.')
-				}
-			} else {
-				#500. Convert it into the requested value
-				tmpsrs <- udate %>% asDates(super$fmtDateIn)
+			#500. Create the data frame
+			tmpdate <- do.call(vecStack, c(list(vec = tmpdate, valName = 'D_DATE'), private$map_stack)) %>%
+				dplyr::mutate(
+					!!rlang::sym('.obsKey.') := dplyr::row_number()
+				)
 
-				#900. Standardize the internal data frame
-				tmpdate <- data.frame(D_DATE = tmpsrs)
-				tmpdate[['.obsKCol.']] <- 0
-				tmpdate[['.obsKRow.']] <- seq_len(length(tmpsrs))
-				tmpdate[['.obsKey.']] <- seq_len(length(tmpsrs))
-			}
-
-			#999. Return the result
+			#999. Purge
 			return(tmpdate)
 		}
 		#220. Method to verify whether the observing dates are at the lower/upper bound of the certain period
@@ -539,9 +505,10 @@ ObsDates <- R6::R6Class('ObsDates'
 			cat(paste('Beginning of the Universal Calendar:',paste0('[',super$clnBgn,']\n')))
 			cat(paste('Ending of the Universal Calendar:',paste0('[',super$clnEnd,']\n')))
 			cat(paste('Observing dates (first 5 ones at most):'))
-			if (private$.values_df.) dplyr::glimpse(self$values)
-			else cat(paste0('[',paste0(head(self$values), collapse = ']['),']'))
-			cat(paste('Country Code:',paste0('[',super$country,']\n')))
+			tmpval <- self$values
+			if (private$.v_struct.) dplyr::glimpse(tmpval)
+			else cat(paste0('[',paste0(head(tmpval), collapse = ']['),']'))
+			cat(paste('\nCountry Code:',paste0('[',super$country,']\n')))
 			cat(paste('Calendar Adjustment:',paste0('[',super$clnAdj,']\n')))
 			cat(paste('How to input the strings into dates:',paste0('[',paste0(super$fmtDateIn, collapse = ']['),']\n')))
 			cat(paste('How to display the results as formatted in string:',paste0('[',super$fmtDateOut,']\n')))
@@ -553,7 +520,7 @@ ObsDates <- R6::R6Class('ObsDates'
 
 			#100. Reset it to [today] if it is provided but with no value
 			if (length(udate)==0) {
-				warning('[',private$classname,']No value is provided for [Observing Dates], reset it to today.')
+				warning(glue::glue('[{private$classname}]No value is provided for [Observing Dates], reset it to today.'))
 				udate <- lubridate::today()
 			}
 
@@ -567,11 +534,8 @@ ObsDates <- R6::R6Class('ObsDates'
 
 			#990. Update the environment as per request
 			#910. Retrieve the attribute of the input
-			private$.values_df. <- isDF(udate)
-			if (private$.values_df.) {
-				private$.values_col. <- colnames(udate)
-				private$.values_shp. <- dim(udate)
-			}
+			private$.inputs. <- udate
+			private$.v_struct. <- isDF(udate)
 
 			#995. Refresh the data frame with the [obsDate] for calculation
 			private$.obs_df <- tmpdate
@@ -903,7 +867,7 @@ if (FALSE){
 		source('D:\\R\\autoexec.r')
 
 		#100. Setup the Calendar.
-		thisday <- ObsDates$new()
+		thisday <- ObsDates$new(clnBgn = '20190101', clnEnd = '20211231')
 		# Check parameters.
 		thisday$params
 		#Assign special dates for calculation (Note the sequence of the dates)
@@ -925,7 +889,7 @@ if (FALSE){
 			a = asDates(c('20190412', NA, '20200925'))
 			,b = asDates(c('20181122', '20200214', NA))
 		)
-		thisday <- ObsDates$new(obsDate = dt_df)
+		thisday <- ObsDates$new(obsDate = dt_df, clnBgn = '20180101', clnEnd = '20201231')
 		View(thisday$values)
 		thisday$isWorkDay
 		thisday$prevMonLCDToPWD

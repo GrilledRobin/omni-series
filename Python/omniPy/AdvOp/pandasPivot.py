@@ -150,6 +150,11 @@ def pandasPivot(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug of losing <column totals> and <column subtotals> when <observed = True>                                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230708        | Version | 1.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug where non-existing combinations of <index> or <columns> dimension values in subtotals and totals            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -263,11 +268,8 @@ def pandasPivot(
         if fColSubt and (colSubt in val_any):
             raise ValueError('[' + LfuncName + '][colSubt]:[{0}] conflicts with the data dimension values!'.format(str(colSubt)))
 
-    #100. Create base pivot table
-    pvt_base = df.copy(deep = True).pivot_table(**kw_proc)
-
-    #200. Helper functions
-    #210. Function to reorder the given dict with continuous sequence, starting from 0
+    #100. Helper functions
+    #110. Function to reorder the given dict with continuous sequence, starting from 0
     #Quote: https://docs.python.org/3/howto/sorting.html#sortinghowto
     #[ASSUMPTION]
     #[1] The input [keyPatcher] could be uncontinuous
@@ -278,10 +280,10 @@ def pandasPivot(
         vals = sorted([ (k,v) for k,v in d.items() ], key = itemgetter(1,0))
         return({ v[0]:i for i,v in enumerate(vals) })
 
-    #219. Reorder the patched values on axes to ensure totals and subtotals can be placed correctly
+    #119. Reorder the patched values on axes to ensure totals and subtotals can be placed correctly
     val_unique = { k:h_reorderDict(v) for k,v in val_unique.items() }
 
-    #230. Function to act as key for sorting of any [pd.Series]
+    #130. Function to act as key for sorting of any [pd.Series]
     def h_sort(vec, ascending, pos_total, pos_subtotal, val_total, val_subtotal):
         #100. Obtain the dedicated sequence of unique values for current input vector
         vec_unique = val_unique.get(vec.name, {})
@@ -310,7 +312,7 @@ def pandasPivot(
         #999. Return the final sequence
         return(rstOut)
 
-    #250. Function to prepare the combination of subtotals and grand totals
+    #150. Function to prepare the combination of subtotals and grand totals
     def h_dim(obj, i, val_total, val_subtotal):
         placeholder = val_total if i == 0 else val_subtotal
         rstOut = {
@@ -320,18 +322,7 @@ def pandasPivot(
         }
         return(rstOut)
 
-    #270. Function to mutate the data and calculate pivot
-    def h_pivot(df, ren):
-        df_mutate = df.copy(deep = True)
-        df_mutate.loc[:, list(ren.keys())] = df_mutate[list(ren.keys())].astype('object')
-        rstOut = (
-            df_mutate
-            .assign(**ren)
-            .pivot_table(**kw_proc)
-        )
-        return(rstOut)
-
-    #290. Function to convert the data type of all levels within a pd.MultiIndex
+    #170. Function to convert the data type of all levels within a pd.MultiIndex
     #Quote: Get respective levels of pd.MultiIndex
     #Quote: https://stackoverflow.com/questions/36909457
     def h_AsObj(idx):
@@ -340,6 +331,89 @@ def pandasPivot(
             return(pd.MultiIndex.from_arrays(obj))
         else:
             return(idx.astype('object'))
+
+    #190. Function to mutate the data and calculate pivot
+    def h_pivot(df, ren = {}):
+        #100. Assign subtotals and totals to necessary dimensions
+        df_mutate = df.copy(deep = True)
+        if len(ren) > 0:
+            df_mutate.loc[:, list(ren.keys())] = df_mutate[list(ren.keys())].astype('object')
+            df_mutate = df_mutate.assign(**ren)
+
+        #300. Pivoting
+        rstOut = (
+            df_mutate
+            .pivot_table(**kw_proc)
+        )
+
+        #700. Remove combinations of dimensions that are not observed
+        if kw_proc.get('observed', False):
+            #400. On axis-0
+            if f_rows:
+                #100. Different number of dimensions
+                if len(var_rows) == 1:
+                    get_row = var_rows[0]
+                    func_idx = pd.Index
+                else:
+                    func_idx = pd.MultiIndex.from_frame
+                    get_row = var_rows
+
+                #500. Determine the existing combinations of dimension values
+                #Quote: python 忽略警告（warning）的几种方法
+                #Quote: https://blog.csdn.net/time_forgotten/article/details/104792200
+                #[ASSUMPTION][pandas = 1.4.2]
+                #[1] Creating index out of dataframe constructed by <object> dtype leads to <FutureWarning>
+                #[2] Since we always have to convert the index into <object> dtype, this warning should be ignored
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', category = FutureWarning)
+                    min_idx = h_AsObj(func_idx((
+                        rstOut.index
+                        .to_frame()
+                        .astype('object')
+                        .reset_index(drop = True)
+                        .merge(
+                            df_mutate.loc[:, get_row].drop_duplicates()
+                            ,on = get_row
+                            ,how = 'inner'
+                        )
+                    )))
+
+                #900. Mitigation of non-existing cobminations
+                rstOut = rstOut.copy(deep = True).loc[lambda x: h_AsObj(x.index).isin(min_idx)]
+
+            #700. On axis-1
+            if f_cols:
+                #100. Different number of dimensions
+                if len(var_cols) == 1:
+                    func_idx = pd.Index
+                    get_col = var_cols[0]
+                else:
+                    func_idx = pd.MultiIndex.from_frame
+                    get_col = var_cols
+
+                #500. Determine the existing combinations of dimension values
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', category = FutureWarning)
+                    min_col = h_AsObj(func_idx((
+                        rstOut.columns
+                        .to_frame()
+                        .astype('object')
+                        .reset_index(drop = True)
+                        .merge(
+                            df_mutate.loc[:, get_col].drop_duplicates()
+                            ,on = get_col
+                            ,how = 'inner'
+                        )
+                    )))
+
+                #900. Mitigation of non-existing cobminations
+                rstOut = rstOut.copy(deep = True).loc[:, lambda x: h_AsObj(x.columns).isin(min_col)]
+            #End if observed
+
+        return(rstOut)
+
+    #200. Create base pivot table
+    pvt_base = h_pivot(df)
 
     #400. Calculate totals
     #410. Row totals
@@ -424,8 +498,6 @@ def pandasPivot(
     if f_totals_col:
         pvt_base.columns = h_AsObj(pvt_base.columns)
         pvt_by_x.columns = h_AsObj(pvt_by_x.columns)
-        #Quote: python 忽略警告（warning）的几种方法
-        #Quote: https://blog.csdn.net/time_forgotten/article/details/104792200
         #[ASSUMPTION][pandas = 1.3.1]
         #[1] Regardless of [sort=False], [pd.concat] still sorts the values of column labels
         #[2] When the input values of columns levels are NOT character strings, it issues RuntimeWarning for unorderable data
@@ -458,7 +530,6 @@ def pandasPivot(
     #817. Sort by above [key]
     if f_rows:
         pvt_base.sort_index(axis = 0, inplace = True, ascending = rowSortAsc, key = h_sort_row)
-        # pvt_base.sort_values(pvt_base.index.names, inplace = True, ascending = rowSortAsc, key = h_sort_row)
 
     #840. Sort columns
     #841. Set the names for special levels
@@ -506,62 +577,6 @@ def pandasPivot(
 
     #847. Sort by above [key]
     pvt_base.sort_index(axis = 1, inplace = True, ascending = colSortAsc, key = h_sort_col)
-
-    #860. Remove combinations of dimensions that are not observed
-    if kw_proc.get('observed', False):
-        #400. On axis-0
-        if len(var_rows):
-            #100. Different number of dimensions
-            if len(var_rows) == 1:
-                func_idx = pd.Index
-                get_row = var_rows[0]
-            else:
-                func_idx = pd.MultiIndex.from_frame
-                get_row = var_rows
-
-            #500. Flag the rows to be kept for output
-            #510. Validate the existing combinations of these dimensions
-            mask_idx = pvt_base.index.isin(h_AsObj(func_idx(df[get_row].drop_duplicates())))
-
-            #540. Validate the subtotals on current axis
-            if f_totals_row:
-                mask_idx |= pvt_base.index.isin(pvt_by_y.index)
-
-            #570. Validate the Totals on current axis
-            if f_totals_cross:
-                mask_idx |= pvt_base.index.isin(pvt_totals.index)
-
-            #900. Subset the data
-            pvt_base = pvt_base.loc[mask_idx].copy(deep = True)
-
-        #700. On axis-1
-        if len(var_cols):
-            #100. Different number of dimensions
-            if len(var_cols) == 1:
-                func_idx = pd.Index
-                get_col = var_cols[0]
-            else:
-                func_idx = pd.MultiIndex.from_frame
-                get_col = var_cols
-
-            #500. Flag the rows to be kept for output
-            #510. Validate the existing combinations of these dimensions
-            mask_col = (
-                pvt_base.columns
-                .droplevel(reorder_vals + reorder_stats)
-                .isin(h_AsObj(func_idx(df[get_col].drop_duplicates())))
-            )
-
-            #540. Validate the subtotals on current axis
-            if f_totals_col:
-                mask_col |= pvt_base.columns.isin(pvt_by_x.columns)
-
-            #570. Validate the Totals on current axis
-            if f_totals_cross:
-                mask_col |= pvt_base.columns.isin(pvt_totals.columns)
-
-            #900. Subset the data
-            pvt_base = pvt_base.loc[:, mask_col].copy(deep = True)
 
     #999. Output
     return(pvt_base)
@@ -620,6 +635,7 @@ if __name__=='__main__':
     #[2] The position of columns are exchanged when [hinc == 2.0] and [hinc == 4.0]
     #[3] The sequence of groupers [invc] and [gc] are exchanged
     #[4] The sequence of stats [np.nanmean] and [np.nanmax] are exchanged
+    #[5] Only display the existing combinations of dimension values, also for subtotals and totals
     udf_pvt2 = pandasPivot(
         udf
         ,index = ['mode','choice']
@@ -627,6 +643,7 @@ if __name__=='__main__':
         ,values = ['invc','gc']
         ,aggfunc = { 'invc' : [np.nansum, srs_nunique], 'gc' : [np.nanmean, np.nanmax] }
         ,fill_value = 0
+        ,observed = True
         ,rowSortAsc = False
         ,fRowTot = True
         ,fRowSubt = True

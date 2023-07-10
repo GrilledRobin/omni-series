@@ -197,18 +197,14 @@ def pandasPivot(
         fRowTot = False
         fRowSubt = False
     else:
-        if isinstance(kw_proc['index'], str):
+        if isinstance(kw_proc['index'], str) or (not isinstance(kw_proc['index'], Iterable)):
             kw_proc['index'] = [kw_proc['index']]
-        elif isinstance(kw_proc['index'], Iterable):
-            kw_proc['index'] = list(kw_proc['index'])
     if len(kw_proc.get('columns', [])) == 0:
         fColTot = False
         fColSubt = False
     else:
-        if isinstance(kw_proc['columns'], str):
+        if isinstance(kw_proc['columns'], str) or (not isinstance(kw_proc['columns'], Iterable)):
             kw_proc['columns'] = [kw_proc['columns']]
-        elif isinstance(kw_proc['columns'], Iterable):
-            kw_proc['columns'] = list(kw_proc['columns'])
     #Ensure the same behavior as [pd.pivot_table]
     if 'margins' in kw:
         fRowTot = kw_proc['margins']
@@ -228,9 +224,9 @@ def pandasPivot(
     #050. Local parameters
     var_rows = kw_proc.get('index', [])
     var_cols = kw_proc.get('columns', [])
-    if isinstance(var_rows, str):
+    if isinstance(var_rows, str) or (not isinstance(var_rows, Iterable)):
         var_rows = [var_rows]
-    if isinstance(var_cols, str):
+    if isinstance(var_cols, str) or (not isinstance(var_cols, Iterable)):
         var_cols = [var_cols]
     f_rows = len(var_rows) > 0
     f_cols = len(var_cols) > 0
@@ -366,17 +362,7 @@ def pandasPivot(
                 #[2] Since we always have to convert the index into <object> dtype, this warning should be ignored
                 with warnings.catch_warnings():
                     warnings.simplefilter('ignore', category = FutureWarning)
-                    min_idx = h_AsObj(func_idx((
-                        rstOut.index
-                        .to_frame()
-                        .astype('object')
-                        .reset_index(drop = True)
-                        .merge(
-                            df_mutate.loc[:, get_row].drop_duplicates()
-                            ,on = get_row
-                            ,how = 'inner'
-                        )
-                    )))
+                    min_idx = h_AsObj(func_idx(df_mutate.loc[:, get_row].drop_duplicates()))
 
                 #900. Mitigation of non-existing cobminations
                 rstOut = rstOut.copy(deep = True).loc[lambda x: h_AsObj(x.index).isin(min_idx)]

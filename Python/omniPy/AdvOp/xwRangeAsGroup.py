@@ -14,9 +14,9 @@ from xlwings.constants import Constants as xlc
 
 def xwRangeAsGroup(
     rng : xw.Range
-    ,method : Union[str, dict, Iterable] = 'Group'
+    ,method : Union[str, dict, Iterable] = {0:'Group',1:'Group'}
     ,axis : Optional[int] = None
-    ,posOutline : Union[str, dict, Iterable] = 'before'
+    ,posOutline : Union[str, dict, Iterable] = {0:'before',1:'before'}
     ,autoStyles : bool = False
 ) -> None:
     #000. Info.
@@ -68,6 +68,11 @@ def xwRangeAsGroup(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230712        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Correct the argument default values to facilitate <modifyDict> at certain scenarios                                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -90,13 +95,6 @@ def xwRangeAsGroup(
     LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Parameter buffer
-    opt_method = ['Group','Ungroup']
-    if method not in opt_method:
-        raise ValueError('[{0}][method]:[{1}] must be among [{2}]!'.format(
-            LfuncName
-            ,str(method)
-            ,','.join(map(str, opt_method))
-        ))
     key_axis = { 0 : 'row', 1 : 'column' }
     opt_axis = [None] + list(key_axis.keys())
     if axis not in opt_axis:

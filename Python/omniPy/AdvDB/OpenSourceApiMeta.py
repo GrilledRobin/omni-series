@@ -326,7 +326,7 @@ class OpenSourceApiMeta(type):
     #[2] If we remove <*pos> in the arguments, we can only create class in below way:
     #    aaa = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)
     #[3] If we keep <*pos> in the arguments, we can also create class in below way:
-    #    class bbb(metaclass = OpenSourceApiMeta('clsname', (object,), {}, apiPkgPull = None, ...)): pass
+    #    class clsname(metaclass = OpenSourceApiMeta, apiPkgPull = None, ...): pass
     #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
     #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
@@ -450,12 +450,12 @@ if __name__=='__main__':
         #200. Private methods
         #210. Method to get attributes that are pre-defined at class instantiation
         def __getattr__(self, attr):
-            vfy_lists = [ a for a,s in self.lists_active.items() if not a ]
-            if attr in vfy_lists:
-                raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not an active API')
-
             if attr not in self.full:
                 raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not registered as an API')
+
+            vfy_lists = [ a for a,s in self.lists_active.items() if not s ]
+            if attr in vfy_lists:
+                raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not an active API')
 
             return(getattr(self, attr))
 

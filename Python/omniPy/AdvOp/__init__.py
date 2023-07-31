@@ -36,6 +36,10 @@ from .strBalancedGroupEval import strBalancedGroupEval
 from .vecStack import vecStack
 from .vecUnstack import vecUnstack
 
+from .SingletonMeta import SingletonMeta
+from .customLog import customLog
+from .PrintToLog import PrintToLog
+
 #200.   Define available resources.
 __all__ = [
     'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
@@ -48,4 +52,6 @@ __all__ = [
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
     , 'vecStack', 'vecUnstack'
+    , 'SingletonMeta'
+    , 'customLog', 'PrintToLog'
 ]

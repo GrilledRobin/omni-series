@@ -10,44 +10,14 @@ from packaging import version
 #003. Find the location of current script
 #Quote: https://www.geeksforgeeks.org/how-to-get-directory-of-current-script-in-python/
 scr_name : str = getsourcefile(lambda:0)
+# scr_name = r'D:\Python\Programs\ProgramTemplate_noArg\PGM\main.py'
 dir_curr = os.path.dirname(scr_name)
-
-#010. Prepare logging
-#011. Clean all previously registered handlers, in case this program is executed again in the same session
-for h in logging.root.handlers[:]:
-    logging.root.removeHandler(h)
-
-#013. Define handler to capture the [Error]s that could be raised to abort the process
-#Quote: http://stackoverflow.com/a/16993115/512111
-handler_err = logging.StreamHandler(stream = sys.stdout)
-
-#015. Create a custom logger with the stream handler
-logger = logging.getLogger(__name__)
-logger.addHandler(handler_err)
-
-#017. Define hook to capture the [Traceback] that is printed in the command console when errors are raised
-def handle_exception(exc_type, exc_value, exc_traceback):
-    #Ignore exception from keyboard interruption, so that one can use [Ctrl+C] to terminate the process in the console
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-
-    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
-
-sys.excepthook = handle_exception
 
 #019. Enable the text writing to the log file
 log_name = os.path.join(dir_curr, re.sub(r'\.\w+$', '.log', os.path.basename(scr_name)))
-logging.basicConfig(
-    filename = log_name
-    ,filemode = 'w'
-    ,level = logging.DEBUG
-    #Quote: https://docs.python.org/3/library/logging.html#logrecord-attributes
-    ,format = '%(levelname)s: %(asctime)-15s %(message)s'
-)
 
-#030. Import the user defined package
-#031. Define the candidates
+#020. Import the user defined package
+#021. Define the candidates
 drives_autoexec = [ d + os.sep for d in ['D:', 'C:'] ]
 paths_autoexec = ['Python', 'Robin', 'RobinLu', 'SAS']
 name_autoexec = r'autoexec.py'
@@ -59,28 +29,42 @@ files_autoexec = [ os.path.join( *p, name_autoexec ) for p in comb_autoexec ]
 paths_omniPy = [ os.path.join( *p ) for p in comb_autoexec ]
 paths_omnimacro = [ os.path.join( *p, name_omnimacro ) for p in comb_autoexec ]
 
-#032. Only retrieve the first valid path from the list of candidate paths
+#022. Only retrieve the first valid path from the list of candidate paths
 exist_autoexec = [ f for f in files_autoexec if os.path.isfile(f) ]
 if not exist_autoexec:
     raise RuntimeError('['+name_autoexec+'] is not found! Program aborted!')
 
 file_autoexec = exist_autoexec[0]
 
-#035. Attach the path to the system path list for the method [__import__]
+#025. Attach the path to the system path list for the method [__import__]
 #[IMPORTANT] The path which [__import__] is looking for a package is the [Parent Directory] to its name!
 path_omniPy = [ d for d in paths_omniPy if os.path.isdir(os.path.join(d,name_omniPy)) ][0]
 if path_omniPy not in sys.path:
     sys.path.append( path_omniPy )
 
-#037. Enable the function to execute other scripts in the same environment
-from omniPy.AdvOp import exec_file
+#027. Enable the function to execute other scripts in the same environment
+from omniPy.AdvOp import exec_file, customLog, PrintToLog
+from omniPy.FileSystem import getMemberByStrPattern, winReg_getInfByStrPattern
 
-#039. Load useful user-defined environment
+#030. Prepare logging
+#031. Clean all previously registered handlers, in case this program is executed again in the same session
+for h in logging.root.handlers[:]:
+    logging.root.removeHandler(h)
+
+#035. Setup loggers
+#[IMPORTANT]
+#[1] These two loggers MUST be both invoked to enable the correct logging
+#Only with this line can <warnings.warn> be logged into the logfile
+logger = customLog('', True, logfile = log_name, logWarnings = True)
+#Only with this line can <warnings.warn> be logged into the console
+logger = customLog(__name__, False, logfile = log_name, logWarnings = False)
+
+#037. Enable the logger to capture <print> results in both console and logfile
+PrintToLog(logger)
+
+#040. Load useful user-defined environment
 #Check the [__doc__] of below script for its detailed output
 exec_file(file_autoexec)
-
-#040. Load user defined functions
-from omniPy.FileSystem import getMemberByStrPattern, winReg_getInfByStrPattern
 
 #050. Define local environment
 #052. Directories for current process

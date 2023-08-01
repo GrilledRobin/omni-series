@@ -8,6 +8,7 @@ from typing import Union, Optional
 def customLog(
     name : str
     ,propagate : bool
+    ,mode : str = 'a'
     ,console : bool = True
     ,logfile : Union[bool, str] = True
     ,debugfile : Union[bool, str] = False
@@ -33,8 +34,11 @@ def customLog(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |name        :   Character string as the name of the logger to be created/extended                                                  #
 #   |propagate   :   Whether to propagate the messages to all parent loggers, see Python: logging.Logger.propagate                      #
-#   |                 [None        ] <Default> Follow the default behavior of Python                                                    #
+#   |                 [not set     ] <Default> Follow the default behavior of Python                                                    #
 #   |                 [False       ]           Usually used in custom logger                                                            #
+#   |mode        :   Mode to write to logfile and debugfile                                                                             #
+#   |                 [a           ] <Default> Use the dedicated mode, see logging.FileHandler                                          #
+#   |                 [w           ]           Overwrite the original file if exists                                                    #
 #   |console     :   Whether to log the messages into the command console                                                               #
 #   |                 [True        ] <Default> Log the messages into the console                                                        #
 #   |                 [False       ]           Do not log messages into the console                                                     #
@@ -120,7 +124,7 @@ def customLog(
         _logger.addHandler(_console)
 
     if logfile:
-        _normal = logging.FileHandler(logfile)
+        _normal = logging.FileHandler(logfile, mode = mode)
         if debugfile:
             _normal.setLevel(logging.INFO)
         else:
@@ -129,7 +133,7 @@ def customLog(
         _logger.addHandler(_normal)
 
     if debugfile:
-        _debug = logging.FileHandler(debugfile)
+        _debug = logging.FileHandler(debugfile, mode = mode)
         _debug.setLevel(level)
         _debug.setFormatter(fmtter)
         _logger.addHandler(_debug)
@@ -178,10 +182,11 @@ if __name__=='__main__':
     #100. Setup loggers
     #[IMPORTANT]
     #[1] These two loggers MUST be both invoked to enable the correct logging
-    #Only with this line can <warnings.warn> be logged into the logfile
-    logger = customLog('', True, logWarnings = True)
+    #[2] Sequence of below lines MUST be as is, to ensure correct position of <warnings.warn> messages
     #Only with this line can <warnings.warn> be logged into the console
-    logger = customLog(__name__, False, logWarnings = False)
+    logger = customLog(__name__, False, mode = 'w', logWarnings = False)
+    #Only with this line can <warnings.warn> be logged into the logfile
+    logger = customLog('', True, mode = 'a', logWarnings = True)
 
     #300. Test the log function
     #Below result cannot be captured into the logfile

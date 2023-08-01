@@ -54,10 +54,11 @@ for h in logging.root.handlers[:]:
 #035. Setup loggers
 #[IMPORTANT]
 #[1] These two loggers MUST be both invoked to enable the correct logging
-#Only with this line can <warnings.warn> be logged into the logfile
-logger = customLog('', True, logfile = log_name, logWarnings = True)
+#[2] Sequence of below lines MUST be as is, to ensure correct position of <warnings.warn> messages
 #Only with this line can <warnings.warn> be logged into the console
-logger = customLog(__name__, False, logfile = log_name, logWarnings = False)
+logger = customLog(__name__, False, mode = 'w', logfile = log_name, logWarnings = False)
+#Only with this line can <warnings.warn> be logged into the logfile
+logger = customLog('', True, mode = 'a', logfile = log_name, logWarnings = True)
 
 #037. Enable the logger to capture <print> results in both console and logfile
 PrintToLog(logger)

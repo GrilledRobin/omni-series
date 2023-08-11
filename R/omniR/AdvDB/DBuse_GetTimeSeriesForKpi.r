@@ -207,6 +207,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -540,8 +545,9 @@ DBuse_GetTimeSeriesForKpi <- function(
 		#100. Parse the provided naming pattern
 		if (SingleInf) dats_inf <- NULL
 		else dats_inf <- d_Dates
-		parse_infDat <- eval(rlang::expr(parseDatName(
-			datPtn = InfDat_path
+		parse_infDat <- rlang::exec(
+			parseDatName
+			,datPtn = InfDat_path
 			,parseCol = NULL
 			,dates = dats_inf
 			,outDTfmt = outDTfmt
@@ -549,7 +555,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 			,chkExist = T
 			,dict_map = cfg_local$.trans
 			,!!!cfg_local$.trans.opt
-		)))
+		)
 
 		#500. Verify the existence of the data files and only use the first one among the existing files
 		#510. Find the first existing data file per group
@@ -616,8 +622,9 @@ DBuse_GetTimeSeriesForKpi <- function(
 	#[ASSUMPTION]:
 	#[1] [inRAM=FALSE] All requested data files are on harddisk, rather than in RAM of current session
 	#[2] Keep all columns for determination of uniqueness
-	parse_kpiDat <- eval(rlang::expr(parseDatName(
-		datPtn = KPICfg
+	parse_kpiDat <- rlang::exec(
+		parseDatName
+		,datPtn = KPICfg
 		,parseCol = trans_var
 		,dates = d_Dates
 		,outDTfmt = outDTfmt
@@ -625,7 +632,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 		,chkExist = T
 		,dict_map = fTrans
 		,!!!fTrans.opt
-	)))
+	)
 
 	#520. Set the useful columns to their parsed values for further data retrieval
 	parse_kpiDat[trans_var] <- parse_kpiDat[paste0(trans_var, '.Parsed')]

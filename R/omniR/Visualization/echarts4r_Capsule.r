@@ -145,6 +145,11 @@
 #   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
 #   |      |     flexibility of customization for each along the vectorized charts                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -701,8 +706,9 @@ echarts4r_Capsule <- function(
 	}
 
 	#600. Generate the charts
-	ch_html <- eval(rlang::expr(mapply(
-		h_charts
+	ch_html <- rlang::exec(
+		mapply
+		,h_charts
 		, vec_min, vec_max, vec_sym, y_min, y_max
 		, barHeight, barWidth, barBorderRadius, col_bar, col_grad
 		, symSize, col_sym
@@ -713,7 +719,7 @@ echarts4r_Capsule <- function(
 		, barShowBG, gradient
 		, ...
 		, SIMPLIFY = TRUE
-	)))
+	)
 
 	#700. Directly return if no need to convert it to tooltip
 	if (!as.tooltip) return(ch_html)

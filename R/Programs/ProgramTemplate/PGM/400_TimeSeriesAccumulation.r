@@ -13,6 +13,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments in the examples                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #500.   Dependent Facilities.                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -124,8 +129,9 @@ L_clndr <- UserCalendar$new( clnBgn = prd_bgn, clnEnd = L_curdate )
 logger.info('500. Calculate maximum AUM on daily basis')
 #510. Locate all source data files
 #Below options are from [autoexec.r]
-parse_data <- eval(rlang::expr(parseDatName(
-	datPtn = df_cust_ptn
+parse_data <- rlang::exec(
+	parseDatName
+	,datPtn = df_cust_ptn
 	,parseCol = 'fullpath'
 	,dates = L_clndr$LastWDofMon
 	,outDTfmt = getOption('fmt.parseDates')
@@ -133,7 +139,7 @@ parse_data <- eval(rlang::expr(parseDatName(
 	,chkExist = T
 	,dict_map = getOption('fmt.def.GTSFK')
 	,!!!getOption('fmt.opt.def.GTSFK')
-)))
+)
 
 #520. Filter the locations in terms of the priority of harddrives
 loop_data <- parse_data %>%

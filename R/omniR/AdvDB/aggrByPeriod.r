@@ -225,6 +225,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 3.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -521,8 +526,9 @@ aggrByPeriod <- function(
 	#110. Calculate the prerequisites for the data as of Checking Period
 	if ((length(chkDatPtn)>0) & (length(chkBgn)>0)) {
 		#100. Determine the name of the data as dependency in Checking Period
-		parse_chkDat <- eval(rlang::expr(parseDatName(
-			datPtn = chkDatPtn
+		parse_chkDat <- rlang::exec(
+			parseDatName
+			,datPtn = chkDatPtn
 			,parseCol = NULL
 			,dates = chkEnd
 			,outDTfmt = outDTfmt
@@ -530,7 +536,7 @@ aggrByPeriod <- function(
 			,chkExist = T
 			,dict_map = fTrans
 			,!!!fTrans.opt
-		)))
+		)
 
 		#500. Extract the values for later steps
 		chkDat <- parse_chkDat[1, 'datPtn.Parsed']
@@ -747,8 +753,9 @@ aggrByPeriod <- function(
 
 	#400. Verify the existence of the data files that are actually required
 	#410. Parse the naming pattern into the physical file path
-	parse_calcDat <- eval(rlang::expr(parseDatName(
-		datPtn = inDatCfg
+	parse_calcDat <- rlang::exec(
+		parseDatName
+		,datPtn = inDatCfg
 		,parseCol = indat_col_parse
 		,dates = calcDate
 		,outDTfmt = outDTfmt
@@ -756,7 +763,7 @@ aggrByPeriod <- function(
 		,chkExist = T
 		,dict_map = fTrans
 		,!!!fTrans.opt
-	)))
+	)
 
 	#420. Search in all candidate paths of the the libraries for the data files and identify the first occurrences respectively
 	exist_calcDat <- parse_calcDat %>%

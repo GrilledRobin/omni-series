@@ -137,6 +137,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -279,8 +284,9 @@ DBuse_MrgKPItoInf <- function(
 	#[2] [inRAM=FALSE] All requested data files are on harddisk, rather than in RAM of current session
 	#[3] [chkExist=False] We do not verify the data file existence here, and leave the verification to below steps
 	#[4] The output data frame of below function has the same index as its input, given [dates=NULL]
-	parse_kpicfg <- eval(rlang::expr(parseDatName(
-		datPtn = KPICfg[trans_var]
+	parse_kpicfg <- rlang::exec(
+		parseDatName
+		,datPtn = KPICfg[trans_var]
 		,parseCol = NULL
 		,dates = NULL
 		,outDTfmt = outDTfmt
@@ -288,7 +294,7 @@ DBuse_MrgKPItoInf <- function(
 		,chkExist = F
 		,dict_map = fTrans
 		,!!!fTrans.opt
-	)))
+	)
 
 	#190. Assign values for the necessary columns
 	KPICfg[trans_var] <- parse_kpicfg[paste0(trans_var, '.Parsed')]

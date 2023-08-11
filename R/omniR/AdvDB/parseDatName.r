@@ -71,6 +71,11 @@
 #   | Log  |[1] Remove the argument [dfclass] and introduce a separate function [omniR$AdvOp$isDF] to validate the inputs               #
 #   |      |[2] Introduce the new function [omniR$AdvOp$get_values] to standardize the value retrieval of variables                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230811        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments in the examples                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -320,14 +325,15 @@ if (FALSE){
 			,'fRAM_Out' = T
 			,stringsAsFactors = F
 		)
-		exist_cc <- eval(rlang::expr(parseDatName(
-			datPtn = testmulti %>% dplyr::select_at(c('datIn', 'datOut'))
+		exist_cc <- rlang::exec(
+			parseDatName
+			,datPtn = testmulti %>% dplyr::select_at(c('datIn', 'datOut'))
 			,dates = c('20160602', '20160603', '20160604')
 			,outDTfmt = getOption('fmt.parseDates')
 			,inRAM = testmulti %>% dplyr::select_at(c('fRAM_In', 'fRAM_Out'))
 			,dict_map = getOption('fmt.def.GTSFK')
 			,!!!getOption('fmt.opt.def.GTSFK')
-		)))
+		)
 		if (F) {
 			#Below statements are the same as the above one, but more tedious!
 			lst_args2 <- list(
@@ -344,14 +350,15 @@ if (FALSE){
 
 		#390. Test if the input has zero [nrow]
 		testmulti2 <- testmulti %>% dplyr::filter(FALSE)
-		exist_dd <- eval(rlang::expr(parseDatName(
-			datPtn = testmulti2 %>% dplyr::select_at(c('datIn', 'datOut'))
+		exist_dd <- rlang::exec(
+			parseDatName
+			,datPtn = testmulti2 %>% dplyr::select_at(c('datIn', 'datOut'))
 			,dates = c('20160602', '20160603', '20160604')
 			,outDTfmt = getOption('fmt.parseDates')
 			,inRAM = testmulti2 %>% dplyr::select_at(c('fRAM_In', 'fRAM_Out'))
 			,dict_map = getOption('fmt.def.GTSFK')
 			,!!!getOption('fmt.opt.def.GTSFK')
-		)))
+		)
 		View(exist_dd)
 	}
 }

@@ -230,6 +230,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 3.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <Recall> to make the recursion more intuitive                                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -597,11 +602,11 @@ aggrByPeriod <- function(
 			message('[',LfuncName,']','Entering calculation for Leading Period...')
 		}
 
-		#100. Call the function to calculate the summary in Leading Period
+		#100. Recall the function to calculate the summary in Leading Period
 		#[1] There is no such [chkDatPtn] to leverage for the Leading Period
 		#[2] The end date of the Leading Period is determined by [calcInd]
 		#[3] We will only apply [SUM] for the calculation in Leading Period, for later subtraction
-		ABP_LeadPeriod <- do.call(LfuncName, list(
+		ABP_LeadPeriod <- Recall(
 			inDatPtn = inDatPtn
 			,inDatType = inDatType
 			,in_df = in_df
@@ -629,7 +634,7 @@ aggrByPeriod <- function(
 			,miss.files = miss.files
 			,err.cols = err.cols
 			,fDebug = fDebug
-		))
+		)
 
 		#199. Debug mode
 		if (fDebug){

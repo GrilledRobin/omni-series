@@ -7,6 +7,7 @@ import datetime as dt
 import pandas as pd
 import itertools as itt
 from collections.abc import Iterable
+from omniPy.AdvOp import get_values
 
 def asDatetimes(
     indate
@@ -80,6 +81,11 @@ def asDatetimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fix a bug when input valus is <str> while <fmt> is not applied                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -93,6 +99,8 @@ def asDatetimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -102,6 +110,7 @@ def asDatetimes(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Handle the parameter buffer.
     if indate is None: return()
@@ -127,7 +136,7 @@ def asDatetimes(
     if isinstance(origin, numbers.Number):
         origin = dt.datetime.min + dt.timedelta(**{unit:int(origin)})
     else:
-        origin = asDatetimes(origin, fmt = fmt_fnl, origin = None)
+        origin = recall(origin, fmt = fmt_fnl, origin = None)
 
     #300. Prepare the function to convert a single value as helper
     def trnsdate(d):

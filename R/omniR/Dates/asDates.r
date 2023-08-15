@@ -42,6 +42,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduced function <isVEC> to generalize the process                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -58,6 +63,7 @@
 #   |   |omniR$AdvOp                                                                                                                    #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #
+#   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -94,6 +100,7 @@ asDates <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+	recall <- get_values(LfuncName, mode = 'function')
 	if(length(fmt)==0) fmt <- c(
 		do.call(
 			paste0
@@ -116,7 +123,7 @@ asDates <- function(
 		if (ncol(indate) == 0) {
 			return(indate)
 		}
-		rst <- data.frame(lapply(indate, asDates, fmt = fmt, origin = origin))
+		rst <- data.frame(lapply(indate, recall, fmt = fmt, origin = origin))
 		rownames(rst) <- rownames(indate)
 		return(rst)
 	}
@@ -151,10 +158,10 @@ asDates <- function(
 	if (isVEC(indate)) return(h_conv(indate))
 
 	#700. Try to convert all elements from the input values, one by one
-	#[IMPORTANT] Although we use [as.Date] to convert the values, the class of the result from [sapply] is still [numeric] instead of [Date],
-	#             so we still need another round of conversion at below steps.
-	#Function [sapply] will generate a list when the input is a list and any among the results applied by the lambda function is multiple.
-	#Functions [sapply/lapply] will remove the class [Date] from the output values
+	#[IMPORTANT] Although we use [as.Date] to convert the values, the class of the result from [sapply] is still [numeric] instead of
+	#             [Date], so we still need another round of conversion at below steps.
+	#Function [sapply] generates a list when the input is a list and any among the results applied by the lambda function is multiple
+	#Functions [sapply/lapply] remove the class [Date] from the output values
 	date_conv <- sapply(
 		indate
 		,h_conv

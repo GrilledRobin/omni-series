@@ -6,6 +6,7 @@ import numbers
 import datetime as dt
 import pandas as pd
 from collections.abc import Iterable
+from omniPy.AdvOp import get_values
 
 def asDates(
     indate
@@ -32,6 +33,13 @@ def asDates(
 #   |[2] On Mac OS, use <%-m> to remove leading zeros (not tested when using <strptime>)                                                #
 #   |[3] Quote: https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0                                       #
 #   |[4] Quote: https://msdn.microsoft.com/en-us/library/fe06s4ak.aspx                                                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[EFFICIENCY]                                                                                                                       #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Time comparison of various functions to a pd.Series                                                                            #
+#   |    Quote: https://stackoverflow.com/questions/49371629                                                                            #
+#   |[2] How to cast types of elements in a pd.Series                                                                                   #
+#   |    Quote: https://note.nkmk.me/en/python-pandas-dtype-astype/                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -79,6 +87,11 @@ def asDates(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -92,6 +105,8 @@ def asDates(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -101,6 +116,7 @@ def asDates(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Handle the parameter buffer.
     if indate is None: return()
@@ -119,7 +135,7 @@ def asDates(
     if isinstance(origin, numbers.Number):
         origin = dt.date.fromordinal(int(origin))
     else:
-        origin = asDates(origin, fmt = fmt_fnl, origin = None)
+        origin = recall(origin, fmt = fmt_fnl, origin = None)
 
     #300. Prepare the function to convert a single value as helper
     def trnsdate(d):

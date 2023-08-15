@@ -10,7 +10,7 @@ from collections.abc import Iterable
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from itertools import repeat
-from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.AdvOp import vecStack, vecUnstack, get_values
 from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
 
 def intck(
@@ -122,6 +122,11 @@ def intck(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -135,6 +140,9 @@ def intck(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |get_values                                                                                                                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |intCalendar                                                                                                                #
 #   |   |   |getDateIntervals                                                                                                           #
@@ -152,6 +160,7 @@ def intck(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Handle the parameter buffer
     if not isinstance(daytype, str):
@@ -413,7 +422,7 @@ def intck(
 #        sys._getframe(1).f_globals.update({ 'vfy_N' : dtt_Ndate.copy(deep=True) })
 
         #110. Increment by [day]
-        dtt_rst_date = intck(
+        dtt_rst_date = recall(
             interval = 'day'
             ,date_bgn = dtt_Mdate
             ,date_end = dtt_Ndate
@@ -427,7 +436,7 @@ def intck(
 
         #150. Increment by different scenarios of [time]
         dtt_ntvl = re.sub(r'^dt', '', interval)
-        dtt_rst_time = intck(
+        dtt_rst_time = recall(
             interval = dtt_ntvl
             ,date_bgn = dtt_Mtime
             ,date_end = dtt_Ntime

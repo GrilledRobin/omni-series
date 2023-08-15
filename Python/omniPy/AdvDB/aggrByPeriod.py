@@ -15,7 +15,7 @@ from warnings import warn
 from functools import partial
 from typing import Optional, Union
 from omniPy.Dates import asDates, UserCalendar, ObsDates
-from omniPy.AdvOp import debug_comp_datcols
+from omniPy.AdvOp import debug_comp_datcols, get_values
 from omniPy.AdvDB import std_read_HDFS, std_read_RAM, std_read_SAS, parseDatName
 
 def aggrByPeriod(
@@ -279,6 +279,11 @@ def aggrByPeriod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when [inDatCfg] is provided a pd.DataFrame while [in_df] is not specified                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -299,6 +304,7 @@ def aggrByPeriod(
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |debug_comp_datcols                                                                                                         #
+#   |   |   |get_values                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvDB                                                                                                                   #
 #   |   |   |std_read_HDFS                                                                                                              #
@@ -315,6 +321,7 @@ def aggrByPeriod(
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
     __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Parameter buffer
     if isinstance(inDatPtn, pd.DataFrame):
@@ -622,7 +629,7 @@ def aggrByPeriod(
         #[1] There is no such [chkDatPtn] to leverage for the Leading Period
         #[2] The end date of the Leading Period is determined by [calcInd]
         #[3] We will only apply [SUM] for the calculation in Leading Period, for later subtraction
-        ABP_LeadPeriod = aggrByPeriod(
+        ABP_LeadPeriod = recall(
             inDatPtn = inDatPtn
             ,inDatType = inDatType
             ,in_df = in_df

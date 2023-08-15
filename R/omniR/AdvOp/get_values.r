@@ -38,6 +38,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <isVEC> to correct the verification of vectors                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -51,6 +56,8 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |   |isVEC                                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -134,13 +141,23 @@ get_values <- function(..., inplace = TRUE, mode = 'any'){
 			)
 
 			#400. Verify whether all results are vectors (primarily for exclusion of data.frame and lists)
-			chk_vec <- all(sapply(v_out, function(x){is.vector(x) & (length(x) == 1)}))
-
-			#500. Identify [NA] values for assigning placeholders
-			v_na <- sapply(v_out, is.na)
+			chk_vec <- all(sapply(v_out, function(x){isVEC(x) & (length(x) == 1)}))
 
 			#600. Assign the placeholder when requested
-			if (inplace) v_out[v_na] <- x[v_na]
+			if (inplace) {
+				#100. Identify [NA] values for assigning placeholders
+				v_na <- mapply(
+					function(vec, is_vec){
+						if (is_vec) return(is.na(vec))
+						else return(F)
+					}
+					,v_out
+					,chk_vec
+				)
+
+				#500. Replace the NA results with the placeholder
+				v_out[v_na] <- x[v_na]
+			}
 
 			#700. Extract the first one from above list created by [sapply]
 			#[1] In case [x] is a vector with more than 1 element and the result is a list of vectors, we flatten the result
@@ -149,7 +166,7 @@ get_values <- function(..., inplace = TRUE, mode = 'any'){
 			#[3] There is another expression for this: {v_out <- eval(rlang::expr(c(!!!v_out)))}, but it is less primitive
 			#     or efficient
 			if (length(x) != 1) {
-				if (chk_vec) v_out <- do.call(c, v_out)
+				if (all(chk_vec)) v_out <- do.call(c, v_out)
 			}
 			else {
 				v_out <- v_out[[1]]
@@ -174,6 +191,9 @@ get_values <- function(..., inplace = TRUE, mode = 'any'){
 if (FALSE){
 	#Simple test
 	if (TRUE){
+		#010. Load user defined functions
+		source('D:\\R\\autoexec.r')
+
 		#100. Execute a script with a simple process
 		aa <- 1
 		bb <- 3

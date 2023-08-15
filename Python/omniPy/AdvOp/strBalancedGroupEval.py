@@ -3,7 +3,7 @@
 
 import sys, re
 from copy import deepcopy
-from . import get_values, locSubstr
+from omniPy.AdvOp import get_values, locSubstr
 
 def strBalancedGroupEval(
     txt
@@ -52,6 +52,11 @@ def strBalancedGroupEval(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -77,6 +82,7 @@ def strBalancedGroupEval(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Parameter buffer
     if not isinstance( txt , str ):
@@ -189,7 +195,7 @@ def strBalancedGroupEval(
         rstMid = rstMid[:b] + str(v) + rstMid[e:]
 
     #700. Process the new string by the provided bounds in recursion
-    rstOut = strBalancedGroupEval(
+    rstOut = recall(
         rstMid
         ,lBound = lBound
         ,rBound = rBound

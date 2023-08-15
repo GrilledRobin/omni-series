@@ -4,6 +4,7 @@
 import sys, os, re, winreg
 import collections as clt
 from collections.abc import Callable
+from omniPy.AdvOp import get_values
 
 def winReg_getInfByStrPattern(
     inKEY : str
@@ -58,6 +59,11 @@ def winReg_getInfByStrPattern(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -71,6 +77,8 @@ def winReg_getInfByStrPattern(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -80,20 +88,21 @@ def winReg_getInfByStrPattern(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = get_values(LfuncName, instance = callable)
 
     #012. Handle the parameter buffer.
     if len(inKEY.strip()) == 0:
         return([])
     if len(inRegExp.strip()) == 0:
-        loggerInf( '[{0}]No pattern is specified, program only searches default value for current key.'.format(LfuncName) )
+        loggerInf( f'[{LfuncName}]No pattern is specified, program only searches default value for current key.' )
         inRegExp = r'^HK_Def$'
     if len(exRegExp.strip()) == 0:
         exRegExp = r'^$'
     if chkType not in [ 0 , 1 , 2 ]:
-        loggerInf( '[{0}]No type is specified. Program will search for <value> instead of <sub-key>.'.format(LfuncName) )
+        loggerInf( f'[{LfuncName}]No type is specified. Program will search for <value> instead of <sub-key>.' )
         chkType = 1
     if not isinstance( recursive , bool ):
-        raise TypeError( '[{0}]Parameter [recursive] should be of the type [bool]!'.format(LfuncName) )
+        raise TypeError( f'[{LfuncName}]Parameter [recursive] should be of the type [bool]!' )
 
     #015. Function local variables
     #Since the list is to be extended within the Generator, we use [deque] to improve the performance of [append()].
@@ -180,7 +189,7 @@ def winReg_getInfByStrPattern(
     if recursive:
         for k in subKeys:
             rstOut.extend(
-                winReg_getInfByStrPattern(
+                recall(
                     os.path.join(inKEY, k)
                     ,inRegExp = inRegExp
                     ,exRegExp = exRegExp

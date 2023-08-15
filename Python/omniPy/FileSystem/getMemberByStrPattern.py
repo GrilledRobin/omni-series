@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+import re
+import os
+import collections as clt
+from omniPy.AdvOp import get_values
+
 def getMemberByStrPattern(
     inDIR : str
     ,inRegExp : str
-    ,exclRegExp : str = r"^$"
+    ,exclRegExp : str = r'^$'
     ,chkType : int = 1
     ,FSubDir : bool = False
 ):
@@ -57,6 +63,11 @@ def getMemberByStrPattern(
 #   |      | See the #5th answer of above article for speed comparison                                                                  #
 #   |      |[2] Remove the [AbsPath<n>] and [RelPath<n>] from the output list as they are obselete during usage                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -69,35 +80,30 @@ def getMemberByStrPattern(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     """
-
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import sys
-    import re
-    import os
-    import collections as clt
 
     #010.   Check parameters.
     #011.   Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
+    recall = get_values(LfuncName, instance = callable)
 
     #012.   Handle the parameter buffer.
     if len(inDIR.strip()) == 0:
-        raise ValueError( "[" + LfuncName + "]No Folder is given for search of files! Program is interrupted!" )
+        raise ValueError( f'[{LfuncName}]No Folder is given for search of files! Program is interrupted!' )
     if len(inRegExp.strip()) == 0:
-        print( "NOTE: [" + LfuncName + "]No pattern is specified for file search, program will find all files in given folder: [" + inDIR + "]." )
-        inRegExp = r".*"
+        print( f'NOTE: [{LfuncName}]No pattern is specified for file search, program will find all files in given folder: [{inDIR}].' )
+        inRegExp = r'.*'
     if len(exclRegExp.strip()) == 0:
-        exclRegExp = r"^$"
+        exclRegExp = r'^$'
     if chkType not in [ 0 , 1 , 2 ]:
-        print( "NOTE: [" + LfuncName + "]No type is specified. Program will search for files instead of directories." )
+        print( f'NOTE: [{LfuncName}]No type is specified. Program will search for files instead of directories.' )
         chkType = 1
     if not isinstance( FSubDir , bool ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [FSubDir] should be of the type [bool]! Type of input value is [{0}]'.format( type(FSubDir) ) )
+        raise TypeError( f'[{LfuncName}][FSubDir] should be of the type [bool]! Type of input value is [{type(FSubDir)}]' )
 
     #013.   Define the local environment.
     #Since the list is to be extended within the Generator, we use [deque] to improve the performance of [append()].
@@ -133,7 +139,7 @@ def getMemberByStrPattern(
         #900.   Continue the generation if the behavior as implied by [FSubDir] is set to True while current member is a directory.
         if FSubDir and Mem_Type == 2:
             #100.   Call itself as recursion to its sub-folders.
-            subs = getMemberByStrPattern(
+            subs = recall(
                 f.path
                 ,inRegExp
                 ,exclRegExp
@@ -164,24 +170,24 @@ if __name__=="__main__":
     from omniPy.FileSystem import getMemberByStrPattern
 
     #100.   Look up files in current directory.
-    PyLst = getMemberByStrPattern( r"D:\Python\Learning" , r".+\.py" )
+    PyLst = getMemberByStrPattern( r'D:\Python\Learning' , r'.+\.py' )
     print( PyLst )
 
     #200.   Look up files in current directory and all its subdirectories.
-    PyLst = getMemberByStrPattern( r"D:\Python" , r".+\.py" , FSubDir = True )
+    PyLst = getMemberByStrPattern( r'D:\Python' , r'.+\.py' , FSubDir = True )
     print( PyLst )
 
     #300.   Print all files in current directory and all its subdirectories.
-    print( getMemberByStrPattern( r"D:\Python\Learning" , "" , FSubDir = True ) )
+    print( getMemberByStrPattern( r'D:\Python\Learning' , '' , FSubDir = True ) )
 
     #400.   Look up files in an entire hard drive.
     #Please note the usage of the function [strip()].
-    print( getMemberByStrPattern( r"E:\ ".strip() , r".+\.mp4" , FSubDir = True ) )
+    print( getMemberByStrPattern( r'E:\ '.strip() , r'.+\.mp4' , FSubDir = True ) )
 
-    #500.   Look up files by excluding the "testing" ones.
-    print( getMemberByStrPattern( r"D:\Python\omniPy" , r".+\.py$" , exclRegExp = r'^test' , FSubDir = True ) )
+    #500.   Look up files by excluding the 'testing' ones.
+    print( getMemberByStrPattern( r'D:\Python\omniPy' , r'.+\.py$' , exclRegExp = r'^test' , FSubDir = True ) )
 
     #600.   Look up all directory names.
-    print( getMemberByStrPattern( r"D:\Python" , "" , chkType = 2 , FSubDir = True ) )
+    print( getMemberByStrPattern( r'D:\Python' , '' , chkType = 2 , FSubDir = True ) )
 #-Notes- -End-
 """

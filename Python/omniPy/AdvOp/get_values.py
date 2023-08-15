@@ -3,8 +3,14 @@
 
 import sys
 from collections import OrderedDict
+from typing import Any
 
-def get_values( *arg , inplace = True , **kw ) -> 'Get the values by regarding the provided [values] as variables':
+def get_values(
+    *arg
+    ,inplace : bool = True
+    ,instance : Any = object
+    ,**kw
+) -> 'Get the values by regarding the provided [values] as variables':
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,6 +32,10 @@ def get_values( *arg , inplace = True , **kw ) -> 'Get the values by regarding t
 #   |inplace    :   Whether to keep the output the same as the input values if any cannot be found as [variable names] from the frames  #
 #   |               [True       ] <Default> Keep the input values as output if they cannot be identified as [variables]                 #
 #   |               [False      ]           Output [None] for those which cannot be identified as [variables]                           #
+#   |instance   :   Instance of which to identify the object, or callable if we need to find one                                        #
+#   |               [<see def.> ] <Default> Search for all objects                                                                      #
+#   |               [instance   ]           Anyone that can be used in function <isinstance>                                            #
+#   |               [callable   ]           Search for callable, as this is actually not an instance                                    #
 #   |kw         :   Various named parameters, whose [names] are used as names in output, while their [values] will be used to search as #
 #   |                [variable names] within all frames along the call stacks                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -50,6 +60,12 @@ def get_values( *arg , inplace = True , **kw ) -> 'Get the values by regarding t
 #   | Date |    20210731        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Change the return value from [list] to [tuple] for case [3] in the [Return Values] to simplify the usage                #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230815        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce new argument <instance> to indicate which instance or <callable> is to be retrieved in terms of the searching #
+#   |      |     priority, i.e. from the closest stack to the top one                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -96,6 +112,12 @@ def get_values( *arg , inplace = True , **kw ) -> 'Get the values by regarding t
             #100. Try to get the value for the input [value] by regarding it as [variable name] in current frame
             val = frame.f_locals.get(v)
 
+            #300. Verify its instance
+            if instance is callable:
+                if not callable(val): continue
+            else:
+                if not isinstance(val, instance): continue
+
             #500. Update related dictionaries if anything is identified
             if val is not None:
                 dict_found.update({k:val})
@@ -119,6 +141,12 @@ def get_values( *arg , inplace = True , **kw ) -> 'Get the values by regarding t
         for k,v in dict_rest.items():
             #100. Try to get the value for the input [value] by regarding it as [variable name] in current frame
             val = globals().get(v)
+
+            #300. Verify its instance
+            if instance is callable:
+                if not callable(val): continue
+            else:
+                if not isinstance(val, instance): continue
 
             #500. Update related dictionaries if anything is identified
             if val is not None:
@@ -209,5 +237,22 @@ if __name__=='__main__':
     v_df = pd.DataFrame({ 'vars':['aa' , 'ee'] })
     testseries = get_values(*v_df['vars'])
     testseries2 = v_df['vars'].apply(get_values)
+
+    #900. Test to search for specific instance when the same name exists in different stacks
+    def outerf():
+        print('from outer function')
+    def innerf():
+        outerf = 'aa'
+        bb = get_values('outerf', instance = callable)
+        bb()
+    innerf()
+    # from outer function
+
+    def innerf2():
+        outerf = 'aa'
+        bb = get_values('outerf')
+        print(bb)
+    innerf2()
+    # aa
 #-Notes- -End-
 '''

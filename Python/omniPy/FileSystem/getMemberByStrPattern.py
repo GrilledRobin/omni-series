@@ -5,7 +5,6 @@ import sys
 import re
 import os
 import collections as clt
-from omniPy.AdvOp import get_values
 
 def getMemberByStrPattern(
     inDIR : str
@@ -68,6 +67,11 @@ def getMemberByStrPattern(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230819        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -89,7 +93,6 @@ def getMemberByStrPattern(
     #011.   Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    recall = get_values(LfuncName, instance = callable)
 
     #012.   Handle the parameter buffer.
     if len(inDIR.strip()) == 0:
@@ -139,7 +142,7 @@ def getMemberByStrPattern(
         #900.   Continue the generation if the behavior as implied by [FSubDir] is set to True while current member is a directory.
         if FSubDir and Mem_Type == 2:
             #100.   Call itself as recursion to its sub-folders.
-            subs = recall(
+            subs = getMemberByStrPattern(
                 f.path
                 ,inRegExp
                 ,exclRegExp

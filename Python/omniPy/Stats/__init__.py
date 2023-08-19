@@ -18,11 +18,14 @@ from .cov_matrix import cov_matrix
 from .cor_matrix import cor_matrix
 from .sim_matrix_cosine import sim_matrix_cosine
 from .userBasedCF import userBasedCF
+from .gcdBitwise import gcdBitwise
+from .gcdExtInteger import gcdExtInteger
 
 #200.   Define available resources.
 __all__ = [
-    'GenPerfData' , 'countEvent' , 'catVarEncoder'
+    'genPerfData' , 'countEvent' , 'catVarEncoder'
     , 'calcWoE' , 'calcIV' , 'chisq_SingleVar'
     , 'calcKS'
     , 'cov_matrix' , 'cor_matrix' , 'sim_matrix_cosine' , 'userBasedCF'
+    , 'gcdBitwise', 'gcdExtInteger'
 ]

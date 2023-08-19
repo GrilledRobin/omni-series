@@ -4,7 +4,6 @@
 import sys, os, re, winreg
 import collections as clt
 from collections.abc import Callable
-from omniPy.AdvOp import get_values
 
 def winReg_getInfByStrPattern(
     inKEY : str
@@ -64,6 +63,11 @@ def winReg_getInfByStrPattern(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230819        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -88,7 +92,6 @@ def winReg_getInfByStrPattern(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    recall = get_values(LfuncName, instance = callable)
 
     #012. Handle the parameter buffer.
     if len(inKEY.strip()) == 0:
@@ -189,7 +192,7 @@ def winReg_getInfByStrPattern(
     if recursive:
         for k in subKeys:
             rstOut.extend(
-                recall(
+                winReg_getInfByStrPattern(
                     os.path.join(inKEY, k)
                     ,inRegExp = inRegExp
                     ,exRegExp = exRegExp

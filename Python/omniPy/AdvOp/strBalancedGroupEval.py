@@ -57,6 +57,11 @@ def strBalancedGroupEval(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230819        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -82,7 +87,6 @@ def strBalancedGroupEval(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    recall = get_values(LfuncName, instance = callable)
 
     #012. Parameter buffer
     if not isinstance( txt , str ):
@@ -195,7 +199,7 @@ def strBalancedGroupEval(
         rstMid = rstMid[:b] + str(v) + rstMid[e:]
 
     #700. Process the new string by the provided bounds in recursion
-    rstOut = recall(
+    rstOut = strBalancedGroupEval(
         rstMid
         ,lBound = lBound
         ,rBound = rBound

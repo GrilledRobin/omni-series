@@ -4,7 +4,6 @@
 import sys
 from collections.abc import Mapping
 from copy import deepcopy
-from omniPy.AdvOp import get_values
 
 def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict':
     #000.   Info.
@@ -41,6 +40,11 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the imitated <recall> to make the recursion more intuitive                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230819        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -64,8 +68,6 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
-    recall = get_values(LfuncName, instance = callable)
 
     #012. Parameter buffer
     if not isinstance(inplace, bool): inplace = False
@@ -79,7 +81,7 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
     #900. Conduct the update
     for k, v in u.items():
         if isinstance(v, Mapping):
-            d_out[k] = recall(d_out.get(k, {}), v)
+            d_out[k] = modifyDict(d_out.get(k, {}), v)
         else:
             d_out[k] = v
     return d_out

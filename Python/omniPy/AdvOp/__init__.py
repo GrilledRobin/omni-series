@@ -28,6 +28,7 @@ from .pandasParseIndexer import pandasParseIndexer
 from .xwDfToRange import xwDfToRange
 from .xwRangeAsGroup import xwRangeAsGroup
 from .xwGroupForDf import xwGroupForDf
+from .thisFunction import thisFunction
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup
@@ -51,6 +52,7 @@ __all__ = [
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
+    , 'thisFunction'
     , 'vecStack', 'vecUnstack'
     , 'SingletonMeta'
     , 'customLog', 'PrintToLog'

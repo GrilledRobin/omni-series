@@ -10,7 +10,7 @@ from copy import deepcopy
 from collections.abc import Iterable
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.AdvOp import vecStack, vecUnstack, thisFunction
 from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
 
 def intnx(
@@ -182,6 +182,11 @@ def intnx(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 7.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -198,6 +203,7 @@ def intnx(
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
+#   |   |   |thisFunction                                                                                                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |intCalendar                                                                                                                #
@@ -216,6 +222,7 @@ def intnx(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = thisFunction()
 
     #012. Handle the parameter buffer
     if isinstance(indate, Iterable):
@@ -496,7 +503,7 @@ def intnx(
         dtt_incr_date.loc[dtt_indate.isnull()] = 0
 
         #630. Increment by [day]
-        dtt_rst_date = intnx(
+        dtt_rst_date = recall(
             interval = 'day'
             ,indate = dtt_indate
             ,increment = dtt_incr_date
@@ -512,7 +519,7 @@ def intnx(
 
         #650. Increment by different scenarios of [time]
         dtt_ntvl = re.sub(r'^dt', '', interval)
-        dtt_rst_time = intnx(
+        dtt_rst_time = recall(
             interval = dtt_ntvl
             ,indate = df_indate[col_calc]
             ,increment = l_incr

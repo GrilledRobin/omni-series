@@ -7,6 +7,7 @@ import datetime as dt
 import pandas as pd
 import itertools as itt
 from collections.abc import Iterable
+from omniPy.AdvOp import thisFunction
 
 def asDatetimes(
     indate
@@ -90,6 +91,11 @@ def asDatetimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 1.70        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -103,6 +109,8 @@ def asDatetimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -112,6 +120,7 @@ def asDatetimes(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = thisFunction()
 
     #012. Handle the parameter buffer.
     if indate is None: return()
@@ -137,7 +146,7 @@ def asDatetimes(
     if isinstance(origin, numbers.Number):
         origin = dt.datetime.min + dt.timedelta(**{unit:int(origin)})
     else:
-        origin = asDatetimes(origin, fmt = fmt_fnl, origin = None)
+        origin = recall(origin, fmt = fmt_fnl, origin = None)
 
     #300. Prepare the function to convert a single value as helper
     def trnsdate(d):

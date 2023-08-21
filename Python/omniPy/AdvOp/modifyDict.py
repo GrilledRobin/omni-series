@@ -4,6 +4,7 @@
 import sys
 from collections.abc import Mapping
 from copy import deepcopy
+from omniPy.AdvOp import thisFunction
 
 def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict':
     #000.   Info.
@@ -45,6 +46,11 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -59,6 +65,7 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |get_values                                                                                                                 #
+#   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     """
 
@@ -68,6 +75,7 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = thisFunction()
 
     #012. Parameter buffer
     if not isinstance(inplace, bool): inplace = False
@@ -81,7 +89,7 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
     #900. Conduct the update
     for k, v in u.items():
         if isinstance(v, Mapping):
-            d_out[k] = modifyDict(d_out.get(k, {}), v)
+            d_out[k] = recall(d_out.get(k, {}), v)
         else:
             d_out[k] = v
     return d_out
@@ -92,6 +100,7 @@ def modifyDict( d , u , inplace = False ) -> 'Recursively Modify Items of a Dict
 #Full Test Program[1]:
 if __name__=="__main__":
     #010. Create envionment.
+    import os
     import sys
     from copy import deepcopy
     dir_omniPy : str = r'D:\Python\ '.strip()

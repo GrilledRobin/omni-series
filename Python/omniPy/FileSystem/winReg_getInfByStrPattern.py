@@ -4,6 +4,7 @@
 import sys, os, re, winreg
 import collections as clt
 from collections.abc import Callable
+from omniPy.AdvOp import thisFunction
 
 def winReg_getInfByStrPattern(
     inKEY : str
@@ -68,6 +69,11 @@ def winReg_getInfByStrPattern(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -83,6 +89,7 @@ def winReg_getInfByStrPattern(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |get_values                                                                                                                 #
+#   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -92,6 +99,7 @@ def winReg_getInfByStrPattern(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = thisFunction()
 
     #012. Handle the parameter buffer.
     if len(inKEY.strip()) == 0:
@@ -192,7 +200,7 @@ def winReg_getInfByStrPattern(
     if recursive:
         for k in subKeys:
             rstOut.extend(
-                winReg_getInfByStrPattern(
+                recall(
                     os.path.join(inKEY, k)
                     ,inRegExp = inRegExp
                     ,exRegExp = exRegExp

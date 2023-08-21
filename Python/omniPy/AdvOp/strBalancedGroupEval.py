@@ -3,7 +3,7 @@
 
 import sys, re
 from copy import deepcopy
-from omniPy.AdvOp import get_values, locSubstr
+from omniPy.AdvOp import get_values, locSubstr, thisFunction
 
 def strBalancedGroupEval(
     txt
@@ -62,6 +62,11 @@ def strBalancedGroupEval(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove <recall> as it always fails to search in RAM when the function is imported in another module                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -78,6 +83,7 @@ def strBalancedGroupEval(
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |locSubstr                                                                                                                  #
+#   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -87,6 +93,7 @@ def strBalancedGroupEval(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
+    recall = thisFunction()
 
     #012. Parameter buffer
     if not isinstance( txt , str ):
@@ -199,7 +206,7 @@ def strBalancedGroupEval(
         rstMid = rstMid[:b] + str(v) + rstMid[e:]
 
     #700. Process the new string by the provided bounds in recursion
-    rstOut = strBalancedGroupEval(
+    rstOut = recall(
         rstMid
         ,lBound = lBound
         ,rBound = rBound

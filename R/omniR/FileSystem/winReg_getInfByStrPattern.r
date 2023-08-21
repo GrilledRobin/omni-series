@@ -41,6 +41,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230821        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <sys.function> to complement the base <Recall> under certain circumstances                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -84,6 +89,7 @@ winReg_getInfByStrPattern <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+	recall <- sys.function()
 
 	#012. Parameter buffer
 	if (length(inKEY) > 1) {
@@ -206,19 +212,12 @@ winReg_getInfByStrPattern <- function(
 			rstOut
 			,do.call(c, lapply(
 				recKey
-				,function(x){
-					do.call(
-						LfuncName
-						,list(
-							x
-							,inRegExp = inRegExp
-							,exRegExp = exRegExp
-							,chkType = chkType
-							,recursive = recursive
-							,loggerInf = loggerInf
-						)
-					)
-				}
+				,recall
+				,inRegExp = inRegExp
+				,exRegExp = exRegExp
+				,chkType = chkType
+				,recursive = recursive
+				,loggerInf = loggerInf
 			))
 		)
 	}

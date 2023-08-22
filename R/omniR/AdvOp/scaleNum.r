@@ -69,6 +69,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now return the result in the same length as the input, mapping <NA> and <NULL> values to empty strings                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230822        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <Recall> to make the recursion more intuitive                                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -141,7 +146,7 @@ scaleNum <- function(inNum,ScaleBase=1000,map_units=NULL,unify=NULL,scientific=T
 			func_unify <- match.fun(unify)
 			num_uni <- forceAndCall(1, func_unify, calcNum, ...)
 			#Call the same function to scale the selected number as idol
-			exp_src <- scaleNum(num_uni, ScaleBase = ScaleBase, map_units = map_units, scientific = scientific, ...)
+			exp_src <- Recall(num_uni, ScaleBase = ScaleBase, map_units = map_units, scientific = scientific, ...)
 			exp_int <- unlist(exp_src$parts$k_exp)
 		}
 		if (length(exp_int) > 1) stop('[',LfuncName,']More than one power scale is found during unification!')

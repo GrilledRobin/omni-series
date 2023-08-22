@@ -147,10 +147,11 @@ if __name__=='__main__':
     #100. Setup loggers
     #[IMPORTANT]
     #[1] These two loggers MUST be both invoked to enable the correct logging
-    #Only with this line can <warnings.warn> be logged into the logfile
-    logger = customLog('', True, logWarnings = True)
+    #[2] Sequence of below lines MUST be as is, to ensure correct position of <warnings.warn> messages
     #Only with this line can <warnings.warn> be logged into the console
-    logger = customLog(__name__, False, logWarnings = False)
+    logger = customLog(__name__, False, mode = 'w', logWarnings = False)
+    #Only with this line can <warnings.warn> be logged into the logfile
+    logger = customLog('', True, mode = 'a', logWarnings = True)
 
     #200. Enable the logger to capture <print> results in both console and logfile
     PrintToLog(logger)

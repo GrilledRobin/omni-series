@@ -6,6 +6,7 @@
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
 #100.   Import the local modules.
+from .thisFunction import thisFunction
 from .Trie import Trie
 from .apply_MapVal import apply_MapVal
 from .debug_comp_datcols import debug_comp_datcols
@@ -28,7 +29,6 @@ from .pandasParseIndexer import pandasParseIndexer
 from .xwDfToRange import xwDfToRange
 from .xwRangeAsGroup import xwRangeAsGroup
 from .xwGroupForDf import xwGroupForDf
-from .thisFunction import thisFunction
 
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup

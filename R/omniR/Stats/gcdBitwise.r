@@ -128,7 +128,7 @@ if (FALSE){
 		t2 <- lubridate::now()
 		print(t2 - t1)
 		# 0.883s
-		# 1.153s of omniPy.Stats.gcdBitwise
+		# 0.159s of omniPy.Stats.gcdBitwise
 
 		head(aaa)
 		head(bbb)
@@ -145,7 +145,7 @@ if (FALSE){
 		t2 <- lubridate::now()
 		print(t2 - t1)
 		# 1.728s
-		# 2.221s of omniPy.Stats.gcdBitwise
+		# 0.327s of omniPy.Stats.gcdBitwise
 
 		head(aaa)
 		head(bbb)

@@ -23,6 +23,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1                                                                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230825        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Eliminate <ifelse> to reduce time elapse by 50%                                                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -50,7 +55,7 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-gcdExtInteger <- function(x,y){
+gcdExtInteger <- function(a,b){
 	#010. Local parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
 	LfuncName <- deparse(sys.call()[[1]])
@@ -59,39 +64,32 @@ gcdExtInteger <- function(x,y){
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 
 	#050. Initialization
-	s <- rlang::rep_along(x, 0); old_s <- rlang::rep_along(x, 1)
-	t <- rlang::rep_along(x, 1); old_t <- rlang::rep_along(x, 0)
-	r <- y; old_r <- x
-	rstOut_r <- x
-	rstOut_s <- old_s
-	rstOut_t <- old_t
+	s <- rlang::rep_along(a, 0); old_s <- rlang::rep_along(a, 1)
+	t <- rlang::rep_along(a, 1); old_t <- rlang::rep_along(a, 0)
 
 	#500. Apply the algorithm
-	while (any(r != 0)) {
-		r_nonzero <- r != 0
-		quotient <- ifelse(r_nonzero, old_r %/% r, r)
+	while (any(b != 0)) {
+		nonzero <- b != 0
+		quotient <- b
+		quotient[nonzero] <- (a %/% b)[nonzero]
 
-		temp <- r
-		r <- ifelse(r_nonzero, old_r - quotient * r, r)
-		old_r <- temp
+		temp <- b
+		b[nonzero] <- (a - quotient * b)[nonzero]
+		a[nonzero] <- temp[nonzero]
 
 		temp <- s
-		s <- ifelse(r_nonzero, old_s - quotient * s, s)
-		old_s <- temp
+		s[nonzero] <- (old_s - quotient * s)[nonzero]
+		old_s[nonzero] <- temp[nonzero]
 
 		temp <- t
-		t <- ifelse(r_nonzero, old_t - quotient * t, t)
-		old_t <- temp
-
-		rstOut_r[old_r != 0] <- old_r[old_r != 0]
-		rstOut_s[old_r != 0] <- old_s[old_r != 0]
-		rstOut_t[old_r != 0] <- old_t[old_r != 0]
+		t[nonzero] <- (old_t - quotient * t)[nonzero]
+		old_t[nonzero] <- temp[nonzero]
 	}
 
 	#900. Output
-	rstOut <- matrix(c(rstOut_r, rstOut_s, rstOut_t), ncol = 3)
-	colnames(rstOut) <- c('gcd','x','y')
-	rownames(rstOut) <- rownames(x)
+	rstOut <- matrix(c(a, old_s, old_t), ncol = 3)
+	colnames(rstOut) <- c('gcd','a','b')
+	rownames(rstOut) <- rownames(a)
 	return(rstOut)
 }
 
@@ -111,6 +109,44 @@ if (FALSE){
 		bbb <- sample(pool, 1000000, replace = T)
 		ccc <- sample(pool, 1000000, replace = T)
 
+		gcdExtIntegerOld <- function(x,y){
+			#050. Initialization
+			s <- rlang::rep_along(x, 0); old_s <- rlang::rep_along(x, 1)
+			t <- rlang::rep_along(x, 1); old_t <- rlang::rep_along(x, 0)
+			r <- y; old_r <- x
+			rstOut_r <- x
+			rstOut_s <- old_s
+			rstOut_t <- old_t
+
+			#500. Apply the algorithm
+			while (any(r != 0)) {
+				r_nonzero <- r != 0
+				quotient <- ifelse(r_nonzero, old_r %/% r, r)
+
+				temp <- r
+				r <- ifelse(r_nonzero, old_r - quotient * r, r)
+				old_r <- temp
+
+				temp <- s
+				s <- ifelse(r_nonzero, old_s - quotient * s, s)
+				old_s <- temp
+
+				temp <- t
+				t <- ifelse(r_nonzero, old_t - quotient * t, t)
+				old_t <- temp
+
+				rstOut_r[old_r != 0] <- old_r[old_r != 0]
+				rstOut_s[old_r != 0] <- old_s[old_r != 0]
+				rstOut_t[old_r != 0] <- old_t[old_r != 0]
+			}
+
+			#900. Output
+			rstOut <- matrix(c(rstOut_r, rstOut_s, rstOut_t), ncol = 3)
+			colnames(rstOut) <- c('gcd','a','b')
+			rownames(rstOut) <- rownames(x)
+			return(rstOut)
+		}
+
 		t1 <- lubridate::now()
 		x1 <- gcdExtInteger(aaa,bbb)
 		t2 <- lubridate::now()
@@ -123,7 +159,16 @@ if (FALSE){
 		head(bbb)
 		head(x1)
 
-		all.equal(x1[,'gcd'],aaa * x1[,'x'] + bbb * x1[,'y'])
+		all.equal(x1[,'gcd'],aaa * x1[,'a'] + bbb * x1[,'b'])
+		# TRUE
+
+		t1 <- lubridate::now()
+		x2 <- gcdExtIntegerOld(aaa,bbb)
+		t2 <- lubridate::now()
+		print(t2 - t1)
+		# 1.195s
+
+		all.equal(x1,x2)
 		# TRUE
 	}
 }

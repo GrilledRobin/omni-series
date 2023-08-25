@@ -32,6 +32,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1                                                                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230825        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Eliminate <ifelse> to reduce time elapse by 25%                                                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -77,26 +82,30 @@ gcdBitwise <- function(...){
 		exp2 <- bitops::bitAnd(ab, bitops::bitFlip(ab - 1))
 
 		#300. Dividing a by 2 until a becomes odd
+		a_nonzero <- a != 0
 		a_exp2 <- bitops::bitAnd(a, bitops::bitFlip(a - 1))
-		a <- ifelse(a, as.integer(a / a_exp2), a)
+		a[a_nonzero] <- as.integer(a[a_nonzero] / a_exp2[a_nonzero])
 
 		#500. From here on, 'a' is always odd
 		while (any(b != 0)) {
 			#100. If b is even, remove all factor of 2 in b
+			b_nonzero <- b != 0
 			b_exp2 <- bitops::bitAnd(b, bitops::bitFlip(b - 1))
-			b <- ifelse(b, as.integer(b / b_exp2), b)
+			b[b_nonzero] <- as.integer(b[b_nonzero] / b_exp2[b_nonzero])
 
 			#500. Now a and b are both odd. Swap if necessary
 			comp <- a > b
-			tmp_a <- ifelse(comp, b, a)
-			tmp_b <- ifelse(comp, a, b)
+			tmp_a <- a
+			tmp_a[comp] <- b[comp]
+			tmp_b <- b
+			tmp_b[comp] <- a[comp]
 
 			#900. Subtract a from b
-			b <- ifelse(b, tmp_b - tmp_a, b)
+			b[b != 0] <- (tmp_b - tmp_a)[b != 0]
 			a <- tmp_a
 
 			#990. Assign the result
-			rstOut <- ifelse(a != 0, a, rstOut)
+			rstOut[a != 0] <- a[a != 0]
 		}
 
 		#900. Restore common factors of 2
@@ -127,7 +136,7 @@ if (FALSE){
 		g1 <- gcdBitwise(aaa,bbb)
 		t2 <- lubridate::now()
 		print(t2 - t1)
-		# 0.883s
+		# 0.675s
 		# 0.159s of omniPy.Stats.gcdBitwise
 
 		head(aaa)

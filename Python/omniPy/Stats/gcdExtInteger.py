@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import numpy as np
+from copy import deepcopy
+from collections.abc import Iterable
 
 def gcdExtInteger(a, b):
     #000. Info.
@@ -31,6 +34,11 @@ def gcdExtInteger(a, b):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1                                                                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230825        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Vectorize using numpy and avoid <slicing-assignment> to reduce time elapse by 65%                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -54,20 +62,42 @@ def gcdExtInteger(a, b):
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
+    #012. Handle the parameter buffer
+    a_iterable = isinstance(a, Iterable)
+    b_iterable = isinstance(b, Iterable)
+    if a_iterable:
+        a = np.array(deepcopy(a), dtype = np.int64)
+    else:
+        a = np.array([deepcopy(a)], dtype = np.int64)
+    if b_iterable:
+        b = np.array(deepcopy(b), dtype = np.int64)
+    else:
+        b = np.array([deepcopy(b)], dtype = np.int64)
+
     #050. Initialization
-    s = 0; old_s = 1
-    t = 1; old_t = 0
-    r = b; old_r = a
+    s = np.zeros_like(a); old_s = np.ones_like(a)
+    t = np.ones_like(a); old_t = np.zeros_like(a)
 
     #500. Reduce the calculation
-    while r:
-        quotient = old_r // r
-        old_r, r = r, old_r - quotient * r
-        old_s, s = s, old_s - quotient * s
-        old_t, t = t, old_t - quotient * t
+    while(np.any(b != 0)):
+        nonzero = b != 0
+        with np.errstate(divide = 'ignore', invalid = 'ignore'):
+            quotient = np.where(nonzero, a // b, b)
+
+        temp = deepcopy(b)
+        b = np.where(nonzero, a - quotient * b, b)
+        a = np.where(nonzero, temp, a)
+
+        temp = deepcopy(s)
+        s = np.where(nonzero, old_s - quotient * s, s)
+        old_s = np.where(nonzero, temp, old_s)
+
+        temp = deepcopy(t)
+        t = np.where(nonzero, old_t - quotient * t, t)
+        old_t = np.where(nonzero, temp, old_t)
 
     #900. Output a tuple
-    return((old_r, old_s, old_t))
+    return(np.array([a, old_s, old_t]).T)
 #End gcdExtInteger
 
 '''
@@ -95,8 +125,24 @@ if __name__=='__main__':
     bbb = np.random.choice(pool, 1000000, replace = True).astype(int)
     ccc = np.random.choice(pool, 1000000, replace = True).astype(int)
 
+    def gcdExtIntegerOld(a, b):
+        #050. Initialization
+        s = 0; old_s = 1
+        t = 1; old_t = 0
+        r = b; old_r = a
+
+        #500. Reduce the calculation
+        while r:
+            quotient = old_r // r
+            old_r, r = r, old_r - quotient * r
+            old_s, s = s, old_s - quotient * s
+            old_t, t = t, old_t - quotient * t
+
+        #900. Output a tuple
+        return((old_r, old_s, old_t))
+
     #200. Vectorize the function to handle large vector
-    gcdext_vec = np.vectorize(gcdExtInteger)
+    gcdext_vec = np.vectorize(gcdExtIntegerOld)
 
     #300. Simple test
     res = gcdext_vec(95642, 1681)
@@ -105,15 +151,23 @@ if __name__=='__main__':
 
     #500. Test the speed
     t0 = time.time()
-    x = gcdext_vec(aaa,bbb)
+    x1 = gcdExtInteger(aaa,bbb)
+    print(time.time() - t0)
+    #0.256s
+
+    #510. Test the old algorithm
+    t0 = time.time()
+    x2 = gcdext_vec(aaa,bbb)
     print(time.time() - t0)
     #0.681s
 
     aaa[:5]
     bbb[:5]
-    x[0][:5]
-    x[1][:5]
-    x[2][:5]
+    x1[0][:5]
+    x1[1][:5]
+    x1[2][:5]
+
+    assert(np.all(x1 == np.array(x2).T))
 
     #900. Official code in recursion (which is much slower)
     def gcd_extended(a,b):

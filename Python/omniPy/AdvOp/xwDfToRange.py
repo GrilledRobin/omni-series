@@ -201,6 +201,12 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fix the bug that causes the entire table to be colored the same way as zebra stripes                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230902        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
+#   |      |[2] Replace <pd.Series[i]> with <pd.Series.iloc[i]> as the former will be deprecated since pandas==2.1.0                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -392,7 +398,7 @@ def xwDfToRange(
     col_int = [
         i + table_left + col_adj
         for i,v in enumerate(df.columns)
-        if col_int_flag[i]
+        if col_int_flag.iloc[i]
     ]
     if f_empty:
         xlrng['data.int'] = []
@@ -410,7 +416,7 @@ def xwDfToRange(
     col_float = [
         i + table_left + col_adj
         for i,v in enumerate(df.columns)
-        if col_float_flag[i]
+        if col_float_flag.iloc[i]
     ]
     if f_empty:
         xlrng['data.float'] = []
@@ -525,8 +531,8 @@ def xwDfToRange(
         #[3] Identify columns with all values are NULL (but not pd.NaT, as it indicates a datetime column) among above ones
         #[4] Set [2] or [3] as what we need
         cols_obj = df.columns[df.dtypes.apply(lambda x: pd.api.types.is_object_dtype(x) or pd.api.types.is_string_dtype(x))]
-        cols_numlike = df[cols_obj].applymap(testFloat).apply(pd.Series.any)
-        cols_allnull = df[cols_obj].applymap(lambda x: pd.isnull(x) and (x is not pd.NaT)).apply(pd.Series.all)
+        cols_numlike = df[cols_obj].map(testFloat).apply(pd.Series.any)
+        cols_allnull = df[cols_obj].map(lambda x: pd.isnull(x) and (x is not pd.NaT)).apply(pd.Series.all)
         cols_totext = cols_obj[cols_numlike | cols_allnull]
         colnum_totext = pandasParseIndexer(df.columns, cols_totext, idxall = idxall, logname = 'txtCol')
 

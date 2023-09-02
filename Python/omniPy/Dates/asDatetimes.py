@@ -31,7 +31,7 @@ def asDatetimes(
 #   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
 #   |             column(s) in the type of [dt.datetime] to ensure a dedicated result, i.e. below methods create the columns in the     #
 #   |             same [dtype] as [object] no matter the input is empty or not:                                                         #
-#   |            [1] [pd.Series.apply(asDatetimes).astype('object')] or [pd.DataFrame.applymap(asDatetimes).astype('object')]           #
+#   |            [1] [pd.Series.apply(asDatetimes).astype('object')] or [pd.DataFrame.map(asDatetimes).astype('object')]                #
 #   |            [2] [asDatetimes(pd.Series)] or [asDatetimes(pd.DataFrame)]                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -95,6 +95,11 @@ def asDatetimes(
 #   | Date |    20230821        | Version | 1.70        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230902        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -179,7 +184,7 @@ def asDatetimes(
     #900. Translate the values
     if isinstance(indate, pd.DataFrame):
         #100. Convert the full input
-        df_interim = indate.applymap(trnsdate)
+        df_interim = indate.map(trnsdate)
 
         #300. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
         conv_dtcol = [ c for c in df_interim.columns if str(df_interim.dtypes[c]).startswith('datetime') ]

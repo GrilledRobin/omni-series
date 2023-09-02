@@ -20,7 +20,7 @@ def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or tim
 #   |             column(s) in the type of [np.int8] to ensure a dedicated result, i.e. below methods create the columns in the same    #
 #   |             [dtype] as [object] no matter the input is empty or not:                                                              #
 #   |            [1] [pd.Series.apply(asQuarters).astype('object').astype(np.int8)]                                                     #
-#   |                 or [pd.DataFrame.applymap(asQuarters).astype('object').astype(np.int8)]                                           #
+#   |                 or [pd.DataFrame.map(asQuarters).astype('object').astype(np.int8)]                                                #
 #   |                This is because 'datetime64[ns]' cannot be coerced to 'np.int8' directly, and we have to walk around it            #
 #   |            [2] [asQuarters(pd.Series)] or [asQuarters(pd.DataFrame)]                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -44,6 +44,11 @@ def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or tim
 #   | Date |    20210619        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce [Iterable] to support more iterable input types for the arguments                                             #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230902        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -82,7 +87,7 @@ def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or tim
 
     #900. Translate the values
     if isinstance( indate , pd.DataFrame ):
-        return( indate.applymap(trnsdate).astype('object').astype(np.int8) )
+        return( indate.map(trnsdate).astype('object').astype(np.int8) )
     elif isinstance( indate , pd.Series ):
         return( indate.apply(trnsdate).astype('object').astype(np.int8) )
     elif isinstance( indate , ( dt.date , dt.datetime , pd.Timestamp ) ):

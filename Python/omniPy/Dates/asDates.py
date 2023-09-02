@@ -23,7 +23,7 @@ def asDates(
 #   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
 #   |             column(s) in the type of [dt.date] to ensure a dedicated result, i.e. below methods create the columns in the same    #
 #   |             [dtype] as [object] no matter the input is empty or not:                                                              #
-#   |            [1] [pd.Series.apply(asDates).astype('object')] or [pd.DataFrame.applymap(asDates).astype('object')]                   #
+#   |            [1] [pd.Series.apply(asDates).astype('object')] or [pd.DataFrame.map(asDates).astype('object')]                        #
 #   |            [2] [asDates(pd.Series)] or [asDates(pd.DataFrame)]                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[NOTE]                                                                                                                             #
@@ -102,6 +102,11 @@ def asDates(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230902        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -175,7 +180,7 @@ def asDates(
 
     #900. Translate the values
     if isinstance(indate, pd.DataFrame):
-        return(indate.applymap(trnsdate).astype('object'))
+        return(indate.map(trnsdate).astype('object'))
     elif isinstance(indate, pd.Series):
         return(indate.apply(trnsdate).astype('object'))
     elif isinstance(indate, str):

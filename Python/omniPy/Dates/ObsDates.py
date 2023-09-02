@@ -244,6 +244,12 @@ class ObsDates( CoreUserCalendar ):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20230902        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <pd.Series.fillna(method=)> with <pd.Series..__getattribute__('ffill'/'bfill')()> as the former will be         #
+#   |      |     deprecated in the future version                                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -464,7 +470,7 @@ class ObsDates( CoreUserCalendar ):
         df_shift = cal_shift.loc[cal_shift[DateFlag]].copy(deep=True).sort_index(ascending = False)
         df_shift.loc[:, 'D_ShiftedDay'] = df_shift.copy(deep=True)['D_DATE'].shift(kdays).set_axis(df_shift.index, axis = 0)
         cal_shift['D_ShiftedDay'] = df_shift['D_ShiftedDay']
-        cal_shift['D_ShiftedDay'] = cal_shift['D_ShiftedDay'].fillna( method = fmethod )
+        cal_shift['D_ShiftedDay'] = cal_shift['D_ShiftedDay'].__getattribute__(fmethod)()
 
         #500. Match the shifted days to the observed dates
         df_out = obsDate.copy(deep=True)

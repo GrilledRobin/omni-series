@@ -60,39 +60,39 @@
 #   |in_df      :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading    #
 #   |               [NULL            ] <Default> No need for default SAS data loading                                                   #
 #   |               [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame           #
-#	|fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#	|               Valid names of the option lists are set in the argument [inDatType]                                                 #
+#   |fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
+#   |               Valid names of the option lists are set in the argument [inDatType]                                                 #
 #   |               [$SAS            ] <Default> Options for [omniR$AdvDB$std_read_SAS]                                                 #
 #   |                                            [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                      #
 #   |               [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
+#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
 #   |               [NULL            ] <Default> For time series process, please ensure this argument is manually defined, otherwise    #
 #   |                                             the result is highly unexpected                                                       #
-#	|fTrans.opt :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                         #
+#   |fTrans.opt :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                         #
 #   |               [NULL            ] <Default> Use default options in [apply_MapVal]                                                  #
 #   |               [<list>          ]           Use alternative options as provided by a list, see documents of [apply_MapVal]         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones  #
+#   |.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones  #
 #   |               [TRUE            ] <Default> Use multiple CPU cores to load the data files in parallel                              #
 #   |               [FALSE           ]           Load the data files sequentially                                                       #
-#	|omniR.ini  :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                 #
+#   |omniR.ini  :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                 #
 #   |               [D:/R/autoexec.r ] <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside     #
 #   |                                             each batch of [%dopar%] to enable the dependent functions separately                  #
 #   |               [NULL            ]           No need when [.parallel=F]                                                             #
-#	|cores      :   Number of system cores to read the data files in parallel                                                           #
+#   |cores      :   Number of system cores to read the data files in parallel                                                           #
 #   |               [4               ] <Default> No need when [.parallel=F]                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|dateBgn    :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please     #
+#   |dateBgn    :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please     #
 #   |                follow the syntax of this function during input                                                                    #
 #   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
-#	|dateEnd    :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
+#   |dateEnd    :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
 #   |                follow the syntax of this function during input                                                                    #
 #   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -111,32 +111,32 @@
 #   |               [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                 #
 #   |chkDat_df  :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading    #
 #   |               [NULL            ] <Default> No need for default SAS data loading                                                   #
-#	|chkDat.opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#	|               Valid names of the option lists are set in the field [inDatType]                                                    #
+#   |chkDat.opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
+#   |               Valid names of the option lists are set in the field [inDatType]                                                    #
 #   |               [$SAS            ] <Default> Options for [omniR$AdvDB$std_read_SAS]                                                 #
 #   |                                            [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                      #
 #   |               [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]          #
-#	|chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
+#   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
 #   |                follow the syntax of this function during input                                                                    #
 #   |               [NULL            ] <Default> Function will set it the same as [dateBgn]                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|byVar      :   The list/vector of column names that are to be used as the group to aggregate the KPI                               #
+#   |byVar      :   The list/vector of column names that are to be used as the group to aggregate the KPI                               #
 #   |               [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                         #
 #   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
-#	|copyVar    :   The list/vector of column names that are to be copied during the aggregation                                        #
+#   |copyVar    :   The list/vector of column names that are to be copied during the aggregation                                        #
 #   |               [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                            #
 #   |               [Note 2] Only those values in the Last Existing observation/record can be copied to the output                      #
 #   |               [NULL            ] <Default> There is no additional column to be retained for the output                            #
-#	|aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
+#   |aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
 #   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
-#	|outVar     :   The single column name as the aggregated value in the output data                                                   #
+#   |outVar     :   The single column name as the aggregated value in the output data                                                   #
 #   |               [A_VAL_OUT       ] <Default> Function will output this column                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |180.   Indicators and methods for aggregation                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|genPHMul   :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with     #
+#   |genPHMul   :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with     #
 #   |                proper Multipliers, to minimize the system effort                                                                  #
 #   |               [TRUE            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays #
 #   |                                            in terms of the indicator [calcInd]                                                    #
@@ -154,13 +154,13 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
+#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
 #   |               [FALSE           ] <Default> Do not print debug messages during calculation                                         #
 #   |               [TRUE            ]           Print debug messages during calculation                                                #
-#	|miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
+#   |miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
 #   |               [G_miss_files    ] <Default> If any data files are missing, please check this global variable to see the details    #
 #   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
-#	|err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
+#   |err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
 #   |               [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details   #
 #   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
 #   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #

@@ -19,86 +19,86 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#	|inKPICfg   :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                            #
-#	|               [--> Columns that are requested by this function                                ]                                   #
-#	|               [C_KPI_SHORTNAME ] : It will be translated into [colnames] in the output data frame.                                #
-#	|                                    [IMPORTANT] Ensure its values are valid according to the syntax in R                           #
-#	|               [C_KPI_BIZNAME   ] : (Optional) If it is present, the program will translate its values to the attribute [label] on #
-#	|                                                the columns of the output data frame                                               #
-#	|               [--> Columns that are requested by the dependent function [DBuse_SetKPItoInf]   ]                                   #
-#	|               [C_KPI_ID        ] : The ID of the KPI to be retrieved from the various data files.                                 #
-#	|               [N_LIB_PATH_SEQ  ] : The sequence of paths to search for the KPI data file in the same library alias                #
-#	|               [C_KPI_FILE_TYPE ] : The types of data files that indicates the method for this function to import data             #
-#	|                                    [RAM     ] Try to load the data frame from RAM in current R session                            #
-#	|                                    [R       ] Try to import as R-Data                                                             #
-#	|                                    [SAS     ] Try to import via [haven::read_sas]                                                 #
-#	|               [DF_NAME         ] : For some cases, such as [C_KPI_FILE_TYPE=R] there should be such an additional field           #
-#	|                                     indicating the name of data.frame stored in the data file (i.e. container) for loading        #
-#	|                                    Default: [NA] i.e. no need for such field when [C_KPI_FILE_TYPE=SAS]                           #
-#	|               [C_KPI_FILE_NAME ] : The names of data files for identification of file existence in all available paths            #
-#	|               [C_LIB_PATH      ] : The absolute paths to store the KPI data (excl. file name). Program will conduct translation   #
-#	|               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#	|                                     variable [trans_var].                                                                         #
-#	|                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#	|                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#	|                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#	|                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#	|                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#	|                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#	|                                              translated by the value of R variable [G_d_curr] in the parent frame                 #
+#   |inKPICfg   :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                            #
+#   |               [--> Columns that are requested by this function                                ]                                   #
+#   |               [C_KPI_SHORTNAME ] : It will be translated into [colnames] in the output data frame.                                #
+#   |                                    [IMPORTANT] Ensure its values are valid according to the syntax in R                           #
+#   |               [C_KPI_BIZNAME   ] : (Optional) If it is present, the program will translate its values to the attribute [label] on #
+#   |                                                the columns of the output data frame                                               #
+#   |               [--> Columns that are requested by the dependent function [DBuse_SetKPItoInf]   ]                                   #
+#   |               [C_KPI_ID        ] : The ID of the KPI to be retrieved from the various data files.                                 #
+#   |               [N_LIB_PATH_SEQ  ] : The sequence of paths to search for the KPI data file in the same library alias                #
+#   |               [C_KPI_FILE_TYPE ] : The types of data files that indicates the method for this function to import data             #
+#   |                                    [RAM     ] Try to load the data frame from RAM in current R session                            #
+#   |                                    [R       ] Try to import as R-Data                                                             #
+#   |                                    [SAS     ] Try to import via [haven::read_sas]                                                 #
+#   |               [DF_NAME         ] : For some cases, such as [C_KPI_FILE_TYPE=R] there should be such an additional field           #
+#   |                                     indicating the name of data.frame stored in the data file (i.e. container) for loading        #
+#   |                                    Default: [NA] i.e. no need for such field when [C_KPI_FILE_TYPE=SAS]                           #
+#   |               [C_KPI_FILE_NAME ] : The names of data files for identification of file existence in all available paths            #
+#   |               [C_LIB_PATH      ] : The absolute paths to store the KPI data (excl. file name). Program will conduct translation   #
+#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
+#   |                                     variable [trans_var].                                                                         #
+#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
+#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
+#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
+#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
+#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
+#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
+#   |                                              translated by the value of R variable [G_d_curr] in the parent frame                 #
 #   |InfDat     :   The dataset that stores the descriptive information at certain level (Acct level or Cust level).                    #
-#	|               Default: [NULL]                                                                                                     #
+#   |               Default: [NULL]                                                                                                     #
 #   |keyvar     :   The vector of Key field names during the merge. This requires that the same Key fields exist in both data.          #
-#	|               [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                      #
-#	|               Default: [NULL]                                                                                                     #
-#	|SetAsBase  :   The merging method indicating which of above data is set as the base during the merge.                              #
-#	|               [I] Use "Inf" data as the base to left join the "KPI" data.                                                         #
-#	|               [K] Use "KPI" data as the base to left join the "Inf" data.                                                         #
-#	|               [B] Use either data as the base to inner join the other, meaning "both".                                            #
-#	|               [F] Use either data as the base to full join the other, meaning "full".                                             #
-#	|                Above parameters are case insensitive, while the default one is set as [I].                                        #
-#	|KeepInfCol :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                     #
+#   |               [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                      #
+#   |               Default: [NULL]                                                                                                     #
+#   |SetAsBase  :   The merging method indicating which of above data is set as the base during the merge.                              #
+#   |               [I] Use "Inf" data as the base to left join the "KPI" data.                                                         #
+#   |               [K] Use "KPI" data as the base to left join the "Inf" data.                                                         #
+#   |               [B] Use either data as the base to inner join the other, meaning "both".                                            #
+#   |               [F] Use either data as the base to full join the other, meaning "full".                                             #
+#   |                Above parameters are case insensitive, while the default one is set as [I].                                        #
+#   |KeepInfCol :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                     #
 #   |               [FALSE           ]  <Default> Use those in KPI data frames as output                                                #
 #   |               [TRUE            ]            Keep those retained from [InfDat] as output                                           #
-#	|fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#	|               Default: [NULL]                                                                                                     #
-#	|fTrans.opt :   Additional options for value translation on [fTrans], see document for [omniR$AdvOp$apply_MapVal]                   #
+#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
+#   |               Default: [NULL]                                                                                                     #
+#   |fTrans.opt :   Additional options for value translation on [fTrans], see document for [omniR$AdvOp$apply_MapVal]                   #
 #   |               [NULL            ]  <Default> Use default options in [apply_MapVal]                                                 #
 #   |               [<list>          ]            Use alternative options as provided by a list, see documents of [apply_MapVal]        #
-#	|fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#	|               Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                     #
+#   |fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
+#   |               Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                     #
 #   |               [$SAS            ]  <Default> Options for [haven::read_sas]                                                         #
 #   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
 #   |               [<name>=<list>   ]            Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
-#	|.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
+#   |.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
 #   |               [TRUE            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
 #   |               [FALSE           ]            Load the data files sequentially                                                      #
-#	|cores      :   Number of system cores to read the data files in parallel                                                           #
-#	|               Default: [4]                                                                                                        #
-#	|fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#	|               Default: [F]                                                                                                        #
-#	|miss.skip  :   Whether to skip loading the files which are requested but missing in all provided paths                             #
+#   |cores      :   Number of system cores to read the data files in parallel                                                           #
+#   |               Default: [4]                                                                                                        #
+#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
+#   |               Default: [F]                                                                                                        #
+#   |miss.skip  :   Whether to skip loading the files which are requested but missing in all provided paths                             #
 #   |               [TRUE            ]  <Default> Skip missing files, but issue a message to inform the user                            #
 #   |               [FALSE           ]            Abort the process if any of the requested files do not exist                          #
-#	|miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
+#   |miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
 #   |               [G_miss_files    ]  <Default> If any data files are missing, please check this global variable to see the details   #
 #   |               [chr string      ]            User defined name of global variable that stores the debug information                #
-#	|err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
+#   |err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
 #   |               [G_err_cols      ]  <Default> If any columns are invalidated, please check this global variable to see the details  #
 #   |               [chr string      ]            User defined name of global variable that stores the debug information                #
 #   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
 #   |               [ <vec/list>     ] <Default> See the function definition as the default argument of usage                           #
-#	|dup.KPIs   :   Name of the global variable to store the debug data frame with duplicated [C_KPI_SHORTNAME]                         #
+#   |dup.KPIs   :   Name of the global variable to store the debug data frame with duplicated [C_KPI_SHORTNAME]                         #
 #   |               [G_dup_kpiname   ]  <Default> If any duplication is found, please check this global variable to see the details     #
 #   |               [chr string      ]            User defined name of global variable that stores the debug information                #
 #   |AggrBy     :   The vector of field names that are to be used as the classes to aggregate the source data.                          #
-#	|               [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                   #
-#	|               Default: [<keyvar>]                                                                                                 #
-#	|values_fn  :   The save parameter as passed into function [tidyr:pivot_wider] to summarize the [A_KPI_VAL] in the output data      #
+#   |               [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                   #
+#   |               Default: [<keyvar>]                                                                                                 #
+#   |values_fn  :   The save parameter as passed into function [tidyr:pivot_wider] to summarize the [A_KPI_VAL] in the output data      #
 #   |               [sum             ]  <Default> Sum the values of input records of any KPI                                            #
 #   |               [<function>      ]            Function to be applied, as an object instead of a character string                    #
 #   |...        :   Any other parameters that are required by [tidyr:pivot_wider]. Please check the documents for it                    #
-#	|               [IMPORTANT] Below options have already been applied; DO avoid to provide them again!                                #
+#   |               [IMPORTANT] Below options have already been applied; DO avoid to provide them again!                                #
 #   |               [id_cols], [names_from], [values_from], [values_fn]                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #

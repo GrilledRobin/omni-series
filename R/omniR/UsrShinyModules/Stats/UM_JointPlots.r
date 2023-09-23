@@ -70,13 +70,13 @@
 #   |               [Sturges         ] <Default> The same method is applied to both scatter plots and the histograms                    #
 #   |               [ <str>          ]           See available values of the same argument for [hist]                                   #
 #   |colorset   :   Character vector of color names/values for painting the charts, rules are as below:                                 #
-#	|               [length(v)==1    ]           All charts are in the same color as provided                                           #
-#	|               [length(v)==2    ]           Color of points on the scatter plot is v[1], while that of other charts are v[2]       #
-#	|               [length(v)>=3    ]           Color of points on the scatter plot is v[1], while that of [x]-axis is v[2] and that   #
-#	|                                             of [y]-axis is v[3]; the rest elements of [v] are omitted                             #
+#   |               [length(v)==1    ]           All charts are in the same color as provided                                           #
+#   |               [length(v)==2    ]           Color of points on the scatter plot is v[1], while that of other charts are v[2]       #
+#   |               [length(v)>=3    ]           Color of points on the scatter plot is v[1], while that of [x]-axis is v[2] and that   #
+#   |                                             of [y]-axis is v[3]; the rest elements of [v] are omitted                             #
 #   |samples    :   Number of samples to extract from all pairs of [x]-[y], useful when the input data is too large                     #
-#	|fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#	|               Default: [F]                                                                                                        #
+#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
+#   |               Default: [F]                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -84,10 +84,10 @@
 #   |               [CallCounter()   ]           Counter of times clicking on the button [Save Chart]                                   #
 #   |               [ActionDone()    ]           Flag of success as TRUE/FALSE after saving the snapshot of the charts                  #
 #   |               [EnvVariables()  ]           The latest values of all reactive ones that are defined within the module. One can use #
-#	|                                             the function [str(module$EnvVariables())] to find all available values.               #
-#	|                                            The most important one is as below:                                                    #
-#	|                                            [ module$EnvVariables()$module_charts[[1]] ] The last saved snapshot of the charts as  #
-#	|                                             a complete html tag                                                                   #
+#   |                                             the function [str(module$EnvVariables())] to find all available values.               #
+#   |                                            The most important one is as below:                                                    #
+#   |                                            [ module$EnvVariables()$module_charts[[1]] ] The last saved snapshot of the charts as  #
+#   |                                             a complete html tag                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

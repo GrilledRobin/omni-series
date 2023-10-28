@@ -6,8 +6,10 @@ import numbers
 import datetime as dt
 import pandas as pd
 import itertools as itt
+#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
+from inspect import signature
 from collections.abc import Iterable
-from omniPy.AdvOp import thisFunction
+from omniPy.AdvOp import thisFunction, vecStack, vecUnstack
 
 def asDatetimes(
     indate
@@ -101,6 +103,11 @@ def asDatetimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231013        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Rewrite the function to reduce the time consumption by 60%                                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -110,12 +117,14 @@ def asDatetimes(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, numbers, datetime, pandas, itertools, collections                                                                         #
+#   |   |sys, numbers, datetime, pandas, itertools, inspect, collections                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |thisFunction                                                                                                               #
+#   |   |   |vecStack                                                                                                                   #
+#   |   |   |vecUnstack                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -128,16 +137,16 @@ def asDatetimes(
     recall = thisFunction()
 
     #012. Handle the parameter buffer.
-    if indate is None: return()
-    if fmt is None: fmt = list(map(
-        ''.join
-        ,list(itt.product(
-            ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
-            , [':', ' ', '-']
-            , ['%H%M%S', '%H-%M-%S', '%H:%M:%S', '%H %M %S']
-        ))
-    )) + ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
-    if unit is None: unit = 'seconds'
+    if indate is None: return(None)
+    col_eval = signature(vecStack).parameters['valName'].default
+    inttypes = [
+        'int'
+        ,'int8','int16','int32','int64'
+        ,'uint8','uint16','uint32','uint64'
+        #Quote: https://stackoverflow.com/questions/11548005/numpy-or-pandas-keeping-array-type-as-integer-while-having-a-nan-value
+        ,'Int8','Int16','Int32','Int64'
+        ,'UInt8','UInt16','UInt32','UInt64'
+    ]
 
     #100. Standardize the formats to be used to try converting the date-like values
     if isinstance(fmt, str):
@@ -145,81 +154,138 @@ def asDatetimes(
     elif isinstance(fmt, Iterable):
         fmt_fnl = list(fmt)
     else:
-        raise TypeError('[' + LfuncName + '][fmt] must be [str], or [Iterable] of the previous')
+        raise TypeError(f'[{LfuncName}][fmt] must be [str], or [Iterable] of the previous')
 
     #200. Conver the [origin] to [dt.datetime] and meanwhile prevent the infinite recursion
-    if isinstance(origin, numbers.Number):
-        origin = dt.datetime.min + dt.timedelta(**{unit:int(origin)})
-    else:
-        origin = recall(origin, fmt = fmt_fnl, origin = None)
-
-    #300. Prepare the function to convert a single value as helper
-    def trnsdate(d):
-        #[IMPORTANT] The verification for [datetime] should be ahead of that for [date], as the latter is [True] on both cases.
-        if isinstance(d, dt.datetime):
-            return(d)
-        elif isinstance(d, dt.date):
-            return(dt.datetime.combine(d, dt.time(0,0,0)))
-        elif isinstance(d, pd.Timestamp):
-            return(dt.to_pydatetime())
-        elif isinstance(d, numbers.Number):
-            #Quote: https://stackoverflow.com/questions/25141789/remove-dtype-datetime-nat
-            if pd.isnull(d): return(pd.NaT)
-            #Quote: https://stackoverflow.com/questions/36361849/is-there-an-as-date-equivalent-r-in-python
-            #Quote: https://stackoverflow.com/questions/50265288/how-to-work-around-python-pandas-dataframes-out-of-bounds-nanosecond-timestamp
-            #Quote: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
-            return(max(dt.datetime.min, min(dt.datetime.max, origin + dt.timedelta(**{unit:int(d)}))))
-        elif isinstance(d, str):
-            for f in fmt_fnl:
-                try:
-                    return(pd.to_datetime(d, errors = 'raise', format = f).to_pydatetime())
-                except:
-                    continue
-
-            return(pd.NaT)
+    if not isinstance(origin, dt.datetime):
+        if isinstance(origin, numbers.Number):
+            origin = dt.datetime.min + dt.timedelta(**{unit:int(origin)})
         else:
-            return(pd.NaT)
+            origin = recall(origin, fmt = fmt_fnl, origin = None)
 
+    #200. Helper functions
+    #210. Function to process the unstacked data before type conversion
+    def h_dtype(df):
+        #100. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
+        conv_dtcol = (
+            df.dtypes
+            .apply(str)
+            .loc[lambda x: x.str.startswith('datetime')]
+            .reset_index(drop = True)
+            .index
+        )
 
-    #900. Translate the values
-    if isinstance(indate, pd.DataFrame):
-        #100. Convert the full input
-        df_interim = indate.map(trnsdate)
+        #300. Create a copy of the input data to avoid unexpected result
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        df_out = df.copy(deep = True).astype('object')
 
-        #300. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
-        conv_dtcol = [ c for c in df_interim.columns if str(df_interim.dtypes[c]).startswith('datetime') ]
+        #500. Re-assign the output values in terms of the request
+        #[ASSUMPTION]
+        #[1] [pd.DataFrame.unstack()] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
+        #[2] [pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
+        for i in conv_dtcol:
+            df_out.iloc[:, i] = pd.Series(df.iloc[:, i].dt.to_pydatetime(), dtype = 'object', index = df.index)
 
-        #500. Convert the storage of above columns into the type of [object]
-        #[pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
-        for c in conv_dtcol:
-            df_interim[c] = pd.Series(
-                df_interim[c].dt.to_pydatetime()
-                ,dtype = 'object'
-                ,index = indate.index
+        #999. Purge
+        return(df_out)
+
+    #290. Function to return the result in the same shape as input
+    def h_rst(rst, col):
+        #500. Unstack the underlying data to the same shape as the input one
+        #[ASSUMPTION]
+        #[1] <col-id> and <row-id> do not have <NA> values
+        #[2] There can only be <NA> values in the <col>
+        #[3] Hence we have to convert them to <NaT> as output
+        rstOut = vecUnstack(rst, valName = col, modelObj = indate, funcConv = h_dtype)
+
+        #999. Purge
+        return(rstOut)
+
+    #300. Flatten the input
+    vec_in = vecStack(indate)
+
+    #400. Identify different sections to process
+    #410. Identify the types of respective input values
+    vec_types = vec_in[col_eval].apply(lambda x: type(x).__name__)
+
+    #450. Locate different sections to process
+    #Quote: https://stackoverflow.com/questions/55718601/pandas-fixing-datetime-time-and-datetime-datetime-mix
+    vtype_dt = vec_types.eq('datetime')
+    vtype_ts = vec_types.eq('Timestamp')
+    vtype_d = vec_types.eq('date')
+    #[ASSUMPTION]
+    #[1] <Series.str.startswith()> is 4x slower than <Series.isin()>
+    # vtype_int = vec_types.str.startswith('int')
+    vtype_int = vec_types.isin(inttypes)
+    vtype_str = vec_types.eq('str')
+    vtype_nat = ~(vtype_dt | vtype_ts | vtype_d | vtype_int | vtype_str)
+
+    #500. Convert to the dedicated values for different scenarios
+    #520. Convert timestamp values
+    out_ts = pd.Series(
+        vec_in[col_eval].loc[vtype_ts].astype('datetime64[ns]').dt.to_pydatetime()
+        ,dtype = 'object'
+        ,index = vtype_ts.loc[vtype_ts].index
+    )
+
+    #530. Convert integer-like values
+    #Quote: https://stackoverflow.com/questions/36361849/is-there-an-as-date-equivalent-r-in-python
+    #Quote: https://stackoverflow.com/questions/50265288/
+    #Quote: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
+    out_int = (
+        vec_in[col_eval]
+        .loc[vtype_int]
+        .astype('object')
+        .apply(lambda d: origin + dt.timedelta(**{unit:int(d)}))
+        .where(lambda x: x.le(dt.datetime.max), dt.datetime.max)
+        .where(lambda x: x.ge(dt.datetime.min), dt.datetime.min)
+    )
+    if pd.api.types.is_datetime64_any_dtype(out_int.dtype):
+        out_int = pd.Series(out_int.dt.to_pydatetime(), dtype = 'object', index = out_int.index)
+
+    #550. Convert strings
+    #Quote: https://stackoverflow.com/questions/17134716/convert-dataframe-column-type-from-string-to-datetime
+    out_str = pd.Series(
+        (
+            pd.concat(
+                [pd.to_datetime(vec_in[col_eval].loc[vtype_str], errors = 'coerce', format = f) for f in fmt_fnl]
+                ,axis = 1
             )
+            .bfill(axis = 1)
+            .iloc[:, 0]
+            .dt.to_pydatetime()
+        )
+        ,dtype = 'object'
+        ,index = vtype_str.loc[vtype_str].index
+    )
 
-        #999. Return the data
-        return(df_interim)
-    elif isinstance(indate, pd.Series):
-        #100. Convert the full input
-        srs_interim = indate.apply(trnsdate)
+    #570. Convert dates
+    out_d = vec_in[col_eval].loc[vtype_d].astype('object').apply(lambda x: dt.datetime.combine(x, dt.time(0,0,0)))
 
-        #500. Convert the storage of this series into the type of [object]
-        if str(srs_interim.dtype).startswith('datetime'):
-            srs_interim = pd.Series(
-                srs_interim.dt.to_pydatetime()
-                ,dtype = 'object'
-                ,index = indate.index
-            )
+    #580. Initialize NULL values
+    out_nat = vec_in[col_eval].loc[vtype_nat].astype('object')
+    out_nat.loc[:] = pd.NaT
 
-        #999. Return the data
-        return(srs_interim)
-    elif isinstance(indate, str):
-        return(trnsdate(indate))
-    elif isinstance(indate, Iterable):
-        return(list(map(trnsdate, indate)))
-    else:
-        return(trnsdate(indate))
+    #600. Combine the results
+    vec_out = pd.concat(
+        [
+            vec_in[col_eval].loc[vtype_dt].astype('object')
+            ,out_ts
+            ,out_int
+            ,out_str
+            ,out_d
+            ,out_nat
+        ]
+        ,axis = 0
+        ,ignore_index = False
+    )
+
+    #800. Prepare the structure for output
+    rstOut = vec_in.copy(deep = True).assign(**{col_eval : vec_out})
+
+    #900. Export in the same shape as the input
+    return(h_rst(rstOut, col_eval))
 #End asDatetimes
 
 '''
@@ -235,6 +301,7 @@ if __name__=='__main__':
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.Dates import asDatetimes
+    from omniPy.AdvOp import vecStack
     print(asDatetimes.__doc__)
 
     #100. Convert a date
@@ -286,38 +353,61 @@ if __name__=='__main__':
     a5 = 1930912496
     a5_rst = asDatetimes( a5 )
 
+    # [CPU] AMD Ryzen 5 4500 6-Core 3.60GHz
+    # [RAM] 32GB 2666MHz
     #900. Test timing
     test_sample = CFG_KPI[['DT_TEST','D_TEST']].copy(deep=True).sample(100000, replace = True)
     time_bgn = dt.datetime.now()
-    print(time_bgn)
-    df_trns = asDatetimes(test_sample)
+    df_trns_old = asDatetimes(test_sample)
     time_end = dt.datetime.now()
-    print(time_end)
     print(time_end - time_bgn)
-    # 1.33s on average
+    # 0:00:00.962579
 
     #Full speed test
     #Quote: https://ehmatthes.com/blog/faster_than_strptime/
     aaa = CFG_KPI['DT_TEST'].sample(100000, replace = True).apply(lambda x: x.strftime('%Y/%m/%d-%H %M %S'))
 
-    t0 = time.time()
+    time_bgn = dt.datetime.now()
     bbb = asDatetimes(aaa)
-    print(time.time() - t0)
-    # 257.26s
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # 0:00:00.963227
 
-    t0 = time.time()
+    time_bgn = dt.datetime.now()
     bbb2 = asDatetimes(aaa, fmt = '%Y/%m/%d-%H %M %S')
-    print(time.time() - t0)
-    # 9.22s
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # 0:00:00.282319
 
-    t0 = time.time()
+    time_bgn = dt.datetime.now()
     bbb3 = pd.to_datetime(aaa)
-    print(time.time() - t0)
-    # ParserError: Unknown string format
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # DateParseError: Unknown datetime string format
 
-    t0 = time.time()
+    time_bgn = dt.datetime.now()
     bbb3 = pd.to_datetime(aaa, format = '%Y/%m/%d-%H %M %S')
-    print(time.time() - t0)
-    # 0.012s
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # 0:00:00.015001
+
+    #Various inputs
+    vvv = vecStack([
+        '2021-02-16 08:12:34'
+        ,'20210101 13:24:35'
+        ,1930912496
+        ,dt.date.today()
+        ,dt.datetime.now()
+        ,np.int64(1930912496)
+        ,pd.Timestamp('2017-01-01T12')
+        ,pd.NaT
+        ,''
+    ])
+    d_smpl = vvv['.val.'].sample(1000000, replace = True).reset_index(drop=True)
+    time_bgn = dt.datetime.now()
+    df_trns = asDatetimes(d_smpl, fmt = ['%Y%m%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'])
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # 0:00:04.286527
 #-Notes- -End-
 '''

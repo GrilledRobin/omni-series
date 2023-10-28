@@ -207,6 +207,11 @@ class UserCalendar( CoreUserCalendar ):
 #   | Log  |[1] Eliminate all [pd.DataFrame.merge] operations and the most of [.apply] methods to improve the overall efficiency, now   #
 #   |      |     use indexing of data frames and the time expense reduced by 90%.                                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231016        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Updated the usage of <asQuarters> to improve the efficiency                                                             #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -365,7 +370,13 @@ class UserCalendar( CoreUserCalendar ):
     #516. List of quarters in [YYYYQk] format that are covered in the period
     @property
     def qtrlist( self ) -> 'Get the list of quarters in the entire period, formatted into text strings with [YYYYQk]':
-        dt_series = self._usrclndr_['D_DATE'].apply( lambda x: str(x.year) + 'Q' + str(asQuarters(x)) )
+        dt_series = (
+            self._usrclndr_['D_DATE']
+            .apply( lambda x: x.year)
+            .astype('str')
+            .add('Q')
+            .add(asQuarters(self._usrclndr_['D_DATE']).astype('str'))
+        )
         return( dt_series.drop_duplicates().sort_values().to_list() )
 
     #520. Retrieve the Count of Calendar Days
@@ -545,7 +556,13 @@ class UserCalendar( CoreUserCalendar ):
     #600. List of Calendar Days within the quarters in the period, comprising a dict of quarters
     @property
     def cd_of_quarters( self ) -> 'Get the dict of quarters with lists of all Calendar Days within each quarter':
-        mask_idx = self._usrclndr_['D_DATE'].apply( lambda x: str(x.year) + 'Q' + str(asQuarters(x)) )
+        mask_idx = (
+            self._usrclndr_['D_DATE']
+            .apply( lambda x: x.year)
+            .astype('str')
+            .add('Q')
+            .add(asQuarters(self._usrclndr_['D_DATE']).astype('str'))
+        )
         qtrs = {
             m : (
                 self._usrclndr_[mask_idx == m]
@@ -573,7 +590,13 @@ class UserCalendar( CoreUserCalendar ):
     #610. List of Work Days within the quarters in the period, comprising a dict of quarters
     @property
     def wd_of_quarters( self ) -> 'Get the dict of quarters with lists of all Work Days within each quarter':
-        mask_idx = self._usrclndr_['D_DATE'].apply( lambda x: str(x.year) + 'Q' + str(asQuarters(x)) )
+        mask_idx = (
+            self._usrclndr_['D_DATE']
+            .apply( lambda x: x.year)
+            .astype('str')
+            .add('Q')
+            .add(asQuarters(self._usrclndr_['D_DATE']).astype('str'))
+        )
         qtrs = {
             m : (
                 self._usrclndr_[ (mask_idx == m) & self._usrclndr_['F_WORKDAY'] ]
@@ -601,7 +624,13 @@ class UserCalendar( CoreUserCalendar ):
     #620. List of Trade Days within the quarters in the period, comprising a dict of quarters
     @property
     def td_of_quarters( self ) -> 'Get the dict of quarters with lists of all Trade Days within each quarter':
-        mask_idx = self._usrclndr_['D_DATE'].apply( lambda x: str(x.year) + 'Q' + str(asQuarters(x)) )
+        mask_idx = (
+            self._usrclndr_['D_DATE']
+            .apply( lambda x: x.year)
+            .astype('str')
+            .add('Q')
+            .add(asQuarters(self._usrclndr_['D_DATE']).astype('str'))
+        )
         qtrs = {
             m : (
                 self._usrclndr_[ (mask_idx == m) & self._usrclndr_['F_TradeDay'] ]

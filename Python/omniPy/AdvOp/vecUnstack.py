@@ -64,6 +64,12 @@ def vecUnstack(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when input object is empty                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231016        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Corrected output method when input object is empty                                                                      #
+#   |      |[2] Replace <unstack> with a more intuitive method to reduce the time consumption by 30%                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -86,12 +92,11 @@ def vecUnstack(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Handle the parameter buffer
     if not isinstance(df, pd.DataFrame):
         raise ValueError(f'[{LfuncName}][df] must be pd.DataFrame, got [{type(df)}]!')
-    vfy_nans = [idRow, idCol]
+    vfy_nans = [idCol, idRow]
     vfy_cols = vfy_nans + [valName]
     col_nonexist = { col: (col not in df.columns) for col in vfy_cols }
     if any(col_nonexist.values()):
@@ -159,28 +164,76 @@ def vecUnstack(
 
     #419. Abort if the output shape is different from the model object
     if rst_shape != mdl_shape:
-        raise ValueError(f'[{LfuncName}]Unstack result has shape [{str(rst_shape)}] different as [modelObj] [{mdl_shape}]!')
+        raise ValueError(f'[{LfuncName}]Unstack result has shape [{str(rst_shape)}] different as [modelObj] [{str(mdl_shape)}]!')
 
     #430. Handle empty structures in certain classes
     if mdl_empty:
-        if isinstance(modelObj, (pd.DataFrame, pd.Index, pd.Series, np.ndarray)):
+        if isinstance(modelObj, pd.DataFrame):
             return(funcConv(modelObj))
+        elif isinstance(modelObj, pd.MultiIndex):
+            return(pd.MultiIndex.from_frame(funcConv(modelObj.to_frame())))
+        elif isinstance(modelObj, pd.Index):
+            return(pd.Index(funcConv(modelObj.to_frame()).iloc[:, 0]))
+        elif isinstance(modelObj, pd.Series):
+            return(funcConv(modelObj.to_frame()).iloc[:, 0])
+        elif isinstance(modelObj, np.matrix):
+            return(funcConv(pd.DataFrame(modelObj)).to_numpy().asmatrix())
+        elif isinstance(modelObj, np.ndarray):
+            return(funcConv(pd.DataFrame(modelObj)).to_numpy())
+        elif isinstance(modelObj, list):
+            return(funcConv(pd.DataFrame(modelObj)).iloc[:, 0].to_list())
+        elif isinstance(modelObj, tuple):
+            return(tuple(funcConv(pd.DataFrame(modelObj)).iloc[:, 0].to_list()))
+        elif modelObj is None:
+            return(None)
+        elif isinstance(modelObj, Iterable) and (not isinstance(modelObj, str)):
+            try:
+                return(type(modelObj)(funcConv(pd.DataFrame(modelObj))))
+            except:
+                raise ValueError(f'[{LfuncName}]Iterable type of [modelObj] is not recognized: [{str(type(modelObj))}]!')
+        else:
+            raise ValueError(f'[{LfuncName}]Type of [modelObj] is not recognized: [{str(type(modelObj))}]!')
 
     #450. Differentiate the process
     if mdl_shape[-1] == 1:
-        rstPre = funcConv((
+        #100. Only need the necessary columns
+        vec_in = (
             df
-            .loc[:, vfy_cols]
-            .set_index(vfy_nans)
-            .sort_index()
-        ))
+            .loc[:, [idRow, valName]]
+            .copy(deep = True)
+            .set_index(idRow)
+        )
+        if not vec_in.index.is_unique:
+            raise ValueError(f'[{LfuncName}][{idRow}] of input df is not unique!')
+        #Quote: https://stackoverflow.com/questions/17315881/how-can-i-check-if-a-pandas-dataframes-index-is-sorted
+        if not vec_in.index.is_monotonic_increasing:
+            vec_in.sort_index(inplace = True)
+
+        #900. Customize the result
+        rstPre = funcConv(vec_in)
     else:
-        rstPre = funcConv((
-            df
-            .loc[:, vfy_cols]
-            .set_index(vfy_nans)
-            .sort_index()
-            .unstack(level = -1)
+        #100. Only need the necessary columns
+        vec_in = df[vfy_cols].copy(deep = True)
+
+        #300. Sort the identifiers where necessary
+        #[ASSUMPTION]
+        #[1] We should sort by COLID then by ROWID at the same time
+        if not (vec_in[idCol].is_monotonic_increasing and vec_in[idRow].is_monotonic_increasing):
+            vec_in.sort_values(vfy_nans, inplace = True)
+
+        #500. Create GroupBy
+        #Quote: https://stackoverflow.com/questions/23691133/split-pandas-dataframe-based-on-values-in-a-column-using-groupby
+        gb = (
+            vec_in
+            .set_index(idRow)
+            .groupby(idCol)
+        )
+
+        #900. Concatenate the groups at axis 1
+        rstPre = funcConv(pd.concat(
+            [gb.get_group(x).drop(columns = [idCol]) for x in gb.groups]
+            ,axis = 1
+            ,ignore_index = False
         ))
 
     #700. Apply attributes to the result
@@ -188,43 +241,40 @@ def vecUnstack(
     #[1] There is no implicit type conversion in Python
     #    Quote: https://stackoverflow.com/questions/67205254/casting-constructor-in-python?r=SearchResults
     if isinstance(modelObj, pd.DataFrame):
-        rstOut = (
+        return((
             rstPre
             .set_axis(mdl_index, axis = 0)
             .set_axis(mdl_names, axis = 1)
-        )
+        ))
     elif isinstance(modelObj, pd.MultiIndex):
-        rstOut = (
+        return((
             pd.MultiIndex.from_frame(rstPre)
             .set_names(mdl_names)
-        )
+        ))
     elif isinstance(modelObj, pd.Index):
-        rstOut = (
+        return((
             pd.Index(rstPre.iloc[:, 0])
             .set_names(mdl_names)
-        )
+        ))
     elif isinstance(modelObj, pd.Series):
-        rstOut = (
+        return((
             rstPre
             .set_axis(mdl_index, axis = 0)
             .set_axis(mdl_names, axis = 1)
             .iloc[:, 0]
-        )
+        ))
     elif isinstance(modelObj, np.matrix):
-        rstOut = rstPre.to_numpy().asmatrix()
+        return(rstPre.to_numpy().asmatrix())
     elif isinstance(modelObj, np.ndarray):
-        rstOut = rstPre.to_numpy()
+        return(rstPre.to_numpy())
     elif isinstance(modelObj, list):
-        rstOut = rstPre.iloc[:, 0].to_list()
+        return(rstPre.iloc[:, 0].to_list())
     elif isinstance(modelObj, tuple):
-        rstOut = tuple(rstPre.iloc[:, 0].to_list())
+        return(tuple(rstPre.iloc[:, 0].to_list()))
     elif modelObj is None:
-        rstOut = None
+        return(None)
     else:
-        rstOut = rstPre.iat[0,0]
-
-    #999. Purge
-    return(rstOut)
+        return(rstPre.iat[0,0])
 #End vecUnstack
 
 '''

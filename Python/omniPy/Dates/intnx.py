@@ -322,20 +322,26 @@ def intnx(
 
     #037. Helper function to process the unstacked data before type conversion
     def h_dtype(df):
-        #010. Create a copy of the input data to avoid unexpected result
+        #100. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
+        conv_dtcol = (
+            df.dtypes
+            .apply(str)
+            .loc[lambda x: x.str.startswith('datetime')]
+            .reset_index(drop = True)
+            .index
+        )
+
+        #300. Create a copy of the input data to avoid unexpected result
         #[ASSUMPTION]
         #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
-        df_out = df.copy(deep = True).fillna(pd.NaT)
-
-        #100. Find all columns of above data that are stored as [datetime64[ns]], i.e. [pd.Timestamp]
-        conv_dtcol = [ c for c in df_out.columns if str(df_out.dtypes[c]).startswith('datetime') ]
+        df_out = df.copy(deep = True).astype('object')
 
         #500. Re-assign the output values in terms of the request
         #[ASSUMPTION]
         #[1] [pd.DataFrame.unstack()] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
         #[2] [pd.Series.dt.to_pydatetime()] creates a [list] as output, hence we need to set proper indexes for it
-        for c in conv_dtcol:
-            df_out[c] = pd.Series(df_out[c].dt.to_pydatetime(), dtype = 'object', index = df_out.index)
+        for i in conv_dtcol:
+            df_out.iloc[:, i] = pd.Series(df.iloc[:, i].dt.to_pydatetime(), dtype = 'object', index = df.index)
 
         #999. Purge
         return(df_out)
@@ -885,7 +891,7 @@ if __name__=='__main__':
     dt1 = dt.date.today()
     dt2 = asDates( [dt1, '20190412', '20200925'] )
     dt3 = pd.Series( dt2, dtype = 'object' )
-    dt3.set_axis(pd.Index([1,3,5]), axis = 0, inplace = True)
+    dt3.set_axis(pd.Index([1,3,5]), axis = 0, copy = False)
     dt4 = pd.DataFrame({ 'aa' : dt3 })
     dt4.set_index(pd.Index([1,3,5]), inplace = True)
     dt4['bb'] = asDates(pd.Series([ '20181005', '20200214', '20210331' ], dtype = 'object', index = dt4.index))

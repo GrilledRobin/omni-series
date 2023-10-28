@@ -250,6 +250,11 @@ class ObsDates( CoreUserCalendar ):
 #   | Log  |[1] Replace <pd.Series.fillna(method=)> with <pd.Series..__getattribute__('ffill'/'bfill')()> as the former will be         #
 #   |      |     deprecated in the future version                                                                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231016        | Version | 2.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Updated the usage of <asQuarters> to improve the efficiency                                                             #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -554,7 +559,13 @@ class ObsDates( CoreUserCalendar ):
         if _period=='M':
             cal_bound['C_PRD'] = cal_bound['D_DATE'].apply( lambda x: x.strftime('%Y%m') )
         elif _period=='Q':
-            cal_bound['C_PRD'] = cal_bound['D_DATE'].apply( lambda x: str(x.year) + 'Q' + str(asQuarters(x)) )
+            cal_bound['C_PRD'] = (
+                cal_bound['D_DATE']
+                .apply( lambda x: x.year)
+                .astype('str')
+                .add('Q')
+                .add(asQuarters(cal_bound['D_DATE']).astype('str'))
+            )
         elif _period=='W':
             cal_bound['C_PRD'] = cal_bound[WeekFlag]
         elif _period=='Y':

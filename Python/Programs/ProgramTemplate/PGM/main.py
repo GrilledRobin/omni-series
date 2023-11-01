@@ -145,7 +145,7 @@ R_EXE = os.path.join(R_HOME, 'bin', 'Rscript.exe')
 #Quote: https://stackoverflow.com/questions/14928860/passing-double-quote-shell-commands-in-python-to-subprocess-popen
 sasKey = r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
 #The names of the direct sub-keys are the version numbers of all installed [SAS] software
-sasVers = winReg_getInfByStrPattern(sasKey, inRegExp = r'^.*$', chkType = 2)
+sasVers = winReg_getInfByStrPattern(sasKey, inRegExp = r'^\d+(\.\d+)+$', chkType = 2)
 if len(sasVers):
     sasVers_comp = [ version.parse(v.get('name', None)) for v in sasVers ]
     sasVer = sasVers[sasVers_comp.index(max(sasVers_comp))].get('name', None)

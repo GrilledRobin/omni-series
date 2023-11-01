@@ -70,6 +70,11 @@ def vecUnstack(
 #   | Log  |[1] Corrected output method when input object is empty                                                                      #
 #   |      |[2] Replace <unstack> with a more intuitive method to reduce the time consumption by 30%                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231101        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Slightly improve efficiency when input data has multiple columns                                                        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -218,7 +223,10 @@ def vecUnstack(
         #300. Sort the identifiers where necessary
         #[ASSUMPTION]
         #[1] We should sort by COLID then by ROWID at the same time
-        if not (vec_in[idCol].is_monotonic_increasing and vec_in[idRow].is_monotonic_increasing):
+        if not (
+            vec_in[idCol].mul(vec_in[idRow].max()).add(vec_in[idRow]).is_monotonic_increasing
+            or vec_in[idRow].mul(vec_in[idCol].max()).add(vec_in[idCol]).is_monotonic_increasing
+        ):
             vec_in.sort_values(vfy_nans, inplace = True)
 
         #500. Create GroupBy

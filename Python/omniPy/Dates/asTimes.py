@@ -7,6 +7,7 @@ import itertools as itt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from collections.abc import Iterable
+from copy import deepcopy
 from omniPy.AdvOp import vecStack, vecUnstack
 
 def asTimes(
@@ -85,6 +86,11 @@ def asTimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Rewrite the function to reduce the time consumption by 90%                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231102        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Improve efficiency when all input values are already of the dedicated type or NATType                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -94,7 +100,7 @@ def asTimes(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, numbers, datetime, pandas, inspect, itertools, collections                                                                #
+#   |   |sys, numbers, datetime, pandas, inspect, itertools, collections, copy                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -172,8 +178,17 @@ def asTimes(
 
     #450. Locate different sections to process
     #Quote: https://stackoverflow.com/questions/55718601/pandas-fixing-datetime-time-and-datetime-datetime-mix
-    vtype_dt = vec_types.isin(['datetime','Timestamp'])
     vtype_t = vec_types.eq('time')
+    if vtype_t.all():
+        return(deepcopy(indate))
+
+    vtype_nat = ~vec_types.isin(['datetime','Timestamp','time','str'] + inttypes)
+    if (vtype_t | vtype_nat).all():
+        rstOut = vec_in.copy(deep = True).assign(**{col_eval : lambda x: x[col_eval].astype('object')})
+        rstOut.loc[vtype_nat, col_eval] = pd.NaT
+        return(h_rst(rstOut, col_eval))
+
+    vtype_dt = vec_types.isin(['datetime','Timestamp'])
     #[ASSUMPTION]
     #[1] <Series.str.startswith()> is 4x slower than <Series.isin()>
     # vtype_int = vec_types.str.startswith('int')
@@ -296,8 +311,8 @@ if __name__=='__main__':
     a5 = 36610
     a5_rst = asTimes( a5 )
 
-    # [CPU] AMD Ryzen 5 4500 6-Core 3.60GHz
-    # [RAM] 32GB 2666MHz
+    # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+    # [RAM] 64GB 2400MHz
     #900. Test timing
     vvv = vecStack([
         '2021-02-16 12:34:56'
@@ -315,6 +330,6 @@ if __name__=='__main__':
     df_trns = asTimes(d_smpl, fmt = ['%Y%m%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'])
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:01.970365
+    # 0:00:00.899591
 #-Notes- -End-
 '''

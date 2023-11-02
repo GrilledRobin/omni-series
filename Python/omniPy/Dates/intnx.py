@@ -11,7 +11,7 @@ from collections.abc import Iterable
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from omniPy.AdvOp import vecStack, vecUnstack, thisFunction
-from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, ObsDates, getDateIntervals, intCalendar
+from omniPy.Dates import asDates, asDatetimes, asTimes, UserCalendar, getDateIntervals, intCalendar
 
 def intnx(
     interval : str
@@ -187,6 +187,12 @@ def intnx(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231102        | Version | 7.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove dependency on [ObsDates] as it is too slow                                                                       #
+#   |      |[2] Reduce time expense by 20% for large dataframe, e.g. 1 million records                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -212,7 +218,6 @@ def intnx(
 #   |   |   |asDatetimes                                                                                                                #
 #   |   |   |asTimes                                                                                                                    #
 #   |   |   |UserCalendar                                                                                                               #
-#   |   |   |ObsDates                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -540,18 +545,24 @@ def intnx(
 
         #700. Correction on incremental for [Work/Trade Days]
         if daytype in ['W', 'T']:
-            #050. Define local variables
-            dict_obsDates = {
-                'W' : 'isWorkDay'
-                ,'T' : 'isTradeDay'
-            }
-
             #100. Verify whether the input values are [Work/Trade Days]
             #110. Instantiate the observed calendar
-            dtt_obs = ObsDates( dtt_indate, **kw_cal_fnl )
+            vld_dates = dtt_indate.loc[lambda x: x.notnull()]
+            dtt_obs = UserCalendar(
+                clnBgn = vld_dates.min()
+                ,clnEnd = vld_dates.max()
+                ,**kw_cal_fnl
+            )
 
             #150. Retrieve the flag in reversed value
-            dtt_flag = ~dtt_obs.__getattribute__(dict_obsDates[daytype])
+            dtt_flag = ~(
+                dtt_obs.usrCalendar
+                .set_index('D_DATE')
+                .reindex(dtt_indate)
+                .set_index(dtt_indate.index)
+                [dict_adjcol.get(daytype)]
+                .fillna(False)
+            )
 
             #500. Correction by below conditions
             #[1] Incremental is 0 (other cases are handled in other steps)
@@ -586,12 +597,12 @@ def intnx(
     #200. Prepare necessary columns
     #220. Unanimous columns
     if dict_attr['itype'] in ['t']:
-        #100. Convert into [np.array] for element-wise combination at later step
-        arr_time = np.array(df_indate[col_calc])
-
-        #900. Create [datetime] for the calculation of [time]
-        #We cannot set its dtype as <object>, for there will be calculation upon datetimelike values in pandas
-        df_indate[col_calc] = pd.Series(v_dt_combine(dt.date.today(), arr_time), index = df_indate.index)
+        dt_today = dt.date.today()
+        df_indate[col_calc] = (
+            df_indate[col_calc]
+            .astype('object')
+            .apply(lambda x: dt.datetime.combine(dt_today, x) if pd.notnull(x) else pd.NaT)
+        )
 
     df_indate['_intnxIncr_'] = l_incr
 
@@ -820,13 +831,13 @@ def intnx(
     #820. Retrieve the corresponding columns from the calendar for non-empty dates
     #[IMPORTANT] We keep all the calendar days at this step, to match the holidays
     #Quote: [0.04s] for 10K records
-    intnx_calmrg = (
+    df_cal_in[[col_period,col_prdidx]] = (
         intnx_calfull
         .set_index(col_out)
         .reindex(df_cal_in[col_merge])
         .set_axis(df_cal_in.index, axis = 0)
+        [[col_period,col_prdidx]]
     )
-    df_cal_in[[col_period,col_prdidx]] = intnx_calmrg[[col_period,col_prdidx]]
 #    sys._getframe(1).f_globals.update({ 'vfy_dat' : df_cal_in.copy(deep=True) })
 
     #830. Calculation
@@ -974,7 +985,7 @@ if __name__=='__main__':
     df_trns = intnx('month', df_ttt, -12, 'e', daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0.26s on average
+    # 0:00:00.301172
 
     #800. Test the timing  of 2 * 100K datetimes
     df_ttt8 = dt8.copy(deep=True).sample(100000, replace = True)
@@ -983,13 +994,13 @@ if __name__=='__main__':
     df_trns8 = intnx('dthour', df_ttt8, 12, 's', daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 1.81s on average
+    # 0:00:01.712767
 
     time_bgn = dt.datetime.now()
     df_trns8_1 = intnx('dthour', df_ttt8, 12, 'm', daytype = 'w')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 1.80s on average
+    # 0:00:01.688032
 
     #900. Test special cases
     #910. [None] vs [None]

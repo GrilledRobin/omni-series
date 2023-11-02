@@ -9,6 +9,7 @@ import itertools as itt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from collections.abc import Iterable
+from copy import deepcopy
 from omniPy.AdvOp import thisFunction, vecStack, vecUnstack
 
 def asDatetimes(
@@ -108,6 +109,11 @@ def asDatetimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Rewrite the function to reduce the time consumption by 60%                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231102        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Improve efficiency when all input values are already of the dedicated type or NATType                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -117,7 +123,7 @@ def asDatetimes(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, numbers, datetime, pandas, itertools, inspect, collections                                                                #
+#   |   |sys, numbers, datetime, pandas, itertools, inspect, collections, copy                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -212,6 +218,15 @@ def asDatetimes(
     #450. Locate different sections to process
     #Quote: https://stackoverflow.com/questions/55718601/pandas-fixing-datetime-time-and-datetime-datetime-mix
     vtype_dt = vec_types.eq('datetime')
+    if vtype_dt.all():
+        return(deepcopy(indate))
+
+    vtype_nat = ~vec_types.isin(['datetime','Timestamp','date','str'] + inttypes)
+    if (vtype_dt | vtype_nat).all():
+        rstOut = vec_in.copy(deep = True).assign(**{col_eval : lambda x: x[col_eval].astype('object')})
+        rstOut.loc[vtype_nat, col_eval] = pd.NaT
+        return(h_rst(rstOut, col_eval))
+
     vtype_ts = vec_types.eq('Timestamp')
     vtype_d = vec_types.eq('date')
     #[ASSUMPTION]
@@ -219,7 +234,6 @@ def asDatetimes(
     # vtype_int = vec_types.str.startswith('int')
     vtype_int = vec_types.isin(inttypes)
     vtype_str = vec_types.eq('str')
-    vtype_nat = ~(vtype_dt | vtype_ts | vtype_d | vtype_int | vtype_str)
 
     #500. Convert to the dedicated values for different scenarios
     #520. Convert timestamp values
@@ -353,15 +367,15 @@ if __name__=='__main__':
     a5 = 1930912496
     a5_rst = asDatetimes( a5 )
 
-    # [CPU] AMD Ryzen 5 4500 6-Core 3.60GHz
-    # [RAM] 32GB 2666MHz
+    # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+    # [RAM] 64GB 2400MHz
     #900. Test timing
     test_sample = CFG_KPI[['DT_TEST','D_TEST']].copy(deep=True).sample(100000, replace = True)
     time_bgn = dt.datetime.now()
     df_trns_old = asDatetimes(test_sample)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.962579
+    # 0:00:00.338204
 
     #Full speed test
     #Quote: https://ehmatthes.com/blog/faster_than_strptime/
@@ -371,13 +385,13 @@ if __name__=='__main__':
     bbb = asDatetimes(aaa)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.963227
+    # 0:00:00.543917
 
     time_bgn = dt.datetime.now()
     bbb2 = asDatetimes(aaa, fmt = '%Y/%m/%d-%H %M %S')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.282319
+    # 0:00:00.105585
 
     time_bgn = dt.datetime.now()
     bbb3 = pd.to_datetime(aaa)
@@ -389,7 +403,7 @@ if __name__=='__main__':
     bbb3 = pd.to_datetime(aaa, format = '%Y/%m/%d-%H %M %S')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.015001
+    # 0:00:00.010003
 
     #Various inputs
     vvv = vecStack([
@@ -408,6 +422,6 @@ if __name__=='__main__':
     df_trns = asDatetimes(d_smpl, fmt = ['%Y%m%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'])
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:04.286527
+    # 0:00:01.564556
 #-Notes- -End-
 '''

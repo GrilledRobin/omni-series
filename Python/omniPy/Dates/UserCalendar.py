@@ -212,6 +212,11 @@ class UserCalendar( CoreUserCalendar ):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Updated the usage of <asQuarters> to improve the efficiency                                                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231107        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug by replacing <pd.Series.at> with <pd.Series.iat> to avoid ambiguity                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -270,7 +275,7 @@ class UserCalendar( CoreUserCalendar ):
             else:
                 int_clnBgn = int_dateBgn
         else:
-            int_clnBgn = int_clnBgn.at[0]
+            int_clnBgn = int_clnBgn.iat[0]
 
         #370. Transform the ending when necessary
         if (len(int_clnEnd) != 1):
@@ -279,7 +284,7 @@ class UserCalendar( CoreUserCalendar ):
             else:
                 int_clnEnd = int_dateEnd
         else:
-            int_clnEnd = int_clnEnd.at[0]
+            int_clnEnd = int_clnEnd.iat[0]
 
         #500. Instantiate parent class
         super(UserCalendar,self).__init__(

@@ -3,14 +3,17 @@
 
 import sys, re
 from copy import deepcopy
-from omniPy.AdvOp import get_values, locSubstr, thisFunction
+from warnings import warn
+from typing import Any
+from omniPy.AdvOp import get_values, strNestedParser
 
 def strBalancedGroupEval(
-    txt
-    ,lBound = '('
-    ,rBound = ')'
-    ,rx = False
-) -> 'Evaluate the string in terms of the balanced group surrounded by the provided boundaries':
+    txt : str
+    ,lBound : str = '('
+    ,rBound : str = ')'
+    ,rx : bool = False
+    ,flags : re.RegexFlag = re.NOFLAG
+) -> Any:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -39,11 +42,12 @@ def strBalancedGroupEval(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<str>      :   The character string with possible replacement at the positions of Balanced Group Expressions                       #
+#   |<str>      :   The character string with possible replacement at the positions regarding Balanced Group Expressions                #
 #   |               [1] Expressions such as : f<g<a>>, will be evaluated in recursion                                                   #
 #   |               [2] Given that any expression, such as: <a>, is not a known variable in current session, it will be treated as      #
 #   |                    plain text with the bounds removed in the output result                                                        #
-#   |               [Special Case] When the whole string is surrounded by the bounds and its evaluation is successful, the return value #
+#   |               [3] The whole concatenated substring between the boundaries (exclusive of them) is stripped for object lookup       #
+#   |               [Special Case] When the whole string is enclosed by the bounds and its evaluation is successful, the return value   #
 #   |                               will be the same as its referenced object, which may be of any type                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -67,6 +71,11 @@ def strBalancedGroupEval(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231118        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Rewrite the function to uplift the efficiency by 450 times                                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -76,14 +85,13 @@ def strBalancedGroupEval(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, copy                                                                                                                  #
+#   |   |sys, re, copy, warnings, typing                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |get_values                                                                                                                 #
-#   |   |   |locSubstr                                                                                                                  #
-#   |   |   |thisFunction                                                                                                               #
+#   |   |   |strNestedParser                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -93,128 +101,86 @@ def strBalancedGroupEval(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    recall = thisFunction()
 
     #012. Parameter buffer
-    if not isinstance( txt , str ):
-        raise TypeError('[' + LfuncName + '][txt]:[{0}] must be provided a character string!'.format( type(txt) ))
-    if len(txt) == 0:
+    if not isinstance(txt, str):
+        raise TypeError(f'[{LfuncName}][txt]:[{type(txt)}] must be provided a character string!')
+    if not txt:
         return('')
-    if not isinstance( lBound , str ):
-        raise TypeError('[' + LfuncName + '][lBound]:[{0}] must be provided a character string!'.format( type(lBound) ))
-    lBound = deepcopy(lBound).strip()
+    if not isinstance(lBound, str):
+        raise TypeError(f'[{LfuncName}][txt]:[{type(lBound)}] must be provided a character string!')
+    lBound = deepcopy(lBound.strip())
     if len(lBound) == 0:
-        raise ValueError('[' + LfuncName + '][lBound]:[{0}] must be at least one non white space character!'.format( lBound ))
-    if not isinstance( rBound , str ):
-        raise TypeError('[' + LfuncName + '][rBound]:[{0}] must be provided a character string!'.format( type(rBound) ))
-    rBound = deepcopy(rBound).strip()
+        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] must be at least one non white space character!')
+    if not isinstance(rBound, str):
+        raise TypeError(f'[{LfuncName}][txt]:[{type(rBound)}] must be provided a character string!')
+    rBound = deepcopy(rBound.strip())
     if len(rBound) == 0:
-        raise ValueError('[' + LfuncName + '][rBound]:[{0}] must be at least one non white space character!'.format( rBound ))
+        raise ValueError(f'[{LfuncName}][rBound]:[{rBound}] must be at least one non white space character!')
     if lBound == rBound:
-        raise ValueError('[' + LfuncName + '][lBound]:[{0}] and [rBound]:[{1}] must be different strings!'.format( lBound, rBound ))
-    if not isinstance( rx , bool ):
-        raise TypeError('[' + LfuncName + '][rx]:[{0}] must be provided a bool!'.format( type(rx) ))
+        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] and [rBound]:[{rBound}] must be different strings!')
+    if not isinstance(rx, bool):
+        raise TypeError(f'[{LfuncName}][rx]:[{type(rx)}] must be provided a bool!')
     if not rx:
-        lBound_i = re.escape(lBound)
-        rBound_i = re.escape(rBound)
-    else:
-        lBound_i = lBound
-        rBound_i = rBound
+        lBound = re.escape(lBound)
+        rBound = re.escape(rBound)
 
     #050. Local parameters
 
-    #100. Compare the occurrences of both bounds and stop if they do not match
-    #Return value of below function is a list of tuples comprised of start and end positions
-    posLB = locSubstr(lBound_i, txt, overlap = False)
-    posRB = locSubstr(rBound_i, txt, overlap = False)
-    kLB = len(posLB)
-    kRB = len(posRB)
+    #100. Parse the nested structure out of the input string
+    #[ASSUMPTION]
+    #[1] We always call the parser with RegExp, since the boundaries are already escaped when requested
+    #[2] Since the parser will raise exception when there is un-Balanced Group, we catch it and return empty list as designed
+    #[3] We exclude the boundaries as output
+    try:
+        nest_struct = strNestedParser(txt, lBound, rBound, rx = True, include = False, flags = flags)
+    except ValueError:
+        warn(f'[{LfuncName}]Input string `{txt}` has un-Balanced boundaries!')
+        nest_struct = []
 
-    #109. Return the input string if the left bound and the right one do not exist in pairs
-    if (kLB == 0) or (kLB != kRB):
-        return(deepcopy(txt))
-
-    #300. Prepare Balanced Group
-    #Quote: https://stackoverflow.com/questions/49138587/find-all-parentheses-in-a-string-by-pairs-python-3
-    #310. Combine all the positions found and sort the list by their starting positions
-    pos_all = sorted(posLB + posRB, key = lambda x: x[0])
-
-    #330. Prepare the adjuster of the Balanced Group
-    pos_adj = [ 0 if m in posLB else 1 for m in pos_all ]
-
-    #350. Add 1 on group ID if we encounter the left bound, or subtract by 1 if we encounter the round bound
-    pos_cnt = []
-    cnt_i = 0
-    for m in pos_all:
-        if m in posLB:
-            cnt_i += 1
-        else:
-            cnt_i -= 1
-
-        pos_cnt.append(cnt_i)
-
-    #370. Post-increment by 1 for the counters on the right bound
-    balgrp = [ v + pos_adj[i] for i,v in enumerate(pos_cnt) ]
-
-    #500. Replace the group with the largest ID (aka the inner-most group) with its parsed value
-    #510. Identify the ID of the inner-most groups
-    max_grp = max(balgrp)
-    #Retrieve the first among the IDs as initiation
-    #Quote: https://stackoverflow.com/questions/176918/finding-the-index-of-an-item-in-a-list
-    idx_grp = balgrp.index(max_grp)
-    #The same Group ID always exists in pairs
-    k_grp = int(balgrp.count(max_grp) / 2)
-
-    #550. Determine the replacement of each identified group
-    rep_grp = []
-    for i in range(k_grp):
-        #100. Define the start position of current group
-        bgn_get = pos_all[idx_grp][-1]
-        bgn_rep = pos_all[idx_grp][0]
-
-        #300. Define the right bound of current group
+    #200. Define helper functions
+    #210. Function to join the nested structures into strings respectively, then evaluate the strings into new ones, with recursion
+    def h_conj_str(struct : list):
         #[ASSUMPTION]
-        #[1] We locate the very first one of the same markers from the right side of current one
-        #[2] the [idx] of the left bound will always be less then the length of the input string, hence add it by 1 is safe
-        idx_right = balgrp.index(max_grp, idx_grp + 1)
+        #[1] Input structure always has the form: [<string | nested struct>]
+        #[2] <nested struct> will be further processed by this function itself,
+        #     with its evaluation result MUST BE able to convert to a string using <str()>
+        #[3] All the evaluated items will be concatenated and then stripped, and then evaluated at current layer
+        #100. Initialize
+        str_struct = ''
 
-        #500. Define the end position of current group
-        end_get = pos_all[idx_right][0]
-        end_rep = pos_all[idx_right][-1]
+        #500. Loop over the nested structure
+        for i,m in enumerate(struct):
+            if isinstance(m, list):
+                #100. Further process the structure of the next layer
+                #[ASSUMPTION]
+                #[1] We should never introduce <thisFunction()> to capture the frame as recursion in such a CPU-intense task
+                #[2] The major CPU expense is on the dynamic compilation of such frame
+                #[3] This function is never mutated (e.g. by decoration), hence there is no need to capture its frame dynamically
+                #[4] Extend the string for the evaluation at current layer
+                str_struct += str(h_conj_str(m))
+            else:
+                str_struct += m
 
-        #700. Evaluate the extracted expression after stripping it
-        val = get_values( txt[bgn_get:end_get].strip(), inplace = True )
+        #999. Purge
+        return(get_values(str_struct.strip(), inplace = True))
 
-        #800. Directly return the evaluated result if the entire string is surrounded by the bounds
-        if bgn_rep == 0 and end_rep == len(txt):
-            return(val)
-
-        #900. Append indicators for later replacement process
-        rep_grp.append((bgn_rep, end_rep, val))
-
-        #990. Increment the counter
-        try:
-            idx_grp = balgrp.index(max_grp, idx_right + 1)
-        except ValueError:
-            break
-
-    #570. Conduct replacement from right to left, which is safe
-    #[list.reverse()] method replaces the original object
-    rep_grp.reverse()
-    rstMid = deepcopy(txt)
-    for b,e,v in rep_grp:
-        rstMid = rstMid[:b] + str(v) + rstMid[e:]
-
-    #700. Process the new string by the provided bounds in recursion
-    rstOut = recall(
-        rstMid
-        ,lBound = lBound
-        ,rBound = rBound
-        ,rx = rx
-    )
-
-    #900. Return the result
-    return(rstOut)
+    #500. Differentiate the result
+    #[ASSUMPTION]
+    #[1] Given any substring that is not enclosed by the boundaries, we mark it as <S>
+    #[2] According to the feature of the nested structure, if <S> exists in the outmost layer, we do separate concatenation WITHOUT
+    #     further evaluation, as the outmost layer is never enclosed by boundaries
+    #[3] According to the feature of the nested structure, every sub-layer <nested struct> is processed in recursion
+    #[4] If <nest_struct> is empty, we export an empty string
+    #[5] If <nest_struct> has only one <nested struct>, we honor its evaluated result type
+    #[6] Otherwise we export a concatenated string
+    len_struct = len(nest_struct)
+    if len_struct == 0:
+        return('')
+    elif len_struct == 1:
+        return(h_conj_str(nest_struct[0]))
+    else:
+        return(''.join([ (str(h_conj_str(i)) if isinstance(i, list) else i) for i in nest_struct ]))
 #End strBalancedGroupEval
 
 '''
@@ -241,6 +207,7 @@ if __name__=='__main__':
         ,rBound = ')'
         ,rx = False
     )
+    # 'gg 5 aa ee ff'
 
     eval_jinja = strBalancedGroupEval(
         testjinja
@@ -248,5 +215,40 @@ if __name__=='__main__':
         ,rBound = '}}'
         ,rx = False
     )
+    # 5
+    type(eval_jinja).__name__
+    # 'int'
+
+    #300. Special cases
+    print(strBalancedGroupEval(''))
+    # ''
+
+    print(strBalancedGroupEval('()'))
+    # ''
+
+    print(strBalancedGroupEval(r'a'))
+    # 'a'
+
+    print(strBalancedGroupEval(r'(a fill_a)'))
+    # 'a fill_a'
+
+    print(strBalancedGroupEval(r'a (fill_a)'))
+    # 'a bb'
+
+    print(strBalancedGroupEval(r'(fill_bb) b'))
+    # '5 b'
+
+    print(strBalancedGroupEval(r'(a) fill_bb'))
+    # 'a fill_bb'
+
+    # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
+    # [RAM] 64GB 2400MHz
+    #900. Test timing
+    str_large = teststr * 10000
+    time_bgn = dt.datetime.now()
+    eval_large = strBalancedGroupEval(str_large)
+    time_end = dt.datetime.now()
+    print(time_end - time_bgn)
+    # 0:00:00.682479
 #-Notes- -End-
 '''

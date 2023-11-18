@@ -3,24 +3,26 @@
 
 import sys, re
 from copy import deepcopy
-from warnings import warn
-from omniPy.AdvOp import strNestedParser
 
-def strBalancedGroup(
+def strNestedParser(
     txt : str
-    ,lBound : str = '('
-    ,rBound : str = ')'
-    ,rx : bool = False
+    ,lBound : str = '[(]'
+    ,rBound : str = '[)]'
+    ,rx : bool = True
     ,include : bool = True
     ,flags : re.RegexFlag = re.NOFLAG
-) -> list[str]:
+) -> list[str | list[str | list]]:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to extract the substrings surrounded by the provided boundaries, in terms of the concept of Balanced     #
-#   | Group in Regular Expression (while NOT using RegExp as it would fail in many cases)                                               #
+#   |This function is intended to parse the nested structures surrounded by the provided boundaries, in terms of the concept of         #
+#   | Balanced Group in Regular Expression (while NOT using RegExp as it would fail in many cases)                                      #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |Quote:                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/1099178/matching-nested-structures-with-regular-expressions-in-python                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -37,9 +39,9 @@ def strBalancedGroup(
 #   |rBound     :   Right bound of the substring, can be provided with a string, which will be stripped and then treated as a whole     #
 #   |               [)          ] <Default> A single right parenthesis                                                                  #
 #   |rx         :   Whether to treat the [lBound] and [rBound] as Regular Expression                                                    #
-#   |               [False      ] <Default> Treat them as raw character strings                                                         #
-#   |               [True       ]           Treat them as regular expressions                                                           #
-#   |include    :   Whether to include the bounding characters in the output substrings                                                 #
+#   |               [True       ] <Default> Treat them as regular expressions                                                           #
+#   |               [False      ]           Treat them as raw character strings                                                         #
+#   |include    :   Whether to include the bounding characters in the output structure                                                  #
 #   |               [True       ] <Default> Include the bounds as output                                                                #
 #   |               [False      ]           Exclude the bounds as output                                                                #
 #   |flags      :   Flags to modify the parsing of the RegExp upon <lBound> and <rBound>                                                #
@@ -48,20 +50,21 @@ def strBalancedGroup(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>     :   List of substrings out of each pair of boundaries as a Balanced Group                                               #
+#   |<list>     :   List of nested structures out of each pair of boundaries as a Balanced Group                                        #
 #   |               [IMPORTANT]                                                                                                         #
-#   |               [1] If the bounds do not exist in pairs, an empty list is returned with a warning                                   #
+#   |               [1] If the bounds do not exist in pairs, exception is raised                                                        #
+#   |               [2] Standalone substrings, i.e. those not enclosed by the provided boundaries, are also included in the result      #
+#   |               [RESULT PATTERN] Assume any substring that is not enclosed by the boundaries, we mark the substring as <S>          #
+#   |               [1] As long as paired boundaries are identified, they are captured in one <sub-list>, including the content between #
+#   |                    them as separated items                                                                                        #
+#   |               [2] <S> can only exist in the outmost list                                                                          #
+#   |               [3] Substrings identifying both boundaries cannot exist in the outmost list, according to rule [1]                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20220123        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20231118        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20231118        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the function to uplift the efficiency by 450 times                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -72,12 +75,10 @@ def strBalancedGroup(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, copy, warnings                                                                                                        #
+#   |   |sys, re, copy                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
-#   |   |   |strNestedParser                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -112,75 +113,69 @@ def strBalancedGroup(
         rBound = re.escape(rBound)
 
     #050. Local parameters
+    stack = [[]]
 
-    #100. Parse the nested structure out of the input string
-    #[ASSUMPTION]
-    #[1] We always call the parser with RegExp, since the boundaries are already escaped when requested
-    #[2] Since the parser will raise exception when there is un-Balanced Group, we catch it and return empty list as designed
-    try:
-        nest_struct = strNestedParser(txt, lBound, rBound, rx = True, include = include, flags = flags)
-    except ValueError:
-        warn(f'[{LfuncName}]Input string `{txt}` has un-Balanced boundaries!')
-        nest_struct = []
+    #100. Split the input string by the boundaries
+    #Return value of below function is a list of tuples comprised of start and end positions
+    ptn_bound = re.compile(r'({}|{})'.format(lBound, rBound), flags = flags)
+    tokens = ptn_bound.split(txt)
+    ptn_lBound = re.compile(lBound, flags = flags)
+    ptn_rBound = re.compile(rBound, flags = flags)
 
-    #200. Define helper functions
-    #210. Function to join the nested structures into strings respectively with recursion
-    def h_conj_str(struct : list):
-        #[ASSUMPTION]
-        #[1] Input structure always has the form: [<lBound,> <string | nested struct>, <rBound>], where
-        #    [a] <lBound> and <rBound> exist or miss at the same time
-        #    [b] When both boundaries are missing given <include is True>, the middle part must be a <nested struct>
-        #[2] Hence there is no need to match the boundaries any more, we just need to join all strings directly.
-        #100. Initialize
-        rstOut = []
-        str_struct = ''
-
-        #500. Loop over the nested structure
-        for i,m in enumerate(struct):
-            if isinstance(m, list):
-                #100. Further process the structure of the next layer
-                #[ASSUMPTION]
-                #[1] We should never introduce <thisFunction()> to capture the frame as recursion in such a CPU-intense task
-                #[2] The major CPU expense is on the dynamic compilation of such frame
-                #[3] This function is never mutated (e.g. by decoration), hence there is no need to capture its frame dynamically
-                next_struct = h_conj_str(m)
-
-                #500. Extend the final result
-                rstOut.extend(next_struct)
-
-                #900. Extend the string for the structure of current layer
-                str_struct += next_struct[-1]
+    #500. Extract the nested structure
+    for x in tokens:
+        if not x:
+            continue
+        if ptn_lBound.match(x):
+            #100. Nest a new list inside the current list
+            #[ASSUMPTION]
+            #[1] We add the boundary as well in the nested structure
+            if include:
+                current = [x]
             else:
-                str_struct += m
+                current = []
 
-        #800. Append the string of current structure to the final result
-        rstOut.append(str_struct)
+            #[ASSUMPTION]
+            #[1] <list> object is mutable
+            #[2] When a list appended inside another object is modified, all references to it will also be updated
+            #[3] The same validates if a list is extended
+            #[4] This mechanism cannot be resembled in another language without mutability, e.g. <R> language
+            stack[-1].append(current)
+            stack.append(current)
+        elif ptn_rBound.match(x):
+            #[ASSUMPTION]
+            #[1] We add the boundary as well in the nested structure
+            if include:
+                stack[-1].append(x)
+            stack.pop()
+            if not stack:
+                raise ValueError(f'[{LfuncName}]Group opener is missing')
+        else:
+            stack[-1].append(x)
 
-        #999. Purge
-        return(rstOut)
+    #600. Raise if the numbers of left boundaries and right boundaries do not match
+    if len(stack) > 1:
+        print(stack)
+        raise ValueError(f'[{LfuncName}]Group closer is missing')
 
-    #500. Remove all <S> from the outmost layer of the nested structure
-    #[ASSUMPTION]
-    #[1] Given any substring that is not enclosed by the boundaries, we mark it as <S>
-    #[2] According to the feature of the nested structure, <S> can only exist as L[0] or L[-1] in the outmost layer
-    #[3] According to the feature of the nested structure, neither of the boundaries can exist in the outmost layer
-    #[4] <S> in the outmost layer is not included in the output result of this function as designed
-    nest_struct_cln = [ m for m in nest_struct if isinstance(m, list)]
+    #900. Purge
+    re.purge()
 
-    #900. Export
-    return([ j for i in map(h_conj_str, nest_struct_cln) for j in i ])
-#End strBalancedGroup
+    #999. Emit the updated structure
+    return stack.pop()
+#End strNestedParser
 
 '''
 #-Notes- -Begin-
 #Full Test Program[1]:
 if __name__=='__main__':
     #010. Create envionment.
+    import datetime as dt
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import strBalancedGroup
+    from omniPy.AdvOp import strNestedParser
 
     #100. Prepare strings
     teststr = '-- (bb (cc (dd))) aa (ee (ff)) ~~'
@@ -188,76 +183,76 @@ if __name__=='__main__':
     testhtml = '<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div> ggg'
 
     #200. Extraction
-    bg_parens = strBalancedGroup(
+    ext_parens = strNestedParser(
         teststr
         ,lBound = '('
         ,rBound = ')'
         ,rx = False
-        ,include = True
     )
+    # ['-- ', ['(', 'bb ', ['(', 'cc ', ['(', 'dd', ')'], ')'], ')'], ' aa ', ['(', 'ee ', ['(', 'ff', ')'], ')'], ' ~~']
 
-    bg_jinja = [
-        m.strip()
-        for m in strBalancedGroup(
-            testjinja
-            ,lBound = '{{'
-            ,rBound = '}}'
-            ,rx = False
-            ,include = False
-        )
-    ]
+    ext_jinja = strNestedParser(
+        testjinja
+        ,lBound = '{{'
+        ,rBound = '}}'
+        ,rx = False
+    )
+    # ['-- ',
+    # ['{{', ' bb ', ['{{', ' cc', ['{{', ' dd ', '}}'], ' ', '}}'], ' ', '}}'],
+    # ' aa',
+    # ['{{', ' ee ', ['{{', ' ff ', '}}'], ' ', '}}']]
 
-    bg_html = [
-        m.strip()
-        for m in strBalancedGroup(
-            testhtml
-            ,lBound = '<div.*?>'
-            ,rBound = '</div>'
-            ,rx = True
-            ,include = True
-        )
-    ]
+    ext_html = strNestedParser(
+        testhtml
+        ,lBound = r'<div.*?>'
+        ,rBound = r'</div>'
+        ,rx = True
+    )
+    # [['<div a="1">',
+    #  'bbb',
+    #  ['<div id="2">', 'ccc ', '</div>'],
+    #  ' ddd',
+    #  ['<div id="3">', 'eee', '</div>'],
+    #  'fff',
+    #  '</div>'],
+    # ' ggg']
+
+    ext_html2 = strNestedParser(
+        testhtml
+        ,lBound = r'<div.*?>'
+        ,rBound = r'</div>'
+        ,rx = True
+        ,include = False
+    )
+    # [['bbb', [' ccc'], 'ddd ', ['eee'], 'fff'], ' ggg']
 
     #300. Special cases
-    chkstr = '-- <div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div> ggg <div id="4"> hhh </div> ~~'
-    chkrst = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
-    # ['<div id="2"> ccc</div>',
-    # '<div id="3">eee</div>',
-    # '<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div>',
-    # '<div id="4"> hhh </div>']
-
-    chkrst2 = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True, include = False)
-    # [' ccc', 'eee', 'bbb cccddd eeefff', ' hhh ']
-
-    print(strBalancedGroup(''))
+    print(strNestedParser(''))
     # []
 
-    print(strBalancedGroup(r'a'))
-    # []
+    print(strNestedParser(r'a'))
+    # ['a']
 
-    print(strBalancedGroup(r'(a b)'))
-    # ['(a b)']
+    print(strNestedParser(r'(a b)'))
+    # [['(', 'a b', ')']]
 
-    print(strBalancedGroup(r'a (b)'))
-    # ['(b)']
+    print(strNestedParser(r'a (b)'))
+    # ['a ', ['(', 'b', ')']]
 
-    print(strBalancedGroup(r'(a) b'))
-    # ['(a)']
+    print(strNestedParser(r'(a) b'))
+    # [['(', 'a', ')'], ' b']
 
-    print(strBalancedGroup(r'(a ((b) c (d))) e (f (g))'))
-    # ['(b)', '(d)', '((b) c (d))', '(a ((b) c (d)))', '(g)', '(f (g))']
-
-    print(strBalancedGroup(r'(a ((b) c (d))) e (f (g))', include = False))
-    # ['b', 'd', 'b c d', 'a b c d', 'g', 'f g']
+    print(strNestedParser(r'(a ((b) c (d))) e (f (g))'))
+    # [['(', 'a ', ['(', ['(', 'b', ')'], ' c ', ['(', 'd', ')'], ')'], ')'], ' e ', ['(', 'f ', ['(', 'g', ')'], ')']]
 
     # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
     # [RAM] 64GB 2400MHz
     #900. Test timing
     str_large = testhtml * 10000
     time_bgn = dt.datetime.now()
-    bg_large = strBalancedGroup(str_large, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
+    ext_large = strNestedParser(str_large, lBound = r'<div.*?>', rBound = r'</div>')
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.079542
+    # 0:00:00.061015
 #-Notes- -End-
 '''

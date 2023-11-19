@@ -150,7 +150,7 @@ def strBalancedGroupEval(
         str_struct = ''
 
         #500. Loop over the nested structure
-        for i,m in enumerate(struct):
+        for m in struct:
             if isinstance(m, list):
                 #100. Further process the structure of the next layer
                 #[ASSUMPTION]
@@ -188,6 +188,7 @@ def strBalancedGroupEval(
 #Full Test Program[1]:
 if __name__=='__main__':
     #010. Create envionment.
+    import datetime as dt
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:

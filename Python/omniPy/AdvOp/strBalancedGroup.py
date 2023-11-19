@@ -136,7 +136,7 @@ def strBalancedGroup(
         str_struct = ''
 
         #500. Loop over the nested structure
-        for i,m in enumerate(struct):
+        for m in struct:
             if isinstance(m, list):
                 #100. Further process the structure of the next layer
                 #[ASSUMPTION]
@@ -176,6 +176,7 @@ def strBalancedGroup(
 #Full Test Program[1]:
 if __name__=='__main__':
     #010. Create envionment.
+    import datetime as dt
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
@@ -258,6 +259,6 @@ if __name__=='__main__':
     bg_large = strBalancedGroup(str_large, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.079542
+    # 0:00:00.091090
 #-Notes- -End-
 '''

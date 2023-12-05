@@ -60,6 +60,11 @@ def pandasParseIndexer(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when the type of input data is [np.integer] instead of [int]                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231205        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Specify <iloc> for pandas objects                                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -103,7 +108,10 @@ def pandasParseIndexer(
         elif np.all(list(map(lambda x: isinstance(x, (bool, np.bool_)), indexer))):
             if len(idx) != len(indexer):
                 raise ValueError(f'[{LfuncName}][{logname}]:Boolean [indexer] has different length to [idx]!' )
-            rst = [ i for i in range(len(idx)) if indexer[i] ]
+            if isinstance(indexer, (pd.Index, pd.MultiIndex, pd.Series)):
+                rst = [ i for i in range(len(idx)) if indexer.iloc[i] ]
+            else:
+                rst = [ i for i in range(len(idx)) if indexer[i] ]
         elif np.all(list(map(lambda x: isinstance(x, (int, np.integer)), indexer))):
             rst = indexer
         else:

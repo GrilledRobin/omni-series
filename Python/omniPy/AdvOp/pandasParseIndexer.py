@@ -109,7 +109,7 @@ def pandasParseIndexer(
             if len(idx) != len(indexer):
                 raise ValueError(f'[{LfuncName}][{logname}]:Boolean [indexer] has different length to [idx]!' )
             if isinstance(indexer, (pd.Index, pd.MultiIndex, pd.Series)):
-                rst = [ i for i in range(len(idx)) if indexer.iloc[i] ]
+                rst = [ i for i in range(len(idx)) if indexer.iat[i] ]
             else:
                 rst = [ i for i in range(len(idx)) if indexer[i] ]
         elif np.all(list(map(lambda x: isinstance(x, (int, np.integer)), indexer))):

@@ -43,8 +43,8 @@ def aggrByPeriod(
     }
     ,chkDatVar : Optional[str] = None
     ,chkBgn = None
-    ,byVar : Optional[Iterable] = None
-    ,copyVar : Optional[Iterable] = None
+    ,byVar : Union[str, Iterable[str]] = None
+    ,copyVar : Union[str, Iterable[str]] = None
     ,aggrVar : str = 'A_KPI_VAL'
     ,outVar : str = 'A_VAL_OUT'
     ,genPHMul : bool = True
@@ -188,6 +188,7 @@ def aggrByPeriod(
 #   |               [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                            #
 #   |               [Note 2] Only those values in the Last Existing observation/record can be copied to the output                      #
 #   |               [None            ] <Default> There is no additional column to be retained for the output                            #
+#   |               [_all_           ]           Retain all related columns from all sources                                            #
 #   |aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
 #   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
 #   |outVar     :   The single column name as the aggregated value in the output data                                                   #
@@ -294,6 +295,11 @@ def aggrByPeriod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231209        | Version | 3.70        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable defining <copyVar = '_all_'> to output all columns from all possible data sources                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -380,22 +386,28 @@ def aggrByPeriod(
         chkBgn = dateBgn
     if chkDatType in ['HDFS']:
         if not chkDat_df: raise ValueError('['+LfuncName+']'+'[chkDat_df] is not provided for [chkDatType='+chkDatType+']!')
+
     if isinstance(byVar, str):
         byVar = [byVar]
     elif isinstance(byVar, Iterable):
         byVar = list(byVar)
-        if not np.alltrue([ isinstance(v,str) for v in byVar ]):
-            raise TypeError('['+LfuncName+']'+'[byVar] should only be a list of [str]!')
     else:
         raise TypeError('['+LfuncName+']'+'[byVar] should be either [str] or [list of str] instead of [{0}]!'.format(type(byVar)))
+    if not np.alltrue([ isinstance(v,str) for v in byVar ]):
+        raise TypeError('['+LfuncName+']'+'[byVar] should only be a list of [str]!')
+
     if isinstance(copyVar, str):
         copyVar = [copyVar]
     elif isinstance(copyVar, Iterable):
         copyVar = list(copyVar)
-        if not np.alltrue([ isinstance(v,str) for v in copyVar ]):
-            raise TypeError('['+LfuncName+']'+'[copyVar] should only be a list of [str]!')
+    elif copyVar is None:
+        copyVar = []
     else:
         raise TypeError('['+LfuncName+']'+'[copyVar] should be either [str] or [list of str] instead of [{0}]!'.format(type(copyVar)))
+    if copyVar:
+        if not np.alltrue([ isinstance(v,str) for v in copyVar ]):
+            raise TypeError('['+LfuncName+']'+'[copyVar] should only be a list of [str]!')
+
     if (not aggrVar) | (not isinstance(aggrVar, str)):
         print('['+LfuncName+']'+'[aggrVar] is not provided, use the default one [A_KPI_VAL] instead.')
         aggrVar = 'A_KPI_VAL'
@@ -417,6 +429,7 @@ def aggrByPeriod(
     if kw is None: kw = {}
 
     #020. Local environment
+    keep_all_col = '_ALL_' in [ f.upper() for f in copyVar ]
     indat_col_parse = 'FilePath'
     indat_col_file = 'FileName'
     indat_col_dirseq = 'PathSeq'
@@ -461,37 +474,6 @@ def aggrByPeriod(
     #030. Define the helper function to retrieve the last record of the provided column, no matter whether it is within a group
     def _last(col):
         return( col.tail(1) )
-
-    #032. Create a list of unique column names for selection from the input data
-    select_at = []
-    if isinstance(byVar, list):
-        select_at.extend(byVar)
-    else:
-        select_at.append(byVar)
-    #[copyVar] could possibly not be provided
-    if copyVar:
-        if isinstance(copyVar, list):
-            select_at.extend(copyVar)
-        else:
-            select_at.append(copyVar)
-    #We directly append [aggrVar] as it must be the name of a single column as defined by this function
-    select_at.append(aggrVar)
-    #Dedup
-    select_at = list(Counter(select_at).keys())
-
-    #035. Define the dictionary of columns to be aggregated by certain functions respectively
-    #Only retrieve the last occurrence of [copyVar] for each group
-    #[copyVar] could possibly not be provided
-    aggrDict = {}
-    if copyVar:
-        if isinstance(copyVar, list):
-            aggrDict.update({ c : _last for c in copyVar })
-        else:
-            aggrDict.update({ copyVar : _last })
-
-    #036. Calculate the sum of [aggrVar]
-    #Ensure [aggrVar] is at the right-most position in the output data frame
-    aggrDict.update({ '.Tmp_Val' : np.nansum })
 
     #039. Debug mode
     if fDebug:
@@ -881,6 +863,12 @@ def aggrByPeriod(
             }
         }
 
+        #400. Create a list of unique column names for selection from the input data
+        if keep_all_col:
+            select_at = lambda x: x.columns
+        else:
+            select_at = list(Counter(byVar + copyVar + [aggrVar]).keys())
+
         #500. Call functions to import data from current path
         #590. Load the data and conduct the requested transformation
         imp_data = (
@@ -977,21 +965,10 @@ def aggrByPeriod(
     #The values in this data should be subtracted from those in the Actual Calculation Period
     if fLeadCalc:
         #300. Create a list of unique column names for selection from the input data
-        sel_LP = []
-        if isinstance(byVar, list):
-            sel_LP.extend(byVar)
+        if keep_all_col:
+            sel_LP = lambda x: x.columns
         else:
-            sel_LP.append(byVar)
-        #[copyVar] could possibly not be provided
-        if copyVar:
-            if isinstance(copyVar, list):
-                sel_LP.extend(copyVar)
-            else:
-                sel_LP.append(copyVar)
-        #We directly append the predefined column name
-        sel_LP.append('.CalcLead.')
-        #Dedup
-        sel_LP = list(Counter(sel_LP).keys())
+            sel_LP = list(Counter(byVar + copyVar + ['.CalcLead.']).keys())
 
         #500. Only retrieve certain columns for Leading Period
         ABP_set_LP = (
@@ -1002,7 +979,7 @@ def aggrByPeriod(
             .assign(**{
                 '.Period' : 'L'
                 ,'.date' : 'Leading'
-                ,'.N_ORDER' : -1
+                ,'.N_ORDER' : -10
                 ,'.Tmp_Val' : lambda x: x['.CalcLead.'].mul(-1)
             })
         )
@@ -1042,21 +1019,10 @@ def aggrByPeriod(
 
         #500. Call functions to import data from current path
         #510. Create a list of unique column names for selection from the input data
-        sel_CP = []
-        if isinstance(byVar, list):
-            sel_CP.extend(byVar)
+        if keep_all_col:
+            sel_CP = lambda x: x.columns
         else:
-            sel_CP.append(byVar)
-        #[copyVar] could possibly not be provided
-        if copyVar:
-            if isinstance(copyVar, list):
-                sel_CP.extend(copyVar)
-            else:
-                sel_CP.append(copyVar)
-        #We directly append [chkDatVar] as it must be the name of a single column as defined by this function
-        sel_CP.append(chkDatVar)
-        #Dedup
-        sel_CP = list(Counter(sel_CP).keys())
+            sel_CP = list(Counter(byVar + copyVar + [chkDatVar]).keys())
 
         #590. Load the data and conduct the requested transformation
         ABP_set_CP = (
@@ -1067,7 +1033,7 @@ def aggrByPeriod(
             .assign(**{
                 '.Period' : 'C'
                 ,'.date' : 'Checking'
-                ,'.N_ORDER' : 0
+                ,'.N_ORDER' : -1
                 ,'.Tmp_Val' : lambda x: x[chkDatVar].mul(multiplier_CP)
             })
         )
@@ -1075,35 +1041,32 @@ def aggrByPeriod(
         ABP_set_CP = None
 
     #690. Combine the data
-    ABP_setall = pd.concat([ d['data'] for d in files_import ] + [ABP_set_LP] + [ABP_set_CP])
+    ABP_setall = pd.concat([ABP_set_LP] + [ABP_set_CP] + [ d['data'] for d in files_import ])
     # sys._getframe(1).f_globals.update({ 'chkABP' : ABP_setall })
 
     #700. Aggregate by the provided function
     #710. Create a list of unique column names for sorting in the input data
-    sort_cols = []
-    if isinstance(byVar, list):
-        sort_cols.extend(byVar)
+    sort_cols = list(Counter(byVar + ['.N_ORDER']).keys())
+
+    #730. Create a group of unique column names for eliminating excessive ones
+    grp_cols = list(Counter(byVar + ['.Period', '.date']).keys())
+
+    #760. Identify the columns to <copy> to the result, i.e. retain their respective values at the last record
+    if keep_all_col:
+        copy_cols = [ f for f in ABP_setall.columns if f not in (sort_cols + grp_cols + ['.Tmp_Val']) ]
     else:
-        sort_cols.append(byVar)
-    #We directly append the predefined column name
-    sort_cols.append('.N_ORDER')
-    #Dedup
-    sort_cols = list(Counter(sort_cols).keys())
+        copy_cols = [ f for f in copyVar if f not in (sort_cols + grp_cols + ['.Tmp_Val']) ]
 
-    #750. Define the dictionary of columns to be aggregated by certain functions respectively
-    #751. Create an empty dict
-    out_Aggr = {}
+    #765. Prepare the method to aggregate above columns
+    aggrDict = { f : _last for f in copy_cols }
 
-    #755. Only retrieve the last occurrence of [copyVar] for each group
-    #[copyVar] could possibly not be provided
-    if copyVar:
-        if isinstance(copyVar, list):
-            out_Aggr.update({ c : _last for c in copyVar })
-        else:
-            out_Aggr.update({ copyVar : _last })
+    #768. Direct sum of the current value for the same period
+    aggrDict.update({ '.Tmp_Val' : np.nansum })
 
-    #758. Calculate the aggregation of [.Tmp_Val]
-    #Ensure [.Tmp_Val] is at the right-most position in the output data frame
+    #775. Only retrieve the last occurrence of [copyVar] for each group of <byVar>
+    out_Aggr = { f : _last for f in copy_cols }
+
+    #778. Calculate the aggregation of [.Tmp_Val]
     out_Aggr.update({ '.Tmp_Val' : partial(LFuncAggr, **kw) })
 
     #790. Aggregation
@@ -1116,10 +1079,10 @@ def aggrByPeriod(
         #400. Aggregate by [byVar] on each date in the first place
         #[1] This is to handle the case when there are multiple records for the same [byVar] on the same date
         #[2] It is tested that any function which accepts [scalar] or [pd.Series] can be applied here, such as [_last] as we defined.
-        .groupby(byVar + ['.Period', '.date'], as_index = False, dropna = False)
+        .groupby(grp_cols, as_index = False, dropna = False)
         .agg(aggrDict)
         #500. Prepare the groups for aggregation
-        .groupby(byVar, as_index = False)
+        .groupby(byVar, as_index = False, dropna = False)
         #700. Aggregation by each group
         .agg(out_Aggr)
         #900. Reset index
@@ -1280,6 +1243,7 @@ if __name__=='__main__':
         ,'in_df' : None
         ,'fImp_opt' : {
             'SAS' : {
+                # Try <GB18030> if below encoding fails
                 'encoding' : 'GB2312'
             }
         }
@@ -1289,7 +1253,7 @@ if __name__=='__main__':
         ,'cores' : 4
         ,'chkDatType' : 'RAM'
         ,'byVar' : ['nc_cifno','nc_acct_no']
-        ,'copyVar' : 'C_KPI_ID'
+        ,'copyVar' : '_all_'
         ,'aggrVar' : 'A_KPI_VAL'
         ,'genPHMul' : True
         ,'calcInd' : 'C'

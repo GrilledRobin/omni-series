@@ -129,6 +129,7 @@
 #   |               [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                            #
 #   |               [Note 2] Only those values in the Last Existing observation/record can be copied to the output                      #
 #   |               [NULL            ] <Default> There is no additional column to be retained for the output                            #
+#   |               [_all_           ]           Retain all related columns from all sources                                            #
 #   |aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
 #   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
 #   |outVar     :   The single column name as the aggregated value in the output data                                                   #
@@ -235,6 +236,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <Recall> to make the recursion more intuitive                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231209        | Version | 3.70        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable defining <copyVar = '_all_'> to output all columns from all possible data sources                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -244,7 +250,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, dplyr, doParallel, foreach, tidyr                                                                             #
+#   |   |magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -269,7 +275,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, rlang, dplyr, doParallel, foreach, tidyr
+	magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -381,8 +387,8 @@ aggrByPeriod <- function(
 	}
 	if (length(byVar)==0) stop('[',LfuncName,']','[byVar] is not provided!')
 	if (length(aggrVar)==0) {
-		message('[',LfuncName,']','[aggrVar] is not provided, use the default one [A_KPI_VAL] instead.')
 		aggrVar <- 'A_KPI_VAL'
+		message('[',LfuncName,']','[aggrVar] is not provided, use the default one [',aggrVar,'] instead.')
 	}
 	if (!is.logical(genPHMul)) {
 		message(
@@ -399,6 +405,16 @@ aggrByPeriod <- function(
 	if (length(err.cols)==0) err.cols <- 'G_err_cols'
 
 	#020. Local environment
+	byVar <- unlist(byVar)
+	copyVar <- unlist(copyVar)
+	outVar <- unlist(outVar)
+	miss.files <- unlist(miss.files)
+	err.cols <- unlist(err.cols)
+	if ('_ALL_' %in% toupper(copyVar)) {
+		keep_all_col <- T
+	} else {
+		keep_all_col <- F
+	}
 	indat_col_parse <- 'FilePath'
 	indat_col_file <- 'FileName'
 	indat_col_dirseq <- 'PathSeq'
@@ -419,11 +435,9 @@ aggrByPeriod <- function(
 		,!!err.cols := NULL
 	)
 	ABP_errors <- F
-	byVar <- unlist(byVar)
-	copyVar <- unlist(copyVar)
 	dateBgn <- asDates(dateBgn)
 	dateEnd <- asDates(dateEnd)
-	if (length(chkBgn)!=0) chkBgn <- asDates(chkBgn)
+	chkBgn <- asDates(chkBgn)
 	if (identical(funcAggr,mean)) {
 		LFuncAggr <- sum
 	} else {
@@ -862,13 +876,20 @@ aggrByPeriod <- function(
 			)
 		)
 
+		#400. Create a list of unique column names for selection from the input data
+		if (keep_all_col) {
+			select_func <- dplyr::select_all
+		} else {
+			#We do not have to [union] the column names as [dplyr::select_at] will always select a column once
+			select_func <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,aggrVar))
+		}
+
 		#500. Call functions to import data from current path
 		#We have the create a symbol for [rlang] syntax of bang-bang operator
 		aggrSym <- rlang::sym(aggrVar)
 		imp_data <- do.call( imp_func[[inDat_type]]$.func, imp_func[[inDat_type]]$.opt ) %>%
 			#100. Only select necessary columns
-			#We do not have to [union] the column names as [dplyr::select_at] will always select a column once
-			dplyr::select_at(c(byVar,copyVar,aggrVar)) %>%
+			select_func() %>%
 			#900. Create identifier of current data within the time series
 			dplyr::mutate(
 				.Period = 'A'
@@ -950,8 +971,16 @@ aggrByPeriod <- function(
 	#610. Data for the Leading Period
 	#The values in this data should be subtracted from those in the Actual Calculation Period
 	if (fLeadCalc) {
+		#300. Create a list of unique column names for selection from the input data
+		if (keep_all_col) {
+			sel_LP <- dplyr::select_all
+		} else {
+			sel_LP <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,'.CalcLead.'))
+		}
+
+		#500. Only retrieve certain columns for Leading Period
 		ABP_set_LP <- ABP_LeadPeriod[['data']] %>%
-			dplyr::select_at(c(byVar,copyVar,'.CalcLead.')) %>%
+			sel_LP() %>%
 			tidyr::replace_na(list('.CalcLead.' = 0)) %>%
 			dplyr::mutate(
 				.Period = 'L'
@@ -983,10 +1012,18 @@ aggrByPeriod <- function(
 		)
 
 		#500. Call functions to import data from current path
+		#510. Create a list of unique column names for selection from the input data
+		if (keep_all_col) {
+			sel_CP <- dplyr::select_all
+		} else {
+			sel_CP <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,chkDatVar))
+		}
+
+		#590. Load the data and conduct the requested transformation
 		#We have the create a symbol for [rlang] syntax of bang-bang operator
 		chkDatSym <- rlang::sym(chkDatVar)
 		ABP_set_CP <- do.call( imp_func[[chkDatType]]$.func, imp_func[[chkDatType]]$.opt ) %>%
-			dplyr::select_at(c(byVar,copyVar,chkDatVar)) %>%
+			sel_CP() %>%
 			dplyr::mutate(
 				.Period = 'C'
 				,.date = 'Checking'
@@ -1002,18 +1039,32 @@ aggrByPeriod <- function(
 	# assign('chkABP', ABP_setall, pos = globalenv())
 
 	#700. Aggregate by the provided function
+	#710. Create a list of unique column names for sorting in the input data
+	sort_cols <- c(byVar,'.N_ORDER')
+
+	#730. Create a group of unique column names for eliminating excessive ones
+	grp_cols <- c(byVar, '.Period', '.date')
+
+	#760. Identify the columns to <copy> to the result, i.e. retain their respective values at the last record
+	if (keep_all_col) {
+		copy_cols <- colnames(ABP_setall)[!colnames(ABP_setall) %in% c(sort_cols,grp_cols,'.Tmp_Val')]
+	} else {
+		copy_cols <- copyVar[!copyVar %in% c(sort_cols,grp_cols,'.Tmp_Val')]
+	}
+
+	#790. Aggregation
 	outSym <- rlang::sym(outVar)
 	outDat <- ABP_setall %>%
 		#100. Sort the data by [byVar] plus [.N_ORDER]
-		dplyr::arrange_at(c(byVar,'.N_ORDER')) %>%
+		dplyr::arrange_at(sort_cols) %>%
 		#400. Aggregate by [byVar] on each date in the first place
-		dplyr::group_by_at(c(byVar, '.Period', '.date')) %>%
+		dplyr::group_by_at(grp_cols) %>%
 		#410. Only retrieve the last occurrence of [copyVar] for each group
-		dplyr::mutate_at(copyVar, dplyr::last) %>%
+		dplyr::mutate_at(copy_cols, dplyr::last) %>%
 		#450. Calculate the sum of [aggrVar]
 		#451. Add the mutated columns into the grouping ones
 		#Quote: https://stackoverflow.com/questions/43594841/extra-statistics-with-summarize-at-in-dplyr
-		dplyr::group_by_at(copyVar, .add = T) %>%
+		dplyr::group_by_at(copy_cols, .add = T) %>%
 		#459. Summarise the [aggrVar]
 		dplyr::summarise_at('.Tmp_Val', sum) %>%
 		#480. Remove the groups
@@ -1021,11 +1072,11 @@ aggrByPeriod <- function(
 		#600. Re-group the data for final aggregation
 		dplyr::group_by_at(byVar) %>%
 		#700. Only retrieve the last occurrence of [copyVar] for each group
-		dplyr::mutate_at(copyVar, dplyr::last) %>%
+		dplyr::mutate_at(copy_cols, dplyr::last) %>%
 		#800. Calculate the sum of [aggrVar]
 		#810. Add the mutated columns into the grouping ones
 		#Quote: https://stackoverflow.com/questions/43594841/extra-statistics-with-summarize-at-in-dplyr
-		dplyr::group_by_at(copyVar, .add = T) %>%
+		dplyr::group_by_at(copy_cols, .add = T) %>%
 		#890. Summarise the [aggrVar]
 		#We have to set argument [.groups] as [keep] to avoid warning message
 		dplyr::summarise(!!outSym := LFuncAggr(.Tmp_Val, ...), .groups = 'keep') %>%
@@ -1185,6 +1236,7 @@ if (FALSE){
 		,in_df = NULL
 		,fImp.opt = list(
 			SAS = list(
+				# Try <GB18030> if below encoding fails
 				encoding = 'GB2312'
 			)
 		)
@@ -1195,7 +1247,7 @@ if (FALSE){
 		,cores = 4
 		,chkDatType = 'RAM'
 		,byVar = c('nc_cifno','nc_acct_no')
-		,copyVar = 'C_KPI_ID'
+		,copyVar = '_all_'
 		,aggrVar = 'A_KPI_VAL'
 		,genPHMul = TRUE
 		,calcInd = 'C'

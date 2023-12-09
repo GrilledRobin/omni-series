@@ -11,12 +11,15 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile     :   The name (as character string) of the file or data frame to read into RAM                                           #
-#   |...        :   Various named parameters for the encapsulated function call if applicable                                           #
+#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
+#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
+#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
+#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
+#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]       :   The data frame to be read into RAM from the source                                                                  #
+#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -28,6 +31,11 @@
 #   | Date |    20210829        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the new function [omniR$AdvOp$get_values] to standardize the value retrieval of variables                     #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231209        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <funcConv> to enable mutation of the loaded data and thus save RAM consumption                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -46,4 +54,10 @@
 #   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-std_read_RAM <- function(infile, ...) return(get_values(infile, mode = 'list'))
+std_read_RAM <- function(
+	infile
+	,funcConv = function(x) x
+	,...
+){
+	return(funcConv(get_values(infile, mode = 'list')))
+}

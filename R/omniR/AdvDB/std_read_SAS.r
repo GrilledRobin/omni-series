@@ -11,18 +11,26 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile     :   The name (as character string) of the file or data frame to read into RAM                                           #
-#   |...        :   Various named parameters for the encapsulated function call if applicable                                           #
+#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
+#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
+#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
+#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
+#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]       :   The data frame to be read into RAM from the source                                                                  #
+#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20210503        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231209        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <funcConv> to enable mutation of the loaded data and thus save RAM consumption                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -51,4 +59,10 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-std_read_SAS <- function(infile, ...) haven::read_sas( infile, ... )
+std_read_SAS <- function(
+	infile
+	,funcConv = function(x) x
+	,...
+){
+	funcConv(haven::read_sas( infile, ... ))
+}

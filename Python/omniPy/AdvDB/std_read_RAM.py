@@ -3,7 +3,11 @@
 
 from omniPy.AdvOp import get_values
 
-def std_read_RAM(infile, **kw) -> 'Helper function to standardize the import of source data in RAM of current environment':
+def std_read_RAM(
+    infile : str
+    ,funcConv : callable = lambda x: x
+    ,**kw
+) -> 'Helper function to standardize the import of source data in RAM of current environment':
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -19,18 +23,26 @@ def std_read_RAM(infile, **kw) -> 'Helper function to standardize the import of 
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile     :   The name (as character string) of the file or data frame to read into RAM                                           #
-#   |kw         :   Various named parameters for the encapsulated function call if applicable                                           #
+#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
+#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
+#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
+#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
+#   |kw          :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]       :   The data frame to be read into RAM from the source                                                                  #
+#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20210503        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231209        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <funcConv> to enable mutation of the loaded data and thus save RAM consumption                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -50,5 +62,5 @@ def std_read_RAM(infile, **kw) -> 'Helper function to standardize the import of 
     '''
 
     #100. Import data
-    return( get_values(infile, inplace = False) )
+    return( funcConv(get_values(infile, inplace = False)) )
 #End std_read_RAM

@@ -901,6 +901,7 @@ proc FCmp
 	outlib=work.fso.dates
 ;
 
+	%usFUN_getOBS4DATA
 	%usFUN_isWorkDay
 	%usFUN_prevWorkday
 	%usFUN_isWDorPredate

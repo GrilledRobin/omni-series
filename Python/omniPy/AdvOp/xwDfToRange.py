@@ -207,6 +207,11 @@ def xwDfToRange(
 #   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |      |[2] Replace <pd.Series[i]> with <pd.Series.iloc[i]> as the former will be deprecated since pandas==2.1.0                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20231212        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now set the format of string-like index levels as text as well                                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -523,6 +528,7 @@ def xwDfToRange(
         xlstripe_idx = []
 
     #500. Find ranges with numbers stored as [text] and set their NumberFormat as [text] with intention
+    #510. Within the data part
     if len(xlrng['data']) > 0:
         #100. Identify all columns with numbers stored as [text]
         #[ASSUMPTION]
@@ -548,6 +554,27 @@ def xwDfToRange(
                 ,val = '@'
             )
 
+    #530. Within the index part
+    if len(xlrng['index']) > 0:
+        #100. Identify all index levels with numbers stored as [text]
+        df_idx = df.index.to_frame()
+        idxs_obj = df_idx.columns[df_idx.dtypes.apply(lambda x: pd.api.types.is_object_dtype(x) or pd.api.types.is_string_dtype(x))]
+        idxs_numlike = df_idx[idxs_obj].map(testFloat).apply(pd.Series.any)
+        idxs_allnull = df_idx[idxs_obj].map(lambda x: pd.isnull(x) and (x is not pd.NaT)).apply(pd.Series.all)
+        idxs_totext = idxs_obj[idxs_numlike | idxs_allnull]
+        idxnum_totext = pandasParseIndexer(df_idx.columns, idxs_totext, idxall = idxall, logname = 'txtIdx')
+
+        #500. Set the NumberFormat for each index level identified above
+        for i in idxnum_totext:
+            txt_rng = (
+                slice(data_top, table_bottom + 1, None)
+                ,slice(table_left + i, table_left + i + 1, None)
+            )
+            rsetattr(
+                rng.__getitem__(txt_rng)
+                ,attr = 'api.NumberFormat'
+                ,val = '@'
+            )
     #600. Setup styles for the predefined ranges
     #610. Retrieve the theme as requested
     table_theme = theme_xwtable(theme)

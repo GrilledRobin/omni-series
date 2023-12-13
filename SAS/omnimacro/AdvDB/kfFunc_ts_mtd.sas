@@ -83,6 +83,11 @@
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
 |	| Log  |Version 1.																													|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20231213		| Version |	1.10		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |[1] Distinguish the interim datasets to avoid unexpected results															|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -92,7 +97,6 @@
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |	|Below macros are from "&cdwmac.\AdvOp"																								|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|	|genvarlist																														|
 |	|	|getOBS4DATA																													|
 |	|	|ErrMcr																															|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -154,7 +158,7 @@
 %*013.	Define the local environment.;
 %local
 	OptNotes	OptSource	OptSource2	OptMLogic	OptSymGen	OptMPrint	OptInOper
-	fnm_DtoMTD	rstIter		byInt		dtBgn		chknm		intpfx		tmppfx
+	fnm_DtoMTD	rstIter		byInt		dtBgn		chknm		intpfx
 	Oj			Ij
 	d_ChkEnd	dnChkEnd	f_chkEnd
 	prx_sfx		f_dtable
@@ -193,7 +197,7 @@ options nonotes nosource nosource2 nomlogic nosymbolgen nomprint minoperator;
 
 %*040.	Combine the calendar data of the whole period starting from the previous year of <dtBgn> to <inDate>.;
 %*041.	Combine the data.;
-data &procLIB..kf_Clndr;
+data &procLIB.._kftsmtd_Clndr;
 	set
 	%do Yi=%eval( %substr( &dtBgn. , 1 , 4 ) - 1 ) %to %substr( &inDate. , 1 , 4 );
 		%if	%sysfunc(exist( &inClndrPfx.&Yi. ))	%then %do;
@@ -205,7 +209,7 @@ run;
 
 %*045.	Ensure there is no duplicated date.;
 proc sort
-	data=&procLIB..kf_Clndr
+	data=&procLIB.._kftsmtd_Clndr
 	nodupkey
 ;
 	by	D_DATE;
@@ -213,7 +217,7 @@ run;
 
 %*050.	Determine [d_ChkEnd] by the implication of [genPHbyWD].;
 %if	&genPHbyWD.	=	1	%then %do;
-	%let	d_ChkEnd	=	%PrevWorkDateOf( inDATE = %sysfunc(inputn(&inDate., yymmdd10.)) , inCalendar = &procLIB..kf_Clndr );
+	%let	d_ChkEnd	=	%PrevWorkDateOf( inDATE = %sysfunc(inputn(&inDate., yymmdd10.)) , inCalendar = &procLIB.._kftsmtd_Clndr );
 %end;
 %else %do;
 	%let	d_ChkEnd	=	%eval( %sysfunc(inputn(&inDate., yymmdd10.)) - 1 );
@@ -241,7 +245,7 @@ run;
 %*100.	Prepare mapper.;
 %*Quote: https://support.sas.com/resources/papers/proceedings/proceedings/forum2007/068-2007.pdf ;
 %*110.	Define the formats.;
-data &procLIB.._trns_pre;
+data &procLIB.._kftsmtd_trns_pre;
 	%*100.	Create necessary fields for <FORMAT Procedure>;
 	length
 		FMTNAME	$32
@@ -268,8 +272,8 @@ data &procLIB.._trns_pre;
 run;
 %*Quote: https://support.sas.com/documentation/cdl/en/proc/61895/HTML/default/viewer.htm#a002473471.htm ;
 proc format
-	cntlin=&procLIB.._trns_pre
-	cntlout=&procLIB.._trns_fmtout
+	cntlin=&procLIB.._kftsmtd_trns_pre
+	cntlout=&procLIB.._kftsmtd_trns_fmtout
 ;
 	select	$&fnm_DtoMTD.;
 run;
@@ -285,10 +289,10 @@ run;
 
 %*150.	Reverse the mapping;
 %*We need to map the KPI ID in the results back to their respective input ones during verification of Checking Data.;
-data &procLIB.._trns_fmtout_r;
+data &procLIB.._kftsmtd_trns_fmtout_r;
 	%*100.	Rename the input columns;
 	set
-		&procLIB.._trns_fmtout(
+		&procLIB.._kftsmtd_trns_fmtout(
 			rename=(
 				START	=	__START
 				END		=	__END
@@ -320,7 +324,7 @@ data &procLIB.._trns_fmtout_r;
 	%*900.	Purge;
 	drop	__:;
 run;
-proc format cntlin=&procLIB.._trns_fmtout_r;
+proc format cntlin=&procLIB.._kftsmtd_trns_fmtout_r;
 run;
 
 %*159.	Print the format.;
@@ -342,7 +346,7 @@ run;
 %*     while multiple KPIs are allowed to store in the same dataset.;
 %*310.	Only select involved KPIs.;
 proc sql;
-	create table &procLIB.._cfg_all as (
+	create table &procLIB.._kftsmtd_cfg_all as (
 		select
 			i.D_BGN as bgn_in
 			,i.C_KPI_ID as kpi_in
@@ -352,7 +356,7 @@ proc sql;
 			,o.C_KPI_ID as kpi_out
 			,upcase(o.C_KPI_DAT_PATH) as lib_out
 			,upcase(prxchange(%sysfunc(quote(%superq(prx_sfx), %str(%'))), -1, o.C_KPI_DAT_NAME)) as dat_out
-		from &procLIB.._trns_fmtout(
+		from &procLIB.._kftsmtd_trns_fmtout(
 			where=(
 					upcase(FMTNAME)	=	%upcase(%sysfunc(quote(&fnm_DtoMTD., %str(%'))))
 				and	HLO	^=	'O'
@@ -376,15 +380,15 @@ proc sql;
 quit;
 
 %*318.	Quit if there is no KPI involved due to configuration.;
-%if	%getOBS4DATA(inDAT = &procLIB.._cfg_all, gMode = F)	=	0	%then %do;
+%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_cfg_all, gMode = F)	=	0	%then %do;
 	%put	%str(N)OTE: [&L_mcrLABEL.]No KPI is involved, skip current process.;
 	%goto	EndOfProc;
 %end;
 
 %*330.	Verify the begin date of both sides on the mapper.;
-data &procLIB.._vfy_bgn;
+data &procLIB.._kftsmtd_vfy_bgn;
 	set
-		&procLIB.._cfg_all(
+		&procLIB.._kftsmtd_cfg_all(
 			where=(
 				bgn_in	^=	bgn_out
 			)
@@ -398,7 +402,7 @@ data &procLIB.._vfy_bgn;
 	);
 	put	txt;
 run;
-%if	%getOBS4DATA(inDAT = &procLIB.._vfy_bgn, gMode = F)	^=	0	%then %do;
+%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn, gMode = F)	^=	0	%then %do;
 	%ErrMcr
 %end;
 
@@ -406,7 +410,7 @@ run;
 %if	&fDebug.	=	1	%then %do;
 	%put	%str(I)NFO: [&L_mcrLABEL.]Final KPI mapping is listed below:;
 	data _NULL_;
-		set &procLIB.._cfg_all;
+		set &procLIB.._kftsmtd_cfg_all;
 		length	txt	$32767;
 		txt	=	cats('I','NFO: [',kpi_in,'] -> [',kpi_out,']');
 		put	txt;
@@ -415,8 +419,8 @@ run;
 
 %*390.	Prepare the loops.;
 proc sort
-	data=&procLIB.._cfg_all
-	out=&procLIB.._cfg_all_dedup
+	data=&procLIB.._kftsmtd_cfg_all
+	out=&procLIB.._kftsmtd_cfg_all_dedup
 	nodupkey
 ;
 	by
@@ -425,7 +429,7 @@ proc sort
 	;
 run;
 data _NULL_;
-	set	&procLIB.._cfg_all_dedup end=EOF;
+	set	&procLIB.._kftsmtd_cfg_all_dedup end=EOF;
 	call symputx(cats('eAggLIBo', _N_), lib_out, 'F');
 	call symputx(cats('eAggDATo', _N_), dat_out, 'F');
 	if	EOF	then do;
@@ -448,9 +452,9 @@ run;
 	%*100.	Determine the loop for all input datasets.;
 	%*Below macro-to-call only handles time series of one dataset name prefix per call;
 	%*110.	Subset the config table for current output dataset.;
-	data &procLIB.._cfg_thisOj;
+	data &procLIB.._kftsmtd_cfg_thisOj;
 		set
-			&procLIB.._cfg_all(
+			&procLIB.._kftsmtd_cfg_all(
 				where=(
 						lib_out	=	%sysfunc(quote(%superq(eAggLIBo&Oj.), %str(%')))
 					and	dat_out	=	%sysfunc(quote(%superq(eAggDATo&Oj.), %str(%')))
@@ -461,8 +465,8 @@ run;
 
 	%*190.	Prepare the loop.;
 	proc sort
-		data=&procLIB.._cfg_thisOj
-		out=&procLIB.._cfg_thisOj_in
+		data=&procLIB.._kftsmtd_cfg_thisOj
+		out=&procLIB.._kftsmtd_cfg_thisOj_in
 		nodupkey
 	;
 		by
@@ -471,7 +475,7 @@ run;
 		;
 	run;
 	data _NULL_;
-		set	&procLIB.._cfg_thisOj_in end=EOF;
+		set	&procLIB.._kftsmtd_cfg_thisOj_in end=EOF;
 		call symputx(cats('eAggLIBi', _N_), lib_in, 'F');
 		call symputx(cats('eAggDATi', _N_), dat_in, 'F');
 		if	EOF	then do;
@@ -483,7 +487,7 @@ run;
 	libname	_agg_o	%sysfunc(quote(%superq(eAggLIBo&Oj.), %str(%')));
 	%let	intpfx	=	_agg_o.&&eAggDATo&Oj..;
 
-	%*400.	Directly copy the data under certain conditions.;
+	%*400.	Create empty Checking Data as of <chkEnd> for standardized process at later steps.;
 	%*[ASSUMPTION] All below conditions MUST BE fulfilled at the same time;
 	%*[1] No need to verify its existence, as the data is required anyway.;
 	%*[2] <inDate> is the same as <D_BGN> for both KPIs involved in the mapper at current iteration.;
@@ -495,18 +499,18 @@ run;
 	%*[ASSUMPTION];
 	%*[1] If there are multiple KPIs launched on the same date that fulfill above conditions, we process them together.;
 	%*[2] Given above condition [4] is fulfilled, it is safe to replicate the <Daily KPI> to resemble <MTD KPI>.;
-	data &procLIB.._vfy_bgn_in;
+	data &procLIB.._kftsmtd_vfy_bgn_in;
 		set
-			&procLIB.._cfg_thisOj(
+			&procLIB.._kftsmtd_cfg_thisOj(
 				where=(
 					bgn_in	^=	%sysfunc(inputn(&inDate., yymmdd10.))
 				)
 			)
 		;
 	run;
-	%if	%getOBS4DATA(inDAT = &procLIB.._vfy_bgn_in, gMode = F)	^=	0	%then %do;
+	%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn_in, gMode = F)	^=	0	%then %do;
 		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Time Series is designed to exist, no need to replicate Daily KPI for MTD KPI.;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Time Series is designed to exist, no need to replicate Daily KPI for MTD Calculation.;
 		%end;
 
 		%goto	EndRepl;
@@ -514,10 +518,10 @@ run;
 
 	%*430.	Obtain the config for the KPI to be replicated.;
 	proc sql;
-		create table &procLIB.._repl_cfg as (
+		create table &procLIB.._kftsmtd_repl_cfg as (
 			select a.*
 			from &inKPICfg. as a
-			inner join &procLIB.._cfg_thisOj as b
+			inner join &procLIB.._kftsmtd_cfg_thisOj as b
 				on	a.C_KPI_ID	=	b.kpi_in
 		);
 	quit;
@@ -526,7 +530,7 @@ run;
 	%if	&fDebug.	=	1	%then %do;
 		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Below is the list of Daily KPIs to be directly translated on <&inDate.>.;
 		data _NULL_;
-			set &procLIB.._repl_cfg;
+			set &procLIB.._kftsmtd_repl_cfg;
 			length	txt	$32767;
 			txt	=	cats('I','NFO: [',C_KPI_ID,']');
 			put	txt;
@@ -545,15 +549,15 @@ run;
 		,MergeProc	=	SET
 		,KeyOfMrg	=	&byVar.
 		,SetAsBase	=	K
-		,inKPICfg	=	&procLIB.._repl_cfg
+		,inKPICfg	=	&procLIB.._kftsmtd_repl_cfg
 		,dnDateList	=	&inDate.
-		,outDAT		=	&procLIB.._chkdat
+		,outDAT		=	&procLIB.._kftsmtd_chkdat
 		,VarRecDate	=	D_RecDate
 		,procLIB	=	&procLIB.
 		,fDebug		=	&fDebug.
 	)
-	data &procLIB.._chkdat;
-		set &procLIB.._chkdat(obs=0);
+	data &procLIB.._kftsmtd_chkdat;
+		set &procLIB.._kftsmtd_chkdat(obs=0);
 	run;
 	%let	f_chkEnd	=	1;
 	%goto	IterInput;
@@ -571,7 +575,7 @@ run;
 	%*     hence it is safe (and useless) not to filter the required KPIs from it.;
 	%if	%sysfunc(exist(&intpfx.&dnChkEnd.))	%then %do;
 		%let	f_chkEnd	=	1;
-		data &procLIB.._chkdat;
+		data &procLIB.._kftsmtd_chkdat;
 			set &intpfx.&dnChkEnd.;
 			C_KPI_ID	=	put(C_KPI_ID, $&fnm_DtoMTD._r.);
 		run;
@@ -584,13 +588,13 @@ run;
 		libname	_agg_i	%sysfunc(quote(%superq(eAggLIBi&Ij.), %str(%')));
 
 		%*300.	Only check the involved KPI during aggregation, to save system effort.;
-		%let	chknm	=	&procLIB.._chk_kpi_pd;
+		%let	chknm	=	&procLIB.._kftsmtd_chk_kpi_pd;
 		%if	&f_chkEnd.	=	1	%then %do;
 			proc sql;
 				create table &chknm.&dnChkEnd. as (
 					select a.*
-					from &procLIB.._chkdat as a
-					inner join &procLIB.._cfg_thisOj(
+					from &procLIB.._kftsmtd_chkdat as a
+					inner join &procLIB.._kftsmtd_cfg_thisOj(
 						where=(
 								lib_in	=	%sysfunc(quote(%superq(eAggLIBi&Ij.), %str(%')))
 							and	dat_in	=	%sysfunc(quote(%superq(eAggDATi&Ij.), %str(%')))
@@ -619,19 +623,19 @@ run;
 			,ChkDatPfx	=	&chknm.
 			,ChkDatVar	=	&aggrVar.
 			,dnChkBgn	=	&dtBgn.
-			,ByVar		=	&byVar.
+			,ByVar		=	&byInt.
 			,CopyVar	=	&copyVar.
 			,genPHbyWD	=	&genPHbyWD.
 			,FuncAggr	=	&funcAggr.
 			,outVar		=	_A_MTD_AGG
-			,outDAT		=	&procLIB..__agg&Ij.
+			,outDAT		=	&procLIB.._kftsmtd__agg&Ij.
 			,procLIB	=	&procLIB.
 			,fDebug		=	&fDebug.
 		)
 
 		%*800.	Search for the specific columns.;
 		%getCOLbyStrPattern(
-			inDAT		=	&procLIB..__agg&Ij.
+			inDAT		=	&procLIB.._kftsmtd__agg&Ij.
 			,inRegExp	=	%nrstr(^D_TABLE\s*$)
 			,exclRegExp	=
 			,outCNT		=	kdtable
@@ -652,7 +656,7 @@ run;
 		%*010.	Set all results.;
 		set
 		%do Ij=1 %to &kAggDATi.;
-			&procLIB..__agg&Ij.
+			&procLIB.._kftsmtd__agg&Ij.
 		%end;
 		;
 

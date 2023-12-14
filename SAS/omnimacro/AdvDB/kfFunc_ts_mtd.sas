@@ -26,6 +26,8 @@
 |	|[3] For meta information of <inKPICfg> please check in the Example as below														|
 |	|[4] KPIs listed in the mapper (on both sides) MUST have been registered in <inKPICfg>, with their <D_BGN> set as the same for each	|
 |	|     pair, indicating that the MTD calculation commences on the same date as when Daily KPI takes effect							|
+|	|[5] Since <AggrByPeriod> does not verify <D_BGN>, please ensure NO DATA EXISTS for the registered KPIs before their respective		|
+|	|     <D_BGN>; otherwise those existing datasets will be inadvertently involved during aggregation									|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|[FUNCTION]																															|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -99,6 +101,7 @@
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|	|getOBS4DATA																													|
 |	|	|ErrMcr																															|
+|	|	|getCOLbyStrPattern																												|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|Below macros are from "&cdwmac.\AdvDB"																								|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -430,23 +433,23 @@ proc sort
 run;
 data _NULL_;
 	set	&procLIB.._kftsmtd_cfg_all_dedup end=EOF;
-	call symputx(cats('eAggLIBo', _N_), lib_out, 'F');
-	call symputx(cats('eAggDATo', _N_), dat_out, 'F');
+	call symputx(cats('eAMTDLIBo', _N_), lib_out, 'F');
+	call symputx(cats('eAMTDDATo', _N_), dat_out, 'F');
 	if	EOF	then do;
-		call symputx('kAggDATo', _N_, 'F');
+		call symputx('kAMTDDATo', _N_, 'F');
 	end;
 run;
 
 %*500.	Loop the calculation for the same output dataset per iteration.;
-%do Oj=1 %to &kAggDATo.;
+%do Oj=1 %to &kAMTDDATo.;
 	%*010.	Local parameters.;
-	%let	rstIter		=	&&eAggDATo&Oj..&inDate.;
+	%let	rstIter		=	&&eAMTDDATo&Oj..&inDate.;
 	%let	f_chkEnd	=	0;
 	%let	f_dtable	=	0;
 
 	%*019.	Debugger.;
 	%if	&fDebug.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Create data <%superq(rstIter)> in path: <%superq(eAggLIBo&Oj.)>;
+		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Create data <%superq(rstIter)> in path: <%superq(eAMTDLIBo&Oj.)>;
 	%end;
 
 	%*100.	Determine the loop for all input datasets.;
@@ -456,8 +459,8 @@ run;
 		set
 			&procLIB.._kftsmtd_cfg_all(
 				where=(
-						lib_out	=	%sysfunc(quote(%superq(eAggLIBo&Oj.), %str(%')))
-					and	dat_out	=	%sysfunc(quote(%superq(eAggDATo&Oj.), %str(%')))
+						lib_out	=	%sysfunc(quote(%superq(eAMTDLIBo&Oj.), %str(%')))
+					and	dat_out	=	%sysfunc(quote(%superq(eAMTDDATo&Oj.), %str(%')))
 				)
 			)
 		;
@@ -476,16 +479,16 @@ run;
 	run;
 	data _NULL_;
 		set	&procLIB.._kftsmtd_cfg_thisOj_in end=EOF;
-		call symputx(cats('eAggLIBi', _N_), lib_in, 'F');
-		call symputx(cats('eAggDATi', _N_), dat_in, 'F');
+		call symputx(cats('eAMTDLIBi', _N_), lib_in, 'F');
+		call symputx(cats('eAMTDDATi', _N_), dat_in, 'F');
 		if	EOF	then do;
-			call symputx('kAggDATi', _N_, 'F');
+			call symputx('kAMTDDATi', _N_, 'F');
 		end;
 	run;
 
 	%*300.	Assign temporary library as output destination.;
-	libname	_agg_o	%sysfunc(quote(%superq(eAggLIBo&Oj.), %str(%')));
-	%let	intpfx	=	_agg_o.&&eAggDATo&Oj..;
+	libname	kfmtd_o	%sysfunc(quote(%superq(eAMTDLIBo&Oj.), %str(%')));
+	%let	intpfx	=	kfmtd_o.&&eAMTDDATo&Oj..;
 
 	%*400.	Create empty Checking Data as of <chkEnd> for standardized process at later steps.;
 	%*[ASSUMPTION] All below conditions MUST BE fulfilled at the same time;
@@ -558,6 +561,7 @@ run;
 	)
 	data &procLIB.._kftsmtd_chkdat;
 		set &procLIB.._kftsmtd_chkdat(obs=0);
+		drop	D_RecDate;
 	run;
 	%let	f_chkEnd	=	1;
 	%goto	IterInput;
@@ -583,9 +587,9 @@ run;
 
 	%IterInput:
 	%*700.	Aggregation for time series per input dataset name.;
-	%do Ij=1 %to &kAggDATi.;
+	%do Ij=1 %to &kAMTDDATi.;
 		%*100.	Assign temporary library for this step.;
-		libname	_agg_i	%sysfunc(quote(%superq(eAggLIBi&Ij.), %str(%')));
+		libname	kfmtd_i	%sysfunc(quote(%superq(eAMTDLIBi&Ij.), %str(%')));
 
 		%*300.	Only check the involved KPI during aggregation, to save system effort.;
 		%let	chknm	=	&procLIB.._kftsmtd_chk_kpi_pd;
@@ -596,8 +600,8 @@ run;
 					from &procLIB.._kftsmtd_chkdat as a
 					inner join &procLIB.._kftsmtd_cfg_thisOj(
 						where=(
-								lib_in	=	%sysfunc(quote(%superq(eAggLIBi&Ij.), %str(%')))
-							and	dat_in	=	%sysfunc(quote(%superq(eAggDATi&Ij.), %str(%')))
+								lib_in	=	%sysfunc(quote(%superq(eAMTDLIBi&Ij.), %str(%')))
+							and	dat_in	=	%sysfunc(quote(%superq(eAMTDDATi&Ij.), %str(%')))
 						)
 					) as b
 						on	a.C_KPI_ID	=	b.kpi_in
@@ -616,7 +620,7 @@ run;
 		%*700.	Standardize the aggregation.;
 		%AggrByPeriod(
 			inClndrPfx	=	&inClndrPfx.
-			,inDatPfx	=	_agg_i.&&eAggDATi&Ij..
+			,inDatPfx	=	kfmtd_i.&&eAMTDDATi&Ij..
 			,AggrVar	=	&aggrVar.
 			,dnDateBgn	=	&dtBgn.
 			,dnDateEnd	=	&inDate.
@@ -647,7 +651,7 @@ run;
 
 		%*900.	Purge.;
 		%*910.	De-assign the temporary library.;
-		libname	_agg_i	clear;
+		libname	kfmtd_i	clear;
 	%*End of inner loop;
 	%end;
 
@@ -655,7 +659,7 @@ run;
 	data &intpfx.&inDate.(compress=yes);
 		%*010.	Set all results.;
 		set
-		%do Ij=1 %to &kAggDATi.;
+		%do Ij=1 %to &kAMTDDATi.;
 			&procLIB.._kftsmtd__agg&Ij.
 		%end;
 		;
@@ -680,7 +684,7 @@ run;
 	%PurgeOj:
 	%*900.	Purge.;
 	%*910.	De-assign the temporary library.;
-	libname	_agg_o	clear;
+	libname	kfmtd_o	clear;
 
 	%*999.	Debugger.;
 	%if	&fDebug.	=	1	%then %do;

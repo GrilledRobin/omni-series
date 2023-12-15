@@ -90,6 +90,11 @@
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
 |	| Log  |[1] Distinguish the interim datasets to avoid unexpected results															|
 |	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20231215		| Version |	1.20		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |[1] Fix a bug by removing <%goto> statements within <%do> loops																|
+|	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -490,18 +495,15 @@ run;
 	libname	kfmtd_o	%sysfunc(quote(%superq(eAMTDLIBo&Oj.), %str(%')));
 	%let	intpfx	=	kfmtd_o.&&eAMTDDATo&Oj..;
 
-	%*400.	Create empty Checking Data as of <chkEnd> for standardized process at later steps.;
+	%*400.	Determine the KPIs to be involved in this patch.;
 	%*[ASSUMPTION] All below conditions MUST BE fulfilled at the same time;
 	%*[1] No need to verify its existence, as the data is required anyway.;
 	%*[2] <inDate> is the same as <D_BGN> for both KPIs involved in the mapper at current iteration.;
 	%*[3] The output dataset ONLY has the required KPIs under conditions [2], i.e. no other KPIs are involved.;
 	%*[4] All involved <intpfx> MUST HAVE BEEN created by this (and only by this) function in the previous periods,;
 	%*     if any among the KPIs has <D_BGN> earlier than <inDate>.;
-
-	%*410.	Determine the KPIs to be involved in this patch.;
-	%*[ASSUMPTION];
-	%*[1] If there are multiple KPIs launched on the same date that fulfill above conditions, we process them together.;
-	%*[2] Given above condition [4] is fulfilled, it is safe to replicate the <Daily KPI> to resemble <MTD KPI>.;
+	%*[5] If there are multiple KPIs launched on the same date that fulfill above conditions, we process them together.;
+	%*[6] Given condition [4] is fulfilled, it is safe to replicate the <Daily KPI> to resemble <MTD KPI>.;
 	data &procLIB.._kftsmtd_vfy_bgn_in;
 		set
 			&procLIB.._kftsmtd_cfg_thisOj(
@@ -511,81 +513,84 @@ run;
 			)
 		;
 	run;
-	%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn_in, gMode = F)	^=	0	%then %do;
+
+	%*400.	Create empty Checking Data as of <chkEnd> for standardized process at later steps.;
+	%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn_in, gMode = F)	=	0	%then %do;
 		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Time Series is designed to exist, no need to replicate Daily KPI for MTD Calculation.;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Create empty MTD KPIs as Checking Data out of daily ones as their <D_BGN> is the same as <%qsysfunc(compbl(&inDate.))>.;
 		%end;
 
-		%goto	EndRepl;
-	%end;
+		%*300.	Obtain the config for the KPI to be replicated.;
+		proc sql;
+			create table &procLIB.._kftsmtd_repl_cfg as (
+				select a.*
+				from &inKPICfg. as a
+				inner join &procLIB.._kftsmtd_cfg_thisOj as b
+					on	a.C_KPI_ID	=	b.kpi_in
+			);
+		quit;
 
-	%*430.	Obtain the config for the KPI to be replicated.;
-	proc sql;
-		create table &procLIB.._kftsmtd_repl_cfg as (
-			select a.*
-			from &inKPICfg. as a
-			inner join &procLIB.._kftsmtd_cfg_thisOj as b
-				on	a.C_KPI_ID	=	b.kpi_in
-		);
-	quit;
+		%*399.	Debugger.;
+		%if	&fDebug.	=	1	%then %do;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Below is the list of Daily KPIs to be directly translated on <&inDate.>.;
+			data _NULL_;
+				set &procLIB.._kftsmtd_repl_cfg;
+				length	txt	$32767;
+				txt	=	cats('I','NFO: [',C_KPI_ID,']');
+				put	txt;
+			run;
+		%end;
 
-	%*439.	Debugger.;
-	%if	&fDebug.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Below is the list of Daily KPIs to be directly translated on <&inDate.>.;
-		data _NULL_;
-			set &procLIB.._kftsmtd_repl_cfg;
-			length	txt	$32767;
-			txt	=	cats('I','NFO: [',C_KPI_ID,']');
-			put	txt;
-		run;
-	%end;
-
-	%*450.	Retrieve all involved <Daily KPI>.;
-	%*[ASSUMPTION];
-	%*[1] We only export an empty dataset to resemble the data on Checking Period.;
-	%*[2] The reason is that we need the combined structure of these datasets for the output.;
-	%*[2] By doing this we would eliminate other logics to create the output.;
-	%DBuse_GetTimeSeriesForKpi(
-		inInfDat	=
-		,InfDatOpt	=
-		,SingleInf	=	Y
-		,MergeProc	=	SET
-		,KeyOfMrg	=	&byVar.
-		,SetAsBase	=	K
-		,inKPICfg	=	&procLIB.._kftsmtd_repl_cfg
-		,dnDateList	=	&inDate.
-		,outDAT		=	&procLIB.._kftsmtd_chkdat
-		,VarRecDate	=	D_RecDate
-		,procLIB	=	&procLIB.
-		,fDebug		=	&fDebug.
-	)
-	data &procLIB.._kftsmtd_chkdat;
-		set &procLIB.._kftsmtd_chkdat(obs=0);
-		drop	D_RecDate;
-	run;
-	%let	f_chkEnd	=	1;
-	%goto	IterInput;
-	%EndRepl:
-
-	%*500.	Create interim dataset for calculation based on the result as of the previous date.;
-	%*[ASSUMPTION];
-	%*[1] Typical variable name that differs the KPI value for the same key is <C_KPI_ID>.;
-	%*[2] In the MTD source data the above variable has been assigned with different values against those in the daily source data.;
-	%*[3] We hence have to map the ID back to the same as in the daily source data to conduct the calculation,;
-	%*     as we also have to group by KPI ID for the same key.;
-	%*[4] Below mapper is dynamically created at earlier steps.;
-	%*[5] We only create it once per iteration over the outer loop, to save system effort.;
-	%*[6] If the data of the same prefix is to be involved, it MUST HAVE BEEN created by this function,;
-	%*     hence it is safe (and useless) not to filter the required KPIs from it.;
-	%if	%sysfunc(exist(&intpfx.&dnChkEnd.))	%then %do;
-		%let	f_chkEnd	=	1;
+		%*500.	Retrieve all involved <Daily KPI>.;
+		%*[ASSUMPTION];
+		%*[1] We only export an empty dataset to resemble the data on Checking Period.;
+		%*[2] The reason is that we need the combined structure of these datasets for the output.;
+		%*[2] By doing this we would eliminate other logics to create the output.;
+		%DBuse_GetTimeSeriesForKpi(
+			inInfDat	=
+			,InfDatOpt	=
+			,SingleInf	=	Y
+			,MergeProc	=	SET
+			,KeyOfMrg	=	&byVar.
+			,SetAsBase	=	K
+			,inKPICfg	=	&procLIB.._kftsmtd_repl_cfg
+			,dnDateList	=	&inDate.
+			,outDAT		=	&procLIB.._kftsmtd_chkdat
+			,VarRecDate	=	D_RecDate
+			,procLIB	=	&procLIB.
+			,fDebug		=	&fDebug.
+		)
 		data &procLIB.._kftsmtd_chkdat;
-			set &intpfx.&dnChkEnd.;
-			C_KPI_ID	=	put(C_KPI_ID, $&fnm_DtoMTD._r.);
+			set &procLIB.._kftsmtd_chkdat(obs=0);
+			drop	D_RecDate;
 		run;
+		%let	f_chkEnd	=	1;
 	%end;
 
-	%IterInput:
+	%*470.	Create interim dataset for calculation based on the result as of the previous date.;
+	%else %do;
+		%if	&fDebug.	=	1	%then %do;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Time Series is designed to exist, search for it as Checking Data.;
+		%end;
+
+		%*[ASSUMPTION];
+		%*[1] Typical variable name that differs the KPI value for the same key is <C_KPI_ID>.;
+		%*[2] In the MTD source data the above variable has been assigned with different values against those in the daily source data.;
+		%*[3] We hence have to map the ID back to the same as in the daily source data to conduct the calculation,;
+		%*     as we also have to group by KPI ID for the same key.;
+		%*[4] Below mapper is dynamically created at earlier steps.;
+		%*[5] We only create it once per iteration over the outer loop, to save system effort.;
+		%*[6] If the data of the same prefix is to be involved, it MUST HAVE BEEN created by this function,;
+		%*     hence it is safe not to filter the required KPIs from it.;
+		%if	%sysfunc(exist(&intpfx.&dnChkEnd.))	%then %do;
+			%let	f_chkEnd	=	1;
+			data &procLIB.._kftsmtd_chkdat;
+				set &intpfx.&dnChkEnd.;
+				C_KPI_ID	=	put(C_KPI_ID, $&fnm_DtoMTD._r.);
+			run;
+		%end;
+	%end;
+
 	%*700.	Aggregation for time series per input dataset name.;
 	%do Ij=1 %to &kAMTDDATi.;
 		%*100.	Assign temporary library for this step.;
@@ -681,7 +686,6 @@ run;
 		drop	_A_MTD_AGG;
 	run;
 
-	%PurgeOj:
 	%*900.	Purge.;
 	%*910.	De-assign the temporary library.;
 	libname	kfmtd_o	clear;

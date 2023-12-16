@@ -1,4 +1,4 @@
-%macro kfFunc_ts_mtd(
+%macro kfFunc_ts_fullmonth(
 	inKPICfg	=	src.CFG_KPI
 	,mapper		=
 	,inDate		=	%sysfunc(putn(%sysfunc(today()), yymmddN8.))
@@ -31,19 +31,15 @@
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|[FUNCTION]																															|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|[1] Map the MTD aggregation of KPIs listed on the left side of <mapper> to those on the right side of it							|
+|	|[1] Only conduct aggregation on the last workday of a month, to eliminate unnecessary effort										|
+|	|[2] Leverage the corresponding MTD result as Checking Period (see <AggrByPeriod>) in terms of <mapper_daily -> mapper_mtd> in the	|
+|	|     provided data <mapper>																										|
+|	|[3] Chain the mapping <mapper_daily -> mapper_mtd -> mapper_fm> to introduce the Daily KPIs into the Actual Calculation Period		|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|[SCENARIO]																															|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|[1] Calculate MTD ANR of product holding balances along the time series, by recognizing the data on each weekend as the same as	|
-|	|     its previous workday																											|
-|	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|[HOW TO]																															|
-|	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|[1] Create the mapper in MS EXCEL: ="'"&A1&"'"&CHAR(9)&"="&CHAR(9)&"'"&B1&"'"&CHAR(9)&"%*"&C1&";"									|
-|	|    [1] <A1> is filled with Daily KPI ID																							|
-|	|    [2] <B1> is filled with MTD KPI ID																								|
-|	|    [3] <C1> is filled with MTD KPI Description (Act as SAS remarks in macro facility)												|
+|	|[1] Calculate Full Month ANR of product holding balances along the time series, by leveraging Daily Balance on the last workday and|
+|	|     its corresponding MTD ANR on the same date																					|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |200.	Glossary.																														|
 |---------------------------------------------------------------------------------------------------------------------------------------|
@@ -51,13 +47,14 @@
 |	|___________________________________________________________________________________________________________________________________|
 |	|inKPICfg	:	The dataset that stores the full configuration of the KPI.															|
 |	|				Default: [src.CFG_KPI]																								|
-|	|mapper		:	Mapper from Daily KPI ID to MTD KPI ID as a dataset with at least these fields:										|
+|	|mapper		:	Mapper from Daily KPI ID to Full Month KPI ID as a dataset with at least these fields:								|
 |	|				['mapper_daily' ] Daily KPI ID																						|
 |	|				['mapper_mtd'] MTD KPI ID																							|
+|	|				['mapper_fm'] Full Month KPI ID																						|
 |	|___________________________________________________________________________________________________________________________________|
 |	|[Required] Options for dataset retrieval by the Calendar:																			|
 |	|___________________________________________________________________________________________________________________________________|
-|	|inDate		:	The date in format <yyyymmdd> indicating the date to which MTD is calculated										|
+|	|inDate		:	The date in format <yyyymmdd> indicating the last workday of a month, otherwise the process is skipped				|
 |	|				Default: [today]																									|
 |	|inClndrPfx	:	The prefix of the series of datasets that store the yearly calendars.												|
 |	|				The naming convention is: [inClndrPfx<yyyy>].																		|
@@ -81,19 +78,9 @@
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |300.	Update log.																														|
 |---------------------------------------------------------------------------------------------------------------------------------------|
-|	| Date |	20231210		| Version |	1.00		| Updater/Creator |	Lu Robin Bin												|
+|	| Date |	20231216		| Version |	1.00		| Updater/Creator |	Lu Robin Bin												|
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
 |	| Log  |Version 1.																													|
-|	|______|____________________________________________________________________________________________________________________________|
-|	|___________________________________________________________________________________________________________________________________|
-|	| Date |	20231213		| Version |	1.10		| Updater/Creator |	Lu Robin Bin												|
-|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
-|	| Log  |[1] Distinguish the interim datasets to avoid unexpected results															|
-|	|______|____________________________________________________________________________________________________________________________|
-|	|___________________________________________________________________________________________________________________________________|
-|	| Date |	20231215		| Version |	1.20		| Updater/Creator |	Lu Robin Bin												|
-|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
-|	| Log  |[1] Fix a bug by removing <%goto> statements within <%do> loops																|
 |	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
@@ -110,13 +97,15 @@
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|Below macros are from "&cdwmac.\AdvDB"																								|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
-|	|	|AggrByPeriod																													|
-|	|	|DBuse_GetTimeSeriesForKpi																										|
+|	|	|kfFunc_ts_mtd																													|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|Below macros are from "&cdwmac.\Dates"																								|
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|	|getMthWithinPeriod																												|
-|	|	|PrevWorkDateOf																													|
+|	|-----------------------------------------------------------------------------------------------------------------------------------|
+|	|Below macros are from "&cdwmac.\FileSystem"																						|
+|	|-----------------------------------------------------------------------------------------------------------------------------------|
+|	|	|FS_getPathList4Lib																												|
 \*-------------------------------------------------------------------------------------------------------------------------------------*/
 
 %*010.	Set parameters.;
@@ -166,16 +155,15 @@
 %*013.	Define the local environment.;
 %local
 	OptNotes	OptSource	OptSource2	OptMLogic	OptSymGen	OptMPrint	OptInOper
-	fnm_DtoMTD	rstMTD		byInt		dtBgn		chknm		pfxmtd
-	Oj			Ij
-	d_ChkEnd	dnChkEnd	f_chkEnd
+	fnm_MtoFM	rstFM		mtd_fr		mtd_to		dtBgn		dtEnd
+	Fj			Mj
 	rx_sfx		f_dtable
 ;
-%let	fnm_DtoMTD	=	map_DtoMTD;
+%let	fnm_MtoFM	=	map_MtoFM;
 %*Quote: https://blogs.sas.com/content/sasdummy/2012/08/22/using-a-regular-expression-to-validate-a-sas-variable-name/ ;
 %let	rx_sfx		=	%nrstr(s/&[a-z_]\w{0,31}\.?\s*$//ismx);
-%let	byInt		=	%unquote(&byVar. C_KPI_ID);
 %let	dtBgn		=	%sysfunc(putn(%sysfunc(intnx(month, %sysfunc(inputn(&inDate., yymmdd10.)), 0, b)), yymmddN8.));
+%let	dtEnd		=	%sysfunc(putn(%sysfunc(intnx(month, %sysfunc(inputn(&inDate., yymmdd10.)), 0, e)), yymmddN8.));
 
 %*016.	Switch off the system options to reduce the LOG size.;
 %let	OptNotes	=	%sysfunc(getoption( notes ));
@@ -194,43 +182,20 @@ options nonotes nosource nosource2 nomlogic nosymbolgen nomprint minoperator;
 	clnLIB		=	%scan(&inClndrPfx., 1, .)
 	,clnPFX		=	%scan(&inClndrPfx., -1, .)
 	,DateBgn	=	&dtBgn.
-	,DateEnd	=	&inDate.
-	,outPfx		=	GkftsMTD
+	,DateEnd	=	&dtEnd.
+	,outPfx		=	GkftsFM
 	,procLIB	=	&procLIB.
+)
+%FS_getPathList4Lib(
+	inDSN		=	&procLIB.
+	,outCNT		=	GnProc
+	,outELpfx	=	GeProc
+	,fDequote	=	1
 )
 
 %*019.	Trick the SAS Base Enhanced Editor into thinking the macro has ended.;
 %*This action allows the readers to see the rest of the codes in classical SAS syntax colors.;
 %macro dummy; %mend dummy;
-
-%*040.	Combine the calendar data of the whole period starting from the previous year of <dtBgn> to <inDate>.;
-%*041.	Combine the data.;
-data &procLIB.._kftsmtd_Clndr;
-	set
-	%do Yi=%eval( %substr( &dtBgn. , 1 , 4 ) - 1 ) %to %substr( &inDate. , 1 , 4 );
-		%if	%sysfunc(exist( &inClndrPfx.&Yi. ))	%then %do;
-			&inClndrPfx.&Yi.
-		%end;
-	%end;
-	;
-run;
-
-%*045.	Ensure there is no duplicated date.;
-proc sort
-	data=&procLIB.._kftsmtd_Clndr
-	nodupkey
-;
-	by	D_DATE;
-run;
-
-%*050.	Determine [d_ChkEnd] by the implication of [genPHbyWD].;
-%if	&genPHbyWD.	=	1	%then %do;
-	%let	d_ChkEnd	=	%PrevWorkDateOf( inDATE = %sysfunc(inputn(&inDate., yymmdd10.)) , inCalendar = &procLIB.._kftsmtd_Clndr );
-%end;
-%else %do;
-	%let	d_ChkEnd	=	%eval( %sysfunc(inputn(&inDate., yymmdd10.)) - 1 );
-%end;
-%let	dnChkEnd	=	%sysfunc(putn( &d_ChkEnd. , yymmddN8. ));
 
 %*099.	Debugger.;
 %if	&fDebug.	=	1	%then %do;
@@ -245,15 +210,21 @@ run;
 	%put	%str(I)NFO: [&L_mcrLABEL.]Input Values: [genPHbyWD=%qsysfunc(compbl(&genPHbyWD.))];
 	%put	%str(I)NFO: [&L_mcrLABEL.]Input Values: [funcAggr=%qsysfunc(compbl(&funcAggr.))];
 	%put	%str(I)NFO: [&L_mcrLABEL.]Input Values: [procLIB=&procLIB.];
+%end;
 
-	%*500.	Local variables.;
-	%put	%str(I)NFO: [&L_mcrLABEL.]Local variables: [dnChkEnd=&dnChkEnd.];
+%*Skip the process if the provided date is not the last workday of a month.;
+%if	%sysfunc(strip(&inDate.))	^=	&GkftsFMdn_LstWD.	%then %do;
+	%if	&fDebug.	=	1	%then %do;
+		%put	%str(I)NFO: [&L_mcrLABEL.][inDate=%qsysfunc(compbl(&inDate.))] is not the last workday of month [%substr(&dtEnd., 1, 6)].;
+		%put	%str(I)NFO: [&L_mcrLABEL.]Skip the process.;
+	%end;
+	%goto	EndOfProc;
 %end;
 
 %*100.	Prepare mapper.;
 %*Quote: https://support.sas.com/resources/papers/proceedings/proceedings/forum2007/068-2007.pdf ;
 %*110.	Define the formats.;
-data &procLIB.._kftsmtd_trns_pre;
+data &procLIB.._kftsfm_trns_pre;
 	%*100.	Create necessary fields for <FORMAT Procedure>;
 	length
 		FMTNAME	$32
@@ -265,10 +236,10 @@ data &procLIB.._kftsmtd_trns_pre;
 	set	%unquote(&mapper.) end=EOF;
 
 	%*500.	Assign values;
-	FMTNAME	=	%upcase(%sysfunc(quote($&fnm_DtoMTD., %str(%'))));
+	FMTNAME	=	%upcase(%sysfunc(quote($&fnm_MtoFM., %str(%'))));
 	TYPE	=	'C';
-	START	=	strip(mapper_daily);
-	LABEL	=	strip(mapper_mtd);
+	START	=	strip(mapper_mtd);
+	LABEL	=	strip(mapper_fm);
 	output;
 
 	%*900.	Create additional format to handle the excessive KPI ID within <inKPICfg>;
@@ -280,71 +251,23 @@ data &procLIB.._kftsmtd_trns_pre;
 run;
 %*Quote: https://support.sas.com/documentation/cdl/en/proc/61895/HTML/default/viewer.htm#a002473471.htm ;
 proc format
-	cntlin=&procLIB.._kftsmtd_trns_pre
-	cntlout=&procLIB.._kftsmtd_trns_fmtout
+	cntlin=&procLIB.._kftsfm_trns_pre
+	cntlout=&procLIB.._kftsfm_trns_fmtout
 ;
-	select	$&fnm_DtoMTD.;
+	select	$&fnm_MtoFM.;
 run;
 
 %*119.	Print the format.;
 %*Quote: https://support.sas.com/documentation/cdl/en/proc/65145/HTML/default/viewer.htm#p1swd5d7lnugzgn1rv7pgzkjav4w.htm ;
 %if	&fDebug.	=	1	%then %do;
 	proc format fmtlib;
-		select	$&fnm_DtoMTD.;
-		title	"[%str(I)NFO] Verify format [$&fnm_DtoMTD.]";
-	run;
-%end;
-
-%*150.	Reverse the mapping;
-%*We need to map the KPI ID in the results back to their respective input ones during verification of Checking Data.;
-data &procLIB.._kftsmtd_trns_fmtout_r;
-	%*100.	Rename the input columns;
-	set
-		&procLIB.._kftsmtd_trns_fmtout(
-			rename=(
-				START	=	__START
-				END		=	__END
-				LABEL	=	__LABEL
-			)
-		)
-	;
-
-	%*200.	Create the fields that are accepted by FORMAT Procedure;
-	length	START	END	LABEL	$256;
-
-	%*500.	Assign new values;
-	%*[ASSUMPTION];
-	%*[1] Add suffix <_r> to the format name, indicating reversed mapping;
-	%*[2] SAS internal format name is always upcased;
-	%*[3] Ensure the final length of format name less than 16;
-	FMTNAME	=	upcase(catx('_', FMTNAME, 'r'));
-	if	HLO	=	'O'	then do;
-		START	=	__START;
-		END		=	__END;
-		LABEL	=	__LABEL;
-	end;
-	else do;
-		START	=	__LABEL;
-		END		=	__LABEL;
-		LABEL	=	__START;
-	end;
-
-	%*900.	Purge;
-	drop	__:;
-run;
-proc format cntlin=&procLIB.._kftsmtd_trns_fmtout_r;
-run;
-
-%*159.	Print the format.;
-%if	&fDebug.	=	1	%then %do;
-	proc format fmtlib;
-		select	$&fnm_DtoMTD._r;
-		title	"[%str(I)NFO] Verify reversed format [$&fnm_DtoMTD._r]";
+		select	$&fnm_MtoFM.;
+		title	"[%str(I)NFO] Verify format [$&fnm_MtoFM.]";
 	run;
 %end;
 
 %*200.	Minimize the KPI Config table for current process.;
-data &procLIB.._kftsmtd_cfg_kpi;
+data &procLIB.._kftsfm_cfg_kpi;
 	%*100.	Retrieve the KPI Config table.;
 	set
 		%unquote(&inKPICfg.)(
@@ -356,7 +279,7 @@ data &procLIB.._kftsmtd_cfg_kpi;
 	;
 
 	%*200.	Prepare to hash in the KPI lists.;
-	if	0	then	set	%unquote(&mapper.)(keep=mapper_daily mapper_mtd);
+	if	0	then	set	%unquote(&mapper.)(keep=mapper_daily mapper_mtd mapper_fm);
 	if	_N_	=	1	then do;
 		dcl	hash	hDaily(dataset:"&mapper.");
 		hDaily.DefineKey("mapper_daily");
@@ -367,12 +290,18 @@ data &procLIB.._kftsmtd_cfg_kpi;
 		hMTD.DefineKey("mapper_mtd");
 		hMTD.DefineData("mapper_mtd");
 		hMTD.DefineDone();
+
+		dcl	hash	hFM(dataset:"&mapper.");
+		hFM.DefineKey("mapper_fm");
+		hFM.DefineData("mapper_fm");
+		hFM.DefineDone();
 	end;
-	call missing(mapper_daily,mapper_mtd);
+	call missing(mapper_daily,mapper_mtd,mapper_fm);
 
 	%*500.	Only keep the KPIs involved in this process.;
 	if		(hDaily.check(key: C_KPI_ID)	=	0)
 		or	(hMTD.check(key: C_KPI_ID)	=	0)
+		or	(hFM.check(key: C_KPI_ID)	=	0)
 	then do;
 		output;
 	end;
@@ -381,6 +310,7 @@ data &procLIB.._kftsmtd_cfg_kpi;
 	drop
 		mapper_daily
 		mapper_mtd
+		mapper_fm
 	;
 run;
 
@@ -395,66 +325,67 @@ run;
 %*     while multiple KPIs are allowed to store in the same dataset.;
 %*310.	Only select involved KPIs.;
 proc sql;
-	create table &procLIB.._kftsmtd_cfg_all as (
+	create table &procLIB.._kftsfm_cfg_all_org as (
 		select
-			i.D_BGN as bgn_daily
-			,i.C_KPI_ID as kpi_daily
-			,upcase(i.C_KPI_DAT_PATH) as lib_daily
-			,upcase(prxchange(%sysfunc(quote(%superq(rx_sfx), %str(%'))), -1, i.C_KPI_DAT_NAME)) as dat_daily
-			,o.D_BGN as bgn_mtd
-			,o.C_KPI_ID as kpi_mtd
-			,upcase(o.C_KPI_DAT_PATH) as lib_mtd
-			,upcase(prxchange(%sysfunc(quote(%superq(rx_sfx), %str(%'))), -1, o.C_KPI_DAT_NAME)) as dat_mtd
+			d.D_BGN as bgn_daily
+			,d.C_KPI_ID as kpi_daily
+			,upcase(d.C_KPI_DAT_PATH) as lib_daily
+			,upcase(prxchange(%sysfunc(quote(%superq(rx_sfx), %str(%'))), -1, d.C_KPI_DAT_NAME)) as dat_daily
+			,m.D_BGN as bgn_mtd
+			,m.C_KPI_ID as kpi_mtd
+			,upcase(m.C_KPI_DAT_PATH) as lib_mtd
+			,upcase(prxchange(%sysfunc(quote(%superq(rx_sfx), %str(%'))), -1, m.C_KPI_DAT_NAME)) as dat_mtd
+			,f.D_BGN as bgn_fm
+			,f.C_KPI_ID as kpi_fm
+			,upcase(f.C_KPI_DAT_PATH) as lib_fm
+			,upcase(prxchange(%sysfunc(quote(%superq(rx_sfx), %str(%'))), -1, f.C_KPI_DAT_NAME)) as dat_fm
 		from %unquote(&mapper.) as a
-		inner join &procLIB.._kftsmtd_cfg_kpi as i
-			on	i.C_KPI_ID	=	a.mapper_daily
-		inner join &procLIB.._kftsmtd_cfg_kpi as o
-			on	o.C_KPI_ID	=	a.mapper_mtd
+		inner join &procLIB.._kftsfm_cfg_kpi as d
+			on	d.C_KPI_ID	=	a.mapper_daily
+		inner join &procLIB.._kftsfm_cfg_kpi as m
+			on	m.C_KPI_ID	=	a.mapper_mtd
+		inner join &procLIB.._kftsfm_cfg_kpi as f
+			on	f.C_KPI_ID	=	a.mapper_fm
 	);
 quit;
 
 %*318.	Quit if there is no KPI involved due to configuration.;
-%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_cfg_all, gMode = F)	=	0	%then %do;
+%if	%getOBS4DATA(inDAT = &procLIB.._kftsfm_cfg_all_org, gMode = F)	=	0	%then %do;
 	%put	%str(N)OTE: [&L_mcrLABEL.]No KPI is involved, skip current process.;
 	%goto	EndOfProc;
 %end;
 
 %*330.	Verify the begin date of both sides on the mapper.;
-data &procLIB.._kftsmtd_vfy_bgn;
+data &procLIB.._kftsfm_vfy_bgn;
 	set
-		&procLIB.._kftsmtd_cfg_all(
+		&procLIB.._kftsfm_cfg_all_org(
 			where=(
-				bgn_daily	^=	bgn_mtd
+				bgn_mtd	>	bgn_fm
 			)
 		)
 	;
 	length	txt	$32767;
 	txt	=	cats(
 		'W','ARNING: [',symget('L_mcrLABEL'),']<D_BGN>'
-		,'[',put(bgn_daily, yymmddN8.),'] of KPI [',kpi_daily,'] differs <D_BGN>'
-		,'[',put(bgn_mtd, yymmddN8.),'] of KPI [',kpi_mtd,']!'
+		,'[',put(bgn_mtd, yymmddN8.),'] of KPI [',kpi_mtd,'] is later than <D_BGN>'
+		,'[',put(bgn_fm, yymmddN8.),'] of KPI [',kpi_fm,']!'
 	);
 	put	txt;
 run;
-%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn, gMode = F)	^=	0	%then %do;
+%if	%getOBS4DATA(inDAT = &procLIB.._kftsfm_vfy_bgn, gMode = F)	^=	0	%then %do;
 	%ErrMcr
 %end;
 
-%*389.	Debugger.;
-%if	&fDebug.	=	1	%then %do;
-	%put	%str(I)NFO: [&L_mcrLABEL.]Final KPI mapping is listed below:;
-	data _NULL_;
-		set &procLIB.._kftsmtd_cfg_all;
-		length	txt	$32767;
-		txt	=	cats('I','NFO: [',symget('L_mcrLABEL'),'][',kpi_daily,'] -> [',kpi_mtd,']');
-		put	txt;
-	run;
-%end;
-
-%*390.	Prepare the loops.;
+%*350.	Prepare the redirection of the MTD data to separate locations.;
+%*[ASSUMPTION];
+%*[1] Dependent macro <kfFunc_ts_mtd> creates data (here the MTD KPIs) to their respective locations.;
+%*[2] After redirection, all perudo-full-month results will also be redirected, hence we can avoid modifying the database.;
+%*[3] We set the redirected location to the last path assigned to <procLIB>;
+%*[4] We set the names of the redirected MTD data by their naming counters to avoid conflicts.;
+%*351.	Identify unique datasets to be redirected.;
 proc sort
-	data=&procLIB.._kftsmtd_cfg_all
-	out=&procLIB.._kftsmtd_cfg_all_dedup
+	data=&procLIB.._kftsfm_cfg_all_org
+	out=&procLIB.._kftsfm_vfy_mtd
 	nodupkey
 ;
 	by
@@ -462,42 +393,91 @@ proc sort
 		dat_mtd
 	;
 run;
+data &procLIB.._kftsfm_vfy_mtd;
+	set &procLIB.._kftsfm_vfy_mtd;
+	length
+		lib_mtd_r	$32767
+		dat_mtd_r	$64
+	;
+	lib_mtd_r	=	symget("GeProc&GnProc.");
+	%*The names will be suffixed by data date string led by a digit, hence we add separater to avoid naming conflicts.;
+	dat_mtd_r	=	cats('_kftsfm_redir',_N_,'_');
+run;
+
+%*355.	Tag the redirected locations to the original mappings.;
+proc sql;
+	create table &procLIB.._kftsfm_cfg_all as (
+		select
+			a.*
+			,b.lib_mtd_r
+			,b.dat_mtd_r
+		from &procLIB.._kftsfm_cfg_all_org as a
+		inner join &procLIB.._kftsfm_vfy_mtd as b
+			on		a.lib_mtd	=	b.lib_mtd
+				and	a.dat_mtd	=	b.dat_mtd
+	);
+quit;
+
+%*389.	Debugger.;
+%if	&fDebug.	=	1	%then %do;
+	%put	%str(I)NFO: [&L_mcrLABEL.]Final KPI mapping is listed below:;
+	data _NULL_;
+		set &procLIB.._kftsfm_cfg_all;
+		length	txt	$32767;
+		txt	=	cats('I','NFO: [',symget('L_mcrLABEL'),'][',kpi_daily,'] -> [',kpi_mtd,'] -> [',kpi_fm,']');
+		put	txt;
+	run;
+%end;
+
+%*500.	Loop the calculation for the same output dataset per iteration.;
+%*510.	Prepare the Full Month loop.;
+proc sort
+	data=&procLIB.._kftsfm_cfg_all
+	out=&procLIB.._kftsfm_cfg_fm
+	nodupkey
+;
+	by
+		lib_fm
+		dat_fm
+	;
+run;
 data _NULL_;
-	set	&procLIB.._kftsmtd_cfg_all_dedup end=EOF;
-	%*[1] <K/C>ount of <A>ggregation in <M>onth-<T>o-<D>ate factory as <DAT>asets for output as <M>td loop;
-	%*[2] <E>lement of <A>ggregation in <M>onth-<T>o-<D>ate factory as <LIB>rary for output within <M>td loop;
-	%*[3] <E>lement of <A>ggregation in <M>onth-<T>o-<D>ate factory as <DAT>aset for output within <M>td loop;
-	call symputx(cats('eAMTDLIBm', _N_), lib_mtd, 'F');
-	call symputx(cats('eAMTDDATm', _N_), dat_mtd, 'F');
+	set	&procLIB.._kftsfm_cfg_fm end=EOF;
+	%*[1] <K/C>ount of <A>ggregation in <F>ull-<M>onth factory as <DAT>asets for output as <F>ull-month loop;
+	%*[2] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <LIB>rary for output within <F>ull-month loop;
+	%*[3] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <DAT>aset for output within <F>ull-month loop;
+	%*[4] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <KPI> ID for output within <F>ull-month loop;
+	call symputx(cats('eAFMLIBf', _N_), lib_fm, 'F');
+	call symputx(cats('eAFMDATf', _N_), dat_fm, 'F');
+	call symputx(cats('eAFMKPIf', _N_), kpi_fm, 'F');
 	if	EOF	then do;
-		call symputx('kAMTDDATm', _N_, 'F');
+		call symputx('kAFMDATf', _N_, 'F');
 	end;
 run;
 
-%*500.	Loop the calculation for the same output dataset per iteration.;
+%*550.	Loop the process.;
 %if	&fDebug.	=	1	%then %do;
-	%put	%str(I)NFO: [&L_mcrLABEL.]Total number of MTD datasets/iterations: [kAMTDDATm=&kAMTDDATm.];
+	%put	%str(I)NFO: [&L_mcrLABEL.]Total number of Full Month datasets/iterations: [kAFMDATf=&kAFMDATf.];
 %end;
-%do Oj=1 %to &kAMTDDATm.;
+%do Fj=1 %to &kAFMDATf.;
 	%*010.	Local parameters.;
-	%let	rstMTD		=	&&eAMTDDATm&Oj..&inDate.;
-	%let	f_chkEnd	=	0;
+	%let	rstFM		=	&&eAFMDATf&Fj..%substr(&inDate., 1, 6);
 	%let	f_dtable	=	0;
 
 	%*019.	Debugger.;
 	%if	&fDebug.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Create data <%superq(rstMTD)> in path: <%superq(eAMTDLIBm&Oj.)>;
+		%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.]Create data <%superq(rstFM)> in path: <%superq(eAFMLIBf&Fj.)>;
 	%end;
 
-	%*100.	Determine the loop for all input datasets.;
-	%*Below macro-to-call only handles time series of one dataset name prefix per call;
+	%*100.	Determine the loop for all MTD datasets.;
+	%*Redirect MTD data when necessary to resemble the Full Month data as of the previous workday;
 	%*110.	Subset the config table for current output dataset.;
-	data &procLIB.._kftsmtd_cfg_thisOj;
+	data &procLIB.._kftsfm_cfg_thisFj;
 		set
-			&procLIB.._kftsmtd_cfg_all(
+			&procLIB.._kftsfm_cfg_all(
 				where=(
-						lib_mtd	=	%sysfunc(quote(%superq(eAMTDLIBm&Oj.), %str(%')))
-					and	dat_mtd	=	%sysfunc(quote(%superq(eAMTDDATm&Oj.), %str(%')))
+						lib_fm	=	%sysfunc(quote(%superq(eAFMLIBf&Fj.), %str(%')))
+					and	dat_fm	=	%sysfunc(quote(%superq(eAFMDATf&Fj.), %str(%')))
 				)
 			)
 		;
@@ -505,204 +485,90 @@ run;
 
 	%*190.	Prepare the loop.;
 	proc sort
-		data=&procLIB.._kftsmtd_cfg_thisOj
-		out=&procLIB.._kftsmtd_cfg_thisOj_in
+		data=&procLIB.._kftsfm_cfg_thisFj
+		out=&procLIB.._kftsfm_cfg_thisFj_in
 		nodupkey
 	;
 		by
-			lib_daily
-			dat_daily
+			lib_mtd
+			dat_mtd
 		;
 	run;
 	data _NULL_;
-		set	&procLIB.._kftsmtd_cfg_thisOj_in end=EOF;
-		%*[1] <K/C>ount of <A>ggregation in <M>onth-<T>o-<D>ate factory as <DAT>asets for input as <D>aily loop;
-		%*[2] <E>lement of <A>ggregation in <M>onth-<T>o-<D>ate factory as <LIB>rary for input within <D>aily loop;
-		%*[3] <E>lement of <A>ggregation in <M>onth-<T>o-<D>ate factory as <DAT>aset for input within <D>aily loop;
-		call symputx(cats('eAMTDLIBd', _N_), lib_daily, 'F');
-		call symputx(cats('eAMTDDATd', _N_), dat_daily, 'F');
+		set	&procLIB.._kftsfm_cfg_thisFj_in end=EOF;
+		%*[1] <K/C>ount of <A>ggregation in <F>ull-<M>onth factory as <DAT>asets for output as <M>td loop;
+		%*[2] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <LIB>rary for output within <M>td loop;
+		%*[3] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <DAT>aset for output within <M>td loop;
+		%*[4] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <LIB>rary for output within <M>td loop as <R>edirection;
+		%*[5] <E>lement of <A>ggregation in <F>ull-<M>onth factory as <DAT>aset for output within <M>td loop as <R>edirection;
+		call symputx(cats('eAFMLIBm', _N_), lib_mtd, 'F');
+		call symputx(cats('eAFMDATm', _N_), dat_mtd, 'F');
+		call symputx(cats('eAFMLIBmr', _N_), lib_mtd_r, 'F');
+		call symputx(cats('eAFMDATmr', _N_), dat_mtd_r, 'F');
 		if	EOF	then do;
-			call symputx('kAMTDDATd', _N_, 'F');
+			call symputx('kAFMDATm', _N_, 'F');
 		end;
 	run;
 
-	%*200.	Assign temporary library as output destination.;
-	libname	kfmtd_m	%sysfunc(quote(%superq(eAMTDLIBm&Oj.), %str(%')));
-	%let	pfxmtd	=	kfmtd_m.&&eAMTDDATm&Oj..;
+	%*300.	Redirect the MTD data as of the last workday of current month, regardless of whether it is also the last calendar day.;
+	%*[ASSUMPTION];
+	%*[1] If it is the last calendar day, we just copy the redirected data to where the Full Month KPI locates with proper mapper.;
+	%*[2] Otherwise, we tweak the KPI Config to redirect the <mapper_daily -> mapper_mtd> mapping as well, and then;
+	%*     call the MTD macro to generate the pseudo full month MTD data in the redirected path, then copy the latter to where the;
+	%*     Full Month KPI locates.;
+	%*[3] For such reason, the MTD data as of the last workday, i.e. <inDate>, MUST exist, otherwise we raise an error.;
+	%if	&fDebug.	=	1	%then %do;
+		%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.]Total number of MTD datasets/iterations: [kAFMDATm=&kAFMDATm.];
+	%end;
+	%do Mj=1 %to &kAFMDATm.;
+		%*010.	Local parameters.;
+		%let	mtd_fr	=	&&eAFMDATm&Mj..&inDate.;
+		%let	mtd_to	=	&&eAFMDATmr&Mj..&inDate.;
 
-	%*300.	Determine the KPIs to be involved in this patch.;
-	%*[ASSUMPTION] All below conditions MUST BE fulfilled at the same time;
-	%*[1] No need to verify its existence, as the data is required anyway.;
-	%*[2] <inDate> is the same as <D_BGN> for both KPIs involved in the mapper at current iteration.;
-	%*[3] The output dataset ONLY has the required KPIs under conditions [2], i.e. no other KPIs are involved.;
-	%*[4] All involved <pfxmtd> MUST HAVE BEEN created by this (and only by this) function in the previous periods,;
-	%*     if any among the KPIs has <D_BGN> earlier than <inDate>.;
-	%*[5] If there are multiple KPIs launched on the same date that fulfill above conditions, we process them together.;
-	%*[6] Given condition [4] is fulfilled, it is safe to replicate the <Daily KPI> to resemble <MTD KPI>.;
-	data &procLIB.._kftsmtd_vfy_bgn_in;
-		set
-			&procLIB.._kftsmtd_cfg_thisOj(
-				where=(
-					bgn_daily	^=	%sysfunc(inputn(&inDate., yymmdd10.))
-				)
-			)
-		;
-	run;
-
-	%*400.	Create empty Checking Data as of <chkEnd> for standardized process at later steps.;
-	%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn_in, gMode = F)	=	0	%then %do;
+		%*019.	Debugger.;
 		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Create empty MTD KPIs as Checking Data out of daily ones as their <D_BGN> is the same as <%qsysfunc(compbl(&inDate.))>.;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.][Mj=&Mj.]Directly copy data <&mtd_fr.> From path: <%superq(eAFMLIBm&Mj.)>;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.][Mj=&Mj.]To data <&mtd_to.> in path: <%superq(eAFMLIBmr&Mj.)>;
 		%end;
 
-		%*300.	Obtain the config for the KPI to be replicated.;
+		%*200.	Assign temporary libraries.;
+		%*[ASSUMPTION];
+		%*[1] <kffm_mr> refers to <procLIB> just as designed.;
+		libname	kffm_m	%sysfunc(quote(%superq(eAFMLIBm&Mj.), %str(%')));
+		libname	kffm_mr	%sysfunc(quote(%superq(eAFMLIBmr&Mj.), %str(%')));
+
+		%*300.	Verify the existence of the input data to write correct message in the log.;
+		%if	%sysfunc(exist(kffm_m.&mtd_fr.))	=	0	%then %do;
+			%put	%str(W)ARNING: [&L_mcrLABEL.][Fj=&Fj.][Mj=&Mj.]<&mtd_fr.> does not exist in path: <%superq(eAFMLIBm&Mj.)>!;
+			%ErrMcr
+		%end;
+
+		%*500.	Only retrieve the necessary MTD KPIs at current iteration.;
 		proc sql;
-			create table &procLIB.._kftsmtd_repl_cfg as (
+			create table kffm_mr.&mtd_to. as (
 				select a.*
-				from &procLIB.._kftsmtd_cfg_kpi as a
-				inner join &procLIB.._kftsmtd_cfg_thisOj as b
-					on	a.C_KPI_ID	=	b.kpi_daily
+				from kffm_m.&mtd_fr.(
+					%*[ASSUMPTION];
+					%*[1] We have to output the same fields as requested.;
+					keep=
+						C_KPI_ID
+						&aggrVar.
+						&byVar.
+						&copyVar.
+				) as a
+				inner join &procLIB.._kftsfm_cfg_thisFj(
+					where=(
+							lib_mtd	=	%sysfunc(quote(%superq(eAFMLIBm&Mj.), %str(%')))
+						and	dat_mtd	=	%sysfunc(quote(%superq(eAFMDATm&Mj.), %str(%')))
+					)
+				) as b
+					on	a.C_KPI_ID	=	b.kpi_mtd
 			);
 		quit;
 
-		%*399.	Debugger.;
-		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Below is the list of Daily KPIs to be directly translated on <&inDate.>.;
-			data _NULL_;
-				set &procLIB.._kftsmtd_repl_cfg;
-				length	txt	$32767;
-				txt	=	cats('I','NFO: [',symget('L_mcrLABEL'),'][',C_KPI_ID,']');
-				put	txt;
-			run;
-		%end;
-
-		%*500.	Retrieve all involved <Daily KPI>.;
-		%*[ASSUMPTION];
-		%*[1] We only export an empty dataset to resemble the data on Checking Period.;
-		%*[2] The reason is that we need the combined structure of these datasets for the output.;
-		%*[3] By doing this we would eliminate other logics to create the output.;
-		%DBuse_GetTimeSeriesForKpi(
-			inInfDat	=
-			,InfDatOpt	=
-			,SingleInf	=	Y
-			,MergeProc	=	SET
-			,KeyOfMrg	=	&byVar.
-			,SetAsBase	=	K
-			,inKPICfg	=	&procLIB.._kftsmtd_repl_cfg
-			,dnDateList	=	&inDate.
-			,outDAT		=	%nrbquote(
-								&procLIB.._kftsmtd_chkdat(
-									%*DS Option <obs=0> is only accepted during input rather than output;
-									where=(0=1)
-									drop=D_RecDate
-								)
-							)
-			,VarRecDate	=	D_RecDate
-			,procLIB	=	&procLIB.
-			,fDebug		=	&fDebug.
-		)
-		%let	f_chkEnd	=	1;
-	%end;
-
-	%*470.	Create interim dataset for calculation based on the result as of the previous date.;
-	%else %do;
-		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]Time Series is designed to exist, search for it as Checking Data.;
-		%end;
-
-		%*[ASSUMPTION];
-		%*[1] Typical variable name that differs the KPI value for the same key is <C_KPI_ID>.;
-		%*[2] In the MTD source data the above variable has been assigned with different values against those in the daily source data.;
-		%*[3] We hence have to map the ID back to the same as in the daily source data to conduct the calculation,;
-		%*     as we also have to group by KPI ID for the same key.;
-		%*[4] Below mapper is dynamically created at earlier steps.;
-		%*[5] We only create it once per iteration over the outer loop, to save system effort.;
-		%*[6] If the data of the same prefix is to be involved, it MUST HAVE BEEN created by this function,;
-		%*     hence it is safe not to filter the required KPIs from it.;
-		%if	%sysfunc(exist(&pfxmtd.&dnChkEnd.))	%then %do;
-			%let	f_chkEnd	=	1;
-			data &procLIB.._kftsmtd_chkdat;
-				set &pfxmtd.&dnChkEnd.;
-				C_KPI_ID	=	put(C_KPI_ID, $&fnm_DtoMTD._r.);
-			run;
-		%end;
-	%end;
-
-	%*500.	Aggregation for time series per input dataset name.;
-	%do Ij=1 %to &kAMTDDATd.;
-		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]Aggregate Daily KPIs for <%superq(eAMTDDATd&Ij.)> from <%superq(eAMTDLIBd&Ij.)>.;
-		%end;
-
-		%*100.	Assign temporary library for this step.;
-		libname	kfmtd_d	%sysfunc(quote(%superq(eAMTDLIBd&Ij.), %str(%')));
-
-		%*300.	Only check the involved KPI during aggregation, to save system effort.;
-		%let	chknm	=	&procLIB.._kftsmtd_chk_kpi_pd;
-		%if	&f_chkEnd.	=	1	%then %do;
-			%if	&fDebug.	=	1	%then %do;
-				%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]Create pseudo Checking Data <&chknm.&dnChkEnd.> for current input;
-			%end;
-			proc sql;
-				create table &chknm.&dnChkEnd. as (
-					select a.*
-					from &procLIB.._kftsmtd_chkdat as a
-					inner join &procLIB.._kftsmtd_cfg_thisOj(
-						where=(
-								lib_daily	=	%sysfunc(quote(%superq(eAMTDLIBd&Ij.), %str(%')))
-							and	dat_daily	=	%sysfunc(quote(%superq(eAMTDDATd&Ij.), %str(%')))
-						)
-					) as b
-						on	a.C_KPI_ID	=	b.kpi_daily
-				);
-			quit;
-		%end;
-		%else %do;
-			%*100.	Ensure there is no data for the checking period at this iteration.;
-			%if	%sysfunc(exist(&chknm.&dnChkEnd.))	%then %do;
-				%if	&fDebug.	=	1	%then %do;
-					%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]Remove the pseudo Checking Data <&chknm.&dnChkEnd.> since it should not exist;
-				%end;
-				proc sql;
-					drop table &chknm.&dnChkEnd.;
-				quit;
-			%end;
-		%end;
-
-		%*600.	Retrieve the meta attribute of specific fields.;
-		%if	&Ij.	=	&kAMTDDATd.	%then %do;
-			data &procLIB.._kftsmtd_aggvar;
-				set
-					kfmtd_d.&&eAMTDDATd&Ij..&dnChkEnd.(
-						keep=&aggrVar.
-					)
-				;
-			run;
-		%end;
-
-		%*700.	Standardize the aggregation.;
-		%AggrByPeriod(
-			inClndrPfx	=	&inClndrPfx.
-			,inDatPfx	=	kfmtd_d.&&eAMTDDATd&Ij..
-			,AggrVar	=	&aggrVar.
-			,dnDateBgn	=	&dtBgn.
-			,dnDateEnd	=	&inDate.
-			,ChkDatPfx	=	&chknm.
-			,ChkDatVar	=	&aggrVar.
-			,dnChkBgn	=	&dtBgn.
-			,ByVar		=	&byInt.
-			,CopyVar	=	&copyVar.
-			,genPHbyWD	=	&genPHbyWD.
-			,FuncAggr	=	&funcAggr.
-			,outVar		=	_A_MTD_AGG
-			,outDAT		=	&procLIB.._kftsmtd__agg&Ij.
-			,procLIB	=	&procLIB.
-			,fDebug		=	&fDebug.
-		)
-
 		%*800.	Search for the specific columns.;
 		%getCOLbyStrPattern(
-			inDAT		=	&procLIB.._kftsmtd__agg&Ij.
+			inDAT		=	kffm_mr.&mtd_to.
 			,inRegExp	=	%nrstr(^D_TABLE\s*$)
 			,exclRegExp	=
 			,outCNT		=	kdtable
@@ -714,53 +580,135 @@ run;
 
 		%*900.	Purge.;
 		%*910.	De-assign the temporary library.;
-		libname	kfmtd_d	clear;
+		libname	kffm_m	clear;
+		libname	kffm_mr	clear;
 
 		%*999.	Debugger.;
 		%if	&fDebug.	=	1	%then %do;
-			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]End iteration.;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.][Mj=&Mj.]End iteration.;
 		%end;
-	%*End of inner loop;
+	%*End of MTD redirection;
 	%end;
 
-	%*800.	Standardize the output.;
-	data &pfxmtd.&inDate.(compress=yes);
-		%*010.	Set all results.;
+	%*500.	Create pseudo Full Month KPIs within the redirections.;
+	%if	%qsysfunc(compbl(&inDate.))	=	&dtEnd.	%then %do;
+		%if	&fDebug.	=	1	%then %do;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.][inDate=%qsysfunc(compbl(&inDate.))] is the last calendar day of month [%substr(&dtEnd., 1, 6)].;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.]Directly map the MTD KPIs to Full Month ones.;
+		%end;
+	%end;
+	%else %do;
+		%*010.	Declare the process.;
+		%if	&fDebug.	=	1	%then %do;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.]Create pseudo Full Month KPIs within the redirections.;
+		%end;
+
+		%*100.	Tweak the KPI Config table, also by redirecting the MTD KPIs to above locations respectively.;
+		data &procLIB.._kftsfm_cfg_redir;
+			%*100.	Retrieve the KPI Config table.;
+			set	&procLIB.._kftsfm_cfg_kpi;
+
+			%*200.	Prepare to hash in the MTD KPI list.;
+			if	0	then	set	&procLIB.._kftsfm_cfg_thisFj(keep=kpi_mtd lib_mtd_r dat_mtd_r);
+			if	_N_	=	1	then do;
+				dcl	hash	hKPI(dataset:"&procLIB.._kftsfm_cfg_thisFj");
+				hKPI.DefineKey("kpi_mtd");
+				hKPI.DefineData("lib_mtd_r","dat_mtd_r");
+				hKPI.DefineDone();
+			end;
+			call missing(lib_mtd_r,dat_mtd_r);
+
+			%*500.	Redirection.;
+			_iorc_	=	hKPI.find(key: C_KPI_ID);
+			if	_iorc_	=	0	then do;
+				C_KPI_DAT_PATH	=	lib_mtd_r;
+				C_KPI_DAT_NAME	=	dat_mtd_r;
+			end;
+
+			%*900.	Purge.;
+			drop
+				kpi_mtd
+				lib_mtd_r
+				dat_mtd_r
+			;
+		run;
+
+		%*400.	Subset the mapper for current iteration.;
+		data &procLIB.._kftsfm_mapper_thisFj;
+			set
+				%unquote(&mapper.)(
+					where=(
+						mapper_fm	=	%sysfunc(quote(%superq(eAFMKPIf&Fj.), %str(%')))
+					)
+				)
+			;
+		run;
+
+		%*700.	Create pseudo Full Month KPIs.;
+		%*[ASSUMPTION] The reason why we do not just call this macro on the last calendar day for the default <inKPICfg>;
+		%*[1] If we do so, we at least need to call it EVERY WORKDAY DAY and create a series of dataset suffixed <inDate>.;
+		%*[2] For most Business cases, Full Month KPIs only represent the fact as of the last calendar day, which means only 1 dataset is necessary.;
+		%*[3] We aim to save the calculation effort on both technical and business purposes.;
+		%kfFunc_ts_mtd(
+			inKPICfg	=	&procLIB.._kftsfm_cfg_redir
+			,mapper		=	&procLIB.._kftsfm_mapper_thisFj
+			,inDate		=	&dtEnd.
+			,inClndrPfx	=	&inClndrPfx.
+			,aggrVar	=	&aggrVar.
+			,byVar		=	&byVar.
+			,copyVar	=	&copyVar.
+			,genPHbyWD	=	&genPHbyWD.
+			,funcAggr	=	&funcAggr.
+			,procLIB	=	&procLIB.
+			,fDebug		=	&fDebug.
+		)
+
+		%*800.	We will NOT verify whether <D_TABLE> exists for all involved datasets at this step.;
+		%*[ASSUMPTION];
+		%*[1] We have verified its existence when we redirect the MTD datasets for the last workday.;
+		%*[2] If it does not exist in any among the MTD datasets as of the last workday, it MUST also not exist in any corresponding Daily KPIs.;
+	%*End of pseudo Full Month data creation;
+	%end;
+
+	%*700.	Assign temporary library as output destination.;
+	libname	kffm_f	%sysfunc(quote(%superq(eAFMLIBf&Fj.), %str(%')));
+
+	%*800.	Set together all the redirected pseudo Full Month KPI datasets.;
+	%*[ASSUMPTION];
+	%*[1] All redirected data reside in <procLIB> just as designed.;
+	data kffm_f.&rstFM.(compress=yes);
+		%*100.	Set all sources.;
 		set
-		%do Ij=1 %to &kAMTDDATd.;
-			&procLIB.._kftsmtd__agg&Ij.
+		%do Mj=1 %to &kAFMDATm.;
+			&procLIB..&&eAFMDATmr&Mj..&dtEnd.
 		%end;
 		;
 
-		%*050.	Ensure <aggrVar> has the same attribute as in the database.;
-		if	0	then	set	&procLIB.._kftsmtd_aggvar(keep=&aggrVar.);
-
 		%*100.	Reset D_TABLE if it exists.;
+		%*[ASSUMPTION];
+		%*[1] This field could have different values due to above cases.;
+		%*[2] We unify the value since we only process the data on the last workday of a month.;
 		%if	&f_dtable.	=	1	%then %do;
 			D_TABLE	=	input(%sysfunc(quote(&inDate., %str(%'))), yymmdd10.);
 		%end;
 
-		%*500.	Map Daily KPIs to MTD ones.;
-		C_KPI_ID	=	put(C_KPI_ID, $&fnm_DtoMTD..);
-		&aggrVar.	=	_A_MTD_AGG;
+		%*500.	Map the KPI ID to the Full Month representation.;
+		C_KPI_ID	=	put(C_KPI_ID, $&fnm_MtoFM..);
 
 		%*800.	Delete excessive data if there are additional KPIs.;
 		%*Due to above process, there is actually no excessive KPI, but we ensure it.;
 		if	missing(C_KPI_ID)	then	delete;
-
-		%*900.	Purge.;
-		drop	_A_MTD_AGG;
 	run;
 
 	%*900.	Purge.;
 	%*910.	De-assign the temporary library.;
-	libname	kfmtd_m	clear;
+	libname	kffm_f	clear;
 
 	%*999.	Debugger.;
 	%if	&fDebug.	=	1	%then %do;
-		%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.]End iteration.;
+		%put	%str(I)NFO: [&L_mcrLABEL.][Fj=&Fj.]End iteration.;
 	%end;
-%*End of outer loop;
+%*End of Full Month loop;
 %end;
 
 %*900.	Purge.;
@@ -776,7 +724,7 @@ options
 	&OptMPrint.
 	&OptInOper.
 ;
-%mend kfFunc_ts_mtd;
+%mend kfFunc_ts_fullmonth;
 
 /*-Notes- -Begin-* /
 %*Full Test Program[1]:;
@@ -873,6 +821,21 @@ data CFG_KPI;
 	C_KPI_FORMAT	=	"comma32.";
 	C_KPI_DAT_PATH	=	strip(pathname("work"));
 	C_KPI_DAT_NAME	=	'kpi_anr&c_date.';
+	output;
+
+	%*Full Month KPI;
+	D_BGN			=	input('20160412', yymmdd10.);
+	D_END			=	mdy(12,31,2999);
+	C_KPI_ID		=	"330100";
+	C_KPI_SHORTNAME	=	"FM_AVG_COUNTER";
+	C_KPI_BIZNAME	=	"Mean of Counter of Days in Full Month";
+	C_KPI_DESC		=	strip(C_KPI_BIZNAME);
+	C_PGM_PATH		=	"D:\SAS";
+	C_PGM_NAME		=	"DBuse_GetTimeSeriesForKpi.sas";
+	F_KPI_INUSE		=	1;
+	C_KPI_FORMAT	=	"comma32.";
+	C_KPI_DAT_PATH	=	strip(pathname("work"));
+	C_KPI_DAT_NAME	=	'kpi_anr_fm&c_mon.';
 	output;
 run;
 
@@ -1018,15 +981,15 @@ run;
 
 %*180.	Create mapper.;
 data mapdat;
-	length	mapper_daily	mapper_mtd	$64;
-	mapper_daily	=	'130100';	mapper_mtd	=	'230100';	output;
+	length	mapper_daily	mapper_mtd	mapper_fm	$64;
+	mapper_daily	=	'130100';	mapper_mtd	=	'230100';	mapper_fm	=	'330100';	output;
 run;
 
-%*200.	Create MTD KPI for 20160412.;
+%*200.	Create MTD KPI for 20160429.;
 %kfFunc_ts_mtd(
 	inKPICfg	=	CFG_KPI
 	,mapper		=	mapdat
-	,inDate		=	20160412
+	,inDate		=	20160429
 	,inClndrPfx	=	work.tmpCalendar
 	,aggrVar	=	A_KPI_VAL
 	,byVar		=	nc_cifno
@@ -1036,13 +999,12 @@ run;
 	,procLIB	=	WORK
 	,fDebug		=	0
 )
-%put	%sysevalf(31 / 12);
 
-%*300.	Create MTD KPI for 20160413.;
-%kfFunc_ts_mtd(
+%*300.	Create Full Month KPI for 20160429 as it is also the last calendar day of the month.;
+%kfFunc_ts_fullmonth(
 	inKPICfg	=	CFG_KPI
 	,mapper		=	mapdat
-	,inDate		=	20160413
+	,inDate		=	20160429
 	,inClndrPfx	=	work.tmpCalendar
 	,aggrVar	=	A_KPI_VAL
 	,byVar		=	nc_cifno
@@ -1050,8 +1012,8 @@ run;
 	,genPHbyWD	=	1
 	,funcAggr	=	CMEAN
 	,procLIB	=	WORK
-	,fDebug		=	0
+	,fDebug		=	1
 )
-%put	%sysevalf((31 + 32) / 13);
+%put	%sysevalf((31.0689655172413 * 29 + 24 * 1) / 30);
 
 /*-Notes- -End-*/

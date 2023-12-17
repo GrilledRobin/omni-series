@@ -166,7 +166,7 @@
 %*013.	Define the local environment.;
 %local
 	OptNotes	OptSource	OptSource2	OptMLogic	OptSymGen	OptMPrint	OptInOper
-	fnm_DtoMTD	rstMTD		byInt		dtBgn		chknm		pfxmtd
+	fnm_DtoMTD	rstMTD		byInt		dtBgn		chknm		pfxmtd		kpiThisIj
 	Oj			Ij
 	d_ChkEnd	dnChkEnd	f_chkEnd
 	rx_sfx		f_dtable
@@ -669,6 +669,25 @@ run;
 			%end;
 		%end;
 
+		%*500.	Identify all involved KPIs for the same input data, to save system effort.;
+		%let	kpiThisIj	=;
+		proc sql noprint;
+			select distinct
+				quote(strip(kpi_daily))
+			into	:kpiThisIj
+			separated by ' '
+			from &procLIB.._kftsmtd_cfg_thisOj(
+				where=(
+						lib_daily	=	%sysfunc(quote(%superq(eAMTDLIBd&Ij.), %str(%')))
+					and	dat_daily	=	%sysfunc(quote(%superq(eAMTDDATd&Ij.), %str(%')))
+				)
+			);
+		quit;
+		%let	kpiThisIj	=	%sysfunc(compbl(&kpiThisIj.));
+		%if	&fDebug.	=	1	%then %do;
+			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]KPIs to load from daily sources: [&kpiThisIj.];
+		%end;
+
 		%*600.	Retrieve the meta attribute of specific fields.;
 		%if	&Ij.	=	&kAMTDDATd.	%then %do;
 			data &procLIB.._kftsmtd_aggvar;
@@ -684,10 +703,12 @@ run;
 		%AggrByPeriod(
 			inClndrPfx	=	&inClndrPfx.
 			,inDatPfx	=	kfmtd_d.&&eAMTDDATd&Ij..
+			,inDatOpt	=	%nrbquote(where=(C_KPI_ID in (&kpiThisIj.)))
 			,AggrVar	=	&aggrVar.
 			,dnDateBgn	=	&dtBgn.
 			,dnDateEnd	=	&inDate.
 			,ChkDatPfx	=	&chknm.
+			,ChkDatOpt	=	%nrbquote(where=(C_KPI_ID in (&kpiThisIj.)))
 			,ChkDatVar	=	&aggrVar.
 			,dnChkBgn	=	&dtBgn.
 			,ByVar		=	&byInt.

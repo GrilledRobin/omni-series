@@ -1,10 +1,12 @@
 %macro AggrByPeriod(
 	inClndrPfx	=
 	,inDatPfx	=
+	,inDatOpt	=
 	,AggrVar	=
 	,dnDateBgn	=
 	,dnDateEnd	=
 	,ChkDatPfx	=
+	,ChkDatOpt	=
 	,ChkDatVar	=
 	,dnChkBgn	=
 	,ByVar		=
@@ -131,6 +133,11 @@
 |	| Date |	20220917		| Version |	1.50		| Updater/Creator |	Lu Robin Bin												|
 |	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
 |   | Log  |[1] Fixed a bug of duplication when data as of holidays are to be created from their respective previous workdays			|
+|	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20231217		| Version |	1.60		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|   | Log  |[1] Add arguments <inDatOpt> and <ChkDatOpt> to filter the input data before processing										|
 |	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
@@ -438,10 +445,12 @@ run;
 %AggrByPeriod(
 	inClndrPfx	=	&inClndrPfx.
 	,inDatPfx	=	&inDatPfx.
+	,inDatOpt	=	&inDatOpt.
 	,AggrVar	=	&AggrVar.
 	,dnDateBgn	=	&dnChkBgn.
 	,dnDateEnd	=	%sysfunc(putn( &pdCalcBgn. , yymmddN8. ))
 	,ChkDatPfx	=
+	,ChkDatOpt	=	&ChkDatOpt.
 	,ChkDatVar	=
 	,dnChkBgn	=
 	,ByVar		=	&ByVar.
@@ -449,7 +458,11 @@ run;
 	,genPHbyWD	=	&genPHbyWD.
 	,FuncAggr	=	%substr( &FuncAggr. , 1 , 1 )SUM
 	,outVar		=	_CalcLead_
-	,outDAT		=	&procLIB..ABP_LeadPeriod
+	,outDAT		=	%nrbquote(
+						&procLIB..ABP_LeadPeriod(
+							keep= &ByVar. &CopyVar. _CalcLead_
+						)
+					)
 	,procLIB	=	&procLIB.
 )
 
@@ -598,10 +611,15 @@ run;
 %*500.	Conduct aggregation for each [ByVar] in each dataset within the calculation period.;
 %*If there are more than 1 record for [ByVar] on any single date, the result will be erroneous for MIN or MAX functions across the entire period.;
 %do Dj=1 %to &nCalcDays.;
+	%*050.	Pre-process the input data.;
+	data &procLIB..ABP_CalcPre&Dj.;
+		set	%unquote(&inDatPfx.&&CalcDate&Dj..(&inDatOpt.));
+		keep	&ByVar.	&CopyVar.	&AggrVar.;
+	run;
+
 	%*100.	Sort the data properly.;
 	proc sort
-		data=&inDatPfx.&&CalcDate&Dj..( keep= &ByVar. &CopyVar. &AggrVar. )
-		out=&procLIB..ABP_CalcPre&Dj.
+		data=&procLIB..ABP_CalcPre&Dj.
 	;
 		by	&ByVar.;
 	run;
@@ -628,21 +646,36 @@ run;
 		if	last.%scan( &ByVar. , -1 )	then do;
 			output;
 		end;
+
+		%*900.	Purge.;
+		keep	&ByVar.	&CopyVar.	_CalcVar_;
 	run;
 %end;
 
 %*600.	Set all the required data.;
+%*610.	Pre-process the Checking Data as requested.;
+%if	&fUsePrev.	=	1	%then %do;
+	data &procLIB..ABP_ChkPeriod;
+		set	%unquote(&ChkDatPfx.&dnChkEnd.(&ChkDatOpt.));
+		keep	&ByVar.	&CopyVar.	&ChkDatVar.;
+		rename
+			&ChkDatVar.	=	_CalcChk_
+		;
+	run;
+%end;
+
+%*680.	Retrieve all sources.;
 data &procLIB..ABP_setall;
 	%*100.	Set the source.;
 	set
 	%if	&fLeadCalc.	=	1	%then %do;
-		&procLIB..ABP_LeadPeriod( in=i keep= &ByVar. &CopyVar. _CalcLead_ )
+		&procLIB..ABP_LeadPeriod( in=i )
 	%end;
 	%if	&fUsePrev.	=	1	%then %do;
-		&ChkDatPfx.&dnChkEnd.( in=j keep= &ByVar. &CopyVar. &ChkDatVar. rename=( &ChkDatVar. = _CalcChk_ ) )
+		&procLIB..ABP_ChkPeriod( in=j )
 	%end;
 	%do Dj=1 %to &nCalcDays.;
-		&procLIB..ABP_Calc&Dj.( in=k&Dj. keep= &ByVar. &CopyVar. _CalcVar_ )
+		&procLIB..ABP_Calc&Dj.( in=k&Dj. )
 	%end;
 	;
 

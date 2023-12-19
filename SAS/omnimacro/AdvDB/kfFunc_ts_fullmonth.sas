@@ -635,13 +635,23 @@ run;
 
 		%*400.	Subset the mapper for current iteration.;
 		data &procLIB.._kftsfm_mapper_thisFj;
-			set
-				%unquote(&mapper.)(
-					where=(
-						mapper_fm	=	%sysfunc(quote(%superq(eAFMKPIf&Fj.), %str(%')))
-					)
-				)
-			;
+			set	%unquote(&mapper.);
+
+			%*200.	Prepare to hash in the MTD KPI list.;
+			if	0	then	set	&procLIB.._kftsfm_cfg_thisFj(keep=kpi_fm);
+			if	_N_	=	1	then do;
+				dcl	hash	hKPI(dataset:"&procLIB.._kftsfm_cfg_thisFj");
+				hKPI.DefineKey("kpi_fm");
+				hKPI.DefineData("kpi_fm");
+				hKPI.DefineDone();
+			end;
+			call missing(kpi_fm);
+
+			%*500.	Only validate the Full Month KPIs involved in this iteration.;
+			if	hKPI.check(key: mapper_fm)	=	0	then	output;
+
+			%*900.	Purge.;
+			drop	kpi_fm;
 		run;
 
 		%*700.	Create pseudo Full Month KPIs.;

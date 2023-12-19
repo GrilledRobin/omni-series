@@ -117,6 +117,7 @@
 |	|-----------------------------------------------------------------------------------------------------------------------------------|
 |	|	|getMthWithinPeriod																												|
 |	|	|PrevWorkDateOf																													|
+|	|	|isWorkDay																														|
 \*-------------------------------------------------------------------------------------------------------------------------------------*/
 
 %*010.	Set parameters.;
@@ -169,7 +170,7 @@
 	fnm_DtoMTD	rstMTD		byInt		dtBgn		chknm		pfxmtd		kpiThisIj
 	Oj			Ij
 	d_ChkEnd	dnChkEnd	f_chkEnd
-	rx_sfx		f_dtable
+	rx_sfx		f_dtable	aggdaily
 ;
 %let	fnm_DtoMTD	=	map_DtoMTD;
 %*Quote: https://blogs.sas.com/content/sasdummy/2012/08/22/using-a-regular-expression-to-validate-a-sas-variable-name/ ;
@@ -232,6 +233,14 @@ run;
 %end;
 %let	dnChkEnd	=	%sysfunc(putn( &d_ChkEnd. , yymmddN8. ));
 
+%*060.	Identify the date that the latest Daily KPI dataset exists.;
+%if	%isWorkDay(inDATE=%sysfunc(inputn(&inDate., yymmdd10.)), inCalendar=&procLIB.._kftsmtd_Clndr)	%then %do;
+	%let	aggdaily	=	&inDate.;
+%end;
+%else %do;
+	%let	aggdaily	=	%sysfunc(putn( %PrevWorkDateOf( inDATE = %sysfunc(inputn(&inDate., yymmdd10.)) , inCalendar = &procLIB.._kftsmtd_Clndr ), yymmddN8. ));
+%end;
+
 %*099.	Debugger.;
 %if	&fDebug.	=	1	%then %do;
 	%*100.	All input values.;
@@ -248,6 +257,7 @@ run;
 
 	%*500.	Local variables.;
 	%put	%str(I)NFO: [&L_mcrLABEL.]Local variables: [dnChkEnd=&dnChkEnd.];
+	%put	%str(I)NFO: [&L_mcrLABEL.]Local variables: [aggdaily=&aggdaily.];
 %end;
 
 %*100.	Prepare mapper.;
@@ -419,27 +429,6 @@ quit;
 	%goto	EndOfProc;
 %end;
 
-%*330.	Verify the begin date of both sides on the mapper.;
-data &procLIB.._kftsmtd_vfy_bgn;
-	set
-		&procLIB.._kftsmtd_cfg_all(
-			where=(
-				bgn_daily	^=	bgn_mtd
-			)
-		)
-	;
-	length	txt	$32767;
-	txt	=	cats(
-		'W','ARNING: [',symget('L_mcrLABEL'),']<D_BGN>'
-		,'[',put(bgn_daily, yymmddN8.),'] of KPI [',kpi_daily,'] differs <D_BGN>'
-		,'[',put(bgn_mtd, yymmddN8.),'] of KPI [',kpi_mtd,']!'
-	);
-	put	txt;
-run;
-%if	%getOBS4DATA(inDAT = &procLIB.._kftsmtd_vfy_bgn, gMode = F)	^=	0	%then %do;
-	%ErrMcr
-%end;
-
 %*389.	Debugger.;
 %if	&fDebug.	=	1	%then %do;
 	%put	%str(I)NFO: [&L_mcrLABEL.]Final KPI mapping is listed below:;
@@ -543,7 +532,7 @@ run;
 		set
 			&procLIB.._kftsmtd_cfg_thisOj(
 				where=(
-					bgn_daily	^=	%sysfunc(inputn(&inDate., yymmdd10.))
+					bgn_mtd	^=	%sysfunc(inputn(&inDate., yymmdd10.))
 				)
 			)
 		;
@@ -686,13 +675,21 @@ run;
 		%let	kpiThisIj	=	%sysfunc(compbl(&kpiThisIj.));
 		%if	&fDebug.	=	1	%then %do;
 			%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]KPIs to load from daily sources: [&kpiThisIj.];
+			%put	[inDate=&inDate.];
 		%end;
 
 		%*600.	Retrieve the meta attribute of specific fields.;
+		%*[ASSUMPTION];
+		%*[1] We only create the template data once to save system effort.;
+		%*[2] The only data that should exist is the Daily KPI dataset on the closest workday to the requested one, which could be itself.;
 		%if	&Ij.	=	&kAMTDDATd.	%then %do;
+			%if	&fDebug.	=	1	%then %do;
+				%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]Search for the meta information of variable <&aggrVar.>;
+				%put	%str(I)NFO: [&L_mcrLABEL.][Oj=&Oj.][Ij=&Ij.]Inside the dataset <%superq(eAMTDDATd&Ij.)&aggdaily.> in directory <%superq(eAMTDLIBd&Ij.)>;
+			%end;
 			data &procLIB.._kftsmtd_aggvar;
-				set
-					kfmtd_d.&&eAMTDDATd&Ij..&dnChkEnd.(
+				if	0	then	set
+					kfmtd_d.&&eAMTDDATd&Ij..&aggdaily.(
 						keep=&aggrVar.
 					)
 				;

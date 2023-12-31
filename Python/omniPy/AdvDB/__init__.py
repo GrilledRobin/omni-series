@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #001.   Import necessary functions for processing.
-import os
 
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
@@ -20,6 +19,9 @@ from .DBuse_GetTimeSeriesForKpi import DBuse_GetTimeSeriesForKpi
 from .aggrByPeriod import aggrByPeriod
 from .OpenSourceApiMeta import OpenSourceApiMeta
 
+from .inferContents import inferContents
+from .writeSASdat import writeSASdat
+
 #200.   Define available resources.
 __all__ = [
     'DBuse_MrgKPItoInf', 'DBuse_SetKPItoInf', 'DBuse_GetTimeSeriesForKpi'
@@ -27,4 +29,5 @@ __all__ = [
     , 'aggrByPeriod'
     , 'parseDatName'
     , 'OpenSourceApiMeta'
+    , 'inferContents', 'writeSASdat'
 ]

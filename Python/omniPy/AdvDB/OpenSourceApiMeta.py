@@ -100,6 +100,70 @@ class OpenSourceApiMeta(type):
 #   |   |   |<object>          :   Any object pushed via the API                                                                        #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[getHdlPull]                                                                                                                   #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to setup the mutable properties for the newly created class                                    #
+#   |   |   |   |Get the handler for <pull> method                                                                                      #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<callable>        :   Callable for data processing                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[setHdlPull]                                                                                                                   #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to setup the mutable properties for the newly created class                                    #
+#   |   |   |   |Set the handler for <pull> method                                                                                      #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<func>            :   Callable to be set as new handler for <pull> method                                                  #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<None>            :   This is an attribute setter hence returns nothing                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[getHdlPush]                                                                                                                   #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to setup the mutable properties for the newly created class                                    #
+#   |   |   |   |Get the handler for <push> method                                                                                      #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<callable>        :   Callable for data processing                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[setHdlPush]                                                                                                                   #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to setup the mutable properties for the newly created class                                    #
+#   |   |   |   |Set the handler for <push> method                                                                                      #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<func>            :   Callable to be set as new handler for <push> method                                                  #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<None>            :   This is an attribute setter hence returns nothing                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |400.   Private method                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -125,6 +189,15 @@ class OpenSourceApiMeta(type):
 #   | Log  |[1] Enable <__init__> to be customized when creating dynamic classes                                                        #
 #   |      |[2] Should any private variables are to be created via customized <__init__>, define a customized <__slots__> to facilitate #
 #   |      |     its scoping as well, see the demo programs for detailed usage                                                          #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240101        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <kw_pull_> and <kw_push_> to enable different pre-defined arguments for either methods                        #
+#   |      |[2] Introduce set-table properties <hdlPull> and <hdlPush> to the newly created class, allowing user to modify these        #
+#   |      |     handlers AFTER the class is instantiated.                                                                              #
+#   |      |    <hdlPull> corresponds to <apiPullHdl> at class creation                                                                 #
+#   |      |    <hdlPush> corresponds to <apiPushHdl> at class creation                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -200,7 +273,7 @@ class OpenSourceApiMeta(type):
 
             #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
             #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-            kw_new = modifyDict(self.__inputkw__, kw)
+            kw_new = modifyDict(self.__inputkw_pull__, kw)
             sig_raw = signature(__func_pull__).parameters.values()
 
             #510. Obtain all defaults of keyword arguments of the raw API
@@ -225,7 +298,7 @@ class OpenSourceApiMeta(type):
             kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
 
             #900. Pull the data from the API
-            self.__pulled__ = apiPullHdl(__func_pull__(*pos, **kw_final))
+            self.__pulled__ = self.hdlPull(__func_pull__(*pos, **kw_final))
 
             #900. Return values
             #[ASSUMPTION]
@@ -252,7 +325,7 @@ class OpenSourceApiMeta(type):
 
             #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
             #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-            kw_new = modifyDict(self.__inputkw__, kw)
+            kw_new = modifyDict(self.__inputkw_push__, kw)
             sig_raw = signature(__func_push__).parameters.values()
 
             #510. Obtain all defaults of keyword arguments of the raw API
@@ -273,14 +346,14 @@ class OpenSourceApiMeta(type):
             kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
 
             #900. Push the data via the API
-            self.__pushed__ = apiPushHdl(__func_push__(*pos, **kw_final))
+            self.__pushed__ = self.hdlPush(__func_push__(*pos, **kw_final))
 
         #400. Define the private environment of the class to be created
         #410. Initialization structure
         # attrs['__init__'] = __init
 
         #430. Slots to protect the privacy
-        slots = ('__pulled__','__pushed__','__inputkw__')
+        slots = ('__pulled__','__pushed__','__hdlpull__','__hdlpush__','__inputkw_pull__','__inputkw_push__','__inputkw__')
         if '__slots__' in attrs:
             attrs['__slots__'] += slots
         else:
@@ -305,6 +378,10 @@ class OpenSourceApiMeta(type):
         attrs['pulled'] = property(mcs.pulled)
         attrs['pushed'] = property(mcs.pushed)
 
+        #465. Mutable properties
+        attrs['hdlPull'] = property(mcs.getHdlPull, mcs.setHdlPull)
+        attrs['hdlPush'] = property(mcs.getHdlPush, mcs.setHdlPush)
+
         #500. Create the new class on the fly
         newcls = super().__new__(mcs, cls, bases, attrs)
 
@@ -315,7 +392,7 @@ class OpenSourceApiMeta(type):
         #[3] When we need to call a staticmethod, we should prepend it with the newly created class <newcls>
         #[4] We pass the newly created class-object to the argument <clsobj> for possible reference of its private environment
         #     created while NOT instantiated
-        setattr(newcls, '__init__', newcls.init(newcls))
+        setattr(newcls, '__init__', newcls.init(newcls, apiPullHdl, apiPushHdl))
 
         #999. Export
         return( newcls )
@@ -330,14 +407,20 @@ class OpenSourceApiMeta(type):
     #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
     #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
-    def init(clsobj):
-        def __init__(self, *pos, **kw):
+    def init(clsobj, hdlPull : callable, hdlPush : callable):
+        def __init__(self, *pos, kw_pull_ = {}, kw_push_ = {}, **kw):
+            #005. Set the default handlers BEFORE initialization, to allow the user to customize them at initialization
+            self.hdlPull = hdlPull
+            self.hdlPush = hdlPush
+
             #010. Hijack the original <__init__> and conduct its process ahead of the processes defined in the metaclass
             self.__init_org__(*pos, **kw)
 
             #100. Assign values to local variables
             self.__pulled__ = None
             self.__pushed__ = None
+            self.__inputkw_pull__ = kw_pull_
+            self.__inputkw_push__ = kw_push_
             self.__inputkw__ = kw
 
         return(__init__)
@@ -352,6 +435,18 @@ class OpenSourceApiMeta(type):
 
     def pushed(self):
         return(self.__pushed__)
+
+    def getHdlPull(self):
+        return(self.__hdlpull__)
+
+    def setHdlPull(self, func : callable):
+        self.__hdlpull__ = func
+
+    def getHdlPush(self):
+        return(self.__hdlpush__)
+
+    def setHdlPush(self, func : callable):
+        self.__hdlpush__ = func
 
 #End OpenSourceApiMeta
 
@@ -399,6 +494,11 @@ if __name__=='__main__':
     aaa_obj.bcd
 
     #300. Create a class in a conventional way
+    #301. Prepare the function to remove the key <address> from the pulled data
+    def h_remaddr(inval):
+        rst = { k:v for k,v in inval.items() if k not in ['address'] }
+        return(rst)
+
     #Quote: https://peps.python.org/pep-0487/
     #[ASSUMPTION]
     #[1] By doing this, all keyword arguments for the metaclass can be passed in via below syntax
@@ -409,6 +509,8 @@ if __name__=='__main__':
         #100. Define the customized initialization method
         def __init__(self):
             self.bcd = 112
+            #Attach customized handler
+            self.hdlPull = h_remaddr
 
     bbb = testMeta()
 
@@ -422,6 +524,10 @@ if __name__=='__main__':
     #350. Now check the result
     #Return: 'test API'
     bbb.pulled.get('name')
+
+    #360. Try to obtain the removed attribute (by the customized handler)
+    bbb.pulled.get('address', 'not exist')
+    # not exist
 
     #390. Try to obtain the customized attribute
     bbb.bcd
@@ -479,7 +585,7 @@ if __name__=='__main__':
             kw_add = modifyDict(self.args_loader.get(attr, {}), kw)
 
             #500. Instantiate the API and read data from it at once
-            obj = cls(**kw_add)
+            obj = cls(kw_pull_ = kw_add)
 
             #600. Pull data via the API at initialization by default
             #[ASSUMPTION]

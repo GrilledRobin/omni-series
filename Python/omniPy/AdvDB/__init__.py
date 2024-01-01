@@ -21,6 +21,10 @@ from .OpenSourceApiMeta import OpenSourceApiMeta
 
 from .inferContents import inferContents
 from .writeSASdat import writeSASdat
+from .std_write_HDFS import std_write_HDFS
+from .std_write_RAM import std_write_RAM
+from .std_write_SAS import std_write_SAS
+from .DataIO import DataIO
 
 #200.   Define available resources.
 __all__ = [
@@ -29,5 +33,5 @@ __all__ = [
     , 'aggrByPeriod'
     , 'parseDatName'
     , 'OpenSourceApiMeta'
-    , 'inferContents', 'writeSASdat'
+    , 'inferContents', 'writeSASdat', 'std_write_HDFS', 'std_write_RAM', 'std_write_SAS', 'DataIO'
 ]

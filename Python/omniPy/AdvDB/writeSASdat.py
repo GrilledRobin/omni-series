@@ -36,7 +36,7 @@ def writeSASdat(
         ,'UTF-8' : 'u8'
         ,'...' : '1d'
     }
-    ,sasEnc : str = 'GB2312'
+    ,encoding : str = 'GB2312'
     ,sasReg : str = r'HKEY_LOCAL_MACHINE\SOFTWARE\SAS Institute Inc.\The SAS System'
     ,sasOpt : list = ['-MEMSIZE', '0', '-NOLOGO', '-NOLOG', '-ICON']
     ,wd : str = os.getcwd()
@@ -74,7 +74,7 @@ def writeSASdat(
 #   |               [ <see def.> ] <Default> See definition of the function                                                             #
 #   |nlsMap     :   Mapping table to call SAS in native environment, see the directory <sasHome\nls>                                    #
 #   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |sasEnc     :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console    #
+#   |encoding   :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console    #
 #   |               [ <see def.> ] <Default> See definition of the function                                                             #
 #   |sasReg     :   Path of the SAS installation in Windows Registry (to search for SAS executable)                                     #
 #   |               [ <see def.> ] <Default> See definition of the function                                                             #
@@ -129,7 +129,7 @@ def writeSASdat(
     #012. Handle the parameter buffer.
     if metaVar is None:
         metaVar = inferContents(inDat)
-    sasEnc = sasEnc.upper()
+    encoding = encoding.upper()
     trnsType = ['dt','t','d']
     err_funcs = [ v for v in set(dt_map.values()) if v not in trnsType ]
     if err_funcs:
@@ -141,7 +141,7 @@ def writeSASdat(
     outDir = os.path.dirname(outFile)
     outDat = os.path.splitext(os.path.basename(outFile))[0]
     cfg_nls = apply_MapVal(
-        sasEnc
+        encoding
         ,dict_map = nlsMap
         , preserve = False
         , full_match = True
@@ -387,7 +387,7 @@ def writeSASdat(
     #780. Full statements
     scr_final = crlf.join([
         f'libname rst %sysfunc(quote(%nrstr({outDir}), %nrstr(%\')));'
-        ,f'data rst.{outDat}(compress = {cmp} encoding = "{sasEnc}");'
+        ,f'data rst.{outDat}(compress = {cmp} encoding = "{encoding}");'
         ,strtab + 'length'
         ,scr_length
         ,strtab + ';'
@@ -408,7 +408,7 @@ def writeSASdat(
 
     #790. Write the script to harddisk for later call
     sasScr = os.path.join(wd, f'forsas{time_file}.sas')
-    with open(sasScr, 'w', encoding = sasEnc) as f:
+    with open(sasScr, 'w', encoding = encoding) as f:
         f.write(scr_final)
 
     #800. Write SAS dataset
@@ -446,10 +446,10 @@ def writeSASdat(
     #858. Collect the execution result
     if rstRC:
         warn(f'[{LfuncName}]<Failure Message Begin>')
-        warn(re.sub(r'^.*?(traceback.+)$', r'\1', sas_msg.decode(sasEnc), flags = re.I | re.M | re.S | re.X))
+        warn(re.sub(r'^.*?(traceback.+)$', r'\1', sas_msg.decode(encoding), flags = re.I | re.M | re.S | re.X))
         warn(f'[{LfuncName}]<Failure Message End>')
         warn(f'[{LfuncName}]<Failure Error Begin>')
-        warn(sas_errs.decode(sasEnc))
+        warn(sas_errs.decode(encoding))
         warn(f'[{LfuncName}]<Failure Error End>')
 
     #859. Close the communication
@@ -555,7 +555,7 @@ if __name__=='__main__':
     #700. Read SAS dataset and export it to SAS again
     loadsas, meta = loadSASdat( dir_omniPy + r'omniPy\AdvDB\test_loadsasdat.sas7bdat' , encoding = 'GB2312' )
     outf3 = os.path.join(os.getcwd(), 'vfysas3.sas7bdat')
-    rc = writeSASdat(loadsas, outf3, sasEnc = 'GB2312')
+    rc = writeSASdat(loadsas, outf3, encoding = 'GB2312')
     if os.path.isfile(outf3): os.remove(outf3)
 
     #750. Adjust the meta config before conversion
@@ -580,7 +580,7 @@ if __name__=='__main__':
     )
     meta_loadsas.loc[lambda x: x['NAME'].eq('f_qpv'), 'FORMATD'] = 0
     outf4 = os.path.join(os.getcwd(), 'vfysas4.sas7bdat')
-    rc = writeSASdat(loadsas, outf4, metaVar = meta_loadsas, sasEnc = 'GB2312')
+    rc = writeSASdat(loadsas, outf4, metaVar = meta_loadsas, encoding = 'GB2312')
     if os.path.isfile(outf4): os.remove(outf4)
 #-Notes- -End-
 '''

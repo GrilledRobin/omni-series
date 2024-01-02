@@ -447,12 +447,12 @@ if __name__=='__main__':
     #[2] Some of the arguments are from <omniPy.AdvDB.loadSASdat>
     #[3] Rest of the arguments are from <omniPy.AdvDB.std_read_SAS>
     #Quote: https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html#module-pyreadstat.pyreadstat
-    datatrns.__getattribute__(api).pull(smpl_sas)
+    sas_pulled = datatrns.__getattribute__(api).pull(smpl_sas)
     # Same as: datatrns.SAS.pull(smpl_sas)
 
     #330. Redirect the pulled data
     # A simpler way to operate on current API is to use slicing fashion
-    sas_pulled = datatrns[api].pulled
+    sas_pulled2 = datatrns[api].pulled
     # pd.DataFrame
 
     #350. Write the data from RAM to the requested path
@@ -485,7 +485,7 @@ if __name__=='__main__':
     #[ASSUMPTION]
     #[1] 'test' is a placeholder for this API, just for unification purpose
     outf1 = os.path.join(cwd, 'vfysas1.sas7bdat')
-    datatrns[api].push({'test' : sas_pulled}, outfile = outf1, metaVar = meta_sas)
+    rc = datatrns[api].push({'test' : sas_pulled}, outfile = outf1, metaVar = meta_sas)
     if os.path.isfile(outf1): os.remove(outf1)
 
     #500. Convert data using HDFS API
@@ -500,15 +500,12 @@ if __name__=='__main__':
     #510. Write the data from RAM to the requested path
     #[ASSUMPTION]
     #[1] HDFStore can store multiple objects in the same batch
-    datatrns[api2].push(smpl_hdf, outfile = outf2)
+    rc = datatrns[api2].push(smpl_hdf, outfile = outf2)
 
     #530. Load data from above storage
     #[ASSUMPTION]
     #[1] As a unified process, the <pull> method can only pull one object from the API
-    datatrns[api2].pull(outf2, key = 'key2')
-
-    #550. Redirect the pulled data
-    hdf_pulled = datatrns[api2].pulled
+    hdf_pulled = datatrns[api2].pull(outf2, key = 'key2')
 
     #560. Change the handler of <pull> method for the API of HDFS
     #561. Prepare the function to remove the required column from the data frame
@@ -524,10 +521,7 @@ if __name__=='__main__':
     datatrns[api2].hdlPull = partial(h_remcol, col = ['bb','kk'])
 
     #570. Load data with the updated handler
-    datatrns[api2].pull(outf2, key = 'key1')
-
-    #580. Verify the loaded-and-mutated table
-    hdf_chk = datatrns[api2].pulled
+    hdf_chk = datatrns[api2].pull(outf2, key = 'key1')
 
     #599. Purge
     if os.path.isfile(outf2): os.remove(outf2)
@@ -541,15 +535,12 @@ if __name__=='__main__':
     def h_conv(df):
         df_new = df.assign(**{'b' : lambda x: pd.Series([5,4,1], index = x.index)})
         return(df_new)
-    datatrns[api3].pull('dat_before', funcConv = h_conv)
-
-    #730. Extract the data pulled and mutated from the API
-    ram_redir = datatrns[api3].pulled
+    ram_redir = datatrns[api3].pull('dat_before', funcConv = h_conv)
 
     #750. Push the data to another address within RAM
     #[ASSUMPTION]
     #[1] Same as SAS, 'dummy' is a placeholder for this API, just for unification purpose
-    datatrns[api3].push({'dummy' : ram_redir}, outfile = 'ram_new')
+    rc = datatrns[api3].push({'dummy' : ram_redir}, outfile = 'ram_new')
 
     #770. Retrieve the exported data frame
     #[ASSUMPTION]

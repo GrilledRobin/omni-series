@@ -24,8 +24,8 @@ def asDatetimes(
     )) + ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
     , origin = dt.datetime(1960,1,1)
     , unit = 'seconds'
-) -> 'Translate date-like values into datetime in the type of [datetime.datetime]':
-    #000.   Info.
+) -> dt.datetime | Iterable[dt.datetime]:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -54,7 +54,7 @@ def asDatetimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ list  ]   :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
+#   |<Any>       :   The returned value may be <dt.datetime | Iterable[dt.datetime]> depending on the input type                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -119,6 +119,11 @@ def asDatetimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when converting the result into datetime.datetime                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added logic for <float> types                                                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -157,6 +162,10 @@ def asDatetimes(
         #Quote: https://stackoverflow.com/questions/11548005/numpy-or-pandas-keeping-array-type-as-integer-while-having-a-nan-value
         ,'Int8','Int16','Int32','Int64'
         ,'UInt8','UInt16','UInt32','UInt64'
+    ]
+    floattypes = [
+        'float'
+        ,'float16','float32','float64'
     ]
 
     #100. Standardize the formats to be used to try converting the date-like values
@@ -226,7 +235,7 @@ def asDatetimes(
     if vtype_dt.all():
         return(deepcopy(indate))
 
-    vtype_nat = ~vec_types.isin(['datetime','Timestamp','date','str'] + inttypes)
+    vtype_nat = ~vec_types.isin(['datetime','Timestamp','date','str'] + inttypes + floattypes)
     if (vtype_dt | vtype_nat).all():
         rstOut = vec_in.copy(deep = True).assign(**{col_eval : lambda x: x[col_eval].astype('object')})
         rstOut.loc[vtype_nat, col_eval] = pd.NaT
@@ -238,6 +247,7 @@ def asDatetimes(
     #[1] <Series.str.startswith()> is 4x slower than <Series.isin()>
     # vtype_int = vec_types.str.startswith('int')
     vtype_int = vec_types.isin(inttypes)
+    vtype_float = vec_types.isin(floattypes)
     vtype_str = vec_types.eq('str')
 
     #500. Convert to the dedicated values for different scenarios
@@ -262,6 +272,24 @@ def asDatetimes(
     )
     if pd.api.types.is_datetime64_any_dtype(out_int.dtype):
         out_int = pd.Series(out_int.dt.to_pydatetime(), dtype = 'object', index = out_int.index)
+
+    #540. Convert float values
+    tmp_float = (
+        vec_in[col_eval]
+        .loc[vtype_float]
+        .astype('object')
+    )
+    fl_int = tmp_float.astype(int)
+    fl_dec = tmp_float.mod(1).mul(100000).astype(int)
+    out_float = (
+        fl_int
+        .apply(lambda d: origin + dt.timedelta(**{unit:int(d)}))
+        .add(fl_dec.apply(lambda x: dt.timedelta(**{'microseconds':int(x)})))
+        .where(lambda x: x.le(dt.datetime.max), dt.datetime.max)
+        .where(lambda x: x.ge(dt.datetime.min), dt.datetime.min)
+    )
+    if pd.api.types.is_datetime64_any_dtype(out_float.dtype):
+        out_float = pd.Series(out_float.dt.to_pydatetime(), dtype = 'object', index = out_float.index)
 
     #550. Convert strings
     #Quote: https://stackoverflow.com/questions/17134716/convert-dataframe-column-type-from-string-to-datetime
@@ -292,6 +320,7 @@ def asDatetimes(
             vec_in[col_eval].loc[vtype_dt].astype('object')
             ,out_ts
             ,out_int
+            ,out_float
             ,out_str
             ,out_d
             ,out_nat
@@ -330,6 +359,12 @@ if __name__=='__main__':
     #200. Convert a datetime
     a2 = dt.datetime.today()
     a2_rst = asDatetimes( a2 )
+
+    #250. Convert a float value
+    #[ASSUMPTION]
+    #[1] Many methods collecting file information would return a float value
+    #[2] China is in timezone +8, hence the returned result should be added by 8 to represent correct value in China
+    float_rst = asDatetimes( 1704198122.6569407, origin = dt.datetime(1970,1,1) ) + dt.timedelta(hours = 8)
 
     #300. Convert a string
     a3 = '2021-02-16 12:34:56'
@@ -427,6 +462,6 @@ if __name__=='__main__':
     df_trns = asDatetimes(d_smpl, fmt = ['%Y%m%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'])
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:01.564556
+    # 0:00:01.562605
 #-Notes- -End-
 '''

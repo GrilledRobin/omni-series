@@ -3,6 +3,7 @@
 
 import sys
 import pandas as pd
+import datetime as dt
 import itertools as itt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
@@ -21,8 +22,8 @@ def asTimes(
         ))
     )) + ['%H%M%S', '%H-%M-%S', '%H:%M:%S', '%H %M %S']
     , unit = 'seconds'
-) -> 'Translate time-like values into [datetime.time]':
-    #000.   Info.
+) -> dt.time | Iterable[dt.time]:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -48,7 +49,7 @@ def asTimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ list  ]   :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
+#   |<Any>       :   The returned value may be <dt.time | Iterable[dt.time]> depending on the input type                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -91,6 +92,11 @@ def asTimes(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Improve efficiency when all input values are already of the dedicated type or NATType                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added logic for <float> types                                                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -130,6 +136,10 @@ def asTimes(
         ,'Int8','Int16','Int32','Int64'
         ,'UInt8','UInt16','UInt32','UInt64'
     ]
+    floattypes = [
+        'float'
+        ,'float16','float32','float64'
+    ]
     #Quote: { <args of dt.timedelta()> : <units of pd.to_datetime()> }
     map_unit = {
         'days' : 'D'
@@ -139,10 +149,13 @@ def asTimes(
         ,'nanoseconds' : 'ns'
     }
     if unit in map_unit:
-        unit = map_unit.get(unit)
-    elif unit not in map_unit.values():
-        cand = ','.join([ ','.join([k,v]) for k,v in map_unit.items() ])
-        raise ValueError(f'[{LfuncName}][unit][{unit}] is not recognized! Try any among: [{cand}]')
+        unit_short = map_unit.get(unit)
+        unit_long = unit
+    elif unit in map_unit.values():
+        unit_short = unit
+        unit_long = { v:k for k,v in map_unit.items() }.get(unit)
+    else:
+        raise ValueError(f'[{LfuncName}][unit][{unit}] is not recognized! Try any among: [{str(map_unit)}]')
 
     #100. Standardize the formats to be used to try converting the date-like values
     if isinstance(fmt, str):
@@ -182,7 +195,7 @@ def asTimes(
     if vtype_t.all():
         return(deepcopy(indate))
 
-    vtype_nat = ~vec_types.isin(['datetime','Timestamp','time','str'] + inttypes)
+    vtype_nat = ~vec_types.isin(['datetime','Timestamp','time','str'] + inttypes + floattypes)
     if (vtype_t | vtype_nat).all():
         rstOut = vec_in.copy(deep = True).assign(**{col_eval : lambda x: x[col_eval].astype('object')})
         rstOut.loc[vtype_nat, col_eval] = pd.NaT
@@ -193,8 +206,8 @@ def asTimes(
     #[1] <Series.str.startswith()> is 4x slower than <Series.isin()>
     # vtype_int = vec_types.str.startswith('int')
     vtype_int = vec_types.isin(inttypes)
+    vtype_float = vec_types.isin(floattypes)
     vtype_str = vec_types.eq('str')
-    vtype_nat = ~(vtype_dt | vtype_t | vtype_int | vtype_str)
 
     #500. Convert to the dedicated values for different scenarios
     #510. Convert datetime-like values
@@ -203,7 +216,23 @@ def asTimes(
     #530. Convert integer-like values
     #Quote: https://stackoverflow.com/questions/34501930/how-to-convert-timedelta-to-time-of-day-in-pandas
     out_int = (
-        pd.to_datetime(vec_in[col_eval].loc[vtype_int], unit = unit)
+        pd.to_datetime(vec_in[col_eval].loc[vtype_int], unit = unit_short)
+        .dt.time
+    )
+
+    #540. Convert float values
+    tmp_float = (
+        vec_in[col_eval]
+        .loc[vtype_float]
+        .astype('object')
+    )
+    fl_int = tmp_float.astype(int)
+    fl_dec = tmp_float.mod(1).mul(100000).astype(int)
+    out_float = (
+        fl_int
+        .apply(lambda d: dt.datetime(1970,1,1) + dt.timedelta(**{unit_long:int(d)}))
+        .add(fl_dec.apply(lambda x: dt.timedelta(**{'microseconds':int(x)})))
+        .astype('datetime64[ns]')
         .dt.time
     )
 
@@ -233,6 +262,7 @@ def asTimes(
             vec_in[col_eval].loc[vtype_t].astype('object')
             ,out_dt
             ,out_int
+            ,out_float
             ,out_str
             ,out_nat
         ]
@@ -269,6 +299,9 @@ if __name__=='__main__':
     #200. Convert a datetime
     a2 = dt.datetime.today()
     a2_rst = asTimes( a2 )
+
+    #250. Convert a float value
+    float_rst = asTimes( 18981.99483 )
 
     #300. Convert a string
     a3 = '12:34:56'
@@ -330,6 +363,6 @@ if __name__=='__main__':
     df_trns = asTimes(d_smpl, fmt = ['%Y%m%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'])
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.899591
+    # 0:00:00.921938
 #-Notes- -End-
 '''

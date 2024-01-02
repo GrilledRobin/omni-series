@@ -304,6 +304,7 @@ class OpenSourceApiMeta(type):
             #[ASSUMPTION]
             #[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
             # return(self)
+            return(self.pulled)
 
         #300. Define dynamic data writer based on pattern: <apiPfxPush + cls + apiSfxPush>
         def push(self, *pos, **kw):
@@ -347,6 +348,9 @@ class OpenSourceApiMeta(type):
 
             #900. Push the data via the API
             self.__pushed__ = self.hdlPush(__func_push__(*pos, **kw_final))
+
+            #900. Return values
+            return(self.pushed)
 
         #400. Define the private environment of the class to be created
         #410. Initialization structure
@@ -482,11 +486,14 @@ if __name__=='__main__':
     aaa = OpenSourceApiMeta('testMeta', (object,), {}, apiPfxPull = 'api_')
     aaa_obj = aaa()
 
-    #210. Reload data from the API
-    aaa_obj.pull()
+    #210. Load data from the API
+    rst = aaa_obj.pull()
 
     #230. Check if it is successful
+    #[ASSUMPTION]
+    #[1] Below statements return the same result
     #Return: RAM
+    rst.get('address')
     aaa_obj.pulled.get('address')
 
     #250. Try to obtain a non-existing property since <__init__> is not customized
@@ -519,11 +526,11 @@ if __name__=='__main__':
     bbb.pulled.get('address')
 
     #330. Manually read data from the API
-    bbb.pull()
+    rst2 = bbb.pull()
 
     #350. Now check the result
     #Return: 'test API'
-    bbb.pulled.get('name')
+    rst2.get('name')
 
     #360. Try to obtain the removed attribute (by the customized handler)
     bbb.pulled.get('address', 'not exist')
@@ -590,7 +597,8 @@ if __name__=='__main__':
             #600. Pull data via the API at initialization by default
             #[ASSUMPTION]
             #[1] One can change this behavior when necessary
-            obj.pull()
+            #[2] Prevent showing messages in the log as the method always returns result
+            _ = obj.pull()
 
             #700. Add current API to the attribute list of current framework
             setattr(self, attr, obj)
@@ -674,7 +682,7 @@ if __name__=='__main__':
     addAPI.testMeta.pulled.get('address')
 
     #630. Refresh data from the API with default arguments
-    addAPI.testMeta.pull()
+    rst3 = addAPI.testMeta.pull()
 
     #700. Overwrite the default arguments to register APIs
     diff_args = {

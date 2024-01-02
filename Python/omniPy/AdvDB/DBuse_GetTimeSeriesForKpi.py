@@ -15,11 +15,9 @@ from pathos.threading import ThreadPool
 from copy import deepcopy
 from warnings import warn
 from typing import Optional, Union
-from omniPy.AdvOp import debug_comp_datcols
+from omniPy.AdvOp import debug_comp_datcols, modifyDict
 from omniPy.Dates import asDates
-from . import std_read_HDFS, std_read_RAM, std_read_SAS, parseDatName
-from . import DBuse_SetKPItoInf
-from . import DBuse_MrgKPItoInf
+from omniPy.AdvDB import DBuse_SetKPItoInf, DBuse_MrgKPItoInf, parseDatName, DataIO
 
 #For annotations in function arguments, see [PEP 604 -- Allow writing union types as X | Y] for [Python >= 3.10]
 def DBuse_GetTimeSeriesForKpi(
@@ -33,7 +31,7 @@ def DBuse_GetTimeSeriesForKpi(
         ,'_trans_opt' : {}
         ,'_imp_opt' : {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,'_func' : None
@@ -50,7 +48,7 @@ def DBuse_GetTimeSeriesForKpi(
     ,fTrans_opt : dict = {}
     ,fImp_opt : dict = {
         'SAS' : {
-            'encoding' : 'GB2312'
+            'encoding' : 'GB18030'
         }
     }
     ,_parallel : bool = True
@@ -66,8 +64,9 @@ def DBuse_GetTimeSeriesForKpi(
     ,dup_KPIs : str = 'G_dup_kpiname'
     ,AggrBy : Optional[Iterable] = None
     ,values_fn : Union[str, callable, dict] = np.sum
+    ,kw_DataIO : dict = {}
     ,**kw
-) -> 'Merge the periodical KPI data files with their respective Information Tables and set together all the merged results':
+) -> dict:
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -210,6 +209,8 @@ def DBuse_GetTimeSeriesForKpi(
 #   |values_fn  :   The same parameter as passed into function [pandas.DataFrame.pivot_table] to summarize the column [A_KPI_VAL]       #
 #   |               [np.sum          ]  <Default> Sum the values of input records of any KPI                                            #
 #   |               [<function>      ]            Function to be applied, as an object instead of a character string                    #
+#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
+#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
 #   |kw         :   The additional arguments for [pandas.DataFrame.pivot_table]                                                         #
 #   |               [IMPORTANT] Do not use these args: [index], [columns] and [aggfunc] as they are encapsulated in this function       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -278,6 +279,11 @@ def DBuse_GetTimeSeriesForKpi(
 #   | Log  |[1] Fixed a bug that always raise error when there are multiple paths provided for [InfDatCfg] and [InfDat] does not exist  #
 #   |      |     in any among them                                                                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -293,14 +299,13 @@ def DBuse_GetTimeSeriesForKpi(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |debug_comp_datcols                                                                                                         #
+#   |   |   |modifyDict                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |asDates                                                                                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvDB                                                                                                                   #
-#   |   |   |std_read_HDFS                                                                                                              #
-#   |   |   |std_read_RAM                                                                                                               #
-#   |   |   |std_read_SAS                                                                                                               #
+#   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_SetKPItoInf                                                                                                          #
 #   |   |   |DBuse_MrgKPItoInf                                                                                                          #
@@ -368,6 +373,9 @@ def DBuse_GetTimeSeriesForKpi(
             keyvar = [ v.upper() for v in keyvar ]
     if kw is None: kw = {}
 
+    #021. Instantiate the IO operator for data migration
+    dataIO = DataIO(**kw_DataIO)
+
     #050. Local environment
     outDict = {
         'data' : None
@@ -434,36 +442,16 @@ def DBuse_GetTimeSeriesForKpi(
         InfDat = InfDat_exist.at[i, 'datPtn.Parsed']
 
         #500. Prepare the function to apply to the process list
-        opt_hdfs = {
+        dataIO.add(DatType)
+        _opt_inf = {
             'infile' : InfDat
+            #For unification purpose, some APIs would omit below arguments
             ,'key' : imp_df
         }
-        if cfg_local.get('_imp_opt',{}).get('HDFS',{}):
-            opt_hdfs.update(cfg_local.get('_imp_opt',{}).get('HDFS',{}))
-        opt_sas = {
-            'infile' : InfDat
-        }
-        if cfg_local.get('_imp_opt',{}).get('SAS',{}):
-            opt_sas.update(cfg_local.get('_imp_opt',{}).get('SAS',{}))
-        imp_func = {
-            'RAM' : {
-                '_func' : std_read_RAM
-                ,'_opt' : {
-                    'infile' : InfDat
-                }
-            }
-            ,'HDFS' : {
-                '_func' : std_read_HDFS
-                ,'_opt' : opt_hdfs
-            }
-            ,'SAS' : {
-                '_func' : std_read_SAS
-                ,'_opt' : opt_sas
-            }
-        }
+        modifyDict(_opt_inf, cfg_local.get('_imp_opt',{}).get(DatType,{}), inplace = True)
 
         #700. Call functions to import data from current path
-        imp_data = imp_func[DatType]['_func'](**imp_func[DatType]['_opt'])
+        imp_data = dataIO[DatType].pull(**_opt_inf)
 
         #750. Conduct pre-process as requested and upcase the field names for all imported data, to facilitate the later [bind_rows]
         #Ensure the field used at below steps are all referred to in upper case
@@ -514,6 +502,7 @@ def DBuse_GetTimeSeriesForKpi(
             ,'miss_skip' : miss_skip
             ,'miss_files' : miss_files
             ,'err_cols' : err_cols
+            ,'kw_DataIO' : kw_DataIO
         }
 
         #730. Append those parameters for [DBuse_MrgKPItoInf] if any

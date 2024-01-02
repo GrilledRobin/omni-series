@@ -8,7 +8,7 @@ from collections import Counter
 from collections.abc import Iterable
 from warnings import warn
 from typing import Optional, Union
-from . import parseDatName, DBuse_SetKPItoInf
+from omniPy.AdvDB import parseDatName, DBuse_SetKPItoInf
 
 #For annotations in function arguments, see [PEP 604 -- Allow writing union types as X | Y] for [Python >= 3.10]
 def DBuse_MrgKPItoInf(
@@ -21,7 +21,7 @@ def DBuse_MrgKPItoInf(
     ,fTrans_opt : dict = {}
     ,fImp_opt : dict = {
         'SAS' : {
-            'encoding' : 'GB2312'
+            'encoding' : 'GB18030'
         }
     }
     ,_parallel : bool = True
@@ -37,8 +37,9 @@ def DBuse_MrgKPItoInf(
     ,dup_KPIs : str = 'G_dup_kpiname'
     ,AggrBy : Iterable = None
     ,values_fn : Union[str, callable, dict] = np.sum
+    ,kw_DataIO : dict = {}
     ,**kw
-) -> 'Merge the KPI data files with their respective Information Tables and set together all the merged results':
+) -> dict:
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -133,6 +134,8 @@ def DBuse_MrgKPItoInf(
 #   |values_fn  :   The same parameter as passed into function [pandas.DataFrame.pivot_table] to summarize the column [A_KPI_VAL]       #
 #   |               [np.sum          ]  <Default> Sum the values of input records of any KPI                                            #
 #   |               [<function>      ]            Function to be applied, as an object instead of a character string                    #
+#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
+#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
 #   |kw         :   The additional arguments for [pandas.DataFrame.pivot_table]                                                         #
 #   |               [IMPORTANT] Do not use these args: [index], [columns] and [aggfunc] as they are encapsulated in this function       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -196,6 +199,11 @@ def DBuse_MrgKPItoInf(
 #   | Log  |[1] Change the output into a [dict] to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -255,7 +263,6 @@ def DBuse_MrgKPItoInf(
     if not values_fn: values_fn = np.sum
     if not AggrBy:
         raise ValueError('['+LfuncName+']'+'[AggrBy] is not provided for pivoting!')
-    if kw is None: kw = {}
 
     #050. Local environment
     outDict = {
@@ -375,6 +382,7 @@ def DBuse_MrgKPItoInf(
         ,miss_files = miss_files
         ,err_cols = err_cols
         ,outDTfmt = outDTfmt
+        ,kw_DataIO = kw_DataIO
     )
 
     #309. Return None if above function does not generate output
@@ -620,7 +628,7 @@ if __name__=='__main__':
         ,fTrans_opt = fmt_opt
         ,fImp_opt = {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,_parallel = False
@@ -652,7 +660,7 @@ if __name__=='__main__':
         ,fTrans_opt = fmt_opt
         ,fImp_opt = {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,_parallel = True
@@ -684,7 +692,7 @@ if __name__=='__main__':
         ,fTrans_opt = fmt_opt
         ,fImp_opt = {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,_parallel = True

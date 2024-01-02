@@ -15,8 +15,8 @@ from warnings import warn
 from functools import partial
 from typing import Optional, Union
 from omniPy.Dates import asDates, UserCalendar, ObsDates
-from omniPy.AdvOp import debug_comp_datcols, thisFunction
-from omniPy.AdvDB import std_read_HDFS, std_read_RAM, std_read_SAS, parseDatName
+from omniPy.AdvOp import debug_comp_datcols, thisFunction, modifyDict
+from omniPy.AdvDB import parseDatName, DataIO
 
 def aggrByPeriod(
     inDatPtn : Union[str, pd.DataFrame] = None
@@ -24,7 +24,7 @@ def aggrByPeriod(
     ,in_df : Optional[str] = None
     ,fImp_opt : dict = {
         'SAS' : {
-            'encoding' : 'GB2312'
+            'encoding' : 'GB18030'
         }
     }
     ,fTrans : Optional[dict] = None
@@ -38,7 +38,7 @@ def aggrByPeriod(
     ,chkDat_df : Optional[str] = None
     ,chkDat_opt : dict = {
         'SAS' : {
-            'encoding' : 'GB2312'
+            'encoding' : 'GB18030'
         }
     }
     ,chkDatVar : Optional[str] = None
@@ -57,8 +57,9 @@ def aggrByPeriod(
         ,'L_m_curr' : '%Y%m'
     }
     ,fDebug : bool = False
+    ,kw_DataIO : dict = {}
     ,**kw
-) -> 'Aggregate specified single column of KPI within a certain period of dates':
+) -> dict:
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -126,7 +127,7 @@ def aggrByPeriod(
 #   |fImp_opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
 #   |               Valid names of the option lists are set in the argument [inDatType]                                                 #
 #   |               [SAS             ] <Default> Options for [omniPy.AdvDB.std_read_SAS]                                                #
-#   |                                            [encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                       #
+#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                       #
 #   |               [{<name>:<dict>} ]           Other dictionaries for different engines, such as [R=dict()] and [HDFS=dict()]         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
@@ -173,7 +174,7 @@ def aggrByPeriod(
 #   |chkDat_opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
 #   |               Valid names of the option lists are set in the field [inDatType]                                                    #
 #   |               [SAS             ] <Default> Options for [omniPy.AdvDB.std_read_SAS]                                                #
-#   |                                            [encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                       #
+#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                       #
 #   |               [{<name>:<dict>} ]           Other named lists for different engines, such as [R=dict()] and [HDFS=dict()]          #
 #   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please        #
 #   |                follow the syntax of this function during input                                                                    #
@@ -226,6 +227,8 @@ def aggrByPeriod(
 #   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
 #   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
 #   |               [ <dict>         ] <Default> See the function definition as the default argument of usage                           #
+#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
+#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
 #   |kw         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -300,6 +303,12 @@ def aggrByPeriod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable defining <copyVar = '_all_'> to output all columns from all possible data sources                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Upper-case <byVar>, <copyVar> and  <aggrVar> in the return result to make it compatible to most of the data engines     #
+#   |      |[2] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -321,11 +330,10 @@ def aggrByPeriod(
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |debug_comp_datcols                                                                                                         #
 #   |   |   |thisFunction                                                                                                               #
+#   |   |   |modifyDict                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvDB                                                                                                                   #
-#   |   |   |std_read_HDFS                                                                                                              #
-#   |   |   |std_read_RAM                                                                                                               #
-#   |   |   |std_read_SAS                                                                                                               #
+#   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -336,27 +344,26 @@ def aggrByPeriod(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
     recall = thisFunction()
 
     #012. Parameter buffer
     if isinstance(inDatPtn, pd.DataFrame):
         if inDatType not in inDatPtn.columns:
-            raise ValueError('['+LfuncName+']'+'[inDatType] must be an existing column in the data frame [inDatPtn]!')
+            raise ValueError(f'[{LfuncName}][inDatType] must be an existing column in the data frame [inDatPtn]!')
         if 'HDFS' in inDatPtn[inDatType]:
             if in_df not in inDatPtn.columns:
-                raise ValueError('['+LfuncName+']'+'[in_df] must be an existing column in the data frame [inDatPtn]!')
+                raise ValueError(f'[{LfuncName}][in_df] must be an existing column in the data frame [inDatPtn]!')
 
         inDatCfg = inDatPtn.copy(deep=True)
     else:
         if (not inDatPtn) | (not isinstance(inDatPtn, str)):
-            raise TypeError('['+LfuncName+']'+'[inDatPtn] must be a single character string!')
+            raise TypeError(f'[{LfuncName}][inDatPtn] must be a single character string!')
         if not inDatType: inDatType = 'SAS'
         inDatType = inDatType.upper()
         if inDatType not in ['SAS','HDFS','RAM']:
-            raise ValueError('['+LfuncName+']'+'[inDatType] should be any among [SAS, HDFS, RAM]!')
+            raise ValueError(f'[{LfuncName}][inDatType] should be any among [SAS, HDFS, RAM]!')
         if inDatType in ['HDFS']:
-            if not in_df: raise ValueError('['+LfuncName+']'+'[in_df] is not provided for [inDatType='+inDatType+']!')
+            if not in_df: raise ValueError(f'[{LfuncName}][in_df] is not provided for [inDatType={inDatType}]!')
 
         inDatCfg = pd.DataFrame(
             {
@@ -373,28 +380,29 @@ def aggrByPeriod(
     if not isinstance(_parallel, bool): _parallel = False
     if _parallel:
         if not cores: cores = 4
-    if not dateBgn: raise ValueError('['+LfuncName+']'+'[dateBgn] is not provided!')
-    if not dateEnd: raise ValueError('['+LfuncName+']'+'[dateEnd] is not provided!')
+    if not dateBgn: raise ValueError(f'[{LfuncName}][dateBgn] is not provided!')
+    if not dateEnd: raise ValueError(f'[{LfuncName}][dateEnd] is not provided!')
     if chkDatPtn:
-        if not isinstance(chkDatPtn, str): raise TypeError('['+LfuncName+']'+'[chkDatPtn] must be a single character string!')
+        if not isinstance(chkDatPtn, str): raise TypeError(f'[{LfuncName}][chkDatPtn] must be a single character string!')
     if not chkDatType: chkDatType = 'SAS'
     chkDatType = chkDatType.upper()
     if chkDatType not in ['SAS','HDFS','RAM']:
-        raise ValueError('['+LfuncName+']'+'[chkDatType] should be any among [SAS, HDFS, RAM]!')
+        raise ValueError(f'[{LfuncName}][chkDatType] should be any among [SAS, HDFS, RAM]!')
     if not chkBgn:
-        print('['+LfuncName+']'+'[chkBgn] is not provided. It will be set the same as [dateBgn].')
+        print(f'[{LfuncName}][chkBgn] is not provided. It will be set the same as [dateBgn].')
         chkBgn = dateBgn
     if chkDatType in ['HDFS']:
-        if not chkDat_df: raise ValueError('['+LfuncName+']'+'[chkDat_df] is not provided for [chkDatType='+chkDatType+']!')
+        if not chkDat_df: raise ValueError(f'[{LfuncName}][chkDat_df] is not provided for [chkDatType={chkDatType}]!')
 
     if isinstance(byVar, str):
         byVar = [byVar]
     elif isinstance(byVar, Iterable):
         byVar = list(byVar)
     else:
-        raise TypeError('['+LfuncName+']'+'[byVar] should be either [str] or [list of str] instead of [{0}]!'.format(type(byVar)))
+        raise TypeError(f'[{LfuncName}][byVar] should be either [str] or [list of str] instead of [{type(byVar)}]!')
     if not np.alltrue([ isinstance(v,str) for v in byVar ]):
-        raise TypeError('['+LfuncName+']'+'[byVar] should only be a list of [str]!')
+        raise TypeError(f'[{LfuncName}][byVar] should only be a list of [str]!')
+    byVar = [ s.upper() for s in byVar ]
 
     if isinstance(copyVar, str):
         copyVar = [copyVar]
@@ -403,25 +411,27 @@ def aggrByPeriod(
     elif copyVar is None:
         copyVar = []
     else:
-        raise TypeError('['+LfuncName+']'+'[copyVar] should be either [str] or [list of str] instead of [{0}]!'.format(type(copyVar)))
+        raise TypeError(f'[{LfuncName}][copyVar] should be either [str] or [list of str] instead of [{type(copyVar)}]!')
     if copyVar:
         if not np.alltrue([ isinstance(v,str) for v in copyVar ]):
-            raise TypeError('['+LfuncName+']'+'[copyVar] should only be a list of [str]!')
+            raise TypeError(f'[{LfuncName}][copyVar] should only be a list of [str]!')
+    copyVar = [ s.upper() for s in copyVar ]
 
     if (not aggrVar) | (not isinstance(aggrVar, str)):
-        print('['+LfuncName+']'+'[aggrVar] is not provided, use the default one [A_KPI_VAL] instead.')
+        print(f'[{LfuncName}][aggrVar] is not provided, use the default one [A_KPI_VAL] instead.')
         aggrVar = 'A_KPI_VAL'
+    aggrVar = aggrVar.upper()
     if not isinstance(genPHMul, bool):
         print(
-            '['+LfuncName+']'+'[genPHMul] is not provided as logical value.'
+            f'[{LfuncName}][genPHMul] is not provided as logical value.'
             +' Program resembles the data on Public Holidays by their respective Previous Workdays.'
         )
         genPHMul = True
     if not calcInd: calcInd = 'C'
     calcInd = calcInd.upper()
     if calcInd not in ['C','W','T']:
-        raise ValueError('['+LfuncName+']'+'[calcInd] should be any among [C, W, T]!')
-    if not callable(funcAggr): raise TypeError('['+LfuncName+']'+'[funcAggr] should be provided a function!')
+        raise ValueError(f'[{LfuncName}][calcInd] should be any among [C, W, T]!')
+    if not callable(funcAggr): raise TypeError(f'[{LfuncName}][funcAggr] should be provided a function!')
     if not isinstance(fDebug, bool): fDebug = False
     if (not outVar) | (not isinstance(outVar, str)): outVar = 'A_VAL_OUT'
     if (not miss_files) | (not isinstance(miss_files, str)): miss_files = 'G_miss_files'
@@ -454,6 +464,9 @@ def aggrByPeriod(
     if chkBgn: chkBgn = asDates(chkBgn)
     fLeadCalc, fUsePrev, calcDate, calcMult = False, False, None, None
 
+    #021. Instantiate the IO operator for data migration
+    dataIO = DataIO(**kw_DataIO)
+
     #025. Verify the requested aggregation function
     #Find all [numpy.nan<funcs>]
     #Quote: https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
@@ -477,13 +490,13 @@ def aggrByPeriod(
 
     #039. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Debug mode...')
-        print('['+LfuncName+']'+'Parameters are listed as below:')
+        print(f'[{LfuncName}]Debug mode...')
+        print(f'[{LfuncName}]Parameters are listed as below:')
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         getvar = sys._getframe().f_code.co_varnames
         for v in getvar:
             if v not in ['v','getvar']:
-                print('['+LfuncName+']'+'[{0}]=[{1}]'.format(v,locals().get(v)))
+                print(f'[{LfuncName}][{0}]=[{1}]'.format(v,str(locals().get(v))))
 
     #040. Create calendar for calculation of time series
     ABP_Clndr = UserCalendar(
@@ -541,14 +554,14 @@ def aggrByPeriod(
 
     #099. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'[chkEnd]=[{0}]'.format(str(chkEnd)))
-        print('['+LfuncName+']'+'[periodOut]=[{0}]'.format(str(periodOut)))
-        print('['+LfuncName+']'+'[periodChk]=[{0}]'.format(str(periodChk)))
-        print('['+LfuncName+']'+'[periodDif]=[{0}]'.format(str(periodDif)))
-        print('['+LfuncName+']'+'[pdCalcBgn]=[{0}]'.format(str(pdCalcBgn)))
-        print('['+LfuncName+']'+'[pdCalcEnd]=[{0}]'.format(str(pdCalcEnd)))
-        print('['+LfuncName+']'+'[pdChkBgn]=[{0}]'.format(str(pdChkBgn)))
-        print('['+LfuncName+']'+'[pdChkEnd]=[{0}]'.format(str(pdChkEnd)))
+        print(f'[{LfuncName}][chkEnd]=[{0}]'.format(str(chkEnd)))
+        print(f'[{LfuncName}][periodOut]=[{0}]'.format(str(periodOut)))
+        print(f'[{LfuncName}][periodChk]=[{0}]'.format(str(periodChk)))
+        print(f'[{LfuncName}][periodDif]=[{0}]'.format(str(periodDif)))
+        print(f'[{LfuncName}][pdCalcBgn]=[{0}]'.format(str(pdCalcBgn)))
+        print(f'[{LfuncName}][pdCalcEnd]=[{0}]'.format(str(pdCalcEnd)))
+        print(f'[{LfuncName}][pdChkBgn]=[{0}]'.format(str(pdChkBgn)))
+        print(f'[{LfuncName}][pdChkEnd]=[{0}]'.format(str(pdChkEnd)))
 
     #100. Calculate the summary for the leading period from [chkBgn] to [dateBgn], if applicable
     #110. Calculate the prerequisites for the data as of Checking Period
@@ -574,21 +587,21 @@ def aggrByPeriod(
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'Procedure will not conduct calculation in Leading Period'
+                f'[{LfuncName}]Procedure will not conduct calculation in Leading Period'
                 +' since [chkBgn] is not provided'
             )
     elif chkBgn>=dateBgn:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'Procedure will not conduct calculation in Leading Period'
+                f'[{LfuncName}]Procedure will not conduct calculation in Leading Period'
                 +' since [chkBgn='+str(chkBgn)+'] >= [dateBgn='+str(dateBgn)+']'
             )
     elif periodDif!=0:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'Procedure will not conduct calculation in Leading Period'
+                f'[{LfuncName}]Procedure will not conduct calculation in Leading Period'
                 +' since its date period coverage is not identical to current one'
             )
     elif LFuncAggr != np.nansum:
@@ -596,26 +609,26 @@ def aggrByPeriod(
         if fDebug:
             #[IMPORTANT] The internal function has been corrected to [numpy.nan<funcs>] where applicable
             print(
-                '['+LfuncName+']'+'Procedure will not conduct calculation in Leading Period'
+                f'[{LfuncName}]Procedure will not conduct calculation in Leading Period'
                 +' for the functions other than [sum, np.sum, np.nansum, math.fsum, np.mean, np.nanmean, statistics.mean]'
             )
     elif not chkDatPtn:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'[chkDatPtn] is not provided. Skip the calculation for Leading Period'
+                f'[{LfuncName}][chkDatPtn] is not provided. Skip the calculation for Leading Period'
             )
     elif not LchkExist:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'The data [chkDat='+chkDat+'] does not exist.'
+                f'[{LfuncName}]The data [chkDat='+chkDat+'] does not exist.'
                 +' Skip the calculation for Leading Period'
             )
     else:
         #001. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Entering calculation for Leading Period...')
+            print(f'[{LfuncName}]Entering calculation for Leading Period...')
 
         #100. Call the function to calculate the summary in Leading Period
         #[1] There is no such [chkDatPtn] to leverage for the Leading Period
@@ -652,7 +665,7 @@ def aggrByPeriod(
 
         #199. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Exiting calculation for Leading Period...')
+            print(f'[{LfuncName}]Exiting calculation for Leading Period...')
 
         #900. Mark the availability of this process
         fLeadCalc = True
@@ -662,26 +675,26 @@ def aggrByPeriod(
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'[chkDatPtn] is not provided. Skip the calculation for Checking Period'
+                f'[{LfuncName}][chkDatPtn] is not provided. Skip the calculation for Checking Period'
             )
     elif not LchkExist:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'The data [chkDat='+chkDat+'] does not exist.'
+                f'[{LfuncName}]The data [chkDat='+chkDat+'] does not exist.'
                 +' Skip the calculation for Checking Period'
             )
     elif chkBgn > chkEnd:
         #001. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'+'Procedure will not conduct calculation in Checking Period'
+                f'[{LfuncName}]Procedure will not conduct calculation in Checking Period'
                 +' since [chkBgn='+str(chkBgn)+'] > [chkEnd='+str(chkEnd)+']'
             )
     elif (dateBgn==chkBgn) | fLeadCalc:
         #001. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Prepare the calculation for Checking Period...')
+            print(f'[{LfuncName}]Prepare the calculation for Checking Period...')
 
         #[1] [dateBgn] = [chkBgn], which usually represents a continuous calculation at fixed beginning, such as MTD ANR
         #[2] [fLeadCalc] = 1, which implies that the Leading Period has already been involved hence the entire
@@ -700,7 +713,7 @@ def aggrByPeriod(
 
     #329. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Actual Calculation Period: [actBgn='+str(actBgn)+'][dateEnd='+str(dateEnd)+']')
+        print(f'[{LfuncName}]Actual Calculation Period: [actBgn='+str(actBgn)+'][dateEnd='+str(dateEnd)+']')
 
     #350. Go through the period from [actBgn] to [dateEnd] and determine the resolution for [inDatPtn]
     #351. Retrieve all the date information within the period
@@ -738,18 +751,18 @@ def aggrByPeriod(
     if fDebug:
         #100. Print the necessities for Leading Period
         if fLeadCalc:
-            print('['+LfuncName+']'+'[Leading Period] Dataset to use: [ABP_LeadPeriod]')
+            print(f'[{LfuncName}][Leading Period] Dataset to use: [ABP_LeadPeriod]')
 
         #400. Print the necessities for Checking Period
         if fUsePrev:
-            print('['+LfuncName+']'+'[Checking Period] Dataset to use: [{0}]'.format(chkDat))
-            print('['+LfuncName+']'+'[Checking Period] Data multiplier: [{0}]'.format(multiplier_CP))
+            print(f'[{LfuncName}][Checking Period] Dataset to use: [{0}]'.format(chkDat))
+            print(f'[{LfuncName}][Checking Period] Data multiplier: [{0}]'.format(multiplier_CP))
 
         #700. Print the necessities for Actual Calculation Period
-        print('['+LfuncName+']'+'[Actual Calculation Period] Dataset to use: [{0}]'.format(inDatCfg))
+        print(f'[{LfuncName}][Actual Calculation Period] Dataset to use: [{0}]'.format(inDatCfg))
         for i,d in enumerate(calcDate):
             print(
-                '['+LfuncName+'][Actual Calculation Period]'
+                f'[{LfuncName}][Actual Calculation Period]'
                 +' Date[{0}]: [{1}]'.format(i, d)
                 +', Multiplier[{0}]: [{1}]'.format(i,calcMult.get(d))
             )
@@ -780,10 +793,10 @@ def aggrByPeriod(
 
     #429. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'There are ['+str(n_files)+'] data files to involve in the Actual Calculation Period')
-        print('['+LfuncName+']'+'Actual Calculation Period Covers below dates:')
+        print(f'[{LfuncName}]There are ['+str(n_files)+'] data files to involve in the Actual Calculation Period')
+        print(f'[{LfuncName}]Actual Calculation Period Covers below dates:')
         print(calcDate)
-        print('['+LfuncName+']'+'Their respective multipliers are as below:')
+        print(f'[{LfuncName}]Their respective multipliers are as below:')
         print(calcMult)
 
     #450. Identify the files that do not exist in any among the candidate paths
@@ -802,7 +815,7 @@ def aggrByPeriod(
         outDict.update({ miss_files : nonexist_calcDat.copy(deep=True) })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'Some data files do not exist! Check the data frame ['+miss_files+'] in the output result!')
+        warn(f'[{LfuncName}]Some data files do not exist! Check the data frame [{miss_files}] in the output result!')
         ABP_errors = True
 
     #495. Verify the exit condition from the calculation of the Leading Period
@@ -814,7 +827,7 @@ def aggrByPeriod(
             })
 
             #999. Abort the process
-            warn('['+LfuncName+']'+'Some data files do not exist! Check the data frame ['+miss_files+'] in the output result!')
+            warn(f'[{LfuncName}]Some data files do not exist! Check the data frame [{miss_files}] in the output result!')
             ABP_errors = True
 
     #499. Abort if the flag of errors is True
@@ -835,33 +848,13 @@ def aggrByPeriod(
         L_d_curr = L_date.strftime('%Y%m%d')
 
         #300. Prepare the function to apply to the process list
-        opt_hdfs = {
+        dataIO.add(inDat_type)
+        _opt_in = {
             'infile' : inDat
+            #For unification purpose, some APIs would omit below arguments
             ,'key' : inDat_df
         }
-        if fImp_opt.get('HDFS',{}):
-            opt_hdfs.update(fImp_opt.get('HDFS',{}))
-        opt_sas = {
-            'infile' : inDat
-        }
-        if fImp_opt.get('SAS',{}):
-            opt_sas.update(fImp_opt.get('SAS',{}))
-        imp_func = {
-            'RAM' : {
-                '_func' : std_read_RAM
-                ,'_opt' : {
-                    'infile' : inDat
-                }
-            }
-            ,'HDFS' : {
-                '_func' : std_read_HDFS
-                ,'_opt' : opt_hdfs
-            }
-            ,'SAS' : {
-                '_func' : std_read_SAS
-                ,'_opt' : opt_sas
-            }
-        }
+        modifyDict(_opt_in, fImp_opt.get(inDat_type,{}), inplace = True)
 
         #400. Create a list of unique column names for selection from the input data
         if keep_all_col:
@@ -872,8 +865,9 @@ def aggrByPeriod(
         #500. Call functions to import data from current path
         #590. Load the data and conduct the requested transformation
         imp_data = (
-            imp_func[inDat_type]['_func'](**imp_func[inDat_type]['_opt'])
+            dataIO[inDat_type].pull(**_opt_in)
             #100. Only select necessary columns
+            .rename(columns = lambda x: x.upper())
             .loc[:, select_at].copy(deep=True)
             #300. Fill [NaN] values with 0 to avoid meaningless results
             .fillna(value = { aggrVar : 0 })
@@ -899,7 +893,7 @@ def aggrByPeriod(
     #550. Create a list of imported data frames and bind all rows of them together as one data frame
     #551. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
+        print(f'[{LfuncName}]Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
     #[IMPOTANT] There could be fields/columns in the same name but not the same types in different data files,
     #            but we throw the errors at the step [pandas.concat] to ask user to correct the input data,
     #            instead of guessing the correct types here, for it takes quite a lot of unnecessary effort.
@@ -940,8 +934,8 @@ def aggrByPeriod(
         outDict.update({ err_cols : chk_cls })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'Some columns cannot be bound due to different dtypes!')
-        warn('['+LfuncName+']'+'Check data frame ['+err_cols+'] in the output result for these columns!')
+        warn(f'[{LfuncName}]Some columns cannot be bound due to different dtypes!')
+        warn(f'[{LfuncName}]Check data frame ['+err_cols+'] in the output result for these columns!')
         ABP_errors = True
 
     #590. Abort the program for certain conditions
@@ -953,8 +947,8 @@ def aggrByPeriod(
             outDict.update({ err_cols : pd.concat([ABP_LeadPeriod.get(err_cols), outDict.get(err_cols)], ignore_index = True) })
 
             #999. Abort the process
-            warn('['+LfuncName+']'+'Some columns cannot be bound due to different dtypes!')
-            warn('['+LfuncName+']'+'Check data frame ['+err_cols+'] in the output result for these columns!')
+            warn(f'[{LfuncName}]Some columns cannot be bound due to different dtypes!')
+            warn(f'[{LfuncName}]Check data frame ['+err_cols+'] in the output result for these columns!')
             ABP_errors = True
 
     #599. Abort if the flag of errors is True
@@ -989,33 +983,13 @@ def aggrByPeriod(
     #630. Data for [chkDat], i.e. Checking Period
     if fUsePrev:
         #300. Prepare the function to apply to the process list
-        opt_hdfs = {
+        dataIO.add(chkDatType)
+        _opt_chk = {
             'infile' : chkDat
+            #For unification purpose, some APIs would omit below arguments
             ,'key' : chkDat_df
         }
-        if chkDat_opt.get('HDFS',{}):
-            opt_hdfs.update(chkDat_opt.get('HDFS',{}))
-        opt_sas = {
-            'infile' : chkDat
-        }
-        if chkDat_opt.get('SAS',{}):
-            opt_sas.update(chkDat_opt.get('SAS',{}))
-        imp_func = {
-            'RAM' : {
-                '_func' : std_read_RAM
-                ,'_opt' : {
-                    'infile' : chkDat
-                }
-            }
-            ,'HDFS' : {
-                '_func' : std_read_HDFS
-                ,'_opt' : opt_hdfs
-            }
-            ,'SAS' : {
-                '_func' : std_read_SAS
-                ,'_opt' : opt_sas
-            }
-        }
+        modifyDict(_opt_chk, chkDat_opt.get(chkDatType,{}), inplace = True)
 
         #500. Call functions to import data from current path
         #510. Create a list of unique column names for selection from the input data
@@ -1026,8 +1000,9 @@ def aggrByPeriod(
 
         #590. Load the data and conduct the requested transformation
         ABP_set_CP = (
-            imp_func[chkDatType]['_func'](**imp_func[chkDatType]['_opt'])
+            dataIO[chkDatType].pull(**_opt_chk)
             #100. Only select necessary columns
+            .rename(columns = lambda x: x.upper())
             .loc[:, sel_CP]
             .copy(deep=True)
             .assign(**{
@@ -1053,7 +1028,7 @@ def aggrByPeriod(
 
     #760. Identify the columns to <copy> to the result, i.e. retain their respective values at the last record
     if keep_all_col:
-        copy_cols = [ f for f in ABP_setall.columns if f not in (sort_cols + grp_cols + ['.Tmp_Val']) ]
+        copy_cols = [ f for f in ABP_setall.columns if f not in (sort_cols + grp_cols + ['.Tmp_Val','.CalcLead.']) ]
     else:
         copy_cols = [ f for f in copyVar if f not in (sort_cols + grp_cols + ['.Tmp_Val']) ]
 

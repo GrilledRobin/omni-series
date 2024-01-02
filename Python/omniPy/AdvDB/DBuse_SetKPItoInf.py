@@ -13,8 +13,8 @@ from pathos.multiprocessing import ProcessPool as Pool
 from warnings import warn
 from collections.abc import Iterable
 from typing import Optional
-from omniPy.AdvOp import debug_comp_datcols
-from . import std_read_HDFS, std_read_RAM, std_read_SAS, parseDatName
+from omniPy.AdvOp import debug_comp_datcols, modifyDict
+from omniPy.AdvDB import parseDatName, DataIO
 
 #For annotations in function arguments, see [PEP 604 -- Allow writing union types as X | Y] for [Python >= 3.10]
 def DBuse_SetKPItoInf(
@@ -27,7 +27,7 @@ def DBuse_SetKPItoInf(
     ,fTrans_opt : dict = {}
     ,fImp_opt : dict = {
         'SAS' : {
-            'encoding' : 'GB2312'
+            'encoding' : 'GB18030'
         }
     }
     ,_parallel : bool = True
@@ -40,7 +40,8 @@ def DBuse_SetKPItoInf(
         'L_d_curr' : '%Y%m%d'
         ,'L_m_curr' : '%Y%m'
     }
-) -> 'Merge the KPI data files with their respective Information Tables and set together all the merged results':
+    ,kw_DataIO : dict = {}
+) -> dict:
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -126,6 +127,8 @@ def DBuse_SetKPItoInf(
 #   |               [chr string      ]            User defined [key] of the output result that stores the debug information             #
 #   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
 #   |               [ <dict>         ]  <Default> See the function definition as the default argument of usage                          #
+#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
+#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -167,6 +170,11 @@ def DBuse_SetKPItoInf(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fix a bug that causes duplication when there are more than 1 KPI stored in the same data file during retrieval          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -182,11 +190,10 @@ def DBuse_SetKPItoInf(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |debug_comp_datcols                                                                                                         #
+#   |   |   |modifyDict                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvDB                                                                                                                   #
-#   |   |   |std_read_HDFS                                                                                                              #
-#   |   |   |std_read_RAM                                                                                                               #
-#   |   |   |std_read_SAS                                                                                                               #
+#   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -222,6 +229,9 @@ def DBuse_SetKPItoInf(
     if not isinstance(miss_skip, bool): miss_skip = True
     if (not miss_files) | (not isinstance(miss_files, str)): miss_files = 'G_miss_files'
     if (not err_cols) | (not isinstance(err_cols, str)): err_cols = 'G_err_cols'
+
+    #021. Instantiate the IO operator for data migration
+    dataIO = DataIO(**kw_DataIO)
 
     #050. Local environment
     outDict = {
@@ -367,36 +377,18 @@ def DBuse_SetKPItoInf(
             )
 
         #300. Prepare the function to apply to the process list
-        opt_hdfs = {
+        dataIO.add(imp_type)
+        _opt_in = {
             'infile' : imp_path
+            #For unification purpose, some APIs would omit below arguments
             ,'key' : imp_df
         }
-        if fImp_opt.get('HDFS'): opt_hdfs.update(fImp_opt.get('HDFS'))
-        opt_sas = {
-            'infile' : imp_path
-        }
-        if fImp_opt.get('SAS'): opt_sas.update(fImp_opt.get('SAS'))
-        imp_func = {
-            'RAM' : {
-                '_func' : std_read_RAM
-                ,'_opt' : {
-                    'infile' : imp_path
-                }
-            }
-            ,'HDFS' : {
-                '_func' : std_read_HDFS
-                ,'_opt' : opt_hdfs
-            }
-            ,'SAS' : {
-                '_func' : std_read_SAS
-                ,'_opt' : opt_sas
-            }
-        }
+        modifyDict(_opt_in, fImp_opt.get(imp_type,{}), inplace = True)
 
         #500. Call functions to import data from current path
         #510. Upcase the field names for all imported data, to facilitate the later [bind_rows]
         #Ensure the field used at below steps are all referred to in upper case
-        imp_data = imp_func[imp_type]['_func'](**imp_func[imp_type]['_opt']).rename( str.upper, axis = 1 )
+        imp_data = dataIO[imp_type].pull(**_opt_in).rename( str.upper, axis = 1 )
 
         #550. Only keep the KPIs that are defined in [inKPICfg] to reduce the RAM expense
         #Quote: https://stackoverflow.com/questions/19960077/how-to-filter-pandas-dataframe-using-in-and-not-in-like-in-sql
@@ -505,6 +497,7 @@ if __name__=='__main__':
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import loadSASdat, DBuse_SetKPItoInf
+    from omniPy.Dates import UserCalendar, asDates
 
     #100. Set parameters
     G_d_curr = '20160310'
@@ -514,8 +507,8 @@ if __name__=='__main__':
     CFG_LIB, meta_lib = loadSASdat(r'D:\R\omniR\SampleKPI\KPI\K1\cfg_lib.sas7bdat', encoding = 'GB2312')
 
     #190. Combine the configuration tables
-    mask_kpi = CFG_KPI.apply(lambda x: x['D_BGN'] <= pd.to_datetime(G_d_curr) <= x['D_END'], axis = 1)
-    mask_lib = CFG_LIB.apply(lambda x: x['D_BGN'] <= pd.to_datetime(G_d_curr) <= x['D_END'], axis = 1)
+    mask_kpi = CFG_KPI.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
+    mask_lib = CFG_LIB.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
     KPICfg_all = CFG_KPI[mask_kpi].merge( CFG_LIB[mask_lib], on = 'C_KPI_DAT_LIB', suffixes = ('', '.y') )
     KPICfg_all = KPICfg_all.loc[:, ~KPICfg_all.columns.str.endswith('.y')]
     KPICfg_all['C_KPI_FILE_TYPE'] = 'SAS'
@@ -549,7 +542,7 @@ if __name__=='__main__':
         ,fTrans_opt = fmt_opt
         ,fImp_opt = {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,_parallel = False
@@ -575,7 +568,7 @@ if __name__=='__main__':
         ,fTrans_opt = fmt_opt
         ,fImp_opt = {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         ,_parallel = True

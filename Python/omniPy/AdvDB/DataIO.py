@@ -345,10 +345,8 @@ class DataIO():
 
     #320. Add all available APIs to current private environment
     def addfull(self, kw_pull_ = {}, kw_push_ = {}, **kw):
-        kw_pull = modifyDict(self.argsPull, kw_pull_)
-        kw_push = modifyDict(self.argsPush, kw_push_)
         for a in self.full:
-            self.add(a, kw_pull_ = kw_pull.get(a, {}), kw_push_ = kw_push.get(a, {}), **kw)
+            self.add(a, kw_pull_ = kw_pull_.get(a, {}), kw_push_ = kw_push_.get(a, {}), **kw)
 
     #360. Remove API from private environment
     def remove(self, attr):

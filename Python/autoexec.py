@@ -26,7 +26,6 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |paths_omniPy        :   Candidate directory names to search for the user defined library of [name_omniPy]                          #
 #   |name_omniPy         :   Name of the user defined library, which contains many useful functions                                     #
-#   |candidate_ClndrAdj  :   Candidate full paths of the [Calendar Adjustment Data]                                                     #
 #   |path_omniPy         :   Physically existing directory of the user defined library as [name_omniPy]                                 #
 #   |G_clndr             :   Business calendar from 5 years ago to 1 month later, counting from [datetime.date.today()]                 #
 #   |G_obsDates          :   Business date-shifting tool covering the period from 5 years ago to 1 month later, counting from           #
@@ -98,8 +97,6 @@ name_omnimacro = r'omnimacro'
 #Quote: https://stackoverflow.com/questions/533905/get-the-cartesian-product-of-a-series-of-lists
 comb_autoexec = list(product(drives_autoexec, paths_autoexec))
 paths_omniPy = [ os.path.join( *p ) for p in comb_autoexec ]
-paths_omnimacro = [ os.path.join( *p, name_omnimacro ) for p in comb_autoexec ]
-candidate_ClndrAdj = [ os.path.join(d, r'Dates',r'CalendarAdj.csv') for d in paths_omnimacro ]
 
 #200. Import the user defined package
 #210. Only retrieve the first valid path from the list of candidate paths
@@ -119,7 +116,13 @@ import omniPy as opy
 reload(opy)
 
 #400. Identify the dates to be adjusted based on government policy
-path_ClndrAdj = list(filter( os.path.isfile , candidate_ClndrAdj ))[0]
+from omniPy.Dates import getCalendarAdj
+path_ClndrAdj = getCalendarAdj(
+    lst_drives = drives_autoexec
+    ,lst_parent = paths_autoexec
+    ,lst_fpath = [name_omniPy, name_omnimacro]
+    ,lst_fcurr = ['Dates']
+)
 
 #500. Create global system options (similar to global variables, but more specific when being referenced to during program call)
 #Below options are dependencies to the rest options
@@ -172,7 +175,7 @@ getOption.update({
             ,'_trans_opt' : getOption['fmt.opt.def.GTSFK']
             ,'_imp_opt' : {
                 'SAS' : {
-                    'encoding' : 'GB2312'
+                    'encoding' : 'GB18030'
                 }
             }
             ,'_func' : None
@@ -191,7 +194,7 @@ getOption.update({
         ,'fTrans_opt' : getOption['fmt.opt.def.GTSFK']
         ,'fImp_opt' : {
             'SAS' : {
-                'encoding' : 'GB2312'
+                'encoding' : 'GB18030'
             }
         }
         #Whether to use multiple CPU cores to import the data in parallel; [T] is recommended for large number of large data files

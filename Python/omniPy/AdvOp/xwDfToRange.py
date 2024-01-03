@@ -212,6 +212,11 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now set the format of string-like index levels as text as well                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240103        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when the input data is empty                                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -263,14 +268,15 @@ def xwDfToRange(
     row_adj = df.columns.nlevels if header else 0
     col_adj = df.index.nlevels if index else 0
     table_top, table_left = 0,0
-    table_bottom = table_top + row_adj + len(df) - 1
-    table_right = table_left + col_adj + len(df.columns) - 1
+    len_row, len_col = df.shape
+    table_bottom = table_top + row_adj + len_row - 1
+    table_right = table_left + col_adj + len_col - 1
     data_top = table_top + row_adj
     data_left = table_left + col_adj
     box_bottom = data_top - 1
     box_right = data_left - 1
     xlrng = {}
-    f_empty = (len(df) == 0) or (len(df.columns) == 0)
+    f_empty = (len_row == 0) or (len_col == 0)
 
     #090. Resize the range to ensure the slicing is successful
     if not asformatter:
@@ -478,7 +484,7 @@ def xwDfToRange(
         ]
 
     #460. Header
-    if header:
+    if header & (len_col > 0):
         xlrng['header'] = [
             (
                 slice(table_top, box_bottom + 1, None)
@@ -496,7 +502,7 @@ def xwDfToRange(
         ]
 
     #470. Index
-    if index:
+    if index & (len_row > 0):
         xlrng['index'] = [
             (
                 slice(data_top, table_bottom + 1, None)
@@ -515,7 +521,7 @@ def xwDfToRange(
 
     #480. Stripes
     #481. Identify the levels to create stripes within [df.index] range
-    if index:
+    if index & (len_row > 0):
         lvl_stripe = [ i for i in range(df.index.nlevels) if i not in idx_to_merge ]
         xlstripe_idx = [
             (
@@ -595,12 +601,12 @@ def xwDfToRange(
         if not len(item_theme): continue
 
         #500. Differentiate the scenarios
-        # print(k)
+        # print('<k>: ' + k)
         for r in v:
-            # print(rng.__getitem__(r).address)
+            # print('<r>: ' + rng.__getitem__(r).address)
             for debugname, attr in item_theme.items():
                 #Quote: https://gaopinghuang0.github.io/2018/11/17/python-slicing
-                # print(debugname)
+                # print('<debugname>: ' + debugname)
                 rsetattr(rng.__getitem__(r), **attr)
 
     #700. Set the styles of the requested ranges
@@ -799,6 +805,9 @@ if __name__=='__main__':
     )
     upvt = pd.pivot_table(udf, values='D', index=['A', 'B'],columns=['C','D'], aggfunc=np.sum, fill_value = 0)
     udf2 = udf.copy(deep=True).assign(**{ 'F' : lambda x: pd.Series(np.random.randn(len(x)), dtype = 'string') })
+    testdf = pd.DataFrame({'aaa' : [1,3,5], 'bbb' : ['01','03','05']}, index = [2,4,7])
+    emp_row = testdf.head(0)
+    emp_col = testdf.loc[:, []]
 
     #200. Set the universal parameters
     args_xw = {
@@ -945,6 +954,25 @@ if __name__=='__main__':
             ]
         )
         xlsh2.autofit()
+
+        #800. Export empty data frames
+        xlsh3 = xlwb.sheets.add('EMPTY_ROW')
+        xlsh3.cells.color = xw.utils.hex_to_rgb('#202122')
+        xlrng3 = xlsh3.range('B2').expand().options(pd.DataFrame, index = True, header = True)
+        xwDfToRange(
+            xlrng3
+            ,emp_row
+        )
+        xlsh3.autofit()
+
+        xlsh4 = xlwb.sheets.add('EMPTY_COL')
+        xlsh4.cells.color = xw.utils.hex_to_rgb('#202122')
+        xlrng4 = xlsh4.range('B2').expand().options(pd.DataFrame, index = True, header = True)
+        xwDfToRange(
+            xlrng4
+            ,emp_col
+        )
+        xlsh4.autofit()
 
         #999. Purge
         xlwb.save(xlfile)

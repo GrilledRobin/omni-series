@@ -412,7 +412,7 @@ class OpenSourceApiMeta(type):
     #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
     def init(clsobj, hdlPull : callable, hdlPush : callable):
-        def __init__(self, *pos, kw_pull_ = {}, kw_push_ = {}, **kw):
+        def __init__(self, *pos, argsPull = {}, argsPush = {}, **kw):
             #005. Set the default handlers BEFORE initialization, to allow the user to customize them at initialization
             self.hdlPull = hdlPull
             self.hdlPush = hdlPush
@@ -423,8 +423,8 @@ class OpenSourceApiMeta(type):
             #100. Assign values to local variables
             self.__pulled__ = None
             self.__pushed__ = None
-            self.__inputkw_pull__ = kw_pull_
-            self.__inputkw_push__ = kw_push_
+            self.__inputkw_pull__ = argsPull
+            self.__inputkw_push__ = argsPush
             self.__inputkw__ = kw
 
         return(__init__)

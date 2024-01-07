@@ -73,8 +73,8 @@ class DataIO():
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |attr              :   <str     > Name of the dedicated API to register, e.g. SAS, HDFS or RAM                              #
-#   |   |   |kw_pull_          :   <dict    > kwargs for the <pull> method of the registered API as default arguments at initilization  #
-#   |   |   |kw_push_          :   <dict    > kwargs for the <push> method of the registered API as default arguments at initilization  #
+#   |   |   |argsPull          :   <dict    > kwargs for the <pull> method of the registered API as default arguments at initilization  #
+#   |   |   |argsPush          :   <dict    > kwargs for the <push> method of the registered API as default arguments at initilization  #
 #   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
@@ -90,8 +90,8 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |kw_pull_          :   <dict    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
-#   |   |   |kw_push_          :   <dict    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
+#   |   |   |argsPull          :   <dict    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
+#   |   |   |argsPush          :   <dict    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
 #   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
@@ -304,7 +304,7 @@ class DataIO():
         return(self.__getattr__(attr))
 
     #300. Public methods
-    def add(self, attr, kw_pull_ = {}, kw_push_ = {}, **kw):
+    def add(self, attr, argsPull = {}, argsPush = {}, **kw):
         #100. Verify whether the API can be found in the candidate packages
         if attr not in self.full:
             raise ValueError(f'[{self.__class__.__name__}]No method is found to register API for [{attr}]!')
@@ -331,11 +331,11 @@ class DataIO():
         #[2] Given <argsPull> is non-empty while <**kw> is empty, we take <argsPull> to call the API
         #[3] Given <**kw> is provided, we call the API with it
         #[4] Use the same logic to handle <argsPush>
-        kw_pull = modifyDict(self.argsPull.get(attr, {}), kw_pull_)
-        kw_push = modifyDict(self.argsPush.get(attr, {}), kw_push_)
+        kw_pull = modifyDict(self.argsPull.get(attr, {}), argsPull)
+        kw_push = modifyDict(self.argsPush.get(attr, {}), argsPush)
 
         #500. Instantiate the API and read data from it at once
-        obj = cls(kw_pull_ = kw_pull, kw_push_ = kw_push, **kw)
+        obj = cls(argsPull = kw_pull, argsPush = kw_push, **kw)
 
         #700. Add current API to the attribute list of current framework
         setattr(self, attr, obj)
@@ -344,9 +344,9 @@ class DataIO():
         modifyDict(self.__dict_active__, { attr : True }, inplace = True)
 
     #320. Add all available APIs to current private environment
-    def addfull(self, kw_pull_ = {}, kw_push_ = {}, **kw):
+    def addfull(self, argsPull = {}, argsPush = {}, **kw):
         for a in self.full:
-            self.add(a, kw_pull_ = kw_pull_.get(a, {}), kw_push_ = kw_push_.get(a, {}), **kw)
+            self.add(a, argsPull = argsPull.get(a, {}), argsPush = argsPush.get(a, {}), **kw)
 
     #360. Remove API from private environment
     def remove(self, attr):

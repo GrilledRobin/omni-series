@@ -867,7 +867,7 @@ def aggrByPeriod(
         imp_data = (
             dataIO[inDat_type].pull(**_opt_in)
             #100. Only select necessary columns
-            .rename(columns = lambda x: x.upper())
+            .rename(str.upper, axis = 1)
             .loc[:, select_at].copy(deep=True)
             #300. Fill [NaN] values with 0 to avoid meaningless results
             .fillna(value = { aggrVar : 0 })
@@ -1002,7 +1002,7 @@ def aggrByPeriod(
         ABP_set_CP = (
             dataIO[chkDatType].pull(**_opt_chk)
             #100. Only select necessary columns
-            .rename(columns = lambda x: x.upper())
+            .rename(str.upper, axis = 1)
             .loc[:, sel_CP]
             .copy(deep=True)
             .assign(**{

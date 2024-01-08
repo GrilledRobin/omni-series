@@ -46,7 +46,7 @@ def DBuse_GetTimeSeriesForKpi(
     ,KeepInfCol : bool = False
     ,fTrans : Optional[dict] = None
     ,fTrans_opt : dict = {}
-    ,fImp_opt : dict = {
+    ,fImp_opt : dict | str = {
         'SAS' : {
             'encoding' : 'GB18030'
         }
@@ -182,6 +182,8 @@ def DBuse_GetTimeSeriesForKpi(
 #   |               [SAS             ]  <Default> Options for [pyreadstat.read_sas7bdat]                                                #
 #   |                                             [encoding = 'GB2312'  ]  <Default> Read SAS data in this encoding                     #
 #   |               [<dict>          ]            Other dicts for different engines, such as [R:{}] and [HDFS:{}]                       #
+#   |               [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be     #
+#   |                                              parsed as a <dict>                                                                   #
 #   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
 #   |               [True            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
 #   |               [False           ]            Load the data files sequentially                                                      #
@@ -283,6 +285,7 @@ def DBuse_GetTimeSeriesForKpi(
 #   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -906,10 +909,17 @@ if __name__=='__main__':
     #190. Combine the configuration tables
     mask_kpi = CFG_KPI.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
     mask_lib = CFG_LIB.apply(lambda x: x['D_BGN'] <= asDates(G_d_curr) <= x['D_END'], axis = 1)
-    KPICfg_all = CFG_KPI[mask_kpi].merge( CFG_LIB[mask_lib], on = 'C_KPI_DAT_LIB', suffixes = ('', '.y') )
-    KPICfg_all = KPICfg_all.loc[:, ~KPICfg_all.columns.str.endswith('.y')]
-    KPICfg_all['C_KPI_FILE_TYPE'] = 'SAS'
-    KPICfg_all['C_KPI_FILE_NAME'] = KPICfg_all['C_KPI_DAT_NAME'] + '.sas7bdat'
+    KPICfg_all = (
+        CFG_KPI[mask_kpi]
+        .merge( CFG_LIB[mask_lib], on = 'C_KPI_DAT_LIB', suffixes = ('', '.y') )
+        .loc[:, lambda x: ~x.columns.str.endswith('.y')]
+        .assign(**{
+            'C_KPI_FILE_TYPE' : 'SAS'
+            ,'C_KPI_FILE_NAME' : lambda x: x['C_KPI_DAT_NAME'].add('.sas7bdat')
+            # Content of below column must be a literal string as required
+            ,'options' : lambda x: [str({'encoding' : 'GB18030'}) for i in range(len(x))]
+        })
+    )
 
     #150. Prepare the date list
     cln = UserCalendar(
@@ -945,6 +955,7 @@ if __name__=='__main__':
                     ,'b' : 4
                 }
             }
+            ,'fImp_opt' : 'options'
             ,'SingleInf' : True
             ,'dnDates' : cln.d_AllWD
             ,'MergeProc' : 'MERGE'

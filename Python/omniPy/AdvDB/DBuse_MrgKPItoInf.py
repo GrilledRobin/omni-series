@@ -19,7 +19,7 @@ def DBuse_MrgKPItoInf(
     ,KeepInfCol : bool = False
     ,fTrans : Optional[dict] = None
     ,fTrans_opt : dict = {}
-    ,fImp_opt : dict = {
+    ,fImp_opt : dict | str = {
         'SAS' : {
             'encoding' : 'GB18030'
         }
@@ -107,6 +107,8 @@ def DBuse_MrgKPItoInf(
 #   |               [SAS             ]  <Default> Options for [pyreadstat.read_sas7bdat]                                                #
 #   |                                             [encoding = 'GB2312'  ]  <Default> Read SAS data in this encoding                     #
 #   |               [<dict>          ]            Other dicts for different engines, such as [R:{}] and [HDFS:{}]                       #
+#   |               [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be     #
+#   |                                              parsed as a <dict>                                                                   #
 #   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
 #   |               [True            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
 #   |               [False           ]            Load the data files sequentially                                                      #
@@ -203,6 +205,7 @@ def DBuse_MrgKPItoInf(
 #   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

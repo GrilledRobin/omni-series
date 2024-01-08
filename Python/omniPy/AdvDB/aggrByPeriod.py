@@ -393,6 +393,8 @@ def aggrByPeriod(
         chkBgn = dateBgn
     if chkDatType in ['HDFS']:
         if not chkDat_df: raise ValueError(f'[{LfuncName}][chkDat_df] is not provided for [chkDatType={chkDatType}]!')
+    if isinstance(chkDatVar, str):
+        chkDatVar = chkDatVar.upper()
 
     if isinstance(byVar, str):
         byVar = [byVar]

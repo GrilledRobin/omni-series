@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os, sys
+import os, sys, ast
 import pandas as pd
 import numpy as np
 from pathos.multiprocessing import ProcessPool as Pool
@@ -25,7 +25,7 @@ def DBuse_SetKPItoInf(
     ,KeepInfCol : bool = False
     ,fTrans : Optional[dict] = None
     ,fTrans_opt : dict = {}
-    ,fImp_opt : dict = {
+    ,fImp_opt : dict | str = {
         'SAS' : {
             'encoding' : 'GB18030'
         }
@@ -107,8 +107,10 @@ def DBuse_SetKPItoInf(
 #   |fImp_opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
 #   |               Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                     #
 #   |               [SAS             ]  <Default> Options for [pyreadstat.read_sas7bdat]                                                #
-#   |                                             [encoding = 'GB2312'  ]  <Default> Read SAS data in this encoding                     #
+#   |                                             [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                     #
 #   |               [<dict>          ]            Other dicts for different engines, such as [R:{}] and [HDFS:{}]                       #
+#   |               [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be     #
+#   |                                              parsed as a <dict>                                                                   #
 #   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
 #   |               [True            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
 #   |               [False           ]            Load the data files sequentially                                                      #
@@ -174,6 +176,7 @@ def DBuse_SetKPItoInf(
 #   | Date |    20240102        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -184,7 +187,7 @@ def DBuse_SetKPItoInf(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, pandas, numpy, pathos, warnings, collections, typing                                                                  #
+#   |   |sys, os, ast, pandas, numpy, pathos, warnings, collections, typing                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -207,7 +210,8 @@ def DBuse_SetKPItoInf(
     __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
-    if inKPICfg is None: raise ValueError('['+LfuncName+']'+'[inKPICfg] is not provided!')
+    if not isinstance(inKPICfg, pd.DataFrame):
+        raise ValueError('['+LfuncName+']'+'[inKPICfg] must be pd.DataFrame!')
     if InfDat is not None:
         if not keyvar:
             raise ValueError('['+LfuncName+']'+'[keyvar] is not provided for mapping to [InfDat]!')
@@ -245,6 +249,15 @@ def DBuse_SetKPItoInf(
     #calc_var = [ 'C_KPI_ID', 'A_KPI_VAL', 'D_TABLE' ]
     trans_var = [ 'C_KPI_FILE_NAME', 'C_KPI_FULL_PATH' ]
     params_funcs = ['DF_NAME']
+    if isinstance(fImp_opt, dict):
+        pass
+    elif fImp_opt in inKPICfg.columns:
+        params_funcs += [fImp_opt]
+    else:
+        raise ValueError(
+            f'[{LfuncName}]<fImp_opt> must be dict or existing name in <inKPICfg>'
+            +', given <{str(fImp_opt)}> as type <{type(fImp_opt).__name__}>'
+        )
     comb_func = {
         'I' : 'left'
         ,'K' : 'right'
@@ -364,6 +377,13 @@ def DBuse_SetKPItoInf(
         imp_path = files_prep.at[i, 'C_KPI_FULL_PATH']
         if imp_type in ['HDFS']: imp_df = files_prep.at[i, 'DF_NAME']
         else: imp_df = None
+        if isinstance(fImp_opt, dict):
+            _opt_this = fImp_opt.get(imp_type,{})
+        else:
+            #Quote: https://stackoverflow.com/questions/988228/convert-a-string-representation-of-a-dictionary-to-a-dictionary/
+            _opt_this = files_prep.at[i, fImp_opt]
+            if not isinstance(_opt_this, dict):
+                _opt_this = ast.literal_eval(_opt_this)
 
         #199. Debug mode
         if fDebug:
@@ -374,6 +394,7 @@ def DBuse_SetKPItoInf(
                 +'[imp_type]=['+imp_type+']'
                 +'[imp_path]=['+imp_path+']'
                 +'[imp_df]=['+ (imp_df or 'NULL') +']'
+                +'[_opt_this]=['+str(_opt_this)+']'
             )
 
         #300. Prepare the function to apply to the process list
@@ -383,16 +404,18 @@ def DBuse_SetKPItoInf(
             #For unification purpose, some APIs would omit below arguments
             ,'key' : imp_df
         }
-        modifyDict(_opt_in, fImp_opt.get(imp_type,{}), inplace = True)
+        modifyDict(_opt_in, _opt_this, inplace = True)
 
         #500. Call functions to import data from current path
-        #510. Upcase the field names for all imported data, to facilitate the later [bind_rows]
-        #Ensure the field used at below steps are all referred to in upper case
-        imp_data = dataIO[imp_type].pull(**_opt_in).rename( str.upper, axis = 1 )
-
-        #550. Only keep the KPIs that are defined in [inKPICfg] to reduce the RAM expense
-        #Quote: https://stackoverflow.com/questions/19960077/how-to-filter-pandas-dataframe-using-in-and-not-in-like-in-sql
-        imp_data = imp_data.loc[ imp_data['C_KPI_ID'].isin(imp_KPI) ].copy(deep=True)
+        imp_data = (
+            dataIO[imp_type].pull(**_opt_in)
+            #100. Upcase the field names for all imported data, to facilitate the later [bind_rows]
+            #Ensure the field used at below steps are all referred to in upper case
+            .rename( str.upper, axis = 1 )
+            #500. Only keep the KPIs that are defined in [inKPICfg] to reduce the RAM expense
+            #Quote: https://stackoverflow.com/questions/19960077/how-to-filter-pandas-dataframe-using-in-and-not-in-like-in-sql
+            .loc[lambda x: x['C_KPI_ID'].isin(imp_KPI)]
+        )
 
         #900. Assign additional attributes to the data frame for column class check at later steps
         imp_dict = {

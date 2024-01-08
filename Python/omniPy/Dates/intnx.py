@@ -345,6 +345,7 @@ def intnx(
         #[ASSUMPTION]
         #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
         df_out = df.copy(deep = True).astype('object')
+        df_out[df_out.isnull()] = pd.NaT
 
         #500. Re-assign the output values in terms of the request
         #[ASSUMPTION]
@@ -1015,6 +1016,10 @@ if __name__=='__main__':
     #915. [None] vs [int]
     print(intnx('day2', None, 1, daytype = 'w'))
     #Return: None
+
+    #916. [np.nan] vs [int]
+    print(intnx('day2', np.nan, 1, daytype = 'w'))
+    #Return: pd.NaT
 
     #915. [date] vs [np.nan]
     print(intnx('day2', dt1, np.nan, daytype = 'w'))

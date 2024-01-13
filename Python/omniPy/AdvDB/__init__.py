@@ -25,6 +25,7 @@ from .aggrByPeriod import aggrByPeriod
 from .DBuse_SetKPItoInf import DBuse_SetKPItoInf
 from .DBuse_MrgKPItoInf import DBuse_MrgKPItoInf
 from .DBuse_GetTimeSeriesForKpi import DBuse_GetTimeSeriesForKpi
+from .kfFunc_ts_mtd import kfFunc_ts_mtd
 
 #200.   Define available resources.
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     , 'parseDatName'
     , 'OpenSourceApiMeta'
     , 'inferContents', 'writeSASdat', 'std_write_HDFS', 'std_write_RAM', 'std_write_SAS', 'DataIO'
+    , 'kfFunc_ts_mtd'
 ]

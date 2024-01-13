@@ -178,6 +178,11 @@ def DBuse_SetKPItoInf(
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240112        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when the KPI data is stored in RAM                                                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -207,23 +212,22 @@ def DBuse_SetKPItoInf(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
     if not isinstance(inKPICfg, pd.DataFrame):
-        raise ValueError('['+LfuncName+']'+'[inKPICfg] must be pd.DataFrame!')
+        raise ValueError(f'[{LfuncName}][inKPICfg] must be pd.DataFrame!')
     if InfDat is not None:
         if not keyvar:
-            raise ValueError('['+LfuncName+']'+'[keyvar] is not provided for mapping to [InfDat]!')
+            raise ValueError(f'[{LfuncName}][keyvar] is not provided for mapping to [InfDat]!')
         if not isinstance(keyvar, Iterable):
-            raise TypeError('['+LfuncName+']'+'[keyvar] should be [Iterable]!')
+            raise TypeError(f'[{LfuncName}][keyvar] should be [Iterable]!')
         if isinstance(keyvar, str):
             keyvar = [keyvar.upper()]
         else:
             keyvar = [ v.upper() for v in keyvar ]
     SetAsBase = SetAsBase.upper()
     if SetAsBase not in ['I','K','B','F']:
-        raise ValueError('['+LfuncName+']'+'[SetAsBase] should be any among [I, K, B, F]!')
+        raise ValueError(f'[{LfuncName}][SetAsBase] should be any among [I, K, B, F]!')
     if not isinstance(KeepInfCol, bool): KeepInfCol = False
     if fTrans_opt is None: fTrans_opt = {}
     if not isinstance(_parallel, bool): _parallel = False
@@ -256,7 +260,7 @@ def DBuse_SetKPItoInf(
     else:
         raise ValueError(
             f'[{LfuncName}]<fImp_opt> must be dict or existing name in <inKPICfg>'
-            +', given <{str(fImp_opt)}> as type <{type(fImp_opt).__name__}>'
+            +f', given <{str(fImp_opt)}> as type <{type(fImp_opt).__name__}>'
         )
     comb_func = {
         'I' : 'left'
@@ -267,13 +271,13 @@ def DBuse_SetKPItoInf(
 
     #099. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Debug mode...')
-        print('['+LfuncName+']'+'Parameters are listed as below:')
+        print(f'[{LfuncName}]Debug mode...')
+        print(f'[{LfuncName}]Parameters are listed as below:')
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         getvar = sys._getframe().f_code.co_varnames
         for v in getvar:
             if v not in ['v','getvar']:
-                print('['+LfuncName+']'+'[{0}]=[{1}]'.format(v,locals().get(v)))
+                print(f'[{LfuncName}]'+'[{0}]=[{1}]'.format(v,str(locals().get(v))))
 
     #100. Translate the configurations once required
     #110. Define the full path of data files
@@ -284,17 +288,37 @@ def DBuse_SetKPItoInf(
     #150. Map any dynamic values in the data file paths
     #[ASSUMPTION]:
     #[1] [dates=None] The variables of date values for translation have been defined in the frames at lower call stacks
-    #[2] [inRAM=False] All requested data files are on harddisk, rather than in RAM of current session
+    #[2] Separately find the full path of KPI data file by differing the file type as input
     #[3] The output data frame of below function has the same index as its input, given [dates=None]
-    parse_kpicfg = parseDatName(
-        datPtn = KPICfg[trans_var]
-        ,parseCol = None
-        ,dates = None
-        ,outDTfmt = outDTfmt
-        ,inRAM = False
-        ,chkExist = True
-        ,dict_map = fTrans
-        ,**fTrans_opt
+    parse_kpicfg = (
+        parseDatName(
+            datPtn = KPICfg[trans_var]
+            ,parseCol = None
+            ,dates = None
+            ,outDTfmt = outDTfmt
+            ,inRAM = False
+            ,chkExist = True
+            ,dict_map = fTrans
+            ,**fTrans_opt
+        )
+        .assign(**{
+            'C_KPI_FULL_PATH.chkExist' : lambda x: (
+                parseDatName(
+                    datPtn = KPICfg['C_KPI_FULL_PATH']
+                    ,parseCol = None
+                    ,dates = None
+                    ,outDTfmt = outDTfmt
+                    ,inRAM = KPICfg['C_KPI_FILE_TYPE'].eq('RAM')
+                    ,chkExist = True
+                    ,dict_map = fTrans
+                    ,**fTrans_opt
+                )
+                .set_index('C_KPI_FULL_PATH.Parsed')
+                .reindex(x['C_KPI_FULL_PATH.Parsed'])
+                .set_index(x.index)
+                ['C_KPI_FULL_PATH.chkExist']
+            )
+        })
     )
 
     #190. Assign values for the necessary columns
@@ -321,10 +345,10 @@ def DBuse_SetKPItoInf(
 
         #999. Abort the process if no missing file is accepted
         if not miss_skip:
-            warn('['+LfuncName+']'+'User requests not to skip the missing files!')
-            warn('['+LfuncName+']'+'Check the data frame ['+miss_files+'] in the output result for missing files!')
+            warn(f'[{LfuncName}]User requests not to skip the missing files!')
+            warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
         else:
-            print('['+LfuncName+']'+'No data file is available! None result is returned!')
+            print(f'[{LfuncName}]No data file is available! None result is returned!')
             print( KPICfg[['C_KPI_ID', 'C_KPI_FULL_PATH']] )
 
         return(outDict)
@@ -338,7 +362,7 @@ def DBuse_SetKPItoInf(
     #535. Print the names of all missing files in the log and create a global data frame for debug
     if len(files_chk_miss):
         #001. Print messages
-        print('['+LfuncName+']'+'Below files are requested but do not exist.')
+        print(f'[{LfuncName}]Below files are requested but do not exist.')
         print(files_chk_miss)
 
         #500. Output a global data frame storing the information of the missing files
@@ -347,8 +371,8 @@ def DBuse_SetKPItoInf(
 
         #999. Abort the process if no missing file is accepted
         if not miss_skip:
-            warn('['+LfuncName+']'+'User requests not to skip the missing files!')
-            warn('['+LfuncName+']'+'Check the data frame ['+miss_files+'] in the output result for missing files!')
+            warn(f'[{LfuncName}]User requests not to skip the missing files!')
+            warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
             return(outDict)
 
     #550. Prepare the import statement given there could be multiple KPIs stored in the same data file
@@ -388,7 +412,7 @@ def DBuse_SetKPItoInf(
         #199. Debug mode
         if fDebug:
             print(
-                '['+LfuncName+']'
+                f'[{LfuncName}]'
                 +'[i]=['+str(i)+']'
                 +'[imp_KPI]=['+'|'.join(imp_KPI)+']'
                 +'[imp_type]=['+imp_type+']'
@@ -405,6 +429,10 @@ def DBuse_SetKPItoInf(
             ,'key' : imp_df
         }
         modifyDict(_opt_in, _opt_this, inplace = True)
+
+        #309. Debug mode
+        if fDebug:
+            print(f'[{LfuncName}]Loading from file: <{imp_path}>')
 
         #500. Call functions to import data from current path
         imp_data = (
@@ -430,7 +458,7 @@ def DBuse_SetKPItoInf(
     #590. Create a list of imported data frames and bind all rows of them together as one data frame
     #591. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
+        print(f'[{LfuncName}]Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
     #[IMPOTANT] There could be fields/columns in the same name but not the same types in different data files,
     #            but we throw the errors at the step [pandas.concat] to ask user to correct the input data,
     #            instead of guessing the correct types here, for it takes quite a lot of unnecessary effort.
@@ -466,8 +494,8 @@ def DBuse_SetKPItoInf(
         outDict.update({ err_cols : chk_cls })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'Some columns cannot be bound due to different dtypes!')
-        warn('['+LfuncName+']'+'Check data frame ['+err_cols+'] in the output result for these columns!')
+        warn(f'[{LfuncName}]Some columns cannot be bound due to different dtypes!')
+        warn(f'[{LfuncName}]Check data frame [{err_cols}] in the output result for these columns!')
         return(outDict)
 
     #680. Combine the data
@@ -481,7 +509,7 @@ def DBuse_SetKPItoInf(
     #800. Retrieve the information table as per request
     #801. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Combine [InfDat] with the loaded KPI data...')
+        print(f'[{LfuncName}]Combine [InfDat] with the loaded KPI data...')
 
     #810. Mark the same columns in both data for further [drop] process
     tbl_out = (

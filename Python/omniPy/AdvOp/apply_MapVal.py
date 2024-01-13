@@ -16,7 +16,7 @@ def apply_MapVal(
     ,PRX : bool = False
     ,full_match : bool = True
     ,ignore_case : bool = False
-) -> 'Map the values by the keys in the provided dict to their respective values based on various matching rules':
+) -> any:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -115,6 +115,11 @@ def apply_MapVal(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240110        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when ignoring case during pattern matching                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -186,7 +191,7 @@ def apply_MapVal(
     #[2] We have to look up for which [key] in [int_map] that matches current element within [matchobj]
     def repl_pair(matchobj):
         for k,v in int_map.items():
-            if re.fullmatch(k, matchobj[0]):
+            if re.fullmatch(k, matchobj[0], flags = flags):
                 return(v)
 
     #600. Define the mapping function to apply to each element of [vec]

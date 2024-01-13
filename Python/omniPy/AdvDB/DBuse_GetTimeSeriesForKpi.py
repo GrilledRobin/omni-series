@@ -287,6 +287,11 @@ def DBuse_GetTimeSeriesForKpi(
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240112        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when the KPI data is stored in RAM                                                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -321,30 +326,29 @@ def DBuse_GetTimeSeriesForKpi(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
-    if inKPICfg is None: raise ValueError('['+LfuncName+']'+'[inKPICfg] is not provided!')
+    if inKPICfg is None: raise ValueError(f'[{LfuncName}][inKPICfg] is not provided!')
     if not isinstance(SingleInf, bool): SingleInf = False
-    if not dnDates: raise ValueError('['+LfuncName+']'+'[dnDates] is not provided!')
+    if not dnDates: raise ValueError(f'[{LfuncName}][dnDates] is not provided!')
     d_Dates = asDates(dnDates)
     if isinstance(d_Dates, Iterable):
         if len(d_Dates) == 0:
-            raise ValueError('['+LfuncName+']'+'[dnDates]:[{0}] should be able to convert to date values!'.format(dnDates))
+            raise ValueError(f'[{LfuncName}][dnDates]:[{str(dnDates)}] should be able to convert to date values!')
         invdates = [ str(dnDates[i]) for i in range(len(dnDates)) if pd.isnull(d_Dates[i]) ]
         if invdates:
-            raise ValueError('['+LfuncName+']'+'Some values among [dnDates] cannot be converted to dates! ['+']['.join(invdates)+']')
+            raise ValueError(f'[{LfuncName}]Some values among [dnDates] cannot be converted to dates! {str(invdates)}')
     elif isinstance(d_Dates, dt.date):
         d_Dates = [d_Dates]
     else:
-        raise ValueError('['+LfuncName+']'+'[dnDates]:[{0}] should be able to convert to date values!'.format(dnDates))
+        raise ValueError(f'[{LfuncName}][dnDates]:[{str(dnDates)}] should be able to convert to date values!')
     if not ColRecDate: ColRecDate = 'D_RecDate'
     MergeProc = MergeProc.upper()
     if MergeProc not in ['SET','MERGE']:
-        raise ValueError('['+LfuncName+']'+'[MergeProc] should be any among [SET, MERGE]!')
+        raise ValueError(f'[{LfuncName}][MergeProc] should be any among [SET, MERGE]!')
     SetAsBase = SetAsBase.upper()
     if SetAsBase not in ['I','K','B','F']:
-        raise ValueError('['+LfuncName+']'+'[SetAsBase] should be any among [I, K, B, F]!')
+        raise ValueError(f'[{LfuncName}][SetAsBase] should be any among [I, K, B, F]!')
     if not isinstance(KeepInfCol, bool): KeepInfCol = False
     if fTrans_opt is None: fTrans_opt = {}
     if not isinstance(_parallel, bool): _parallel = False
@@ -363,13 +367,13 @@ def DBuse_GetTimeSeriesForKpi(
     if not values_fn: values_fn = np.sum
     if MergeProc == 'MERGE':
         if not AggrBy:
-            raise ValueError('['+LfuncName+']'+'[AggrBy] is not provided for pivoting, as [MergeProc]==[{0}]!'.format(MergeProc))
+            raise ValueError(f'[{LfuncName}][AggrBy] is not provided for pivoting, as [MergeProc]==[{MergeProc}]!')
     if InfDatCfg is None: InfDatCfg = {}
     if not isinstance(InfDatCfg, dict):
-        raise ValueError('['+LfuncName+']'+'[InfDatCfg] must be a dict!')
+        raise ValueError(f'[{LfuncName}][InfDatCfg] must be a dict!')
     if InfDatCfg.get('InfDat') is not None:
         if not isinstance(keyvar, Iterable):
-            raise TypeError('['+LfuncName+']'+'[keyvar] should be Iterable!')
+            raise TypeError(f'[{LfuncName}][keyvar] should be Iterable!')
         if isinstance(keyvar, str):
             keyvar = [keyvar.upper()]
         else:
@@ -409,10 +413,10 @@ def DBuse_GetTimeSeriesForKpi(
     cfg_local = deepcopy(InfDatCfg)
     if cfg_local.get('DatType') in ['HDFS']: imp_df = cfg_local.get('DF_NAME')
     else: imp_df = None
-    if not cfg_local.get('_trans'): cfg_local.update({'_trans',fTrans})
+    if not cfg_local.get('_trans'): cfg_local.update({'_trans':fTrans})
     DatType = cfg_local.get('DatType').upper()
     if DatType not in ['RAM','HDFS','SAS']:
-        raise ValueError('['+LfuncName+'][GTSFK_getInfDat]'+'[DatType] should be any among [RAM, HDFS, SAS]!')
+        raise ValueError(f'[{LfuncName}][GTSFK_getInfDat][DatType] should be any among [RAM, HDFS, SAS]!')
     _paths = cfg_local.get('_paths')
     if isinstance(_paths, str):
         _paths = [_paths]
@@ -420,7 +424,7 @@ def DBuse_GetTimeSeriesForKpi(
         _paths = list(_paths)
     else:
         if DatType not in ['RAM']:
-            raise ValueError('['+LfuncName+'][GTSFK_getInfDat]'+'[_paths] should be [str], or [Iterable] of the previous!')
+            raise ValueError(f'[{LfuncName}][GTSFK_getInfDat][_paths] should be [str], or [Iterable] of the previous!')
 
     #065. Combine the file path
     if _paths:
@@ -430,8 +434,8 @@ def DBuse_GetTimeSeriesForKpi(
 
     #099. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Debug mode...')
-        print('['+LfuncName+']'+'Parameters are listed as below:')
+        print(f'[{LfuncName}]Debug mode...')
+        print(f'[{LfuncName}]Parameters are listed as below:')
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         getvar = sys._getframe().f_code.co_varnames
         for v in getvar:
@@ -452,6 +456,10 @@ def DBuse_GetTimeSeriesForKpi(
             ,'key' : imp_df
         }
         modifyDict(_opt_inf, cfg_local.get('_imp_opt',{}).get(DatType,{}), inplace = True)
+
+        #509. Debug mode
+        if fDebug:
+            print(f'[{LfuncName}]Loading from file: <{InfDat}>')
 
         #700. Call functions to import data from current path
         imp_data = dataIO[DatType].pull(**_opt_inf)
@@ -520,7 +528,7 @@ def DBuse_GetTimeSeriesForKpi(
 
         #739. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Arguments for current iteration [i='+str(i)+'][curr_args]:')
+            print(f'[{LfuncName}]Arguments for current iteration [i={str(i)}][curr_args]:')
             print(curr_args)
 
         #790. Call the function as per request
@@ -598,7 +606,7 @@ def DBuse_GetTimeSeriesForKpi(
         #559. Abort if there is any one not found as Information Table is not skippable once requested
         if len(InfDat_miss):
             #001. Print messages
-            print('['+LfuncName+']'+'Below files of Information Table are requested but do not exist in the parsed path(s).')
+            print(f'[{LfuncName}]Below files of Information Table are requested but do not exist in the parsed path(s).')
             print(InfDat_miss[['datPtn', 'datPtn.Parsed']])
 
             #500. Output a global data frame storing the information of the missing files
@@ -606,8 +614,8 @@ def DBuse_GetTimeSeriesForKpi(
             outDict.update({ miss_files : InfDat_miss })
 
             #999. Abort the process
-            warn('['+LfuncName+']'+'Non-existence of Information Table cannot be skipped!')
-            warn('['+LfuncName+']'+'Check the data frame ['+miss_files+'] in the output result for missing files!')
+            warn(f'[{LfuncName}]Non-existence of Information Table cannot be skipped!')
+            warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
             return(outDict)
 
         #900. Only read the source of Information Table once if requested, to minimize work load
@@ -623,17 +631,37 @@ def DBuse_GetTimeSeriesForKpi(
 
     #510. Parse the provided naming pattern
     #[ASSUMPTION]:
-    #[1] [inRAM=False] All requested data files are on harddisk, rather than in RAM of current session
+    #[1] Separately find the full path of KPI data file by differing the file type as input
     #[2] Keep all columns for determination of uniqueness
-    parse_kpiDat = parseDatName(
-        datPtn = KPICfg
-        ,parseCol = trans_var
-        ,dates = d_Dates
-        ,outDTfmt = outDTfmt
-        ,inRAM = False
-        ,chkExist = True
-        ,dict_map = fTrans
-        ,**fTrans_opt
+    parse_kpiDat = (
+        parseDatName(
+            datPtn = KPICfg
+            ,parseCol = trans_var
+            ,dates = d_Dates
+            ,outDTfmt = outDTfmt
+            ,inRAM = False
+            ,chkExist = True
+            ,dict_map = fTrans
+            ,**fTrans_opt
+        )
+        .assign(**{
+            'C_KPI_FULL_PATH.chkExist' : lambda x: (
+                parseDatName(
+                    datPtn = KPICfg['C_KPI_FULL_PATH']
+                    ,parseCol = None
+                    ,dates = d_Dates
+                    ,outDTfmt = outDTfmt
+                    ,inRAM = KPICfg['C_KPI_FILE_TYPE'].eq('RAM')
+                    ,chkExist = True
+                    ,dict_map = fTrans
+                    ,**fTrans_opt
+                )
+                .set_index('C_KPI_FULL_PATH.Parsed')
+                .reindex(x['C_KPI_FULL_PATH.Parsed'])
+                .set_index(x.index)
+                ['C_KPI_FULL_PATH.chkExist']
+            )
+        })
     )
 
     #520. Set the useful columns to their parsed values for further data retrieval
@@ -658,8 +686,8 @@ def DBuse_GetTimeSeriesForKpi(
         outDict.update({ miss_files : parse_kpiDat })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'There is no KPI data file found in any of the parsed paths!')
-        warn('['+LfuncName+']'+'Check the data frame ['+miss_files+'] in the output result for missing files!')
+        warn(f'[{LfuncName}]There is no KPI data file found in any of the parsed paths!')
+        warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
         return(outDict)
 
     #580. Find the missing data files
@@ -672,7 +700,7 @@ def DBuse_GetTimeSeriesForKpi(
     #589. Abort the process if it is requested not to skip the missing KPI data files
     if len(kpiDat_miss):
         #001. Print messages
-        print('['+LfuncName+']'+'Below KPI data files are requested but do not exist in the parsed path(s).')
+        print(f'[{LfuncName}]Below KPI data files are requested but do not exist in the parsed path(s).')
         print(kpiDat_miss[['C_KPI_ID', 'dates', 'C_KPI_FULL_PATH']])
 
         #500. Output a global data frame storing the information of the missing files
@@ -681,14 +709,14 @@ def DBuse_GetTimeSeriesForKpi(
 
         #999. Abort the process if no missing file is accepted
         if not miss_skip:
-            warn('['+LfuncName+']'+'User requests not to skip the missing files!')
-            warn('['+LfuncName+']'+'Check the data frame ['+miss_files+'] in the output result for missing files!')
+            warn(f'[{LfuncName}]User requests not to skip the missing files!')
+            warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
             return(outDict)
 
     #700. Loop all provided date series to retrieve KPI data
     #591. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
+        print(f'[{LfuncName}]Import data files in '+('Parallel' if _parallel else 'Sequential')+' mode...')
     #[IMPOTANT] There could be fields/columns in the same name but not the same types in different data files,
     #            but we throw the errors at the step [pandas.concat] to ask user to correct the input data,
     #            instead of guessing the correct types here, for it takes quite a lot of unnecessary effort.
@@ -726,8 +754,8 @@ def DBuse_GetTimeSeriesForKpi(
     if len(GTSFK_chk_cls):
         # sys._getframe(1).f_globals.update({ err_cols : GTSFK_chk_cls })
         outDict.update({ err_cols : GTSFK_chk_cls })
-        warn('['+LfuncName+']'+'Some columns cannot be bound due to different dtypes between different dates!')
-        warn('['+LfuncName+']'+'Check data frame ['+err_cols+'] in the output result for these columns!')
+        warn(f'[{LfuncName}]Some columns cannot be bound due to different dtypes between different dates!')
+        warn(f'[{LfuncName}]Check data frame [{err_cols}] in the output result for these columns!')
         f_ts_errors = True
 
     #790. Abort the program for certain conditions
@@ -735,7 +763,7 @@ def DBuse_GetTimeSeriesForKpi(
     if MergeProc in ['MERGE']:
         if not np.all([ (d.get(dup_KPIs) is None) for d in GTSFK_import ]):
             #001. Print messages
-            warn('['+LfuncName+']'+'Below [C_KPI_SHORTNAME] are applied to more than 1 columns!')
+            warn(f'[{LfuncName}]Below [C_KPI_SHORTNAME] are applied to more than 1 columns!')
             qc_KPI_id = (
                 pd.concat([ d.get(dup_KPIs) for d in GTSFK_import ], ignore_index = True)
                 .drop_duplicates()
@@ -748,7 +776,7 @@ def DBuse_GetTimeSeriesForKpi(
             outDict.update({ dup_KPIs : qc_KPI_id })
 
             #999. Abort the process
-            warn('['+LfuncName+']'+'Check the data frame ['+dup_KPIs+'] in the output result for duplications!')
+            warn(f'[{LfuncName}]Check the data frame [{dup_KPIs}] in the output result for duplications!')
             f_ts_errors = True
 
     #797. Abort if any columns cannot be concatenated among the KPI data on [each date]
@@ -765,8 +793,8 @@ def DBuse_GetTimeSeriesForKpi(
         outDict.update({ err_cols : pd.concat([qc_err_cols, outDict.get(err_cols)], ignore_index = True) })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'Some columns cannot be bound due to different dtypes between the data sources on the same date(s)!')
-        warn('['+LfuncName+']'+'Check data frame ['+err_cols+'] in the output result for these columns!')
+        warn(f'[{LfuncName}]Some columns cannot be bound due to different dtypes between the data sources on the same date(s)!')
+        warn(f'[{LfuncName}]Check data frame [{err_cols}] in the output result for these columns!')
         f_ts_errors = True
 
     #799. Abort if the flag of errors is True

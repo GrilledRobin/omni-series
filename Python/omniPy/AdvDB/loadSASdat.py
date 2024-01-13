@@ -3,15 +3,17 @@
 
 import sys, re
 import datetime as dt
-from omniPy.AdvOp import apply_MapVal
-from omniPy.Dates import asDates, asDatetimes, asTimes
+import pandas as pd
 import pyreadstat as pyr
 from collections import OrderedDict
+from collections.abc import Iterable
 from functools import partial
+from omniPy.AdvOp import apply_MapVal, modifyDict
+from omniPy.Dates import asDates, asDatetimes, asTimes
 
 def loadSASdat(
     inFile
-    , dt_map : dict = {
+    ,dt_map : dict = {
         #[LHS] The original format in SAS loaded from [pyreadstat.read_sas7bdat] and stored in meta.original_variable_types
         #[RHS] The [function] to translate the corresponding values in the format of [LHS]
         #[IMPORTANT] The mapping is conducted by the sequence as provided below, check document for [apply_MapVal]
@@ -24,8 +26,8 @@ def loadSASdat(
         ,r'(dat|day|mon|qtr|year)+' : 'd'
         ,r'(jul)+' : 'd'
     }
-    , **kw
-) -> 'Read SAS dataset with date-like variables translated into [datetime] classes, also with respect to its lower and upper bounds':
+    ,**kw
+) -> tuple[pd.DataFrame, pyr.metadata_container]:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -53,7 +55,7 @@ def loadSASdat(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[<tuple>]  :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):       #
 #   |               [pd.DataFrame] The data frame corresponding to the input SAS dataset                                                #
-#   |               [list        ] The list of meta information                                                                         #
+#   |               [meta        ] pyr.metadata_container                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -73,6 +75,11 @@ def loadSASdat(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Add correction of column dtypes when the input data has no row                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240112        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable user to provide kwarg <usecols=> with column names regardless of character case                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -81,12 +88,13 @@ def loadSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pyreadstat, collections, functools                                                                                        #
+#   |   |sys, pyreadstat, collections, functools, pandas                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
 #   |   |   |apply_MapVal                                                                                                               #
+#   |   |   |modifyDict                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.Dates                                                                                                                   #
 #   |   |   |asDates                                                                                                                    #
@@ -102,10 +110,9 @@ def loadSASdat(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012.   Handle the parameter buffer.
-    if not dt_map:
+    if not isinstance(dt_map, dict):
         dt_map : dict = {
             r'(datetime|dateampm)+' : 'dt'
             ,r'(hhmm|mmss)+' : 't'
@@ -120,13 +127,47 @@ def loadSASdat(
     err_funcs = [ v for v in set(dt_map.values()) if v not in ['dt','t','d'] ]
     if err_funcs:
         raise ValueError(
-            '[' + LfuncName + ']Values of [dt_map] should be among [dt, t, d]! Check these: [{0}]'.format( '|'.join(err_funcs) )
+            f'[{LfuncName}]Values of [dt_map] should be among [dt, t, d]! Check these: {str(err_funcs)}'
         )
 
-    #100. Read the SAS dataset
-    df, meta = pyr.read_sas7bdat(inFile, **kw)
+    #100. Determine the <usecols>
+    #[ASSUMPTION]
+    #[1] SAS does not validate the character case of the column names
+    #[2] There may be different character cases for the same column name in different SAS datasets
+    #[3] When we use the unified API to load these datasets, we should be able to unify the column selection
+    #[4] This would provide flexibility
+    #110. Split the kwargs
+    usecols = kw.get('usecols', None)
+    kw_fnl = { k:v for k,v in kw.items() if k != 'usecols' }
 
-    #300. Correct the character column dtype if the input data is empty
+    #150. Modify the <usecols> argument
+    if ('usecols' in kw) and (usecols is not None):
+        #010. Standardize the input
+        if not isinstance(usecols, Iterable):
+            raise TypeError(f'[{LfuncName}]<usecols> must be Iterable, given <{type(usecols).__name__}>')
+
+        #100. Fabricate the kwargs to only retrieve the meta structure of the input file
+        kw_meta = modifyDict(
+            { k:v for k,v in kw_fnl.items() if k != 'metadataonly' }
+            ,{ 'metadataonly' : True }
+        )
+
+        #300. Retrieve the meta structure
+        _, meta_col = pyr.read_sas7bdat(inFile, **kw_meta)
+
+        #500. Search for the possible matching of the provided column names
+        newcol = [ v for v in meta_col.column_names if v.upper() in [ u.upper() for u in usecols ] ]
+
+        #900. Update the kwargs for the actual data retrieval
+        kw_fnl = modifyDict(
+            kw_fnl
+            ,{ 'usecols' : newcol }
+        )
+
+    #300. Read the SAS dataset
+    df, meta = pyr.read_sas7bdat(inFile, **kw_fnl)
+
+    #500. Correct the character column dtype if the input data is empty
     #This is because [pyreadstat] will convert them to [float64] imperatively.
     if not len(df):
         #100. Correction of the case when the column type is clearly specified
@@ -149,11 +190,11 @@ def loadSASdat(
         #900. Purge the memory usage
         re.purge()
 
-    #500. Translate the date-like columns where necessary
-    #510. Identify the original [format] of all variables in the SAS dataset
+    #700. Translate the date-like columns where necessary
+    #710. Identify the original [format] of all variables in the SAS dataset
     vardef = OrderedDict(sorted(meta.original_variable_types.items()))
 
-    #520. Identify the [unit] to be used for translating the date-like variables
+    #720. Identify the [unit] to be used for translating the date-like variables
     f_conv = apply_MapVal(
         list(vardef.values())
         , dt_map
@@ -163,18 +204,18 @@ def loadSASdat(
         , PRX = True
     )
 
-    #550. Extract the date-like variables by above mapping result
+    #750. Extract the date-like variables by above mapping result
     k_conv = list(vardef.keys())
     varconv = { k_conv[i]:f_conv[i] for i in range(len(f_conv)) if f_conv[i] is not None }
 
-    #570. Collect the functions for date-like value convertion
+    #770. Collect the functions for date-like value convertion
     dt_func = {
         'dt' : partial( asDatetimes , origin = dt.datetime(1960,1,1) , unit = 'seconds' )
         ,'t' : partial( asTimes , unit = 'seconds' )
         ,'d' : partial( asDates , origin = dt.date(1960,1,1) , unit = 'days' )
     }
 
-    #590. Convert these variables
+    #790. Convert these variables
     if varconv:
         #100. Invert the dict by merging the column names in the same convertion [unit] into lists
         #Quote: (#3) https://stackoverflow.com/questions/483666/reverse-invert-a-dictionary-mapping/41861007#41861007
@@ -194,23 +235,33 @@ def loadSASdat(
 #-Notes- -Begin-
 #Full Test Program[1]:
 if __name__=='__main__':
-    #010.   Create envionment.
+    #010. Create envionment.
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import loadSASdat
 
-    #100.   Load the SAS dataset wich Chinese Characters and missing values.
+    #100. Load the SAS dataset wich Chinese Characters and missing values
     tt , meta_tt = loadSASdat( dir_omniPy + r'omniPy\AdvDB\test_loadsasdat.sas7bdat' , encoding = 'GB2312' )
     tt.head()
     tt.dtypes
     meta_tt.original_variable_types
 
-    #200.   Load the empty SAS dataset.
+    #200. Load the empty SAS dataset
     tt2 , meta_tt2 = loadSASdat( dir_omniPy + r'omniPy\AdvDB\test_emptysasdat.sas7bdat' , encoding = 'GB2312' )
     tt2.head()
     tt2.dtypes
     meta_tt2.original_variable_types
+
+    #300. Load the SAS dataset with specific columns, regardless of the character case
+    tt3 , meta_tt3 = loadSASdat(
+        dir_omniPy + r'omniPy\AdvDB\test_loadsasdat.sas7bdat'
+        ,usecols = ['dt_test']
+        ,encoding = 'GB2312'
+    )
+    tt3.head()
+    tt3.dtypes
+    meta_tt3.original_variable_types
 #-Notes- -End-
 '''

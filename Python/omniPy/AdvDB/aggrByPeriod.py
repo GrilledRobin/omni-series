@@ -309,6 +309,11 @@ def aggrByPeriod(
 #   | Log  |[1] Upper-case <byVar>, <copyVar> and  <aggrVar> in the return result to make it compatible to most of the data engines     #
 #   |      |[2] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240112        | Version | 4.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when <fDebug == True>                                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -498,7 +503,7 @@ def aggrByPeriod(
         getvar = sys._getframe().f_code.co_varnames
         for v in getvar:
             if v not in ['v','getvar']:
-                print(f'[{LfuncName}][{0}]=[{1}]'.format(v,str(locals().get(v))))
+                print(f'[{LfuncName}]'+'[{0}]=[{1}]'.format(v,str(locals().get(v))))
 
     #040. Create calendar for calculation of time series
     ABP_Clndr = UserCalendar(
@@ -556,14 +561,14 @@ def aggrByPeriod(
 
     #099. Debug mode
     if fDebug:
-        print(f'[{LfuncName}][chkEnd]=[{0}]'.format(str(chkEnd)))
-        print(f'[{LfuncName}][periodOut]=[{0}]'.format(str(periodOut)))
-        print(f'[{LfuncName}][periodChk]=[{0}]'.format(str(periodChk)))
-        print(f'[{LfuncName}][periodDif]=[{0}]'.format(str(periodDif)))
-        print(f'[{LfuncName}][pdCalcBgn]=[{0}]'.format(str(pdCalcBgn)))
-        print(f'[{LfuncName}][pdCalcEnd]=[{0}]'.format(str(pdCalcEnd)))
-        print(f'[{LfuncName}][pdChkBgn]=[{0}]'.format(str(pdChkBgn)))
-        print(f'[{LfuncName}][pdChkEnd]=[{0}]'.format(str(pdChkEnd)))
+        print(f'[{LfuncName}]'+'[chkEnd]=[{0}]'.format(str(chkEnd)))
+        print(f'[{LfuncName}]'+'[periodOut]=[{0}]'.format(str(periodOut)))
+        print(f'[{LfuncName}]'+'[periodChk]=[{0}]'.format(str(periodChk)))
+        print(f'[{LfuncName}]'+'[periodDif]=[{0}]'.format(str(periodDif)))
+        print(f'[{LfuncName}]'+'[pdCalcBgn]=[{0}]'.format(str(pdCalcBgn)))
+        print(f'[{LfuncName}]'+'[pdCalcEnd]=[{0}]'.format(str(pdCalcEnd)))
+        print(f'[{LfuncName}]'+'[pdChkBgn]=[{0}]'.format(str(pdChkBgn)))
+        print(f'[{LfuncName}]'+'[pdChkEnd]=[{0}]'.format(str(pdChkEnd)))
 
     #100. Calculate the summary for the leading period from [chkBgn] to [dateBgn], if applicable
     #110. Calculate the prerequisites for the data as of Checking Period
@@ -624,7 +629,7 @@ def aggrByPeriod(
         #001. Debug mode
         if fDebug:
             print(
-                f'[{LfuncName}]The data [chkDat='+chkDat+'] does not exist.'
+                f'[{LfuncName}]The data [chkDat={str(chkDat)}] does not exist.'
                 +' Skip the calculation for Leading Period'
             )
     else:
@@ -683,7 +688,7 @@ def aggrByPeriod(
         #001. Debug mode
         if fDebug:
             print(
-                f'[{LfuncName}]The data [chkDat='+chkDat+'] does not exist.'
+                f'[{LfuncName}]The data [chkDat={str(chkDat)}] does not exist.'
                 +' Skip the calculation for Checking Period'
             )
     elif chkBgn > chkEnd:
@@ -757,11 +762,11 @@ def aggrByPeriod(
 
         #400. Print the necessities for Checking Period
         if fUsePrev:
-            print(f'[{LfuncName}][Checking Period] Dataset to use: [{0}]'.format(chkDat))
-            print(f'[{LfuncName}][Checking Period] Data multiplier: [{0}]'.format(multiplier_CP))
+            print(f'[{LfuncName}][Checking Period] Dataset to use: [{str(chkDat)}]')
+            print(f'[{LfuncName}][Checking Period] Data multiplier: [{str(multiplier_CP)}]')
 
         #700. Print the necessities for Actual Calculation Period
-        print(f'[{LfuncName}][Actual Calculation Period] Dataset to use: [{0}]'.format(inDatCfg))
+        print(f'[{LfuncName}][Actual Calculation Period] Dataset to use: [{type(inDatCfg).__name__}{inDatCfg.shape}]')
         for i,d in enumerate(calcDate):
             print(
                 f'[{LfuncName}][Actual Calculation Period]'
@@ -857,6 +862,10 @@ def aggrByPeriod(
             ,'key' : inDat_df
         }
         modifyDict(_opt_in, fImp_opt.get(inDat_type,{}), inplace = True)
+
+        #309. Debug mode
+        if fDebug:
+            print(f'[{LfuncName}]Loading from file: <{inDat}>')
 
         #400. Create a list of unique column names for selection from the input data
         if keep_all_col:

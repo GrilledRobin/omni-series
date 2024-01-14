@@ -174,7 +174,7 @@ def aggrByPeriod(
 #   |chkDat_opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
 #   |               Valid names of the option lists are set in the field [inDatType]                                                    #
 #   |               [SAS             ] <Default> Options for [omniPy.AdvDB.std_read_SAS]                                                #
-#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                       #
+#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                      #
 #   |               [{<name>:<dict>} ]           Other named lists for different engines, such as [R=dict()] and [HDFS=dict()]          #
 #   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please        #
 #   |                follow the syntax of this function during input                                                                    #
@@ -313,6 +313,8 @@ def aggrByPeriod(
 #   | Date |    20240112        | Version | 4.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when <fDebug == True>                                                                                       #
+#   |      |[2] Aligned the searching logic for <chkEnd>, now facilitate the scenario: calculate rolling 10-day ANR only on workdays and#
+#   |      |     need to leverage the result on the previous workday                                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -519,8 +521,8 @@ def aggrByPeriod(
     )
 
     #050. Determine [chkEnd] by the implication of [genPHMul]
-    if genPHMul & (calcInd!='C'):
-        chkEnd = ABP_ObsDates.shiftDays(kshift = -1, preserve = False, daytype = calcInd)[0]
+    if genPHMul:
+        chkEnd = ABP_ObsDates.shiftDays(kshift = -1, preserve = False, daytype = ('W' if calcInd=='C' else calcInd))[0]
     else:
         chkEnd = dateEnd - dt.timedelta(days=1)
 
@@ -1158,17 +1160,17 @@ If any of below conditions is tiggered, we will NOT take the Checking Period int
 %*170. Create the test KPI tables.;
 
 %*200. Using the same Beginning of a series of periods.;
-%*210. Mean of all Calendar Days from 20160501 to 20160516.;
-%*220. Mean of all Calendar Days from 20160501 to 20160517.;
+%*210. Mean of all Calendar Days from 20160501 to 20160513.;
+%*220. Mean of all Calendar Days from 20160501 to 20160516.;
 %*230. Mean of all Working Days from 20160501 to 20160516.;
 %*240. Mean of all Working Days from 20160501 to 20160517.;
-%*250. Max of all Calendar Days from 20160501 to 20160516.;
-%*260. Max of all Calendar Days from 20160501 to 20160517.;
+%*250. Max of all Calendar Days from 20160501 to 20160513.;
+%*260. Max of all Calendar Days from 20160501 to 20160516.;
 %*270. Max of all Working Days from 20160501 to 20160516.;
 %*280. Max of all Working Days from 20160501 to 20160517.;
 
-%*300. Rolling 10 days.;
-%*310. Mean of all Calendar Days from 20160401 to 20160410.;
+%*300. Rolling 10 days, using the data on each last workday to resemble the data on holidays.;
+%*310. Mean of all Calendar Days from 20160330 to 20160408.;
 %*311. Mean of all Calendar Days from 20160402 to 20160411.;
 %*312. Mean of all Calendar Days from 20160403 to 20160412.;
 
@@ -1250,10 +1252,10 @@ if __name__=='__main__':
     }
 
     #200. Using the same Beginning of a series of periods
-    #210. Mean of all Calendar Days from 20160501 to 20160516
+    #210. Mean of all Calendar Days from 20160501 to 20160513
     if True:
         DtBgn = asDates('20160501')
-        DtEnd = asDates('20160516')
+        DtEnd = asDates('20160513')
         args_ABP_CMEAN = modifyDict(
             opt_def_ABP
             ,{
@@ -1269,21 +1271,24 @@ if __name__=='__main__':
         outdat = 'avgKpi' + DtEnd.strftime('%Y%m%d')
         globals().update({ outdat : aggrByPeriod(**args_ABP_CMEAN).get('data') })
         print(globals()[outdat]['A_KPI_ANR'])
-        print((24*2+23+22+21+20*3+19+18+17+16+15*3+14)/16)
+        print((24*2+23+22+21+20*3+19+18+17+16+15)/13)
 
-    #220. Mean of all Calendar Days from 20160501 to 20160517
+    #220. Mean of all Calendar Days from 20160501 to 20160516
+    #[ASSUMPTION]
+    #[1] Function searches for the aggregation on its previous workday, and set it as <chkDat>
     if True:
-        DtEnd = asDates('20160517')
+        DtEnd = asDates('20160516')
         args_ABP_CMEAN = modifyDict(
             args_ABP_CMEAN
             ,{
                 'dateEnd' : DtEnd
+                ,'fDebug' : True
             }
         )
         outdat = 'avgKpi' + DtEnd.strftime('%Y%m%d')
         globals().update({ outdat : aggrByPeriod(**args_ABP_CMEAN).get('data') })
         print(globals()[outdat]['A_KPI_ANR'])
-        print((24*2+23+22+21+20*3+19+18+17+16+15*3+14+13)/17)
+        print((24*2+23+22+21+20*3+19+18+17+16+15*3+14)/16)
 
     #230. Mean of all Working Days from 20160501 to 20160516
     if True:
@@ -1321,10 +1326,10 @@ if __name__=='__main__':
         print(globals()[outdat]['A_KPI_ANR'])
         print((23+22+21+20+19+18+17+16+15+14+13)/11)
 
-    #250. Max of all Calendar Days from 20160501 to 20160516
+    #250. Max of all Calendar Days from 20160501 to 20160513
     if True:
         DtBgn = asDates('20160501')
-        DtEnd = asDates('20160516')
+        DtEnd = asDates('20160513')
         args_ABP_CMAX = modifyDict(
             opt_def_ABP
             ,{
@@ -1341,11 +1346,11 @@ if __name__=='__main__':
         outdat = 'CDmaxKpi' + DtEnd.strftime('%Y%m%d')
         globals().update({ outdat : aggrByPeriod(**args_ABP_CMAX).get('data') })
         print(globals()[outdat]['A_KPI_MAX'])
-        print(max(24,23,22,21,20,19,18,17,16,15,14))
+        print(max(24,23,22,21,20,19,18,17,16,15))
 
-    #260. Max of all Calendar Days from 20160501 to 20160517
+    #260. Max of all Calendar Days from 20160501 to 20160516
     if True:
-        DtEnd = asDates('20160517')
+        DtEnd = asDates('20160516')
         args_ABP_CMAX = modifyDict(
             args_ABP_CMAX
             ,{
@@ -1355,7 +1360,7 @@ if __name__=='__main__':
         outdat = 'CDmaxKpi' + DtEnd.strftime('%Y%m%d')
         globals().update({ outdat : aggrByPeriod(**args_ABP_CMAX).get('data') })
         print(globals()[outdat]['A_KPI_MAX'])
-        print(max(24,23,22,21,20,19,18,17,16,15,14,13))
+        print(max(24,23,22,21,20,19,18,17,16,15,14))
 
     #270. Max of all Working Days from 20160501 to 20160516
     if True:
@@ -1394,11 +1399,11 @@ if __name__=='__main__':
         print(globals()[outdat]['A_KPI_MAX'])
         print(max(23,22,21,20,19,18,17,16,15,14,13))
 
-    #300. Rolling 10 days
-    #310. Mean of all Calendar Days from 20160401 to 20160410
+    #300. Rolling 10 days, using the data on each last workday to resemble the data on holidays
+    #310. Mean of all Calendar Days from 20160330 to 20160408
     if True:
-        DtBgn = asDates('20160401')
-        DtEnd = asDates('20160410')
+        DtBgn = asDates('20160330')
+        DtEnd = asDates('20160408')
         pDate = DtBgn - dt.timedelta(days=1)
         args_ABP_roll_CMEAN = modifyDict(
             opt_def_ABP
@@ -1417,9 +1422,11 @@ if __name__=='__main__':
         outdat = 'R10ANR' + DtEnd.strftime('%Y%m%d')
         globals().update({ outdat : aggrByPeriod(**args_ABP_roll_CMEAN).get('data') })
         print(globals()[outdat]['A_KPI_ANR'])
-        print((25*4+26+27+28+29*3)/10)
+        print((23+24+25*4+26+27+28+29)/10)
 
     #311. Mean of all Calendar Days from 20160402 to 20160411
+    #[ASSUMPTION]
+    #[1] Function searches for the aggregation on its previous workday, and set it as <chkDat>
     if True:
         DtBgn = asDates('20160402')
         DtEnd = asDates('20160411')
@@ -1429,7 +1436,7 @@ if __name__=='__main__':
             ,{
                 'dateBgn' : DtBgn
                 ,'dateEnd' : DtEnd
-                ,'chkBgn' : pDate
+                ,'chkBgn' : '20160330'
             }
         )
         outdat = 'R10ANR' + DtEnd.strftime('%Y%m%d')

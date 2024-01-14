@@ -10,8 +10,9 @@ from omniPy.AdvDB import kfCore_ts_agg
 
 anno_return = kfCore_ts_agg.__annotations__.get('return', None)
 
-def kfFunc_ts_mtd(
+def kfFunc_ts_roll(
     inDate : str | dt.date = None
+    ,kDays : int = 0
     ,**kw
 ) -> anno_return:
     #000. Info.
@@ -24,17 +25,18 @@ def kfFunc_ts_mtd(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <M>onth-<T>o-<D>ate algorithm                                        #
+#   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <ROLL>ing period algorithm                                           #
 #   |[2] It is a high level interface of <kfCore_ts_agg>, which tweaks the date variables to facilitate various scenarios               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[FUNCTION]                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Map the MTD aggregation of KPIs listed on the left side of <mapper> to those on the right side of it                           #
+#   |[1] Map the rolling period aggregation of KPIs listed on the left side of <mapper> to those on the right side of it                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[SCENARIO]                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Calculate MTD ANR of product holding balances along the time series, by recognizing the data on each weekend as the same as    #
-#   |     its previous workday, also leveraging the aggregation result on its previous workday                                          #
+#   |[1] Calculate Rolling 30 days ANR of product holding balances along the time series, by recognizing the data on each weekend as    #
+#   |     the same as its previous workday, also leveraging the aggregation result on its previous workday                              #
+#   |[2] Calculate the same as above, but only conduct the process on workdays while set <genPHMul = True>                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -45,6 +47,8 @@ def kfFunc_ts_mtd(
 #   |inDate     :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                    #
 #   |                follow the syntax of this function during input                                                                    #
 #   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
+#   |kDays      :   Positive number of days to roll back from <inDate>                                                                  #
+#   |               [0               ] <Default> Function will raise error if it is NOT positive                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -52,18 +56,13 @@ def kfFunc_ts_mtd(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Anno>     :   See the return result from <kfCore_ts_agg>                                                                          #
+#   |[DataFrame]:   See the return result from <kfCore_ts_agg>                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20240113        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20240114        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20240114        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Make it the high level interface of the generalized core <kfCore_ts_agg> for more diversity                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -93,8 +92,13 @@ def kfFunc_ts_mtd(
     LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Parameter buffer
+    if not isinstance(kDays, int):
+        raise ValueError(f'[{LfuncName}]<kDays> must be a positive integer!')
+    if kDays < 1:
+        raise ValueError(f'[{LfuncName}]<kDays> must be a positive integer!')
 
     #020. Local environment
+    k_roll = 1 - kDays
 
     #100. Get the signature of the core function
     sig_core = signature(kfCore_ts_agg).parameters
@@ -125,21 +129,32 @@ def kfFunc_ts_mtd(
     }
 
     #500. Tweak the parameters for function call
-    #550. Ending date
+    #510. Ending date
     kw_d = kw_oth.get('kw_d', sig_core['kw_d'].default)
     kw_cal = kw_oth.get('kw_cal', sig_core['kw_cal'].default)
     dateEnd_d = asDates(inDate, **kw_d)
 
-    #570. Beginning date
+    #530. Beginning date
     #[ASSUMPTION]
-    #[1] MTD aggregation always starts from the first calendar day of a month
-    dtBgn = intnx('month', dateEnd_d, 0, 'b', daytype = 'c', kw_cal = kw_cal)
+    #[1] Rolling days aggregation requires the indication of <daytype>
+    calcInd = kw_oth.get('calcInd', sig_core['calcInd'].default)
+    dtBgn = intnx('day', dateEnd_d, k_roll, 'b', daytype = calcInd, kw_cal = kw_cal)
+
+    #550. Determine <chkEnd> by the implication of <genPHMul>
+    genPHMul = kw_oth.get('genPHMul', sig_core['genPHMul'].default)
+    if genPHMul:
+        chkEnd_d = intnx('day', dateEnd_d, -1, daytype = ('W' if calcInd=='C' else calcInd), kw_cal = kw_cal)
+    else:
+        chkEnd_d = intnx('day', dateEnd_d, -1, daytype = 'C', kw_cal = kw_cal)
+
+    #570. Determine <chkBgn>
+    chkBgn = intnx('day', chkEnd_d, k_roll, 'b', daytype = calcInd, kw_cal = kw_cal)
 
     #599. Finalize the parameters
     kw_fnl = {
         'dateBgn' : dtBgn
         ,'dateEnd' : dateEnd_d
-        ,'chkBgn' : dtBgn
+        ,'chkBgn' : chkBgn
         ,**kw_oth
         ,**kw_varkw
     }
@@ -150,11 +165,11 @@ def kfFunc_ts_mtd(
         print(f'[{LfuncName}]Tweaked parameters are listed as below:')
         print(f'[{LfuncName}][dateBgn]=[{str(dtBgn)}]')
         print(f'[{LfuncName}][dateEnd]=[{str(dateEnd_d)}]')
-        print(f'[{LfuncName}][chkBgn]=[{str(dtBgn)}]')
+        print(f'[{LfuncName}][chkBgn]=[{str(chkBgn)}]')
 
     #999. Call the core function
     return(kfCore_ts_agg(**kw_fnl))
-#End kfFunc_ts_mtd
+#End kfFunc_ts_roll
 
 '''
 #-Notes- -Begin-
@@ -170,7 +185,7 @@ if __name__=='__main__':
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvOp import exec_file, modifyDict, get_values
-    from omniPy.AdvDB import aggrByPeriod, kfFunc_ts_mtd
+    from omniPy.AdvDB import aggrByPeriod, kfFunc_ts_roll
     from omniPy.Dates import asDates, UserCalendar, intnx
 
     #010. Load user defined functions
@@ -203,13 +218,9 @@ if __name__=='__main__':
     )
 
     #150. Mapper to indicate the aggregation
-    #[ASSUMPTION]
-    #[1] <D_BGN> of KPI <140111> is the same as <G_d_rpt>, hence its result only leverages daily KPI starting from <D_BGN>,
-    #     regardless of whether the daily KPI data exists before that date
-    #[2] This logic is different from rolling period aggregation, where all daily KPI data files MUST exist within the whole period
     map_dict = {
-        '130100' : '130101'
-        ,'140110' : '140111'
+        '130100' : '130102'
+        ,'140110' : '140112'
     }
     map_agg = pd.DataFrame(
         {
@@ -219,12 +230,14 @@ if __name__=='__main__':
         ,index = list(range(len(map_dict)))
     )
 
-    #300. Call the factory to create MTD ANR
+    #300. Call the factory to create Rolling 15-day ANR
     #310. Prepare the modification upon the default arguments with current Business requirements
-    args_ts_mtd = {
+    k_roll_days = 15
+    args_ts_roll = {
         'inKPICfg' : cfg_kpi
         ,'mapper' : map_agg
         ,'inDate' : G_d_rpt
+        ,'kDays' : k_roll_days
         ,'_parallel' : False
         ,'cores' : 4
         ,'aggrVar' : 'A_KPI_VAL'
@@ -241,24 +254,24 @@ if __name__=='__main__':
 
     #350. Call the process
     time_bgn = dt.datetime.now()
-    rst = kfFunc_ts_mtd(**args_ts_mtd)
+    rst = kfFunc_ts_roll(**args_ts_roll)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
 
     #400. Verify the result
     #410. Retrieve the newly created data
-    file_kpi1 = rf'D:\Temp\agg{G_d_rpt}.hdf'
+    file_kpi1 = rf'D:\Temp\r15_{G_d_rpt}.hdf'
     rst_kpi1 = (
         pd.read_hdf(file_kpi1, 'kpi1')
-        .loc[lambda x: x['C_KPI_ID'].eq('130101')]
+        .loc[lambda x: x['C_KPI_ID'].eq('130102')]
     )
     rst_kpi2 = (
-        get_values(rf'kpi2agg_{G_d_rpt}', instance = pd.DataFrame, inplace = False)
-        .loc[lambda x: x['C_KPI_ID'].eq('140111')]
+        pd.read_hdf(file_kpi1, 'kpi2')
+        .loc[lambda x: x['C_KPI_ID'].eq('140112')]
     )
 
     #420. Prepare unanimous arguments
-    cln = UserCalendar( intnx('month', G_d_rpt, 0, 'b', daytype = 'c'), G_d_rpt )
+    cln = UserCalendar( intnx('day', G_d_rpt, 1 - k_roll_days, 'b', daytype = 'c'), G_d_rpt )
     byvar_kpis = args_ts_mtd.get('byVar')
     if isinstance(byvar_kpis, (str, tuple)):
         byvar_kpis = [byvar_kpis]
@@ -332,20 +345,12 @@ if __name__=='__main__':
         ,{
             'inDatPtn' : datptn_agg_kpi2
             ,'fImp_opt' : agg_opt_kpi2
-            #[ASSUMPTION]
-            #[1] Since <D_BGN> is set to the same as <G_d_rpt> (see the data <cfg_agg>), we should only involve data file
-            #     on one date for identical calculation
-            ,'dateBgn' : G_d_rpt
         }
     )
     man_kpi2 = (
         aggrByPeriod(**args_agg_kpi2).get('data')
         .assign(**{
             'C_KPI_ID' : lambda x: x['C_KPI_ID'].map(map_dict)
-            #[ASSUMPTION]
-            #[1] Since we only used one data file, we need to divide the result by the number of calendar days in the
-            #     calculation period
-            ,aggvar_kpis : lambda x: x[aggvar_kpis].div(cln.kClnDay)
         })
     )
 
@@ -353,15 +358,15 @@ if __name__=='__main__':
     rst_kpi1.eq(man_kpi1).all(axis = None)
     rst_kpi2.eq(man_kpi2).all(axis = None)
 
-    #600. Calculate MTD ANR for the next workday
+    #600. Calculate Rolling 15-day ANR for the next workday
     #[ASSUMPTION]
     #[1] Since <G_d_next> is later than <D_BGN> of <kpi2>, one should avoid calling the factory for <G_d_next> BEFORE the call
     #     to the factory for <G_d_rpt> is complete. i.e. the MTD calculation on the first data date should be ready
     #[2] The factory does not validate the above data and will leverage any existing Daily KPI data file inadvertently, which
     #     would produce unexpected result in such case
     G_d_next = intnx('day', G_d_rpt, 1, daytype = 'w').strftime('%Y%m%d')
-    args_ts_mtd2 = modifyDict(
-        args_ts_mtd
+    args_ts_roll2 = modifyDict(
+        args_ts_roll
         ,{
             'inDate' : G_d_next
             #[ASSUMPTION]
@@ -372,24 +377,24 @@ if __name__=='__main__':
 
     #650. Call the process
     time_bgn = dt.datetime.now()
-    rst2 = kfFunc_ts_mtd(**args_ts_mtd2)
+    rst2 = kfFunc_ts_roll(**args_ts_roll2)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
 
     #700. Verify the result for the next workday
     #710. Retrieve the newly created data
-    file_kpi1_2 = rf'D:\Temp\agg{G_d_next}.hdf'
+    file_kpi1_2 = rf'D:\Temp\r15_{G_d_next}.hdf'
     rst_kpi1_2 = (
         pd.read_hdf(file_kpi1_2, 'kpi1')
-        .loc[lambda x: x['C_KPI_ID'].eq('130101')]
+        .loc[lambda x: x['C_KPI_ID'].eq('130102')]
     )
     rst_kpi2_2 = (
-        get_values(rf'kpi2agg_{G_d_next}', instance = pd.DataFrame, inplace = False)
-        .loc[lambda x: x['C_KPI_ID'].eq('140111')]
+        pd.read_hdf(file_kpi1_2, 'kpi2')
+        .loc[lambda x: x['C_KPI_ID'].eq('140112')]
     )
 
     #720. Prepare unanimous arguments
-    cln2 = UserCalendar( intnx('month', G_d_next, 0, 'b', daytype = 'c'), G_d_next )
+    cln2 = UserCalendar( intnx('day', G_d_next, 1 - k_roll_days, 'b', daytype = 'c'), G_d_next )
 
     #740. Calculate the ANR manually for <kpi1>
     args_agg_kpi1_2 = modifyDict(
@@ -412,14 +417,12 @@ if __name__=='__main__':
         ,{
             'inDatPtn' : datptn_agg_kpi2
             ,'fImp_opt' : agg_opt_kpi2
-            ,'dateBgn' : G_d_rpt
         }
     )
     man_kpi2_2 = (
         aggrByPeriod(**args_agg_kpi2_2).get('data')
         .assign(**{
             'C_KPI_ID' : lambda x: x['C_KPI_ID'].map(map_dict)
-            ,aggvar_kpis : lambda x: x[aggvar_kpis].mul(2).div(cln2.kClnDay)
         })
     )
 

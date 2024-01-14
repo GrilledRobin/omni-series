@@ -19,31 +19,11 @@ from omniPy.AdvOp import pandasParseIndexer, modifyDict, pandasPivot, xwRangeAsG
 def xwGroupForDf(
     rng : xw.Range
     ,df : pd.DataFrame
-    ,index : bool = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'index'
-    ][0]
-    ,index_name : bool = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'index_name'
-    ][0]
-    ,header : bool = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'header'
-    ][0]
-    ,mergeIdx : Union[bool, int, Iterable[Optional[int]]] = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'mergeIdx'
-    ][0]
-    ,mergeHdr : Union[bool, int, Iterable[Optional[int]]] = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'mergeHdr'
-    ][0]
+    ,index : bool = signature(xwDfToRange).parameters['index'].default
+    ,index_name : bool = signature(xwDfToRange).parameters['index_name'].default
+    ,header : bool = signature(xwDfToRange).parameters['header'].default
+    ,mergeIdx : Union[bool, int, Iterable[Optional[int]]] = signature(xwDfToRange).parameters['mergeIdx'].default
+    ,mergeHdr : Union[bool, int, Iterable[Optional[int]]] = signature(xwDfToRange).parameters['mergeIdx'].default
     ,kw_pvtLike : dict = {
         s.name : s.default
         for s in signature(pandasPivot).parameters.values()
@@ -52,11 +32,7 @@ def xwGroupForDf(
     ,kw_asGroup : dict = {}
     ,asformatter : bool = False
     ,formatOnly : bool = False
-    ,idxall : str = [
-        s.default
-        for s in signature(xwDfToRange).parameters.values()
-        if s.name == 'idxall'
-    ][0]
+    ,idxall : str = signature(xwDfToRange).parameters['idxall'].default
 ) -> None:
     #000. Info.
     '''
@@ -155,9 +131,9 @@ def xwGroupForDf(
     else:
         hdr_to_merge = pandasParseIndexer(pd.Index(df.columns.names), mergeHdr, idxall = idxall, logname = 'mergeHdr')
     if not isinstance(asformatter, (bool, np.bool_)):
-        raise TypeError('[{0}][asformatter]:[{1}] must be boolean!'.format(LfuncName, type(asformatter)))
+        raise TypeError(f'[{LfuncName}][asformatter]:[{type(asformatter).__name__}] must be boolean!')
     if not isinstance(formatOnly, (bool, np.bool_)):
-        raise TypeError('[{0}][formatOnly]:[{1}] must be boolean!'.format(LfuncName, type(formatOnly)))
+        raise TypeError(f'[{LfuncName}][formatOnly]:[{type(formatOnly).__name__}] must be boolean!')
 
     #050. Local parameters
     rng_Sheet = rng.sheet
@@ -198,13 +174,13 @@ def xwGroupForDf(
     posColTot = args_pvtLike.get('posColTot').lower()
     posColSubt = args_pvtLike.get('posColSubt').lower()
     if posRowTot not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posRowTot]:[{0}] must be among: [{1}]!'.format(posRowTot, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posRowTot] must be among: [{str(cand_pos)}]!')
     if posRowSubt not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posRowSubt]:[{0}] must be among: [{1}]!'.format(posRowSubt, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posRowSubt] must be among: [{str(cand_pos)}]!')
     if posColTot not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posColTot]:[{0}] must be among: [{1}]!'.format(posColTot, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posColTot] must be among: [{str(cand_pos)}]!')
     if posColSubt not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posColSubt]:[{0}] must be among: [{1}]!'.format(posColSubt, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posColSubt] must be among: [{str(cand_pos)}]!')
     fRowTot = args_pvtLike.get('fRowTot')
     fRowSubt = args_pvtLike.get('fRowSubt')
     fColTot = args_pvtLike.get('fColTot')

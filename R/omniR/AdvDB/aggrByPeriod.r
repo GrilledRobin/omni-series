@@ -241,6 +241,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable defining <copyVar = '_all_'> to output all columns from all possible data sources                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240114        | Version | 3.80        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Aligned the searching logic for <chkEnd>, now facilitate the scenario: calculate rolling 10-day ANR only on workdays and#
+#   |      |     need to leverage the result on the previous workday                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -475,8 +481,13 @@ aggrByPeriod <- function(
 	)
 
 	#050. Determine [chkEnd] by the implication of [genPHMul]
-	if (genPHMul & calcInd!='C') {
-		chkEnd <- ABP_ObsDates$shiftDays(kshift = -1, preserve = F, daytype = calcInd)
+	if (genPHMul) {
+		if (calcInd == 'C') {
+			indMod <- 'W'
+		} else {
+			indMod <- calcInd
+		}
+		chkEnd <- ABP_ObsDates$shiftDays(kshift = -1, preserve = F, daytype = indMod)
 	} else {
 		chkEnd <- dateEnd - as.difftime(1, units = 'days')
 	}
@@ -1162,17 +1173,17 @@ if (FALSE){'
 %*170. Create the test KPI tables.;
 
 %*200. Using the same Beginning of a series of periods.;
-%*210. Mean of all Calendar Days from 20160501 to 20160516.;
-%*220. Mean of all Calendar Days from 20160501 to 20160517.;
+%*210. Mean of all Calendar Days from 20160501 to 20160513;
+%*220. Mean of all Calendar Days from 20160501 to 20160516;
 %*230. Mean of all Working Days from 20160501 to 20160516.;
 %*240. Mean of all Working Days from 20160501 to 20160517.;
-%*250. Max of all Calendar Days from 20160501 to 20160516.;
-%*260. Max of all Calendar Days from 20160501 to 20160517.;
+%*250. Max of all Calendar Days from 20160501 to 20160513;
+%*260. Max of all Calendar Days from 20160501 to 20160516;
 %*270. Max of all Working Days from 20160501 to 20160516.;
 %*280. Max of all Working Days from 20160501 to 20160517.;
 
-%*300. Rolling 10 days.;
-%*310. Mean of all Calendar Days from 20160401 to 20160410.;
+%*300. Rolling 10 days, using the data on each last workday to resemble the data on holidays.;
+%*310. Mean of all Calendar Days from 20160330 to 20160408;
 %*311. Mean of all Calendar Days from 20160402 to 20160411.;
 %*312. Mean of all Calendar Days from 20160403 to 20160412.;
 
@@ -1259,10 +1270,10 @@ if (FALSE){
 	)
 
 	#200. Using the same Beginning of a series of periods
-	#210. Mean of all Calendar Days from 20160501 to 20160516
+	#210. Mean of all Calendar Days from 20160501 to 20160513
 	if (TRUE){
 		DtBgn <- asDates('20160501')
-		DtEnd <- asDates('20160516')
+		DtEnd <- asDates('20160513')
 		args.ABP.CMEAN <- modifyList(
 			opt.def.ABP
 			,list(
@@ -1278,12 +1289,14 @@ if (FALSE){
 		outdat <- paste0('avgKpi', strftime(DtEnd,'%Y%m%d'))
 		assign( outdat, do.call(aggrByPeriod, args.ABP.CMEAN)[['data']] )
 		print(get(outdat, mode = 'list')[['A_KPI_ANR']] %>% unlist())
-		message((24*2+23+22+21+20*3+19+18+17+16+15*3+14)/16)
+		message((24*2+23+22+21+20*3+19+18+17+16+15)/13)
 	}
 
-	#220. Mean of all Calendar Days from 20160501 to 20160517
+	#220. Mean of all Calendar Days from 20160501 to 20160516
+	#[ASSUMPTION]
+	#[1] Function searches for the aggregation on its previous workday, and set it as <chkDat>
 	if (TRUE){
-		DtEnd <- asDates('20160517')
+		DtEnd <- asDates('20160516')
 		args.ABP.CMEAN <- modifyList(
 			args.ABP.CMEAN
 			,list(
@@ -1293,7 +1306,7 @@ if (FALSE){
 		outdat <- paste0('avgKpi', strftime(DtEnd,'%Y%m%d'))
 		assign( outdat, do.call(aggrByPeriod, args.ABP.CMEAN)[['data']] )
 		print(get(outdat, mode = 'list')[['A_KPI_ANR']] %>% unlist())
-		message((24*2+23+22+21+20*3+19+18+17+16+15*3+14+13)/17)
+		message((24*2+23+22+21+20*3+19+18+17+16+15*3+14)/16)
 	}
 
 	#230. Mean of all Working Days from 20160501 to 20160516
@@ -1334,10 +1347,10 @@ if (FALSE){
 		message((23+22+21+20+19+18+17+16+15+14+13)/11)
 	}
 
-	#250. Max of all Calendar Days from 20160501 to 20160516
+	#250. Max of all Calendar Days from 20160501 to 20160513
 	if (TRUE){
 		DtBgn <- asDates('20160501')
-		DtEnd <- asDates('20160516')
+		DtEnd <- asDates('20160513')
 		args.ABP.CMAX <- modifyList(
 			opt.def.ABP
 			,list(
@@ -1354,12 +1367,12 @@ if (FALSE){
 		outdat <- paste0('CDmaxKpi', strftime(DtEnd,'%Y%m%d'))
 		assign( outdat, do.call(aggrByPeriod, args.ABP.CMAX)[['data']] )
 		print(get(outdat, mode = 'list')[['A_KPI_MAX']] %>% unlist())
-		message(max(24,23,22,21,20,19,18,17,16,15,14))
+		message(max(24,23,22,21,20,19,18,17,16,15))
 	}
 
-	#260. Max of all Calendar Days from 20160501 to 20160517
+	#260. Max of all Calendar Days from 20160501 to 20160516
 	if (TRUE){
-		DtEnd <- asDates('20160517')
+		DtEnd <- asDates('20160516')
 		args.ABP.CMAX <- modifyList(
 			args.ABP.CMAX
 			,list(
@@ -1369,7 +1382,7 @@ if (FALSE){
 		outdat <- paste0('CDmaxKpi', strftime(DtEnd,'%Y%m%d'))
 		assign( outdat, do.call(aggrByPeriod, args.ABP.CMAX)[['data']] )
 		print(get(outdat, mode = 'list')[['A_KPI_MAX']] %>% unlist())
-		message(max(24,23,22,21,20,19,18,17,16,15,14,13))
+		message(max(24,23,22,21,20,19,18,17,16,15,14))
 	}
 
 	#270. Max of all Working Days from 20160501 to 20160516
@@ -1411,11 +1424,11 @@ if (FALSE){
 		message(max(23,22,21,20,19,18,17,16,15,14,13))
 	}
 
-	#300. Rolling 10 days
-	#310. Mean of all Calendar Days from 20160401 to 20160410
+	#300. Rolling 10 days, using the data on each last workday to resemble the data on holidays
+	#310. Mean of all Calendar Days from 20160330 to 20160408
 	if (TRUE){
-		DtBgn <- asDates('20160401')
-		DtEnd <- asDates('20160410')
+		DtBgn <- asDates('20160330')
+		DtEnd <- asDates('20160408')
 		pDate <- DtBgn - as.difftime(1, units = 'days')
 		args.ABP.roll.CMEAN <- modifyList(
 			opt.def.ABP
@@ -1434,10 +1447,12 @@ if (FALSE){
 		outdat <- paste0('R10ANR', strftime(DtEnd,'%Y%m%d'))
 		assign( outdat, do.call(aggrByPeriod, args.ABP.roll.CMEAN)[['data']] )
 		print(get(outdat, mode = 'list')[['A_KPI_ANR']] %>% unlist())
-		message((25*4+26+27+28+29*3)/10)
+		message((23+24+25*4+26+27+28+29)/10)
 	}
 
 	#311. Mean of all Calendar Days from 20160402 to 20160411
+	#[ASSUMPTION]
+	#[1] Function searches for the aggregation on its previous workday, and set it as <chkDat>
 	if (TRUE){
 		DtBgn <- asDates('20160402')
 		DtEnd <- asDates('20160411')
@@ -1447,7 +1462,7 @@ if (FALSE){
 			,list(
 				dateBgn = DtBgn
 				,dateEnd = DtEnd
-				,chkBgn = pDate
+				,chkBgn = '20160330'
 				,fDebug = F
 			)
 		)

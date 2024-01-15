@@ -579,6 +579,11 @@ def kfCore_ts_agg(
 
         #710. Helper function to handle each input
         def h_agg(incfg : pd.Series):
+            #010. Initialize current iteration
+            dateBgn_fnl = dateBgn_d
+            chkBgn_fnl = chkBgn_d
+            chkdat_vfy = chkdat_pre
+
             #100. Subset the config table for current iteration
             cfg_input = (
                 cfg_daily
@@ -598,16 +603,46 @@ def kfCore_ts_agg(
             #[2] For rolling period aggregation, <D_BGN> > <chkBgn> means that Daily KPI data file should exist
             #    [1] If a pseudo <chkDat> is created, <aggrByPeriod> searches for <Leading Period> based on the difference between
             #         <dateBgn> and <chkBgn>
-            #    [2] We should stop this search by raising exception, as the function cannot handle nested calculation on the data
-            #         files that should not exist
             if dateBgn_d != chkBgn_d:
-                vfy_d_bgn = cfg_input.iat[0, cfg_input.columns.get_loc('D_BGN')]
-                if vfy_d_bgn > chkBgn_d:
-                    vfy_kpi = cfg_input.iat[0, cfg_input.columns.get_loc('C_KPI_ID')]
-                    raise RuntimeError(
-                        f'[{LfuncName}]For the scenario <chkBgn><{chkBgn_d}> != <dateBgn><{dateBgn_d}>'
-                        +f', <D_BGN><{vfy_d_bgn}> for KPI <{vfy_kpi}> must be earlier than or equal to <chkBgn>!'
+                #100. Verify whether all KPIs in this container have different <D_BGN>
+                vfy_d_bgn = (
+                    cfg_input
+                    [['C_KPI_ID','D_BGN']]
+                    .drop_duplicates()
+                    .groupby(['C_KPI_ID'], as_index = False)
+                    ['D_BGN']
+                    .count()
+                    .loc[lambda x: x['D_BGN'].gt(1)]
+                )
+                if len(vfy_d_bgn):
+                    raise ValueError(
+                        f'''[{LfuncName}]Different <D_BGN> found for KPIs: {str(vfy_d_bgn['C_KPI_ID'].to_list())}!'''
+                        +' They should be the same for rolling period aggregation!'
                     )
+
+                _d_bgn = cfg_input.iat[0, cfg_input.columns.get_loc('D_BGN')]
+
+                #500. Differ the process
+                if _d_bgn >= dateBgn_d:
+                    #[ASSUMPTION]
+                    #[1] In such case, the calculation only covers the period starting from <D_BGN> of the involved KPI
+                    #[2] Hence <chkBgn> also starts on the same date
+                    #[3] There should not be <Leading Period> as well
+                    dateBgn_fnl = _d_bgn
+                    chkBgn_fnl = _d_bgn
+                elif _d_bgn > chkBgn_d:
+                    #[ASSUMPTION]
+                    #[1] In such case, there is no clue whether <Checking Period> is equal to <Request Period>
+                    #[2] We conduct the process without <chkDat> to simplify the logic
+                    #[3] Hence we set <chkDat> as nothing for good
+                    #[4] Example
+                    #    [1] KPI starts on 20160327
+                    #    [2] The rolling 5-day ANR has been calculated from 20160327 to 20160331, which follows the logic at higher
+                    #         priority as <dateBgn> is set to <D_BGN>
+                    #    [3] Now we have to calculate rolling 5-day ANR from 20160401 to 20160405
+                    #    [4] Literally we would leverage [2] as <chkDat>, but by the logic of <aggrByPeriod>, <Checking Period> covers
+                    #         4 workdays while <Request Period> covers 1 workday; hence <chkDat> is not used
+                    chkdat_vfy = None
 
             #109. Debug mode
             if fDebug:
@@ -615,12 +650,12 @@ def kfCore_ts_agg(
                 print(f'''[{LfuncName}]From daily source file: {incfg['C_KPI_FILE_NAME']}''')
 
             #300. Only check the involved KPI during aggregation, to save system effort
-            if chkdat_pre is not None:
+            if chkdat_vfy is not None:
                 if fDebug:
                     print(f'''[{LfuncName}]Create pseudo <chkDat> <chk_kpi_pd{chkEnd}> for current input''')
                 gen_locals(**{
                     f'chk_kpi_pd{chkEnd}' : (
-                        chkdat_pre
+                        chkdat_vfy
                         .loc[lambda x: x['C_KPI_ID'].isin(cfg_input['C_KPI_ID'])]
                         .loc[:, lambda x: ~x.columns.isin(['D_RecDate'])]
                     )
@@ -643,12 +678,12 @@ def kfCore_ts_agg(
                 ,'fTrans_opt' : fTrans_opt
                 ,'_parallel' : _parallel
                 ,'cores' : cores
-                ,'dateBgn' : dateBgn_d
+                ,'dateBgn' : dateBgn_fnl
                 ,'dateEnd' : dateEnd_d
                 ,'chkDatPtn' : 'chk_kpi_pd&L_curdate.'
                 ,'chkDatType' : 'RAM'
                 ,'chkDatVar' : aggrVar
-                ,'chkBgn' : chkBgn_d
+                ,'chkBgn' : chkBgn_fnl
                 ,'byVar' : byInt
                 ,'copyVar' : copyVar
                 ,'aggrVar' : aggrVar

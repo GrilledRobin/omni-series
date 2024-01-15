@@ -272,7 +272,7 @@ if __name__=='__main__':
 
     #420. Prepare unanimous arguments
     cln = UserCalendar( intnx('day', G_d_rpt, 1 - k_roll_days, 'b', daytype = 'c'), G_d_rpt )
-    byvar_kpis = args_ts_mtd.get('byVar')
+    byvar_kpis = args_ts_roll.get('byVar')
     if isinstance(byvar_kpis, (str, tuple)):
         byvar_kpis = [byvar_kpis]
     #[ASSUMPTION]
@@ -280,7 +280,7 @@ if __name__=='__main__':
     #[2] Use other syntax to avoid modification of the object
     # byvar_kpis += ['C_KPI_ID']
     byvar_kpis = list(set(byvar_kpis + ['C_KPI_ID']))
-    aggvar_kpis = args_ts_mtd.get('aggrVar')
+    aggvar_kpis = args_ts_roll.get('aggrVar')
 
     #430. Modify the config table to adapt to <aggrByPeriod>
     cfg_agg = (
@@ -307,7 +307,7 @@ if __name__=='__main__':
     args_agg_kpi1 = modifyDict(
         {
             k:v
-            for k,v in args_ts_mtd.items()
+            for k,v in args_ts_roll.items()
             if k in [ s.name for s in signature(aggrByPeriod).parameters.values() ]
         }
         ,{
@@ -345,6 +345,10 @@ if __name__=='__main__':
         ,{
             'inDatPtn' : datptn_agg_kpi2
             ,'fImp_opt' : agg_opt_kpi2
+            #[ASSUMPTION]
+            #[1] Since <D_BGN> is set to the same as <G_d_rpt> (see the data <cfg_agg>), we should only involve data file
+            #     on one date for identical calculation
+            ,'dateBgn' : G_d_rpt
         }
     )
     man_kpi2 = (
@@ -417,6 +421,7 @@ if __name__=='__main__':
         ,{
             'inDatPtn' : datptn_agg_kpi2
             ,'fImp_opt' : agg_opt_kpi2
+            ,'dateBgn' : G_d_rpt
         }
     )
     man_kpi2_2 = (

@@ -298,7 +298,12 @@ def kfCore_ts_agg(
     cfg_unique_row = ['C_KPI_ID','N_LIB_PATH_SEQ']
     dateBgn_d = asDates(dateBgn, **kw_d)
     dateEnd_d = asDates(dateEnd, **kw_d)
-    chkBgn_d = asDates(chkBgn, **kw_d)
+    if chkBgn is None:
+        if fDebug:
+            print(f'[{LfuncName}]<chkBgn> is not provided, set it the same as <dateBgn>')
+        chkBgn_d = dateBgn_d
+    else:
+        chkBgn_d = asDates(chkBgn, **kw_d)
     vfy_ci = fTrans_opt.get('ignore_case', True)
     if not vfy_ci:
         print(
@@ -636,12 +641,12 @@ def kfCore_ts_agg(
                     #[2] We conduct the process without <chkDat> to simplify the logic
                     #[3] Hence we set <chkDat> as nothing for good
                     #[4] Example
-                    #    [1] KPI starts on 20160327
-                    #    [2] The rolling 5-day ANR has been calculated from 20160327 to 20160331, which follows the logic at higher
+                    #    [1] KPI starts on 20160330
+                    #    [2] The rolling 5-day ANR has been calculated from 20160328 to 20160401, which follows the logic at higher
                     #         priority as <dateBgn> is set to <D_BGN>
-                    #    [3] Now we have to calculate rolling 5-day ANR from 20160401 to 20160405
+                    #    [3] Now we have to calculate rolling 5-day ANR from 20160401 to 20160405, i.e. the next workday of 20160401
                     #    [4] Literally we would leverage [2] as <chkDat>, but by the logic of <aggrByPeriod>, <Checking Period> covers
-                    #         4 workdays while <Request Period> covers 1 workday; hence <chkDat> is not used
+                    #         3 workdays while <Request Period> covers 2 workdays; hence <chkDat> is not used
                     chkdat_vfy = None
 
             #109. Debug mode

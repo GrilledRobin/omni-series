@@ -4,6 +4,7 @@
 import os, sys
 import pandas as pd
 from typing import Union, Optional
+from omniPy.AdvDB import parseHDFStoreInfo
 
 def std_read_HDFS(
     infile : Union[str, os.PathLike, pd.HDFStore]
@@ -55,8 +56,8 @@ def std_read_HDFS(
 #   |      |[2] <usecols> and <columns> (see pd.read_hdf()) cannot be specified at the same time, but take the same effect              #
 #   |      |[3] The provided column list is matched to all columns in the source data in the first place, so that anyone that is NOT in #
 #   |      |     the source can be ignored, rather than triggering exception                                                            #
-#   |      |[4] However, <columns=> cannot be used when the storage is in default type <fixed>, please store the data in the HDF file   #
-#   |      |     with <format='table'> if one needs to use <columns=>                                                                   #
+#   |      |[4] If the format of the storage is <fixed>, the performance suffers as the filtration is applied AFTER loading the whole   #
+#   |      |     object                                                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -71,6 +72,8 @@ def std_read_HDFS(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |   |parseHDFStoreInfo                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -87,7 +90,8 @@ def std_read_HDFS(
     has_columns = ('columns' in kw) and (columns is not None)
     cols_req = []
     kw_col = {}
-    kw_raw = { k:v for k,v in kw.items() if k not in ['usecols','columns'] }
+    fmt_src = 'table'
+    kw_raw = { k:v for k,v in kw.items() if k not in ['usecols','columns','path_or_buf'] }
 
     #119. Raise exception
     if has_usecols and has_columns:
@@ -111,8 +115,33 @@ def std_read_HDFS(
         #500. Identify the columns that are in the source
         kw_col = { 'columns' : { v for v in struct.columns if v in cols_req } }
 
+        #900. Identify the format of the source
+        fmt_src = (
+            parseHDFStoreInfo(infile)
+            .loc[lambda x: x['key'].eq(key), 'format']
+            .iat[0]
+        )
+
+    #300. Helper function to slice the data frame at axis-1
+    def h_flt(df : pd.DataFrame):
+        if len(kw_col) == 0:
+            return(slice(len(df.columns)))
+        else:
+            return(df.columns.isin(kw_col.get('columns')))
+
+    #700. Load the data with the column filter
+    if fmt_src == 'table':
+        rstOut = pd.read_hdf( infile, key, **kw_raw, **kw_col )
+    elif fmt_src == 'fixed':
+        rstOut = (
+            pd.read_hdf( infile, key, **kw_raw )
+            .loc[:, h_flt]
+        )
+    else:
+        raise TypeError(f'[{LfuncName}]Format <{fmt_src}> of the key <{key}> is not recognized!')
+
     #900. Import data
-    return( funcConv(pd.read_hdf( infile, key, **kw_raw, **kw_col )) )
+    return( funcConv(rstOut) )
 #End std_read_HDFS
 
 '''
@@ -120,23 +149,36 @@ def std_read_HDFS(
 #Full Test Program[1]:
 if __name__=='__main__':
     #010. Create envionment.
+    import os
     import sys
+    import pandas as pd
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import std_read_HDFS
 
+    file_tmp = r'D:\Temp\aaa.hdf'
     aaa = pd.DataFrame({'a' : [2,4,6], 'b' : [1,5,9]})
+    bbb = pd.DataFrame({'d' : [5,9]})
 
     #100. Ensure the data format is <table>
     #[ASSUMPTION]
     #[1] <format='table'> cannot store empty data frame into the HDF file, it results in a <dict> instead
     #[2] <format='fixed'> can store empty data frame correctly, without compatibility of <columns=> argument
     #[3] Choose wisely
-    with pd.HDFStore(r'D:\Temp\aaa.hdf', mode = 'w') as store:
+    with pd.HDFStore(file_tmp, mode = 'w') as store:
         store.put('aaa', aaa, format = 'table')
+        store.put('bbb', bbb, format = 'fixed')
 
     #200. Load the data with specified columns, ignoring those not in the table
-    bbb = std_read_HDFS(r'D:\Temp\aaa.hdf', 'aaa', columns = ['a','c'])
+    vfy_aaa = std_read_HDFS(file_tmp, 'aaa', columns = ['a','c'])
+
+    #300. Load empty data with none of the required columns existing in the source
+    #[ASSUMPTION]
+    #[1] <format='fixed'> still causes large effort as the filtration is applied AFTER loading the whole object
+    vfy_bbb = std_read_HDFS(file_tmp, 'bbb', usecols = ['a','c'])
+
+    #900. Purge
+    if os.path.isfile(file_tmp): os.remove(file_tmp)
 #-Notes- -End-
 '''

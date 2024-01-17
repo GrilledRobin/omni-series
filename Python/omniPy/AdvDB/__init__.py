@@ -9,6 +9,7 @@
 #[IMPORTANT] The sequence of below statements should align the dependency tree,
 #             i.e. the definition of the latter function depends on the former one
 from .parseDatName import parseDatName
+from .parseHDFStoreInfo import parseHDFStoreInfo
 from .loadSASdat import loadSASdat
 from .std_read_HDFS import std_read_HDFS
 from .std_read_RAM import std_read_RAM
@@ -33,6 +34,7 @@ from .kfFunc_ts_roll import kfFunc_ts_roll
 #200.   Define available resources.
 __all__ = [
     'DBuse_MrgKPItoInf', 'DBuse_SetKPItoInf', 'DBuse_GetTimeSeriesForKpi'
+    , 'parseHDFStoreInfo'
     , 'loadSASdat', 'std_read_HDFS', 'std_read_RAM', 'std_read_SAS'
     , 'aggrByPeriod'
     , 'parseDatName'

@@ -52,6 +52,11 @@ def std_read_SAS(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Eliminate the excessive kwargs from those acceptable in <pyreadstat.read_sas7bdat>                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on arguments, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -71,13 +76,43 @@ def std_read_SAS(
     '''
 
     #013. Define the local environment.
-    kw_readstat = [
-        s.name
-        for s in signature(read_sas7bdat).parameters.values()
-    ]
 
-    #100. Import the data
-    df , meta = loadSASdat( infile, **{ k:v for k,v in kw.items() if k in kw_readstat } )
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_pyr = signature(read_sas7bdat).parameters.values()
+    sig_ls = signature(loadSASdat).parameters.values()
+
+    #510. Obtain all defaults of keyword arguments of the function
+    kw_raw_pyr = {
+        s.name : s.default
+        for s in sig_pyr
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+    }
+    kw_raw_ls = {
+        s.name : s.default
+        for s in sig_ls
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+    }
+
+    #550. In case the raw API takes any variant keywords, we also identify them
+    #[ASSUMPTION]
+    #[1] Variant kwargs from <loadSASdat> is designed only for <read_sas7bdat>
+    #[2] Hence we only validate the kwargs of the latter
+    if len([ s.name for s in sig_pyr if s.kind == s.VAR_KEYWORD ]) > 0:
+        kw_varkw = { k:v for k,v in kw.items() if not ((k in kw_raw_pyr) or (k in kw_raw_ls) or (k in ['filename_path','inFile'])) }
+    else:
+        kw_varkw = {}
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = {
+        **{ k:v for k,v in kw.items() if ((k in kw_raw_pyr) or (k in kw_raw_ls)) and k not in ['filename_path','inFile'] }
+        ,**kw_varkw
+    }
+
+    #800. Import the data
+    df , meta = loadSASdat( infile, **kw_final )
 
     #999. Return the result
     return( funcConv(df) )

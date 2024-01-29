@@ -3,6 +3,7 @@
 
 import sys, os
 import pandas as pd
+from inspect import signature
 from omniPy.AdvOp import get_values
 
 def std_write_HDFS(
@@ -48,6 +49,11 @@ def std_write_HDFS(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on data type, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -57,7 +63,7 @@ def std_write_HDFS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, pandas                                                                                                                #
+#   |   |sys, os, pandas, inspect                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -78,16 +84,32 @@ def std_write_HDFS(
     kw_put_fnl = { k:v for k,v in kw_put.items() if k not in ['key','value'] }
     rc = 0
 
-    #300. Retrieve the data before writing to the API, to avoid destruction of the destination
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_raw = signature(get_values).parameters.values()
+
+    #510. Obtain all defaults of keyword arguments of the function
+    #[ASSUMPTION]
+    #[1] We do not retrieve the VAR_KEYWORD args of the function, as it is designed for other purpose
+    kw_raw = {
+        s.name : s.default
+        for s in sig_raw
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+        and s.name != 'inplace'
+    }
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = { k:v for k,v in kw.items() if k in kw_raw }
+
+    #600. Retrieve the data before writing to the API, to avoid destruction of the destination
     rstOut = {}
     for key,dat in indat.items():
         if isinstance(dat, str):
-            dat = get_values(dat, inplace = False, instance = pd.DataFrame)
-        if not isinstance(dat, pd.DataFrame):
-            raise TypeError(f'[{LfuncName}]<pd.DataFrame> must be provided for <{key}>!')
+            dat = get_values(dat, inplace = False, **kw_final)
         rstOut[key] = funcConv(dat)
 
-    #500. Write the data with API
+    #800. Write the data with API
     with pd.HDFStore(outfile, **kw_open_fnl) as store:
         for key,dat in rstOut.items():
             #Quote: https://pandas.pydata.org/docs/reference/api/pandas.HDFStore.put.html

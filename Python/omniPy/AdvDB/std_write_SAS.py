@@ -3,6 +3,7 @@
 
 import sys, os
 import pandas as pd
+from inspect import signature
 from omniPy.AdvDB import writeSASdat
 from omniPy.AdvOp import get_values
 
@@ -46,6 +47,11 @@ def std_write_SAS(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on arguments, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -55,7 +61,7 @@ def std_write_SAS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, pandas                                                                                                                #
+#   |   |sys, os, pandas, inspect                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -77,12 +83,35 @@ def std_write_SAS(
         raise TypeError(f'[{LfuncName}]<indat> must be a 1-item dict, while <{type(indat).__name__}> is given!')
     if len(indat) != 1:
         raise ValueError(f'[{LfuncName}]<indat> must be a 1-item dict, while <{len(indat)}> items are given!')
-    kw_fnl = { k:v for k,v in kw.items() if k not in ['inDat','outFile'] }
 
-    #100. Identify the data frame to be exported
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_raw = signature(writeSASdat).parameters.values()
+
+    #510. Obtain all defaults of keyword arguments of the function
+    kw_raw = {
+        s.name : s.default
+        for s in sig_raw
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+    }
+
+    #550. In case the raw API takes any variant keywords, we also identify them
+    if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
+        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw and k not in ['inDat','outFile'] }
+    else:
+        kw_varkw = {}
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = {
+        **{ k:v for k,v in kw.items() if k in kw_raw and k not in ['inDat','outFile'] }
+        ,**kw_varkw
+    }
+
+    #700. Identify the data frame to be exported
     val = list(indat.values())[0]
     if isinstance(val, str): val = get_values(val, inplace = False, instance = pd.DataFrame)
 
     #999. Return the result
-    return( writeSASdat(funcConv(val), outFile = outfile, **kw_fnl) )
+    return( writeSASdat(funcConv(val), outFile = outfile, **kw_final) )
 #End std_write_SAS

@@ -3,6 +3,7 @@
 
 import os, sys
 import pandas as pd
+from inspect import signature
 from typing import Union, Optional
 from omniPy.AdvDB import parseHDFStoreInfo
 
@@ -59,6 +60,11 @@ def std_read_HDFS(
 #   |      |[4] If the format of the storage is <fixed>, the performance suffers as the filtration is applied AFTER loading the whole   #
 #   |      |     object                                                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on arguments, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -68,7 +74,7 @@ def std_read_HDFS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |os, sys, pandas                                                                                                                #
+#   |   |os, sys, pandas, inspect, typing                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -82,8 +88,32 @@ def std_read_HDFS(
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #100. Determine the <usecols>
-    #110. Split the kwargs
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_raw = signature(pd.read_hdf).parameters.values()
+
+    #510. Obtain all defaults of keyword arguments of the function
+    kw_raw = {
+        s.name : s.default
+        for s in sig_raw
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+    }
+
+    #550. In case the raw API takes any variant keywords, we also identify them
+    if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
+        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw and k not in ['usecols','columns','path_or_buf'] }
+    else:
+        kw_varkw = {}
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = {
+        **{ k:v for k,v in kw.items() if k in kw_raw and k not in ['usecols','columns','path_or_buf'] }
+        ,**kw_varkw
+    }
+
+    #700. Determine the <usecols>
+    #710. Split the kwargs
     usecols = kw.get('usecols', None)
     columns = kw.get('columns', None)
     has_usecols = ('usecols' in kw) and (usecols is not None)
@@ -91,13 +121,12 @@ def std_read_HDFS(
     cols_req = []
     kw_col = {}
     fmt_src = 'table'
-    kw_raw = { k:v for k,v in kw.items() if k not in ['usecols','columns','path_or_buf'] }
 
-    #119. Raise exception
+    #719. Raise exception
     if has_usecols and has_columns:
         raise KeyError(f'[{LfuncName}]Cannot specify <usecols> and <columns> at the same time!')
 
-    #130. Combine the requests
+    #730. Combine the requests
     #[ASSUMPTION]
     #[1] We do not use <isinstance>, but leave the exception to be raised
     if has_usecols:
@@ -105,10 +134,10 @@ def std_read_HDFS(
     if has_columns:
         cols_req = [ v for v in columns ]
 
-    #150. Modify the <columns> argument
+    #750. Modify the <columns> argument
     if len(cols_req) > 0:
         #100. Pre-load the data structure
-        kw_struct = { k:v for k,v in kw_raw.items() if k not in ['start','stop'] }
+        kw_struct = { k:v for k,v in kw_final.items() if k not in ['start','stop'] }
         kw_norow = { 'start' : 0, 'stop' : 0 }
         struct = pd.read_hdf( infile, key, **kw_struct, **kw_norow )
 
@@ -122,23 +151,27 @@ def std_read_HDFS(
             .iat[0]
         )
 
-    #300. Helper function to slice the data frame at axis-1
+    #800. Load the data with the column filter
+    #810. Helper function to slice the data frame at axis-1
     def h_flt(df : pd.DataFrame):
         if len(kw_col) == 0:
             return(slice(len(df.columns)))
         else:
             return(df.columns.isin(kw_col.get('columns')))
 
-    #700. Load the data with the column filter
-    if fmt_src == 'table':
-        rstOut = pd.read_hdf( infile, key, **kw_raw, **kw_col )
-    elif fmt_src == 'fixed':
-        rstOut = (
-            pd.read_hdf( infile, key, **kw_raw )
-            .loc[:, h_flt]
-        )
+    #850. Differ the process
+    if len(cols_req) == 0:
+        rstOut = pd.read_hdf( infile, key, **kw_final )
     else:
-        raise TypeError(f'[{LfuncName}]Format <{fmt_src}> of the key <{key}> is not recognized!')
+        if fmt_src == 'table':
+            rstOut = pd.read_hdf( infile, key, **kw_final, **kw_col )
+        elif fmt_src == 'fixed':
+            rstOut = (
+                pd.read_hdf( infile, key, **kw_final )
+                .loc[:, h_flt]
+            )
+        else:
+            raise TypeError(f'[{LfuncName}]Format <{fmt_src}> of the key <{key}> is not recognized!')
 
     #900. Import data
     return( funcConv(rstOut) )

@@ -3,6 +3,7 @@
 
 import sys
 import pandas as pd
+from inspect import signature
 from omniPy.AdvOp import get_values
 
 def std_write_RAM(
@@ -45,6 +46,11 @@ def std_write_RAM(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on data type, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -54,7 +60,7 @@ def std_write_RAM(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas                                                                                                                    #
+#   |   |sys, pandas, inspect                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -75,11 +81,29 @@ def std_write_RAM(
         raise ValueError(f'[{LfuncName}]<indat> must be a 1-item dict, while <{len(indat)}> items are given!')
     rc = 0
 
-    #100. Identify the data frame to be exported
-    val = list(indat.values())[0]
-    if isinstance(val, str): val = get_values(val, inplace = False, instance = pd.DataFrame)
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_raw = signature(get_values).parameters.values()
 
-    #300. Identify the frame to export the data
+    #510. Obtain all defaults of keyword arguments of the function
+    #[ASSUMPTION]
+    #[1] We do not retrieve the VAR_KEYWORD args of the function, as it is designed for other purpose
+    kw_raw = {
+        s.name : s.default
+        for s in sig_raw
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+        and s.name != 'inplace'
+    }
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = { k:v for k,v in kw.items() if k in kw_raw }
+
+    #600. Identify the data frame to be exported
+    val = list(indat.values())[0]
+    if isinstance(val, str): val = get_values(val, inplace = False, **kw_final)
+
+    #700. Identify the frame to export the data
     #[ASSUMPTION]
     #[1] Tt cannot be detected how deep this function is called along the stack
     #[2] It can neither be detected which along the call stack should we export the data for other processes

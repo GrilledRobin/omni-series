@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
+from inspect import signature
 from omniPy.AdvOp import get_values
 
 def std_read_RAM(
@@ -50,6 +51,11 @@ def std_read_RAM(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable user to provide kwarg <usecols=> to filter columns BEFORE <funcConv> is applied                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240129        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the unnecessary restrictions on data type, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -59,7 +65,7 @@ def std_read_RAM(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |pandas                                                                                                                         #
+#   |   |pandas, inspect                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -72,10 +78,28 @@ def std_read_RAM(
     usecols = kw.get('usecols', None)
     has_usecols = ('usecols' in kw) and (usecols is not None)
 
-    #300. Load the data directly
-    rstOut = get_values(infile, inplace = False, instance = pd.DataFrame)
+    #500. Overwrite the keyword arguments
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
+    sig_raw = signature(get_values).parameters.values()
 
-    #500. Filter the columns
+    #510. Obtain all defaults of keyword arguments of the function
+    #[ASSUMPTION]
+    #[1] We do not retrieve the VAR_KEYWORD args of the function, as it is designed for other purpose
+    kw_raw = {
+        s.name : s.default
+        for s in sig_raw
+        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
+        and s.default is not s.empty
+        and s.name != 'inplace'
+    }
+
+    #590. Create the final keyword arguments for calling the function
+    kw_final = { k:v for k,v in kw.items() if k in kw_raw }
+
+    #700. Load the data directly
+    rstOut = get_values(infile, inplace = False, **kw_final)
+
+    #800. Filter the columns
     if has_usecols:
         rstOut = rstOut.loc[:, lambda x: x.columns.isin(usecols)]
 

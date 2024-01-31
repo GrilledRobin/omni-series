@@ -176,16 +176,21 @@ def inferContents(
         lambda x,y: x | y
         ,[ v for k,v in col_dtypes.items() if k in [ k for k,v in map_fmt.items() if v == '$' ] ]
     )
-    dfsub_str = inDat.loc[:,col_str].astype(str).where(inDat.loc[:,col_str].notnull(), '')
+    dfsub_str = (
+        inDat
+        .loc[:,col_str]
+        .astype(str)
+        .where(inDat.loc[:,col_str].notnull(), '')
+        .map(h_getByteLen)
+        .max(axis = 0)
+        .astype(float)
+    )
+    dfsub_str.loc[dfsub_str.ne(0)] = np.log2(dfsub_str.loc[dfsub_str.ne(0)])
     col_len = (
         pd.Series(
             np.left_shift(
                 np.ones_like(col_str.loc[col_str])
-                ,np.ceil(np.log2(
-                    dfsub_str
-                    .map(h_getByteLen)
-                    .max(axis = 0)
-                )).replace([-np.inf, np.inf], 0).astype(int)
+                ,np.ceil(dfsub_str).replace([-np.inf, np.inf], 0).astype(int)
             )
             ,index = col_str.index
         )
@@ -195,11 +200,7 @@ def inferContents(
 
     #430. Helper function to retrieve format lengths
     def h_getColAttr(vec : str, attrs : str):
-        attr_set = map_len.get(vec, None)
-        if attr_set is None:
-            return(np.nan)
-        else:
-            return(attr_set.get(attrs, np.nan))
+        return(map_len.get(vec, {}).get(attrs, np.nan))
 
     #700. Create the data frame to store meta information
     rstOut = (

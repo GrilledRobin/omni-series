@@ -37,7 +37,16 @@
 #   |   |   |thisfile                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-getCalendarAdj <- function(){
+getCalendarAdj <- function(
+	#[IMPORTANT] The sequence of below lists determines below logics:
+	#[1] Search order for the dedicated file
+	#[2] Program efficiency on system I/O
+	fname = 'CalendarAdj.csv'
+	,lst_drives = c('D:', 'C:')
+	,lst_parent = c('R','Python', 'Robin', 'RobinLu', 'SAS')
+	,lst_fpath = c('omnimacro', 'omniPy', 'omniR')
+	,lst_fcurr = c('Dates')
+){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
 	LfuncName <- deparse(sys.call()[[1]])
@@ -47,16 +56,6 @@ getCalendarAdj <- function(){
 
 	#012. Handle the parameter buffer.
 	file_prior <- thisfile()
-
-	#100. Prepare the candidates
-	#[IMPORTANT] The sequence of below lists determines below logics:
-	#[1] Search order for the dedicated file
-	#[2] Program efficiency on system I/O
-	fname <- 'CalendarAdj.csv'
-	lst_drives <- c('D:', 'C:')
-	lst_parent <- c('Python', 'Robin', 'RobinLu', 'SAS')
-	lst_fpath <- c('omnimacro', 'omniPy')
-	lst_fcurr <- c('Dates')
 
 	#300. Directly return if the dedicated file is in the same folder as this function
 	if (length(file_prior) > 0) {

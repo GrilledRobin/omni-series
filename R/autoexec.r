@@ -104,7 +104,7 @@ name_omnimacro <- 'omnimacro'
 comb_autoexec <- expand.grid(drives_autoexec, paths_autoexec, stringsAsFactors = F)
 path_omniRs <- file.path(comb_autoexec[[1]], comb_autoexec[[2]], name_omniR)
 paths_omnimacro <- file.path(comb_autoexec[[1]], comb_autoexec[[2]], name_omnimacro)
-candidate_ClndrAdj <- file.path(paths_omnimacro, 'Dates', 'CalendarAdj.csv')
+# candidate_ClndrAdj <- file.path(paths_omnimacro, 'Dates', 'CalendarAdj.csv')
 
 #200. Import the user defined package
 #210. Only retrieve the first valid path from the list of candidate paths
@@ -123,7 +123,13 @@ if (length(omniR_Files)>0){
 LfileName <- thisfile()
 
 #400. Identify the dates to be adjusted based on government policy
-path_ClndrAdj <- head(Filter(file.exists, candidate_ClndrAdj), 1)
+# path_ClndrAdj <- head(Filter(file.exists, candidate_ClndrAdj), 1)
+path_ClndrAdj <- getCalendarAdj(
+	lst_drives = drives_autoexec
+	,lst_parent = paths_autoexec
+	,lst_fpath = c(name_omniR, name_omnimacro)
+	,lst_fcurr = 'Dates'
+)
 
 #500. Create global system options (similar to global variables, but more specific when being referenced to during program call)
 #Below options are dependencies to the rest options

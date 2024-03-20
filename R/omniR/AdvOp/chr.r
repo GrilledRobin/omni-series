@@ -1,21 +1,26 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the names of the provided list in recursion                                                  #
+#   |This function is intended to convert the integer vector into a single character string, by translating each integer via ASCII table#
+#   | and pasting them all together                                                                                                     #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[QUOTE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://www.r-bloggers.com/2011/03/ascii-code-table-in-r/                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x            :   List for which to extract the names                                                                               #
+#   |x            :   Integer vector with length-n                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>        :   Vector of names with possible duplications removed                                                                #
+#   |[string    ] :   Single string with each character translated from each element in the provided vector via ASCII table             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20211218        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20240214        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
@@ -28,58 +33,28 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |vctrs                                                                                                                          #
+#   |   |base                                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-#001. Append the list of required packages to the global environment
-#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
-lst_pkg <- deparse(substitute(c(
-	vctrs
-)))
-#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
-lst_pkg <- paste0(lst_pkg, collapse = '')
-lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
-lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
-lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
-options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
-
-getListNames <- function(x) {
-	rstOut <- names(x)
-	for (m in x) {
-		if (rlang::is_named(m)) {
-			rstOut <- c(rstOut, Recall(m))
-		}
-	}
-	rstOut <- base::unique(rstOut)
-	return(rstOut)
-}
+chr <- function(n) { rawToChar(as.raw(n)) }
 
 #[Full Test Program;]
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#100. Prepare a complex list
-		v_list <- list(
-			'aa' = list(
-				'bb' = 1
-				,'cc' = list(
-					'aa' = 3
-					,'dd' = 5
-				)
-			)
-			,'ee' = list(
-				'ff' = 2
-				,'gg' = 4
-			)
-			,list(
-				'hh' = 6
-			)
-		)
+		x1 <- 65
+		x2 <- c(65,66)
 
-		#200. Get the names
-		v_names <- getListNames(v_list)
+		#100. Convert the integer to ASCII character
+		x1_chr <- chr(x1)
+		# A
+
+		#200. Convert the whole integer vector into one character string
+		x2_chr <- chr(x2)
+		# [1]  "AB"
+
 	}
 }

@@ -21,22 +21,26 @@ def inferContents(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDat      :   Data frame to be inspected                                                                                          #
+#   |inDat       :   Data frame to be inspected                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<DF>       :   Data frame describing the column-level meta information of the input data that contains below columns               #
-#   |               [VARNUM      ] <int   >  Position of variables in the SAS dataset, as well as in the interim CSV file               #
-#   |               [NAME        ] <str   >  Column name in SAS syntax                                                                  #
-#   |               [FORMAT      ] <str   >  Format name in SAS syntax                                                                  #
-#   |               [TYPE        ] <int   >  Variable type, 1 for numeric, 2 for character                                              #
-#   |               [LENGTH      ] <int   >  Variable length of the actual storage in SAS dataset                                       #
-#   |               [FORMATL     ] <int   >  Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>                        #
-#   |                                        [IMPORTANT] This value is only the display length in the converted data, the storage       #
-#   |                                                     precision is always kept maximum during conversion                            #
-#   |               [FORMATD     ] <int   >  Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>                       #
-#   |                                        [IMPORTANT] This value is only the display length in the converted data, the storage       #
-#   |                                                     precision is always kept maximum during conversion                            #
+#   |<DF>        :   Data frame describing the column-level meta information of the input data that contains below columns              #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |dtype      |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |VARNUM          |int        | Position of variables in the SAS dataset, as well as in the interim CSV file        #
+#   |                |NAME            |str        | Column name in SAS syntax                                                           #
+#   |                |FORMAT          |str        | Format name in SAS syntax                                                           #
+#   |                |TYPE            |int        | Variable type, 1 for numeric, 2 for character                                       #
+#   |                |LENGTH          |int        | Variable length of the actual storage in SAS dataset                                #
+#   |                |FORMATL         |int        | Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>                 #
+#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
+#   |                |                |           |              precision is always kept maximum during conversion                     #
+#   |                |FORMATD         |int        | Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>                #
+#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
+#   |                |                |           |              precision is always kept maximum during conversion                     #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -234,8 +238,12 @@ def inferContents(
         .reset_index(drop = False)
         .rename(columns = {'index' : 'NAME'})
         .reset_index(drop = False)
-        .rename(columns = {'index' : 'VARNUM'})
+        .assign(**{
+            'VARNUM' : lambda x: x['index'].add(1).astype(int)
+        })
+        .drop(columns = 'index')
         .loc[:, lambda x: ~x.columns.str.endswith('_')]
+        .loc[:, lambda x: ['VARNUM'] + [ v for v in x.columns if v != 'VARNUM' ]]
     )
 
     #999. Output

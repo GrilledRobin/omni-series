@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 #001. Import necessary functions for processing.
-import sys
+import sys, re
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
-from omniPy.AdvOp import get_values, importByStr, modifyDict
+from typing import Optional
+from omniPy.AdvOp import importByStr, modifyDict, ls_frame
 
 #100. Definition of the class.
 class OpenSourceApiMeta(type):
@@ -40,28 +41,34 @@ class OpenSourceApiMeta(type):
 #   |   |   |attrs             :   <dict    > Attributes used to create the new class, instead of instantiating it                      #
 #   |   |   |apiPkgPull        :   <str     > Name of the package from which to obtain the API function to pull the data                #
 #   |   |   |                      [None                ]<Default> Obtain the API from current session in global environment            #
-#   |   |   |                      [<str>               ]          Package name valid for function <omniPy.AdvOp.importByStr>           #
-#   |   |   |apiPfxPull        :   <str     > Prefix of the puller API name to search                                                   #
+#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
+#   |   |   |apiPfxPull        :   <str     > Prefix of the puller API name to search as regular expression                             #
 #   |   |   |                      [<empty>             ]<Default> No specific prefix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
-#   |   |   |apiSfxPull        :   <str     > Suffix of the puller API name to search                                                   #
+#   |   |   |apiSfxPull        :   <str     > Suffix of the puller API name to search as regular expression                             #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
 #   |   |   |apiPullHdl        :   <callable> Function with only one argument as handler to process the data pulled at once             #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the pulled data                                  #
+#   |   |   |lsPullOpt         :   <dict    > Options to list the <pull> callables given <apiPkgPull == None>                           #
+#   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
+#   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
 #   |   |   |                      [None                ]<Default> Obtain the API from current session in global environment            #
-#   |   |   |                      [<str>               ]          Package name valid for function <omniPy.AdvOp.importByStr>           #
-#   |   |   |apiPfxPush        :   <str     > Prefix of the pusher API name to search                                                   #
+#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
+#   |   |   |apiPfxPush        :   <str     > Prefix of the pusher API name to search as regular expression                             #
 #   |   |   |                      [<empty>             ]<Default> No specific prefix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
-#   |   |   |apiSfxPush        :   <str     > Suffix of the pusher API name to search                                                   #
+#   |   |   |apiSfxPush        :   <str     > Suffix of the pusher API name to search as regular expression                             #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
 #   |   |   |apiPushHdl        :   <callable> Function with only one argument as handler to process the data pushed at once             #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the pushed data                                  #
+#   |   |   |lsPushOpt         :   <dict    > Options to list the <push> callables given <apiPkgPush == None>                           #
+#   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
+#   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -199,6 +206,12 @@ class OpenSourceApiMeta(type):
 #   |      |    <hdlPull> corresponds to <apiPullHdl> at class creation                                                                 #
 #   |      |    <hdlPush> corresponds to <apiPushHdl> at class creation                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240217        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Make <apiPullHdl> and <apiPushHdl> optional to enable stability when invalid input is taken                             #
+#   |      |[2] Make the search in current session more flexible, e.g. enable searching in provided frame                               #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -208,14 +221,14 @@ class OpenSourceApiMeta(type):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, inspect                                                                                                                   #
+#   |   |sys, re, inspect, typing                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |omniPy.AdvOp                                                                                                                   #
-#   |   |   |get_values                                                                                                                 #
 #   |   |   |importByStr                                                                                                                #
 #   |   |   |modifyDict                                                                                                                 #
+#   |   |   |ls_frame                                                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -232,21 +245,44 @@ class OpenSourceApiMeta(type):
     #002. Constructor
     def __new__(
         mcs, cls, bases, attrs
-        ,apiPkgPull : str = None
+        ,apiPkgPull : Optional[str] = None
         ,apiPfxPull : str = ''
         ,apiSfxPull : str = ''
-        ,apiPullHdl : callable = lambda x: x
-        ,apiPkgPush : str = None
+        ,apiPullHdl : Optional[callable] = lambda x: x
+        ,lsPullOpt : dict = {}
+        ,apiPkgPush : Optional[str] = None
         ,apiPfxPush : str = ''
         ,apiSfxPush : str = ''
-        ,apiPushHdl : callable = lambda x: x
+        ,apiPushHdl : Optional[callable] = lambda x: x
+        ,lsPushOpt : dict = {}
     ):
         #001. Handle parameters
-        if apiPkgPush is None: apiPkgPush = apiPkgPull
-        if apiPfxPull is None: apiPfxPull = ''
-        if apiSfxPull is None: apiSfxPull = ''
-        if apiPfxPush is None: apiPfxPush = ''
-        if apiSfxPush is None: apiSfxPush = ''
+        if not isinstance(apiPfxPull, str): apiPfxPull = ''
+        if not isinstance(apiSfxPull, str): apiSfxPull = ''
+        if not isinstance(apiPfxPush, str): apiPfxPush = ''
+        if not isinstance(apiSfxPush, str): apiSfxPush = ''
+        if not callable(apiPullHdl) : apiPullHdl = lambda x: x
+        if not callable(apiPushHdl) : apiPushHdl = lambda x: x
+        lsPullOpt = {
+            'verbose' : True
+            ,'predicate' : callable
+            ,'flags' : re.NOFLAG
+            ,**{ k:v for k,v in lsPullOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
+        }
+        lsPushOpt = {
+            'verbose' : True
+            ,'predicate' : callable
+            ,'flags' : re.NOFLAG
+            ,**{ k:v for k,v in lsPushOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
+        }
+        hasPkgPull = False
+        if isinstance(apiPkgPull, str):
+            if len(apiPkgPull) > 0:
+                hasPkgPull = True
+        hasPkgPush = False
+        if isinstance(apiPkgPush, str):
+            if len(apiPkgPush) > 0:
+                hasPkgPush = True
 
         #100. Assign values to local variables
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
@@ -260,10 +296,14 @@ class OpenSourceApiMeta(type):
 
             #200. Prepare the callable core for creating the reader method
             try:
-                if apiPkgPull is None:
-                    __func_pull__ = get_values(apiPtnPull)
-                else:
+                if hasPkgPull:
                     __func_pull__ = importByStr('.' + apiPtnPull, package = apiPkgPull)
+                else:
+                    __func_pull__ = list(ls_frame(pattern = f'^{apiPtnPull}$', **lsPullOpt).values())
+                    if len(__func_pull__) == 1:
+                        __func_pull__ = __func_pull__[0]
+                    else:
+                        __func_pull__ = None
             except:
                 __func_pull__ = None
 
@@ -313,10 +353,14 @@ class OpenSourceApiMeta(type):
 
             #200. Prepare the callable core for creating the writer method
             try:
-                if apiPkgPush is None:
-                    __func_push__ = get_values(apiPtnPush)
-                else:
+                if hasPkgPush:
                     __func_push__ = importByStr('.' + apiPtnPush, package = apiPkgPush)
+                else:
+                    __func_push__ = list(ls_frame(pattern = f'^{apiPtnPush}$', **lsPushOpt).values())
+                    if len(__func_push__) == 1:
+                        __func_push__ = __func_push__[0]
+                    else:
+                        __func_push__ = None
             except:
                 __func_push__ = None
 
@@ -577,7 +621,7 @@ if __name__=='__main__':
         #[ASSUMPTION]
         #[1] Pass <**kw> to indicate different arguments for different APIs
         #[2] Create the class of APIs on the fly, and assign their names as attributes to this framework
-        def add(self, attr, **kw):
+        def add(self, attr, argsPull = {}, **kw):
             #100. Create API class on the fly
             #How to pass arguments to metaclass in class definition: (#2)
             #Quote: https://stackoverflow.com/questions/27258557/
@@ -586,19 +630,19 @@ if __name__=='__main__':
             #200. Prepare keyword arguments for reading data from the API
             #[ASSUMPTION]
             #[1] We take the default keyword arguments in current API as top priority,
-            #     given neither <args_loader> nor <kw> is provided
-            #[2] Given <args_loader> is non-empty while <**kw> is empty, we take <args_loader> to call the API
-            #[3] Given <**kw> is provided, we call the API with it
-            kw_add = modifyDict(self.args_loader.get(attr, {}), kw)
+            #     given neither <args_loader> nor <argsPull> is provided
+            #[2] Given <args_loader> is non-empty while <**argsPull> is empty, we take <args_loader> to call the API
+            #[3] Given <**argsPull> is provided, we call the API with it
+            kw_add = modifyDict(self.args_loader.get(attr, {}), argsPull)
 
             #500. Instantiate the API and read data from it at once
-            obj = cls(kw_pull_ = kw_add)
+            obj = cls(argsPull = kw_add, **kw)
 
             #600. Pull data via the API at initialization by default
             #[ASSUMPTION]
             #[1] One can change this behavior when necessary
             #[2] Prevent showing messages in the log as the method always returns result
-            _ = obj.pull()
+            _ = obj.pull(**kw)
 
             #700. Add current API to the attribute list of current framework
             setattr(self, attr, obj)

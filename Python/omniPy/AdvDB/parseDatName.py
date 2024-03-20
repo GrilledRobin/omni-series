@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys, os, ast
 import pandas as pd
 from collections.abc import Iterable
+from omniPy.AdvDB import std_read_RAM
 from omniPy.AdvOp import apply_MapVal, get_values
 from omniPy.Dates import asDates
 
@@ -15,11 +16,12 @@ def parseDatName(
         'L_d_curr' : '%Y%m%d'
         ,'L_m_curr' : '%Y%m'
     }
-    ,inRAM : bool = False
-    ,chkExist : (bool, str) = True
+    ,inRAM : bool | Iterable[bool] = False
+    ,chkExist : bool | str = True
     ,dict_map : dict = {}
+    ,exist_Opt : Iterable[str | dict] = None
     ,**kw
-) -> 'Parse the names of the files from the input string pattern and check their existence if requested':
+) -> pd.DataFrame:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -39,47 +41,51 @@ def parseDatName(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |datPtn     :   The naming pattern of the data files, either located on the harddisk or in RAM of current session                   #
-#   |               [ <str>          ]           Single string that represent the naming convention of a series of data files           #
-#   |               [ <Iterable>     ]           Iterable of <str> in the same convention as above                                      #
-#   |parseCol   :   The column(s) to be parsed if [datPtn] is provided a [pd.DataFrame]                                                 #
-#   |               [None            ] <Default> Parse all columns for [datPtn] where applicable                                        #
-#   |dates      :   Date series that is used to substitute the corresponding naming patterns in [datPtn] to generate valid data paths   #
-#   |               [ <date>         ]           Any value that can be parsed by the default arguments of [omniPy.Dates.asDates]        #
-#   |outDTfmt   :   Format of dates as string to be used for substitution. Its [keys] should exist in the [values] of [dict_map]        #
-#   |               [ <dict>         ] <Default> See the function definition as the default argument of usage                           #
-#   |inRAM      :   Whether the [datPtn] that corresponds to the full paths of data files indicates they are in RAM of current session  #
-#   |               [False           ] <Default> Indicates that the data files are stored on harddisk                                   #
-#   |               [True            ]           Indicates that the data files are stored in RAM of current session                     #
-#   |               [ <Iterable>     ]           Iterable of <bool> in the same convention as above                                     #
-#   |chkExist   :   Whether to check the data file existence after the parse of the full paths of the them                              #
-#   |               [True            ] <Default> Try to locate the parsed data paths                                                    #
-#   |               [False           ]           Do not check the existence of the parsed data paths                                    #
-#   |               [ <str>          ]           Try to locate the parsed data paths by appending the requested naming suffix, see      #
-#   |                                             the output naming convention as in [Return values]                                    #
-#   |dict_map   :   Same argument as in [omniPy.AdvOp.apply_MapVal]                                                                     #
-#   |               [{}              ] <Default> Indicates that [datPtn] does not require translation by pattern                        #
-#   |kw         :   Various named parameters for [omniPy.AdvOp.apply_MapVal] during import; see its official document                   #
+#   |datPtn      :   The naming pattern of the data files, either located on the harddisk or in RAM of current session                  #
+#   |                [ <str>          ]           Single string that represent the naming convention of a series of data files          #
+#   |                [ <Iterable>     ]           Iterable of <str> in the same convention as above                                     #
+#   |parseCol    :   The column(s) to be parsed if [datPtn] is provided a [pd.DataFrame]                                                #
+#   |                [None            ] <Default> Parse all columns for [datPtn] where applicable                                       #
+#   |dates       :   Date series that is used to substitute the corresponding naming patterns in [datPtn] to generate valid data paths  #
+#   |                [ <date>         ]           Any value that can be parsed by the default arguments of [Dates.asDates]              #
+#   |outDTfmt    :   Format of dates as string to be used for substitution. Its [keys] should exist in the [values] of [dict_map]       #
+#   |                [ <dict>         ] <Default> See the function definition as the default argument of usage                          #
+#   |inRAM       :   Whether the [datPtn] that corresponds to the full paths of data files indicates they are in RAM of current session #
+#   |                [False           ] <Default> Indicates that the data files are stored on harddisk                                  #
+#   |                [True            ]           Indicates that the data files are stored in RAM of current session                    #
+#   |                [ <Iterable>     ]           Iterable of <bool> in the same convention as above                                    #
+#   |chkExist    :   Whether to check the data file existence after the parse of the full paths of the them                             #
+#   |                [True            ] <Default> Try to locate the parsed data paths                                                   #
+#   |                [False           ]           Do not check the existence of the parsed data paths                                   #
+#   |                [ <str>          ]           Try to locate the parsed data paths by appending the requested naming suffix, see     #
+#   |                                              the output naming convention as in [Return values]                                   #
+#   |dict_map    :   Same argument as in [AdvOp.apply_MapVal]                                                                           #
+#   |                [{}              ] <Default> Indicates that [datPtn] does not require translation by pattern                       #
+#   |exist_Opt   :   Named arguments for the function <std_read_RAM> to search for objects in current session                           #
+#   |                [<see def.>      ] <Default> Only try to obtain object in current session without directions                       #
+#   |                [Iterable        ]           Iterable of <dict> or <string> that can be parsed into <dict>, matching the length of #
+#   |                                              <parseCol> or having the same index as it                                            #
+#   |kw          :   Various named parameters for [AdvOp.apply_MapVal] during import; see its official document                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |df         :   [pd.DataFrame] with below set of columns:                                                                           #
-#   |               [1] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add two columns with the translated paths as:   #
-#   |                   ['datPtn'] and ['datPtn.Parsed']                                                                                #
-#   |               [2] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the translated paths as:            #
-#   |                   [datPtn.names] and [ c + '.Parsed' for c in datPtn.names ]                                                      #
-#   |               [3] When [dates] is provided, add one column created by [omniPy.Date.asDates] as:                                   #
-#   |                   ['dates'] <dtype: object> with values in the class as <datetime.date>                                           #
-#   |               [4] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add one column with the indicator as:           #
-#   |                   ['datPtn.inRAM']                                                                                                #
-#   |               [5] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the indicator(s) as:                #
-#   |                   [ c + '.inRAM' for c in datPtn.names ]                                                                          #
-#   |               [6] When [datPtn] is a string or [datPtn] is an unnamed [Iterable] and [chkExist!=False], add one column as:        #
-#   |                   ['datPtn.' + ( 'chkExist' if chkExist or <str> )]                                                               #
-#   |               [7] When [datPtn] is a named [Iterable] or a [pd.DataFrame] and [chkExist!=False], add column(s) as:                #
-#   |                   [ c + '.' + ( 'chkExist' if chkExist or <str> ) for c in datPtn.names ]                                         #
-#   |               [8] When [datPtn] is a named [Iterable] or a [pd.DataFrame] there is a column [dates] in it, rename it as:          #
-#   |                   ['dates.original']  (to differ from ['dates'] that is created in this function)                                 #
+#   |df          :   [pd.DataFrame] with below set of columns:                                                                          #
+#   |                [1] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add two columns with the translated paths as:  #
+#   |                    ['datPtn'] and ['datPtn.Parsed']                                                                               #
+#   |                [2] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the translated paths as:           #
+#   |                    [datPtn.names] and [ c + '.Parsed' for c in datPtn.names ]                                                     #
+#   |                [3] When [dates] is provided, add one column created by [Date.asDates] as:                                         #
+#   |                    ['dates'] <dtype: object> with values in the class as <datetime.date>                                          #
+#   |                [4] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add one column with the indicator as:          #
+#   |                    ['datPtn.inRAM']                                                                                               #
+#   |                [5] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the indicator(s) as:               #
+#   |                    [ c + '.inRAM' for c in datPtn.names ]                                                                         #
+#   |                [6] When [datPtn] is a string or [datPtn] is an unnamed [Iterable] and [chkExist!=False], add one column as:       #
+#   |                    ['datPtn.' + ( 'chkExist' if chkExist or <str> )]                                                              #
+#   |                [7] When [datPtn] is a named [Iterable] or a [pd.DataFrame] and [chkExist!=False], add column(s) as:               #
+#   |                    [ c + '.' + ( 'chkExist' if chkExist or <str> ) for c in datPtn.names ]                                        #
+#   |                [8] When [datPtn] is a named [Iterable] or a [pd.DataFrame] there is a column [dates] in it, rename it as:         #
+#   |                    ['dates.original']  (to differ from ['dates'] that is created in this function)                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -109,6 +115,11 @@ def parseDatName(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace <pd.DataFrame.applymap> with <pd.DataFrame.map> as the former is deprecated since pandas==2.1.0                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240309        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <exist_Opt> to enable searching of objects in RAM, esp. in specific frames as requested              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -117,15 +128,18 @@ def parseDatName(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, pandas, collections                                                                                                   #
+#   |   |sys, os, ast, pandas, collections                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
+#   |   |   |std_read_RAM                                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |get_values                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -137,7 +151,6 @@ def parseDatName(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Handle the parameter buffer.
     #We avoid ambiguous statement if this argument is provided a [pd.DataFrame] or [pd.Series]
@@ -186,7 +199,7 @@ def parseDatName(
     if isinstance(inRAM, pd.DataFrame):
         pass
     elif isinstance(inRAM, Iterable):
-        inRAM = pd.DataFrame(inRAM, dtype = 'bool')
+        inRAM = pd.DataFrame(inRAM, dtype = 'bool', index = df_ptn.index)
     elif isinstance(inRAM, bool):
         inRAM = df_ptn[names_trans].map(lambda x: inRAM)
     else:
@@ -200,6 +213,14 @@ def parseDatName(
         col_exist = [ v + '.' + chkExist for v in names_trans ]
     else:
         raise TypeError('[' + LfuncName + '][chkExist] must be boolean or a single string!')
+
+    #090. Transform the options
+    if exist_Opt is None:
+        df_ptn['_opts_'] = [ {} for i in range(len(df_ptn)) ]
+    elif isinstance(exist_Opt, Iterable):
+        df_ptn['_opts_'] = exist_Opt
+    else:
+        raise TypeError('[' + LfuncName + '][exist_Opt] must be [Iterable] of dict in the same length as <datPtn>!')
 
     #100. Define helper functions to be applied to interim data frames
     #110. Translate naming patterns by the mapping dictionary
@@ -222,10 +243,26 @@ def parseDatName(
         return(rst)
 
     #150. Create column(s) that indicate the data file existence
+    def h_exist(flag : bool, ptn : str, opt : str | dict):
+        #100. Handle options
+        if isinstance(opt, str):
+            opt_int = ast.literal_eval(opt)
+        else:
+            opt_int = { k:v for k,v in opt.items()}
+
+        #500. Verify existence
+        if flag:
+            rst = isinstance(std_read_RAM(infile = ptn, **opt_int), pd.DataFrame)
+        else:
+            rst = os.path.isfile(ptn)
+
+        #999. Return the result
+        return(rst)
+
     def rowExistence(row):
         #100. Verify the file existence in terms of the indicators
         rst = tuple(
-            isinstance(get_values(row[names_resolve[i]]), pd.DataFrame) if row[v + '.inRAM'] else os.path.isfile(row[names_resolve[i]])
+            h_exist(row[v + '.inRAM'], row[names_resolve[i]], row['_opts_'])
             for i,v in enumerate(names_trans)
         )
 
@@ -277,6 +314,7 @@ if __name__=='__main__':
         sys.path.append( dir_omniPy )
     from omniPy.AdvOp import exec_file
     from omniPy.AdvDB import parseDatName
+    from omniPy.AdvDB import std_write_RAM
 
     #050. Prepare necessities
     #Dictionary [getOption] is defined in below file
@@ -334,5 +372,51 @@ if __name__=='__main__':
         ,dict_map = getOption['fmt.def.GTSFK']
         ,**getOption['fmt.opt.def.GTSFK']
     )
+
+    #500. Test if the function is in an enclosed environment
+    def lcl_func():
+        frame = sys._getframe()
+
+        rc = std_write_RAM(
+            {'vfy' : pd.DataFrame({'b' : [1,4,5]})}
+            ,'aa20160602'
+            ,frame = frame
+        )
+
+        def int_func(chkframe = None):
+            myenv = sys._getframe()
+            rc = std_write_RAM(
+                {'vfy' : pd.DataFrame({'a' : [1,4,5]})}
+                ,'aa20160503'
+                ,frame = myenv
+            )
+            if chkframe is None:
+                chkframe = myenv
+
+            args_get = {
+                **{
+                    'datPtn' : pd.DataFrame({'path' : 'aa&L_curdate.'}, index = [0])
+                    ,'dates' : ['20160602', '20160503']
+                    ,'outDTfmt' : getOption['fmt.parseDates']
+                    ,'inRAM' : True
+                    ,'dict_map' : getOption['fmt.def.GTSFK']
+                    #[ASSUMPTION]
+                    #[1] <datPtn> has length as 1 hence below list matches its length
+                    #[2] Provide the similar list of dict in the same length as <datPtn>
+                    ,'exist_Opt' : [{'frame' : chkframe}]
+                }
+                ,**getOption['fmt.opt.def.GTSFK']
+            }
+
+            exist_get = parseDatName(**args_get)
+
+            return(exist_get['path.chkExist'].to_list())
+
+        print(f'from <frame>: {str(int_func(frame))}')
+        print(f'from <myenv>: {str(int_func())}')
+
+    lcl_func()
+    # from <frame>: [True, False]
+    # from <myenv>: [False, True]
 #-Notes- -End-
 '''

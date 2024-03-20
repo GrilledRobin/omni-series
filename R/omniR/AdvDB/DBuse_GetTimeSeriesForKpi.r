@@ -20,161 +20,169 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKPICfg   :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                            #
-#   |               [--> Columns that are requested by the dependent function [DBuse_MrgKPItoInf]   ]                                   #
-#   |               [C_KPI_SHORTNAME ] : It will be translated into [colnames] in the output data frame.                                #
-#   |                                    [IMPORTANT] Ensure its values are valid according to the syntax in R                           #
-#   |               [C_KPI_BIZNAME   ] : (Optional) If it is present, the program will translate its values to the attribute [label] on #
-#   |                                                the columns of the output data frame                                               #
-#   |               [--> Columns that are requested by the dependent function [DBuse_SetKPItoInf]   ]                                   #
-#   |               [C_KPI_ID        ] : The ID of the KPI to be retrieved from the various data files.                                 #
-#   |               [N_LIB_PATH_SEQ  ] : The sequence of paths to search for the KPI data file in the same library alias                #
-#   |               [C_KPI_FILE_TYPE ] : The types of data files that indicates the method for this function to import data             #
-#   |                                    [RAM     ] Try to load the data frame from RAM in current R session                            #
-#   |                                    [R       ] Try to import as R-Data                                                             #
-#   |                                    [SAS     ] Try to import via [haven::read_sas]                                                 #
-#   |               [DF_NAME         ] : For some cases, such as [C_KPI_FILE_TYPE=R] there should be such an additional field           #
-#   |                                     indicating the name of data.frame stored in the data file (i.e. container) for loading        #
-#   |                                    Default: [NA] i.e. no need for such field when [C_KPI_FILE_TYPE=SAS]                           #
-#   |               [C_KPI_FILE_NAME ] : The names of data files for identification of file existence in all available paths            #
-#   |               [C_LIB_PATH      ] : The absolute paths to store the KPI data (excl. file name). Program will conduct translation   #
-#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#   |                                     variable [trans_var].                                                                         #
-#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#   |                                              translated by the value of R variable [G_d_curr] in the parent frame                 #
-#   |InfDatCfg  :   The list that stores the full configuration of the Information Table. It MUST contain below elements:               #
-#   |               [$InfDat         ] : Character string as the name of Information Table, or its [prefix] if [$SingleInf=F]           #
-#   |                                    [NULL    ] <Default> No Information Table is required                                          #
-#   |               [$.paths         ] : Character vector of the candidate paths to search for the [$InfDat]; the position of the       #
-#   |                                     character strings represents the priority for searching, i.e. if the same data file exists    #
-#   |                                     in several candidate paths, the first one will be used for import                             #
-#   |                                    [NULL    ] <Default> No Information Table is required                                          #
-#   |               [$DatType        ] : Character string as the type of Information Table for this function to import                  #
-#   |                                    [RAM     ] <Default> Directly use it as an existing object in current R session                #
-#   |                                    [R       ]           Try to import as R-Data                                                   #
-#   |                                    [SAS     ]           Try to import via [haven::read_sas]                                       #
-#   |               [$DF_NAME        ] : For some cases, such as [$DatType=R] there should be such an additional field indicating the   #
-#   |                                     name of data.frame stored in the data file (i.e. container) for loading                       #
-#   |                                    [NULL    ] <Default> No need if [$DatType] indicates the data is an object instead of a        #
-#   |                                                          container with many objects                                              #
-#   |               [$.trans         ] : Named list/vector to translate strings within the configuration to resolve the actual data     #
-#   |                                     file name for process                                                                         #
-#   |                                    [<preset>] <Default> Same as the universal parameter [fTrans]                                  #
-#   |                                    [<list>  ]           A named list/vector for date value translation                            #
-#   |               [$.trans.opt     ] : Additional options for value translation on [$.trans], see document for                        #
-#   |                                     [omniR$AdvOp$apply_MapVal]                                                                    #
-#   |                                    [<preset>] <Default> Same as the universal parameter [fTrans.opt]                              #
-#   |                                    [<list>  ]           Use alternative options as provided by a list, see documents of           #
-#   |                                                          [apply_MapVal]                                                           #
-#   |               [$.imp.opt       ] : List of options during the data file import for different engines; each element of it is a     #
-#   |                                     separate list, too. See the definition for the similar parameter [fImp.opt]                   #
-#   |                                    [$SAS    ] <Default> Options for [haven::read_sas]                                             #
-#   |                                    [<list>  ]           A named list for different engines, such as [R=list()] and [HDFS=list()]  #
-#   |               [$.func          ] : Function as pre-process before merging to KPI data; its first argument MUST take a             #
-#   |                                     data.frame-like object                                                                        #
-#   |                                    [NULL    ] <Default> No pre-process is applied to the Information Table                        #
-#   |                                    [<func>  ]           An object of function to call                                             #
-#   |               [$.func.opt      ] : Additional arguments to [$.func], provided as a named [list]                                   #
-#   |                                    [NULL    ] <Default> No additional argument is required for [$.func]                           #
-#   |                                    [<list>  ]           A named list acting as additional arguments to [$.func]                   #
-#   |SingleInf  :   Whether it is only requested to use one Information Table to merge to all KPI data                                  #
-#   |               [FALSE           ]  <Default> Information Table is also a time series input with snapshots on all provided dates    #
-#   |               [TRUE            ]            There is only one Information Table to merge to all KPI data                          #
-#   |dnDates    :   Vector/list of dates as character strings in the format [YYYYMMDD] (or: [%Y%m%d]) for time series process           #
-#   |               [NULL            ]  <Default> Abort the program as there is no request for data extraction                          #
-#   |               [<vec/list>      ]            Process the data files for the dates as indicated                                     #
-#   |ColRecDate :   Name of the column as [Date of Record] in the output data that indicates on which date the data record is obtained  #
-#   |               [D_RecDate       ]  <Default> Please take care of the character cases of this column name when using it             #
-#   |               [<chr. string>   ]            Only a single character string is accepted; the first is taken if a vector is         #
-#   |                                              provided with a warning message                                                      #
-#   |MergeProc  :   In which type to merge the data                                                                                     #
-#   |               [SET             ]  <Default> Conduct the [DBuse_SetKPItoInf] process for all provided dates                        #
-#   |               [MERGE           ]            Conduct the [DBuse_MrgKPItoInf] process for all provided dates                        #
-#   |keyvar     :   The vector of Key field names during the merge. This requires that the same Key fields exist in both data.          #
-#   |               [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                      #
-#   |               Default: [NULL]                                                                                                     #
-#   |SetAsBase  :   The merging method indicating which of above data is set as the base during the merge.                              #
-#   |               [I] Use "Inf" data as the base to left join the "KPI" data.                                                         #
-#   |               [K] Use "KPI" data as the base to left join the "Inf" data.                                                         #
-#   |               [B] Use either data as the base to inner join the other, meaning "both".                                            #
-#   |               [F] Use either data as the base to full join the other, meaning "full".                                             #
-#   |                Above parameters are case insensitive, while the default one is set as [I].                                        #
-#   |KeepInfCol :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                     #
-#   |               [FALSE           ]  <Default> Use those in KPI data frames as output                                                #
-#   |               [TRUE            ]            Keep those retained from [InfDat] as output                                           #
-#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#   |               Default: [(See the function definition)]                                                                            #
-#   |               [IMPORTANT] Below local variables are created to denote respective date values during the loop of data retrieval,   #
-#   |                            hence please put them on the right side (i.e. values side) of this parameter to conduct translation.   #
-#   |               [L_d_curr        ]            Denote each of the input [dnDates] within the loop, in the format [%Y%m%d]            #
-#   |               [L_m_curr        ]            Denote each of the input [dnDates] within the loop, in the format [%Y%m]              #
-#   |fTrans.opt :   Additional options for value translation on [fTrans], see document for [omniR$AdvOp$apply_MapVal]                   #
-#   |               [<See Func Def.> ]  <Default> The default options in [apply_MapVal]                                                 #
-#   |               [<list>          ]            Use alternative options as provided by a list, see documents of [apply_MapVal]        #
-#   |fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                     #
-#   |               [$SAS            ]  <Default> Options for [haven::read_sas]                                                         #
-#   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
-#   |               [<name>=<list>   ]            Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
-#   |.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
-#   |               [TRUE            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
-#   |               [FALSE           ]            Load the data files sequentially                                                      #
-#   |omniR.ini  :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                 #
-#   |               [D:/R/autoexec.r ]  <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside    #
-#   |                                              each batch of [%dopar%] to enable the dependent functions separately                 #
-#   |               [NULL            ]            No need when [.parallel=F]                                                            #
-#   |cores      :   Number of system cores to read the data files in parallel                                                           #
-#   |               Default: [4]                                                                                                        #
-#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#   |               Default: [F]                                                                                                        #
-#   |miss.skip  :   Whether to skip loading the files which are requested but missing in all provided paths                             #
-#   |               [TRUE            ]  <Default> Skip missing files, but issue a message to inform the user                            #
-#   |               [FALSE           ]            Abort the process if any of the requested files do not exist                          #
-#   |miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
-#   |               [G_miss_files    ]  <Default> If any data files are missing, please check this global variable to see the details   #
-#   |               [chr string      ]            User defined name of global variable that stores the debug information                #
-#   |err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
-#   |               [G_err_cols      ]  <Default> If any columns are invalidated, please check this global variable to see the details  #
-#   |               [chr string      ]            User defined name of global variable that stores the debug information                #
-#   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
-#   |               [ <vec/list>     ] <Default> See the function definition as the default argument of usage                           #
-#   |dup.KPIs   :   Name of the global variable to store the debug data frame with duplicated [C_KPI_SHORTNAME]                         #
-#   |               [G_dup_kpiname   ]  <Default> If any duplication is found, please check this global variable to see the details     #
-#   |               [chr string      ]            User defined name of global variable that stores the debug information                #
-#   |AggrBy     :   The vector of field names that are to be used as the classes to aggregate the source data.                          #
-#   |               [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                   #
-#   |               Default: [<keyvar>]                                                                                                 #
-#   |values_fn  :   The save parameter as passed into function [tidyr:pivot_wider] to summarize the [A_KPI_VAL] in the output data      #
-#   |               [sum             ]  <Default> Sum the values of input records of any KPI                                            #
-#   |               [<function>      ]            Function to be applied, as an object instead of a character string                    #
-#   |...        :   Any other parameters that are required by [tidyr:pivot_wider]. Please check the documents for it                    #
-#   |               [IMPORTANT] Below options have already been applied; DO avoid to provide them again!                                #
-#   |               [id_cols], [names_from], [values_from], [values_fn]                                                                 #
+#   |inKPICfg    :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Nullable?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                             #
+#   |                |C_KPI_SHORTNAME |No         | It will be translated into [colnames] in the output data frame                      #
+#   |                |                |           | [IMPORTANT] Required when <MergeProc==MERGE>                                        #
+#   |                |C_KPI_BIZNAME   |Yes        | If it is present, the program will translate its values to the attribute [label] on #
+#   |                |                |           |  the columns of the output data frame                                               #
+#   |                |C_KPI_FILE_TYPE |No         | File type to determine the API for data I/O process, see <DataIO>                   #
+#   |                |N_LIB_PATH_SEQ  |No         | Priority to determine the candidate paths when loading and writing data files, the  #
+#   |                |                |           |  lesser the higher. E.g. 1 represents the primary path, 2 indicates the backup      #
+#   |                |                |           |  location of historical data files                                                  #
+#   |                |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>      #
+#   |                |                |           | It can be empty for data type <RAM>                                                 #
+#   |                |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                          #
+#   |                |DF_NAME         |Yes        | For some cases, such as [inDatType=R] there should be such an additional field      #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
+#   |                |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [R]                 #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
+#   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
+#   |                                      variable [trans_var].                                                                        #
+#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
+#   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
+#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
+#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
+#   |                                               translated by the value of R variable [G_d_curr] in the parent frame                #
+#   |InfDatCfg   :   The list that stores the full configuration of the Information Table. It MUST contain below elements:              #
+#   |                [$InfDat         ] : Character string as the name of Information Table, or its [prefix] if [$SingleInf=F]          #
+#   |                                     [NULL    ] <Default> No Information Table is required                                         #
+#   |                [$.paths         ] : Character vector of the candidate paths to search for the [$InfDat]; the position of the      #
+#   |                                      character strings represents the priority for searching, i.e. if the same data file exists   #
+#   |                                      in several candidate paths, the first one will be used for import                            #
+#   |                                     [NULL    ] <Default> No Information Table is required                                         #
+#   |                [$DatType        ] : Character string as the type of Information Table for this function to import                 #
+#   |                                     [RAM     ] <Default> Directly use it as an existing object in current R session               #
+#   |                                     [R       ]           Try to import as R-Data                                                  #
+#   |                                     [SAS     ]           Try to import via [haven::read_sas]                                      #
+#   |                [$DF_NAME        ] : For some cases, such as [$DatType=R] there should be such an additional field indicating the  #
+#   |                                      name of data.frame stored in the data file (i.e. container) for loading                      #
+#   |                                     [NULL    ] <Default> No need if [$DatType] indicates the data is an object instead of a       #
+#   |                                                           container with many objects                                             #
+#   |                [$.trans         ] : Named list/vector to translate strings within the configuration to resolve the actual data    #
+#   |                                      file name for process                                                                        #
+#   |                                     [<preset>] <Default> Same as the universal parameter [fTrans]                                 #
+#   |                                     [<list>  ]           A named list/vector for date value translation                           #
+#   |                [$.trans.opt     ] : Additional options for value translation on [$.trans], see document for                       #
+#   |                                      [AdvOp$apply_MapVal]                                                                         #
+#   |                                     [<preset>] <Default> Same as the universal parameter [fTrans.opt]                             #
+#   |                                     [<list>  ]           Use alternative options as provided by a list, see documents of          #
+#   |                                                           [apply_MapVal]                                                          #
+#   |                [$.imp.opt       ] : List of options during the data file import for different engines; each element of it is a    #
+#   |                                      separate list, too. See the definition for the similar parameter [fImp.opt]                  #
+#   |                                     [$SAS    ] <Default> Options for [haven::read_sas]                                            #
+#   |                                     [<list>  ]           A named list for different engines, such as [R=list()] and [HDFS=list()] #
+#   |                [$.func          ] : Function as pre-process before merging to KPI data; its first argument MUST take a            #
+#   |                                      data.frame-like object                                                                       #
+#   |                                     [NULL    ] <Default> No pre-process is applied to the Information Table                       #
+#   |                                     [<func>  ]           An object of function to call                                            #
+#   |                [$.func.opt      ] : Additional arguments to [$.func], provided as a named [list]                                  #
+#   |                                     [NULL    ] <Default> No additional argument is required for [$.func]                          #
+#   |                                     [<list>  ]           A named list acting as additional arguments to [$.func]                  #
+#   |SingleInf   :   Whether it is only requested to use one Information Table to merge to all KPI data                                 #
+#   |                [FALSE           ]  <Default> Information Table is also a time series input with snapshots on all provided dates   #
+#   |                [TRUE            ]            There is only one Information Table to merge to all KPI data                         #
+#   |dnDates     :   Vector/list of dates as character strings in the format [YYYYMMDD] (or: [%Y%m%d]) for time series process          #
+#   |                [NULL            ]  <Default> Abort the program as there is no request for data extraction                         #
+#   |                [<vec/list>      ]            Process the data files for the dates as indicated                                    #
+#   |ColRecDate  :   Name of the column as [Date of Record] in the output data that indicates on which date the data record is obtained #
+#   |                [D_RecDate       ]  <Default> Please take care of the character cases of this column name when using it            #
+#   |                [<chr. string>   ]            Only a single character string is accepted; the first is taken if a vector is        #
+#   |                                               provided with a warning message                                                     #
+#   |MergeProc   :   In which type to merge the data                                                                                    #
+#   |                [SET             ]  <Default> Conduct the [DBuse_SetKPItoInf] process for all provided dates                       #
+#   |                [MERGE           ]            Conduct the [DBuse_MrgKPItoInf] process for all provided dates                       #
+#   |keyvar      :   The vector of Key field names during the merge. This requires that the same Key fields exist in both data.         #
+#   |                [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                     #
+#   |                Default: [NULL]                                                                                                    #
+#   |SetAsBase   :   The merging method indicating which of above data is set as the base during the merge.                             #
+#   |                [I] Use "Inf" data as the base to left join the "KPI" data.                                                        #
+#   |                [K] Use "KPI" data as the base to left join the "Inf" data.                                                        #
+#   |                [B] Use either data as the base to inner join the other, meaning "both".                                           #
+#   |                [F] Use either data as the base to full join the other, meaning "full".                                            #
+#   |                 Above parameters are case insensitive, while the default one is set as [I].                                       #
+#   |KeepInfCol  :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                    #
+#   |                [FALSE           ]  <Default> Use those in KPI data frames as output                                               #
+#   |                [TRUE            ]            Keep those retained from [InfDat] as output                                          #
+#   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
+#   |                Default: [(See the function definition)]                                                                           #
+#   |                [IMPORTANT] Below local variables are created to denote respective date values during the loop of data retrieval,  #
+#   |                             hence please put them on the right side (i.e. values side) of this parameter to conduct translation.  #
+#   |                [L_d_curr        ]            Denote each of the input [dnDates] within the loop, in the format [%Y%m%d]           #
+#   |                [L_m_curr        ]            Denote each of the input [dnDates] within the loop, in the format [%Y%m]             #
+#   |fTrans.opt  :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                        #
+#   |                [<See Func Def.> ]  <Default> The default options in [apply_MapVal]                                                #
+#   |                [<list>          ]            Use alternative options as provided by a list, see documents of [apply_MapVal]       #
+#   |fImp.opt    :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                    #
+#   |                [$SAS            ]  <Default> Options for [haven::read_sas]                                                        #
+#   |                                              [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                    #
+#   |                [<name>=<list>   ]            Other named lists for different engines, such as [R=list()] and [HDFS=list()]        #
+#   |                [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be    #
+#   |                                               parsed as a <list>                                                                  #
+#   |.parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones#
+#   |                [FALSE           ]  <Default> Load the data files sequentially                                                     #
+#   |                [TRUE            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
+#   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
+#   |                                               that RAM is the requested location for search                                       #
+#   |omniR.ini   :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                #
+#   |                [D:/R/autoexec.r ]  <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside   #
+#   |                                               each batch of [%dopar%] to enable the dependent functions separately                #
+#   |                [NULL            ]            No need when [.parallel=F]                                                           #
+#   |cores       :   Number of system cores to read the data files in parallel                                                          #
+#   |                Default: [4]                                                                                                       #
+#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |                Default: [F]                                                                                                       #
+#   |miss.skip   :   Whether to skip loading the files which are requested but missing in all provided paths                            #
+#   |                [TRUE            ]  <Default> Skip missing files, but issue a message to inform the user                           #
+#   |                [FALSE           ]            Abort the process if any of the requested files do not exist                         #
+#   |miss.files  :   Name of the global variable to store the debug data frame with missing file paths and names                        #
+#   |                [G_miss_files    ]  <Default> If any data files are missing, please check this global variable to see the details  #
+#   |                [chr string      ]            User defined name of global variable that stores the debug information               #
+#   |err.cols    :   Name of the global variable to store the debug data frame with error column information                            #
+#   |                [G_err_cols      ]  <Default> If any columns are invalidated, please check this global variable to see the details #
+#   |                [chr string      ]            User defined name of global variable that stores the debug information               #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |                [ <vec/list>     ] <Default> See the function definition as the default argument of usage                          #
+#   |dup.KPIs    :   Name of the global variable to store the debug data frame with duplicated [C_KPI_SHORTNAME]                        #
+#   |                [G_dup_kpiname   ]  <Default> If any duplication is found, please check this global variable to see the details    #
+#   |                [chr string      ]            User defined name of global variable that stores the debug information               #
+#   |AggrBy      :   The vector of field names that are to be used as the classes to aggregate the source data.                         #
+#   |                [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                  #
+#   |                Default: [<keyvar>]                                                                                                #
+#   |values_fn   :   The save parameter as passed into function [tidyr:pivot_wider] to summarize the [A_KPI_VAL] in the output data     #
+#   |                [sum             ]  <Default> Sum the values of input records of any KPI                                           #
+#   |                [<function>      ]            Function to be applied, as an object instead of a character string                   #
+#   |...         :   Any other parameters that are required by [tidyr:pivot_wider]. Please check the documents for it                   #
+#   |                [IMPORTANT] Below options have already been applied; DO avoid to provide them again!                               #
+#   |                [id_cols], [names_from], [values_from], [values_fn]                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>     :   The named list that contains below names as results:                                                                #
-#   |               [data            ] [data.frame] that stores the result in terms of [MergeProc]:                                     #
-#   |                                  [SET  ] Stores the result with columns including those in the same names as in [InfDat] if it is #
-#   |                                           provided with their values determined by [KeepInfCol], as well as all available columns #
-#   |                                           in all KPI data files                                                                   #
-#   |                                  [MERGE] Stores the result with columns including [available KPIs] and the pivoting [ID]s         #
-#   |                                           determined as:                                                                          #
-#   |                                          [1] If [InfDat] is not provided, we only use [AggrBy] as [ID] during pivoting            #
-#   |                                          [2] If [InfDat] is provided:                                                             #
-#   |                                              [1] If [AggrBy] has the same values as [keyvar], we add to [AggrBy] by all other     #
-#   |                                                   columns than [keyvar] in [InfDat] as [ID]                                       #
-#   |                                              [2] Otherwise we follow the rule when [InfDat] is not provided                       #
-#   |               [ <miss.files>   ] [NULL] if all data files are successfully loaded, or [data.frame] that contains the paths to the #
-#   |                                   data files that are required but missing                                                        #
-#   |               [ <err.cols>     ] [NULL] if all KPI data are successfully loaded, or [data.frame] that contains the column names   #
-#   |                                   as well as the data files in which they are located, which cannot be concatenated due to        #
-#   |                                   different [dtypes]                                                                              #
+#   |<list>      :   The named list that contains below names as results:                                                               #
+#   |                [data            ] [data.frame] that stores the result in terms of [MergeProc]:                                    #
+#   |                                   [SET  ] Stores the result with columns including those in the same names as in [InfDat] if it is#
+#   |                                            provided with their values determined by [KeepInfCol], as well as all available columns#
+#   |                                            in all KPI data files                                                                  #
+#   |                                   [MERGE] Stores the result with columns including [available KPIs] and the pivoting [ID]s        #
+#   |                                            determined as:                                                                         #
+#   |                                           [1] If [InfDat] is not provided, we only use [AggrBy] as [ID] during pivoting           #
+#   |                                           [2] If [InfDat] is provided:                                                            #
+#   |                                               [1] If [AggrBy] has the same values as [keyvar], we add to [AggrBy] by all other    #
+#   |                                                    columns than [keyvar] in [InfDat] as [ID]                                      #
+#   |                                               [2] Otherwise we follow the rule when [InfDat] is not provided                      #
+#   |                [ <miss.files>   ] [NULL] if all data files are successfully loaded, or [data.frame] that contains the paths to the#
+#   |                                    data files that are required but missing                                                       #
+#   |                [ <err.cols>     ] [NULL] if all KPI data are successfully loaded, or [data.frame] that contains the column names  #
+#   |                                    as well as the data files in which they are located, which cannot be concatenated due to       #
+#   |                                    different [dtypes]                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -190,7 +198,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210619        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [omniR$AdvDB$parseDatName] as standardization      #
+#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [AdvDB$parseDatName] as standardization            #
 #   |      |[2] Introduce an argument [outDTfmt] aligning above change, to bridge the mapping from [fTrans] to the date series          #
 #   |      |[3] Correct the part of frame lookup when assigning values to global variables for user request                             #
 #   |      |[4] Change the output into a [list] to store all results, including debug facilities, to avoid pollution in global          #
@@ -212,6 +220,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments                                            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240223        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |      |[2] Accept <fImp.opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -225,14 +239,12 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |debug_comp_datcols                                                                                                         #
 #   |   |   |match.arg.x                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvDB                                                                                                                    #
-#   |   |   |std_read_R                                                                                                                 #
-#   |   |   |std_read_RAM                                                                                                               #
-#   |   |   |std_read_SAS                                                                                                               #
+#   |   |AdvDB                                                                                                                          #
+#   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_SetKPItoInf                                                                                                          #
 #   |   |   |DBuse_MrgKPItoInf                                                                                                          #
@@ -295,9 +307,9 @@ DBuse_GetTimeSeriesForKpi <- function(
 			encoding = 'GB2312'
 		)
 	)
-	,.parallel = T
+	,.parallel = F
 	,cores = 4
-	,omniR.ini = 'D:\\R\\autoexec.r'
+	,omniR.ini = getOption('file.autoexec')
 	,fDebug = F
 	,miss.skip = T
 	,miss.files = 'G_miss_files'
@@ -309,6 +321,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 	,dup.KPIs = 'G_dup_kpiname'
 	,AggrBy = keyvar
 	,values_fn = sum
+	,kw_DataIO = list()
 	,...
 ){
 	#001. Handle parameters
@@ -356,6 +369,9 @@ DBuse_GetTimeSeriesForKpi <- function(
 	#Below statements are copied from [dplyr::bind_rows]
 	dots <- rlang::list2(...)
 
+	#021. Instantiate the IO operator for data migration
+	dataIO <- do.call(DataIO$new, kw_DataIO)
+
 	#050. Local environment
 	#Below function supports to force variable names on its LHS, see [!!!] in [rlang]
 	outDict = rlang::list2(
@@ -365,30 +381,49 @@ DBuse_GetTimeSeriesForKpi <- function(
 		,!!err.cols := NULL
 	)
 	f_ts_errors <- FALSE
-	trans_var <- c('C_KPI_FILE_NAME', 'C_KPI_FULL_PATH', 'C_KPI_SHORTNAME')
+	trans_var <- c('C_KPI_FULL_PATH', 'C_KPI_FILE_NAME', 'C_KPI_SHORTNAME')
 	if ('C_KPI_BIZNAME' %in% names(inKPICfg)) trans_var <- c(trans_var, 'C_KPI_BIZNAME')
 	GTSFK_getFunc <- list(
 		SET = 'DBuse_SetKPItoInf'
 		,MERGE = 'DBuse_MrgKPItoInf'
 	)
+	if (is.list(fImp.opt)) {
+		opt_ram <- fImp.opt[['RAM']]
+		if (!is.null(opt_ram)) {
+			opt_ram <- list(exist.Opt = rep_len(list(opt_ram), nrow(inKPICfg)))
+		}
+	} else if (fImp.opt %in% colnames(inKPICfg)) {
+		opt_ram <- list(exist.Opt = inKPICfg[[fImp.opt]])
+	} else {
+		stop(glue::glue(
+			'[{LfuncName}]<fImp.opt> must be list or existing name in <inKPICfg>'
+			,', given <{str(fImp.opt)}> as class <{toString(class(fImp.opt))}>'
+		))
+	}
 
 	#060. Handle the configuration for Information Tables
 	cfg_local <- InfDatCfg
-	formal.args <- formals(sys.function(sysP <- sys.parent()))
-	dattype_choices <- eval(formal.args$InfDatCfg$DatType, envir = sys.frame(sysP))
+	formal.args <- formals()
+	dattype_choices <- eval(formal.args$InfDatCfg$DatType)
 	DatType <- match.arg.x(cfg_local$DatType, dattype_choices, arg.func = toupper)
-	# DatType <- match.arg(cfg_local$DatType, c('RAM','R','SAS'))
-	if (DatType %in% c('R')) imp_df <- cfg_local$DF_NAME
-	else imp_df <- NULL
+	imp_df <- cfg_local$DF_NAME
 	if (is.null(cfg_local$.trans)) cfg_local$.trans <- fTrans
 	if (is.null(cfg_local$.trans.opt)) cfg_local$.trans.opt <- fTrans.opt
 
+	#061. Prepare function to join paths by recognizing the names in RAM
+	safe_path <- function(fparent,fname) {
+		psep <- '[\\\\/\\s]+'
+		fname_int <- gsub(paste0('^', psep), '', fname)
+		rstOut <- file.path(gsub(paste0(psep, '$'), '', fparent), fname_int)
+		parent_empty <- nchar(fparent) == 0
+		parent_empty[is.na(parent_empty)] <- T
+		rstOut[parent_empty] <- fname_int[parent_empty]
+		return(rstOut)
+	}
+
 	#065. Combine the file path
 	if (length(cfg_local$.paths)>0) {
-		InfDat_path <- file.path(
-			gsub('[\\\\/]+\\s*$', '', unlist(cfg_local$.paths))
-			,cfg_local$InfDat
-		)
+		InfDat_path <- safe_path(unlist(cfg_local$.paths), cfg_local$InfDat)
 	} else {
 		InfDat_path <- cfg_local$InfDat
 	}
@@ -411,28 +446,22 @@ DBuse_GetTimeSeriesForKpi <- function(
 	#310. Prepare to import the Information Table
 	GTSFK_getInfDat <- function(i){
 		#100. Set parameters
-		InfDat <- InfDat_exist[i, 'datPtn.Parsed']
+		InfDat <- InfDat_exist[i, 'datPtn.Parsed'] %>% unlist(recursive = F)
 
 		#500. Prepare the function to apply to the process list
-		imp_func <- list(
-			RAM = list(
-				.func = std_read_RAM
-				,.opt = list(InfDat)
-			)
-			,R = list(
-				.func = std_read_R
-				#[Quote: https://www.r-bloggers.com/2013/08/a-new-r-trick-for-me-at-least/ ]
-				,.opt = c(list(InfDat), list(imp_df), cfg_local$.imp.opt$R)
-			)
-			,SAS = list(
-				.func = std_read_SAS
-				,.opt = c( list(InfDat), cfg_local$.imp.opt$SAS )
-			)
+		dataIO$add(DatType)
+		.opt_in <- list(
+			'infile' = InfDat
+			#For unification purpose, some APIs would omit below arguments
+			,'key' = imp_df
 		)
+		.opt_this <- cfg_local[['.imp.opt']][[DatType]]
+		if (is.null(.opt_this)) .opt_this <- list()
+		.opt_in <- modifyList(.opt_in, .opt_this)
 
 		#700. Call functions to import data from current path
 		#710. Import the data
-		imp_data <- do.call( imp_func[[cfg_local$DatType]]$.func, imp_func[[cfg_local$DatType]]$.opt )
+		imp_data <- do.call(dataIO[[DatType]]$pull, .opt_in)
 
 		#750. Conduct pre-process as requested
 		if (is.function(cfg_local$.func)){
@@ -498,6 +527,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 			,KeepInfCol = KeepInfCol
 			,fTrans = NULL
 			,fTrans.opt = NULL
+			,outDTfmt = outDTfmt
 			,fImp.opt = fImp.opt
 			,.parallel = .parallel
 			,cores = cores
@@ -505,6 +535,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 			,miss.skip = miss.skip
 			,miss.files = miss.files
 			,err.cols = err.cols
+			,kw_DataIO = kw_DataIO
 		)
 
 		#730. Append those parameters for [DBuse_MrgKPItoInf] if any
@@ -542,19 +573,34 @@ DBuse_GetTimeSeriesForKpi <- function(
 
 	#400. Verify the existence of the Information Tables that are actually required
 	if (!is.null(InfDatCfg$InfDat)) {
+		#050. Determine the options to search for RAM objects if any
+		if (DatType == 'RAM') {
+			opt_inf_ram <- cfg_local$.imp.opt[['RAM']]
+			if (!is.null(opt_inf_ram)) {
+				opt_inf_ram <- list(exist.Opt = rep_len(list(opt_inf_ram), length(InfDat_path)))
+			}
+		} else {
+			opt_inf_ram <- list()
+		}
+
 		#100. Parse the provided naming pattern
 		if (SingleInf) dats_inf <- NULL
 		else dats_inf <- d_Dates
-		parse_infDat <- rlang::exec(
+		parse_infDat <- do.call(
 			parseDatName
-			,datPtn = InfDat_path
-			,parseCol = NULL
-			,dates = dats_inf
-			,outDTfmt = outDTfmt
-			,inRAM = (DatType == 'RAM')
-			,chkExist = T
-			,dict_map = cfg_local$.trans
-			,!!!cfg_local$.trans.opt
+			,c(
+				list(
+					datPtn = InfDat_path
+					,parseCol = NULL
+					,dates = dats_inf
+					,outDTfmt = outDTfmt
+					,inRAM = (DatType == 'RAM')
+					,chkExist = T
+					,dict_map = cfg_local$.trans
+				)
+				,opt_inf_ram
+				,cfg_local$.trans.opt
+			)
 		)
 
 		#500. Verify the existence of the data files and only use the first one among the existing files
@@ -612,26 +658,35 @@ DBuse_GetTimeSeriesForKpi <- function(
 	#501. Define the full path of data files
 	KPICfg <- inKPICfg %>%
 		dplyr::mutate(
-			C_KPI_FULL_PATH = file.path(
-				gsub('[\\\\/]+\\s*$', '', C_LIB_PATH)
-				,C_KPI_FILE_NAME
-			)
+			C_KPI_FULL_PATH = safe_path(C_LIB_PATH, C_KPI_FILE_NAME)
 		)
 
 	#510. Parse the provided naming pattern
 	#[ASSUMPTION]:
 	#[1] [inRAM=FALSE] All requested data files are on harddisk, rather than in RAM of current session
 	#[2] Keep all columns for determination of uniqueness
-	parse_kpiDat <- rlang::exec(
+	parse_kpiDat <- do.call(
 		parseDatName
-		,datPtn = KPICfg
-		,parseCol = trans_var
-		,dates = d_Dates
-		,outDTfmt = outDTfmt
-		,inRAM = F
-		,chkExist = T
-		,dict_map = fTrans
-		,!!!fTrans.opt
+		,c(
+			list(
+				datPtn = KPICfg
+				,parseCol = trans_var
+				,dates = d_Dates
+				,outDTfmt = outDTfmt
+				,inRAM = (
+					KPICfg %>%
+						dplyr::mutate_at(trans_var, ~F) %>%
+						dplyr::mutate(
+							!!rlang::sym('C_KPI_FULL_PATH') := !!rlang::sym('C_KPI_FILE_TYPE') == 'RAM'
+						) %>%
+						dplyr::select(tidyselect::all_of(trans_var))
+				)
+				,chkExist = T
+				,dict_map = fTrans
+			)
+			,opt_ram
+			,fTrans.opt
+		)
 	)
 
 	#520. Set the useful columns to their parsed values for further data retrieval
@@ -682,15 +737,15 @@ DBuse_GetTimeSeriesForKpi <- function(
 	}
 
 	#700. Loop all provided date series to retrieve KPI data
+	#701. Debug mode
+	if (fDebug){
+		message(glue::glue('[{LfuncName}]Import data files in {ifelse(.parallel, "Parallel", "Sequential")} mode...'))
+	}
+
 	#[IMPOTANT] There could be fields/columns in the same name but not the same types in different data files,
 	#            but we throw the errors at the step [dplyr::bind_rows] to ask user to correct the input data,
 	#            instead of guessing the correct types here, for it takes quite a lot of unnecessary effort.
 	if (.parallel) {
-		#001. Debug mode
-		if (fDebug){
-			message('[',LfuncName,']','Import data files in Parallel mode...')
-		}
-
 		#100. Set the cores to be used
 		doParallel::registerDoParallel(cores = cores)
 
@@ -698,12 +753,11 @@ DBuse_GetTimeSeriesForKpi <- function(
 		#We do not directly combine the data, for there may be columns with different classes.
 		# GTSFK_import <- foreach::foreach( i = seq_along(dnDates), .combine = dplyr::bind_rows ) %dopar% func_parallel(i)
 		GTSFK_import <- foreach::foreach( i = seq_along(dnDates) ) %dopar% GTSFK_parallel(i)
-	} else {
-		#001. Debug mode
-		if (fDebug){
-			message('[',LfuncName,']','Import data files in Sequential mode...')
-		}
 
+		#990. Ensure the process is closed
+		#Quote: https://www.r-bloggers.com/2015/02/how-to-go-parallel-in-r-basics-tips/
+		doParallel::stopImplicitCluster()
+	} else {
 		#900. Read the files sequentially
 		#We do not directly combine the data, for there may be columns with different classes.
 		# GTSFK_import <- lapply( seq_along(dnDates), func_parallel ) %>% dplyr::bind_rows()
@@ -799,19 +853,6 @@ DBuse_GetTimeSeriesForKpi <- function(
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#001. Load necessary packages
-		lst_pkg <- c( 'magrittr', 'rlang' , 'dplyr' , 'haven' , 'doParallel' , 'foreach'
-			#Below packages are further required by function [DBuse_SetKPItoInf] and [DBuse_MrgKPItoInf]
-			, 'tidyselect'
-			#Below packages are further required by function [DBuse_MrgKPItoInf]
-			, 'tidyr'
-		)
-
-		suppressPackageStartupMessages(
-			sapply(lst_pkg, function(x){library(x,character.only = TRUE)})
-		)
-		tmcn::setchs(rev=F)
-
 		#010. Load user defined functions
 		source('D:\\R\\autoexec.r')
 		#Below system options are defined in [autoexec.r]
@@ -833,10 +874,11 @@ if (FALSE){
 			dplyr::mutate(
 				C_KPI_FILE_TYPE = 'SAS'
 				,C_KPI_FILE_NAME = paste0(C_KPI_DAT_NAME,'.sas7bdat')
+				,DF_NAME = ''
 			)
 
 		#150. Prepare the date list
-		#Below function is from [omniR$Dates]
+		#Below function is from [Dates]
 		cln <- UserCalendar$new(
 			G_d_bgn
 			, G_d_curr
@@ -845,12 +887,6 @@ if (FALSE){
 			, CalendarAdj = getOption('ClndrAdj')
 		)
 		cln$fmtDateOut <- '%Y%m%d'
-
-		#200. Prepare to translate the date strings in the file names
-		#Similar to FORMAT Procedure in SAS, we map the special strings with what we need in current session
-		#The function will attempt to resolve the values of below list as if they are R variables
-		fmt_Trans <- getOption('fmt.def.GTSFK')
-		fmt_opt <- getOption('fmt.opt.def.GTSFK')
 
 		#300. Read the KPI data
 		#310. Prepare the modification upon the default arguments with current business requirements
@@ -862,6 +898,11 @@ if (FALSE){
 					InfDat = 'acctinfo'
 					,.paths = NULL
 					,DatType = 'RAM'
+					,.imp.opt = list(
+						'RAM' = list(
+							'frame' = environment()
+						)
+					)
 					#Below is a demo, please modify the function where necessary
 					,.func = function(df, ...){
 						dots <- list(...)
@@ -897,7 +938,7 @@ if (FALSE){
 		View(KPI_ts[['data']])
 
 		#500. Test part of the function
-		#Below function is from: [omniR$AdvOp]
+		#Below function is from: [AdvOp]
 		gen_locals(
 			LfuncName = 'DBuse_GetTimeSeriesForKpi'
 			,inKPICfg = KPICfg_all
@@ -906,8 +947,8 @@ if (FALSE){
 				,.paths = NULL
 				,DatType = 'RAM'
 				,DF_NAME = NULL
-				,.trans = fmt_Trans
-				,.trans.opt = fmt_opt
+				,.trans = getOption('fmt.def.GTSFK')
+				,.trans.opt = getOption('fmt.opt.def.GTSFK')
 				,.imp.opt = list(
 					SAS = list(
 						encoding = 'GB2312'
@@ -948,16 +989,16 @@ if (FALSE){
 		}
 
 		#600. Test if there is no [InfDat]
-		KPI_ts2 <- DBuse_GetTimeSeriesForKpi(
-			KPICfg_all
+		args.GTSFK2 <- list(
+			inKPICfg = KPICfg_all
 			,dnDates = cln$d_AllWD
 			,ColRecDate = 'D_RecDate'
 			,MergeProc = 'MERGE'
 			,keyvar = c('nc_cifno','nc_acct_no')
 			,SetAsBase = 'k'
 			,KeepInfCol = F
-			,fTrans = fmt_Trans
-			,fTrans.opt = fmt_opt
+			,fTrans = getOption('fmt.def.GTSFK')
+			,fTrans.opt = getOption('fmt.opt.def.GTSFK')
 			,fImp.opt = list(
 				SAS = list(
 					encoding = 'GB2312'
@@ -975,6 +1016,10 @@ if (FALSE){
 			,values_fn = sum
 			,values_fill = list(A_KPI_VAL = 0)
 		)
+		time_bgn <- Sys.time()
+		KPI_ts2 <- do.call( DBuse_GetTimeSeriesForKpi, args.GTSFK2 )
+		time_end <- Sys.time()
+		print(time_end - time_bgn)
 
 		View(KPI_ts2[['data']])
 

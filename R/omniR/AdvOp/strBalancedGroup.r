@@ -157,7 +157,7 @@ strBalancedGroup <- function(
 			}
 			,simplify = F
 		)
-		pos_ext <- rlang::exec(rbind,!!!pos_ext)
+		pos_ext <- do.call(rbind, pos_ext)
 
 		#750. Reset the rownames
 		rownames(pos_ext) <- NULL

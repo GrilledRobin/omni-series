@@ -25,158 +25,164 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |110.   Input dataset information: (Daily snapshot of database)                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDatPtn   :   Naming pattern of the series of datasets for calculation (such as Daily Account Balances)                           #
-#   |               [IMPORTANT] If a data.frame is provided, it MUST match below naming convention:                                     #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |               |Column Name     |Required?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |FileName        |Yes        | The naming pattern of data files to be located in the candidate paths                #
-#   |               |FilePath        |Yes        | The naming pattern of the candidate paths to store the data (incl. file name)        #
-#   |               |PathSeq         |Yes        | The sequence of candidate paths to search for the data file. Should the same data    #
-#   |               |                |           |  exist in many among these paths, the one with the smaller [PathSeq] is retrieved    #
-#   |               |[inDatType]     |Yes        | The types of data files that indicates the method for this function to import data   #
-#   |               |                |           | [RAM     ] Try to load the data frame from RAM in current session                    #
-#   |               |                |           | [R       ] Try to import as RData file                                               #
-#   |               |                |           | [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                              #
-#   |               |[in_df]         |No         | For some cases, such as [inDatType=R] there should be such an additional field       #
-#   |               |                |           |  indicating the name of data.frame stored in the data file (i.e. container)          #
-#   |               |                |           | It is required if [inDatType] on any record is [R]                                   #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#   |                                     variable [trans_var].                                                                         #
-#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#   |                                              translated by the value of Python variable [G_d_curr] in the parent frame            #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |inDatType  :   The type of data files that indicates the method for this function to import data                                   #
-#   |               [SAS             ] <Default> Try to import as the SAS dataset                                                       #
-#   |               [RAM             ]           Try to load the data frame from RAM in current environment                             #
-#   |               [R               ]           Try to import as R-Data                                                                #
-#   |               [<column name>   ]           Column name indicating the data file type if [inDatPtn] is provided a data.frame       #
-#   |in_df      :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading    #
-#   |               [NULL            ] <Default> No need for default SAS data loading                                                   #
-#   |               [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame           #
-#   |fImp.opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the argument [inDatType]                                                 #
-#   |               [$SAS            ] <Default> Options for [omniR$AdvDB$std_read_SAS]                                                 #
-#   |                                            [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                      #
-#   |               [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]          #
+#   |inDatPtn    :   Naming pattern of the series of datasets for calculation (such as Daily Account Balances)                          #
+#   |                [IMPORTANT] If a data.frame is provided, it MUST match below naming convention:                                    #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Required?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |FileName        |Yes        | The naming pattern of data files to be located in the candidate paths               #
+#   |                |FilePath        |Yes        | The naming pattern of the candidate paths to store the data (incl. file name)       #
+#   |                |PathSeq         |Yes        | The sequence of candidate paths to search for the data file. Should the same data   #
+#   |                |                |           |  exist in many among these paths, the one with the smaller [PathSeq] is retrieved   #
+#   |                |[inDatType]     |Yes        | The types of data files that indicates the method for this function to import data  #
+#   |                |                |           | [RAM     ] Try to load the data frame from RAM in current session                   #
+#   |                |                |           | [R       ] Try to import as RData file                                              #
+#   |                |                |           | [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                             #
+#   |                |[in_df]         |No         | For some cases, such as [inDatType=R] there should be such an additional field      #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
+#   |                |                |           | It is required if [inDatType] on any record is [R]                                  #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
+#   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
+#   |                                      variable [trans_var].                                                                        #
+#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
+#   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
+#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
+#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
+#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |inDatType   :   The type of data files that indicates the method for this function to import data                                  #
+#   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
+#   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
+#   |                [R               ]           Try to import as R-Data                                                               #
+#   |                [<column name>   ]           Column name indicating the data file type if [inDatPtn] is provided a data.frame      #
+#   |in_df       :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading   #
+#   |                [NULL            ] <Default> No need for default SAS data loading                                                  #
+#   |                [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame          #
+#   |fImp.opt    :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the argument [inDatType]                                                #
+#   |                [$SAS            ] <Default> Options for [AdvDB$std_read_SAS]                                                      #
+#   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
+#   |                [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
+#   |                [<col. name>     ]           Column name in <inDatPtn> that stores the options as a literal string that can be     #
+#   |                                               parsed as a <list>                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#   |               [NULL            ] <Default> For time series process, please ensure this argument is manually defined, otherwise    #
-#   |                                             the result is highly unexpected                                                       #
-#   |fTrans.opt :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                         #
-#   |               [NULL            ] <Default> Use default options in [apply_MapVal]                                                  #
-#   |               [<list>          ]           Use alternative options as provided by a list, see documents of [apply_MapVal]         #
+#   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
+#   |                [NULL            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
+#   |                                              the result is highly unexpected                                                      #
+#   |fTrans.opt  :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                        #
+#   |                [NULL            ] <Default> Use default options in [apply_MapVal]                                                 #
+#   |                [<list>          ]           Use alternative options as provided by a list, see documents of [apply_MapVal]        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |.parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones  #
-#   |               [TRUE            ] <Default> Use multiple CPU cores to load the data files in parallel                              #
-#   |               [FALSE           ]           Load the data files sequentially                                                       #
-#   |omniR.ini  :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                 #
-#   |               [D:/R/autoexec.r ] <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside     #
-#   |                                             each batch of [%dopar%] to enable the dependent functions separately                  #
-#   |               [NULL            ]           No need when [.parallel=F]                                                             #
-#   |cores      :   Number of system cores to read the data files in parallel                                                           #
-#   |               [4               ] <Default> No need when [.parallel=F]                                                             #
+#   |.parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones#
+#   |                [FALSE           ]  <Default> Load the data files sequentially                                                     #
+#   |                [TRUE            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
+#   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
+#   |                                               that RAM is the requested location for search                                       #
+#   |omniR.ini   :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                #
+#   |                [D:/R/autoexec.r ] <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside    #
+#   |                                              each batch of [%dopar%] to enable the dependent functions separately                 #
+#   |                [NULL            ]           No need when [.parallel=F]                                                            #
+#   |cores       :   Number of system cores to read the data files in parallel                                                          #
+#   |                [4               ] <Default> No need when [.parallel=F]                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn    :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please     #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |dateEnd    :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please    #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |160.   Retrieval of previously aggregated result for Checking Period                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |chkDatPtn  :   Naming pattern of the datasets that store the previously aggregated KPI for minimization of system effort, such as  #
-#   |                MTD Daily Average Balance by Account                                                                               #
-#   |               [IMPORTANT] This pattern will be translated by [fTrans], hence please ensure the correct convention                 #
-#   |               [NULL            ] <Default> Function will not use existing results for performance improvement                     #
-#   |chkDatType :   The type of data files for Checking Period that indicates the method for this function to import data               #
-#   |               [SAS             ] <Default> Try to import as the SAS dataset                                                       #
-#   |               [RAM             ]           Try to load the data frame from RAM in current environment                             #
-#   |               [R               ]           Try to import as R-Data                                                                #
-#   |chkDatVar  :   Variable name in the [data as of Checking Period], which is used for calculation in [Checking Period]               #
-#   |               [NULL            ] <Default> Not in use if [Checking Period] is not involved, or raise error when required          #
-#   |               [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                 #
-#   |chkDat_df  :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading    #
-#   |               [NULL            ] <Default> No need for default SAS data loading                                                   #
-#   |chkDat.opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the field [inDatType]                                                    #
-#   |               [$SAS            ] <Default> Options for [omniR$AdvDB$std_read_SAS]                                                 #
-#   |                                            [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                      #
-#   |               [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]          #
-#   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [NULL            ] <Default> Function will set it the same as [dateBgn]                                             #
+#   |chkDatPtn   :   Naming pattern of the datasets that store the previously aggregated KPI for minimization of system effort, such as #
+#   |                 MTD Daily Average Balance by Account                                                                              #
+#   |                [IMPORTANT] This pattern will be translated by [fTrans], hence please ensure the correct convention                #
+#   |                [NULL            ] <Default> Function will not use existing results for performance improvement                    #
+#   |chkDatType  :   The type of data files for Checking Period that indicates the method for this function to import data              #
+#   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
+#   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
+#   |                [R               ]           Try to import as R-Data                                                               #
+#   |chkDatVar   :   Variable name in the [data as of Checking Period], which is used for calculation in [Checking Period]              #
+#   |                [NULL            ] <Default> Not in use if [Checking Period] is not involved, or raise error when required         #
+#   |                [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                #
+#   |chkDat_df   :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading   #
+#   |                [NULL            ] <Default> No need for default SAS data loading                                                  #
+#   |chkDat.opt  :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the field [inDatType]                                                   #
+#   |                [$SAS            ] <Default> Options for [AdvDB$std_read_SAS]                                                      #
+#   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
+#   |                [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [NULL            ] <Default> Function will set it the same as [dateBgn]                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |byVar      :   The list/vector of column names that are to be used as the group to aggregate the KPI                               #
-#   |               [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                         #
-#   |               [NULL            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |copyVar    :   The list/vector of column names that are to be copied during the aggregation                                        #
-#   |               [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                            #
-#   |               [Note 2] Only those values in the Last Existing observation/record can be copied to the output                      #
-#   |               [NULL            ] <Default> There is no additional column to be retained for the output                            #
-#   |               [_all_           ]           Retain all related columns from all sources                                            #
-#   |aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
-#   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
-#   |outVar     :   The single column name as the aggregated value in the output data                                                   #
-#   |               [A_VAL_OUT       ] <Default> Function will output this column                                                       #
+#   |byVar       :   The list/vector of column names that are to be used as the group to aggregate the KPI                              #
+#   |                [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                        #
+#   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |copyVar     :   The list/vector of column names that are to be copied during the aggregation                                       #
+#   |                [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                           #
+#   |                [Note 2] Only those values in the Last Existing observation/record can be copied to the output                     #
+#   |                [NULL            ] <Default> There is no additional column to be retained for the output                           #
+#   |                [_all_           ]           Retain all related columns from all sources                                           #
+#   |aggrVar     :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                #
+#   |                [A_KPI_VAL       ] <Default> Function will aggregate this column                                                   #
+#   |outVar      :   The single column name as the aggregated value in the output data                                                  #
+#   |                [A_VAL_OUT       ] <Default> Function will output this column                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |180.   Indicators and methods for aggregation                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |genPHMul   :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with     #
-#   |                proper Multipliers, to minimize the system effort                                                                  #
-#   |               [TRUE            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays #
-#   |                                            in terms of the indicator [calcInd]                                                    #
-#   |                                            [IMPORTANT] Function will ignore any existing data on Public Holidays                  #
-#   |               [FALSE           ]           Function will NOT generate pseudo data for Public Holidays                             #
-#   |                                            [IMPORTANT] Function will raise error if there is no existing data on Public Holidays  #
-#   |calcInd    :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                           #
-#   |               [C               ] <Default> Conduct calculation based on Calendar Days                                             #
-#   |               [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect  #
-#   |               [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect #
-#   |funcAggr   :   The function to aggregate the input time series data. It should be provided a [function]                            #
-#   |               [mean            ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series                        #
-#   |               [<other aggr.>   ]           Other aggregation functions that are supported in current environment                  #
-#   |                                            [IMPORTANT] One can define specific aggregation function and use it here               #
+#   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
+#   |                 proper Multipliers, to minimize the system effort                                                                 #
+#   |                [TRUE            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
+#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
+#   |                [FALSE           ]           Function will NOT generate pseudo data for Public Holidays                            #
+#   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
+#   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
+#   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
+#   |                [mean            ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series                       #
+#   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
+#   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#   |               [FALSE           ] <Default> Do not print debug messages during calculation                                         #
-#   |               [TRUE            ]           Print debug messages during calculation                                                #
-#   |miss.files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
-#   |               [G_miss_files    ] <Default> If any data files are missing, please check this global variable to see the details    #
-#   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
-#   |err.cols   :   Name of the global variable to store the debug data frame with error column information                             #
-#   |               [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details   #
-#   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
-#   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
-#   |               [ <vec/list>     ] <Default> See the function definition as the default argument of usage                           #
-#   |...        :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one     #
+#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |                [FALSE           ] <Default> Do not print debug messages during calculation                                        #
+#   |                [TRUE            ]           Print debug messages during calculation                                               #
+#   |miss.files  :   Name of the global variable to store the debug data frame with missing file paths and names                        #
+#   |                [G_miss_files    ] <Default> If any data files are missing, please check this global variable to see the details   #
+#   |                [chr string      ]           User defined name of global variable that stores the debug information                #
+#   |err.cols    :   Name of the global variable to store the debug data frame with error column information                            #
+#   |                [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details  #
+#   |                [chr string      ]           User defined name of global variable that stores the debug information                #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |                [ <vec/list>     ] <Default> See the function definition as the default argument of usage                          #
+#   |...         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>     :   The named list that contains below names as results:                                                                #
-#   |               [data            ] [data.frame] that contains the combined result                                                   #
-#   |               [ <miss.files>   ] [NULL] if all data files are successfully loaded, or [data.frame] that contains the paths to the #
-#   |                                   data files that are required but missing                                                        #
-#   |               [ <err.cols>     ] [NULL] if all KPI data are successfully loaded, or [data.frame] that contains the column names   #
-#   |                                   as well as the data files in which they are located, which cannot be concatenated due to        #
-#   |                                   different [dtypes]                                                                              #
+#   |<list>      :   The named list that contains below names as results:                                                               #
+#   |                [data            ] [data.frame] that contains the combined result                                                  #
+#   |                [ <miss.files>   ] [NULL] if all data files are successfully loaded, or [data.frame] that contains the paths to the#
+#   |                                    data files that are required but missing                                                       #
+#   |                [ <err.cols>     ] [NULL] if all KPI data are successfully loaded, or [data.frame] that contains the column names  #
+#   |                                    as well as the data files in which they are located, which cannot be concatenated due to       #
+#   |                                    different [dtypes]                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -192,7 +198,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210614        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [omniR$AdvDB$parseDatName] as standardization      #
+#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [AdvDB$parseDatName] as standardization            #
 #   |      |[2] Introduce an argument [outDTfmt] aligning above change, to bridge the mapping from [fTrans] to the date series          #
 #   |      |[3] Correct the part of frame lookup when assigning values to global variables for user request                             #
 #   |      |[4] Change the output into a [list] to store all results, including debug facilities, to avoid pollution in global          #
@@ -247,6 +253,12 @@
 #   | Log  |[1] Aligned the searching logic for <chkEnd>, now facilitate the scenario: calculate rolling 10-day ANR only on workdays and#
 #   |      |     need to leverage the result on the previous workday                                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240223        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Upper-case <byVar>, <copyVar> and  <aggrVar> in the return result to make it compatible to most of the data engines     #
+#   |      |[2] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -256,32 +268,30 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr                                                                      #
+#   |   |magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr, glue                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |UserCalendar                                                                                                               #
 #   |   |   |ObsDates                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |debug_comp_datcols                                                                                                         #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |match.arg.x                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvDB                                                                                                                    #
-#   |   |   |std_read_R                                                                                                                 #
-#   |   |   |std_read_RAM                                                                                                               #
-#   |   |   |std_read_SAS                                                                                                               #
+#   |   |AdvDB                                                                                                                          #
+#   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr
+	magrittr, rlang, dplyr, doParallel, foreach, tidyr, purrr, glue
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -308,7 +318,7 @@ aggrByPeriod <- function(
 	)
 	,fTrans = NULL
 	,fTrans.opt = NULL
-	,.parallel = T
+	,.parallel = F
 	,omniR.ini = getOption('file.autoexec')
 	,cores = 4
 	,dateBgn = NULL
@@ -337,6 +347,7 @@ aggrByPeriod <- function(
 		,'L_m_curr' = '%Y%m'
 	)
 	,fDebug = FALSE
+	,kw_DataIO = list()
 	,...
 ){
 	#001. Handle parameters
@@ -349,19 +360,11 @@ aggrByPeriod <- function(
 		if (!(inDatType %in% colnames(inDatPtn))) {
 			stop('[',LfuncName,']','[inDatType] must be an existing column in the data frame [inDatPtn]')
 		}
-		if ('R' %in% unique(inDatPtn[[inDatType]])) {
-			if (!(in_df %in% colnames(inDatPtn))) {
-				stop('[',LfuncName,']','[in_df] must be an existing column in the data frame [inDatPtn]')
-			}
-		}
 		inDatCfg <- inDatPtn
 	} else {
 		if (length(inDatPtn)==0) stop('[',LfuncName,']','[inDatPtn] is not provided!')
 		if ((!is.character(inDatPtn)) | (length(inDatPtn)!=1)) stop('[',LfuncName,']','[inDatPtn] must be a single character string!')
 		inDatType <- match.arg.x(inDatType, arg.func = toupper)
-		if (inDatType=='R') {
-			if (length(in_df)==0) stop('[',LfuncName,']','[in_df] is not provided for [inDatType=',inDatType,']!')
-		}
 		#Since [in_df] may be NULL, we can only create a data.frame and assign it at another step
 		inDatCfg <- data.frame(
 			FilePath = inDatPtn
@@ -391,11 +394,15 @@ aggrByPeriod <- function(
 	if (chkDatType=='R') {
 		if (length(chkDat_df)==0) stop('[',LfuncName,']','[chkDat_df] is not provided for [chkDatType=',chkDatType,']!')
 	}
+
+	if (is.character(chkDatVar)) chkDatVar <- chkDatVar %>% unlist() %>% toupper()
 	if (length(byVar)==0) stop('[',LfuncName,']','[byVar] is not provided!')
-	if (length(aggrVar)==0) {
-		aggrVar <- 'A_KPI_VAL'
-		message('[',LfuncName,']','[aggrVar] is not provided, use the default one [',aggrVar,'] instead.')
-	}
+	byVar <- byVar %>% unlist() %>% toupper()
+	if (length(aggrVar)==0) stop('[',LfuncName,']','[aggrVar] is not provided!')
+	aggrVar <- aggrVar %>% unlist() %>% toupper()
+	if (length(copyVar)==0) stop('[',LfuncName,']','[copyVar] is not provided!')
+	copyVar <- copyVar %>% unlist() %>% toupper()
+
 	if (!is.logical(genPHMul)) {
 		message(
 			'[',LfuncName,']','[genPHMul] is not provided as logical value.'
@@ -411,12 +418,10 @@ aggrByPeriod <- function(
 	if (length(err.cols)==0) err.cols <- 'G_err_cols'
 
 	#020. Local environment
-	byVar <- unlist(byVar)
-	copyVar <- unlist(copyVar)
 	outVar <- unlist(outVar)
 	miss.files <- unlist(miss.files)
 	err.cols <- unlist(err.cols)
-	if ('_ALL_' %in% toupper(copyVar)) {
+	if ('_ALL_' %in% copyVar) {
 		keep_all_col <- T
 	} else {
 		keep_all_col <- F
@@ -434,6 +439,19 @@ aggrByPeriod <- function(
 		indat_col_df <- 'DF_NAME'
 	}
 	f_get_in_df <- indat_col_df %in% colnames(inDatCfg)
+	if (is.list(fImp.opt)) {
+		opt_ram <- fImp.opt[['RAM']]
+		if (!is.null(opt_ram)) {
+			opt_ram <- list(exist.Opt = rep_len(list(opt_ram), nrow(inDatCfg)))
+		}
+	} else if (fImp.opt %in% colnames(inDatCfg)) {
+		opt_ram <- list(exist.Opt = inDatCfg[[fImp.opt]])
+	} else {
+		stop(glue::glue(
+			'[{LfuncName}]<fImp.opt> must be list or existing name in <inDatCfg>'
+			,', given <{str(fImp.opt)}> as class <{toString(class(fImp.opt))}>'
+		))
+	}
 	#Below function supports to force variable names on its LHS, see [!!!] in [rlang]
 	outDict = rlang::list2(
 		'data' = NULL
@@ -453,6 +471,9 @@ aggrByPeriod <- function(
 	fUsePrev <- F
 	calcDate <- NULL
 	calcMult <- NULL
+
+	#021. Instantiate the IO operator for data migration
+	dataIO <- do.call(DataIO$new, kw_DataIO)
 
 	#039. Debug mode
 	if (fDebug){
@@ -555,17 +576,32 @@ aggrByPeriod <- function(
 	#100. Calculate the summary for the leading period from [chkBgn] to [dateBgn], if applicable
 	#110. Calculate the prerequisites for the data as of Checking Period
 	if ((length(chkDatPtn)>0) & (length(chkBgn)>0)) {
-		#100. Determine the name of the data as dependency in Checking Period
-		parse_chkDat <- rlang::exec(
+		#050. Determine the options to search for RAM objects if any
+		if (chkDatType == 'RAM') {
+			opt_chk_ram <- chkDat.opt[['RAM']]
+			if (!is.null(opt_chk_ram)) {
+				opt_chk_ram <- list(exist.Opt = rep_len(list(opt_chk_ram), length(chkDatPtn)))
+			}
+		} else {
+			opt_chk_ram <- list()
+		}
+
+		#300. Determine the name of the data as dependency in Checking Period
+		parse_chkDat <- do.call(
 			parseDatName
-			,datPtn = chkDatPtn
-			,parseCol = NULL
-			,dates = chkEnd
-			,outDTfmt = outDTfmt
-			,inRAM = (chkDatType=='RAM')
-			,chkExist = T
-			,dict_map = fTrans
-			,!!!fTrans.opt
+			,c(
+				list(
+					datPtn = chkDatPtn
+					,parseCol = NULL
+					,dates = chkEnd
+					,outDTfmt = outDTfmt
+					,inRAM = (chkDatType=='RAM')
+					,chkExist = T
+					,dict_map = fTrans
+				)
+				,opt_chk_ram
+				,fTrans.opt
+			)
 		)
 
 		#500. Extract the values for later steps
@@ -658,7 +694,10 @@ aggrByPeriod <- function(
 			,outVar = '.CalcLead.'
 			,miss.files = miss.files
 			,err.cols = err.cols
+			,outDTfmt = outDTfmt
 			,fDebug = fDebug
+			,kw_DataIO = kw_DataIO
+			,...
 		)
 
 		#199. Debug mode
@@ -766,12 +805,12 @@ aggrByPeriod <- function(
 
 		#400. Print the necessities for Checking Period
 		if (fUsePrev) {
-			message('[',LfuncName,']','[Checking Period] Dataset to use: [',chkDat,']')
+			message('[',LfuncName,']','[Checking Period] Dataset to use: [',str(chkDat),']')
 			message('[',LfuncName,']','[Checking Period] Data multiplier: [',multiplier_CP,']')
 		}
 
 		#700. Print the necessities for Actual Calculation Period
-		message('[',LfuncName,']','[Actual Calculation Period] Dataset to use: [',inDatCfg,']')
+		message('[',LfuncName,']','[Actual Calculation Period] Dataset to use: [',str(inDatCfg),']')
 		for (i in seq_along(calcDate)) {
 			message(
 				'[',LfuncName,'][Actual Calculation Period]'
@@ -783,16 +822,21 @@ aggrByPeriod <- function(
 
 	#400. Verify the existence of the data files that are actually required
 	#410. Parse the naming pattern into the physical file path
-	parse_calcDat <- rlang::exec(
+	parse_calcDat <- do.call(
 		parseDatName
-		,datPtn = inDatCfg
-		,parseCol = indat_col_parse
-		,dates = calcDate
-		,outDTfmt = outDTfmt
-		,inRAM = (inDatCfg[[indat_col_type]]=='RAM')
-		,chkExist = T
-		,dict_map = fTrans
-		,!!!fTrans.opt
+		,c(
+			list(
+				datPtn = inDatCfg
+				,parseCol = indat_col_parse
+				,dates = calcDate
+				,outDTfmt = outDTfmt
+				,inRAM = (inDatCfg[[indat_col_type]]=='RAM')
+				,chkExist = T
+				,dict_map = fTrans
+			)
+			,opt_ram
+			,fTrans.opt
+		)
 	)
 
 	#420. Search in all candidate paths of the the libraries for the data files and identify the first occurrences respectively
@@ -800,7 +844,8 @@ aggrByPeriod <- function(
 		dplyr::filter_at(paste0(indat_col_parse,'.chkExist'), ~.) %>%
 		dplyr::arrange_at(c(indat_col_file, indat_col_date, indat_col_dirseq)) %>%
 		dplyr::group_by_at(c(indat_col_file, indat_col_date)) %>%
-		dplyr::slice_head(n = 1)
+		dplyr::slice_head(n = 1) %>%
+		dplyr::ungroup()
 
 	n_files <- nrow(exist_calcDat)
 
@@ -827,7 +872,7 @@ aggrByPeriod <- function(
 		outDict[[miss.files]] <- nonexist_calcDat
 
 		#999. Abort the process
-		warning('[',LfuncName,']','Some data files do not exist! Check the data frame [',miss_files,'] in the output result!')
+		warning('[',LfuncName,']','Some data files do not exist! Check the data frame [',miss.files,'] in the output result!')
 		ABP_errors <- T
 	}
 
@@ -838,7 +883,7 @@ aggrByPeriod <- function(
 			outDict[[miss.files]] <- dplyr::bind_rows(ABP_LeadPeriod[[miss.files]], outDict[[miss.files]])
 
 			#999. Abort the process
-			warning('[',LfuncName,']','Some data files do not exist! Check the data frame [',miss_files,'] in the output result!')
+			warning('[',LfuncName,']','Some data files do not exist! Check the data frame [',miss.files,'] in the output result!')
 			ABP_errors <- T
 		}
 	}
@@ -847,7 +892,16 @@ aggrByPeriod <- function(
 	if (ABP_errors) return(outDict)
 
 	#500. Import the source data within the Actual Calculation Period
-	#510. Define the function for reading one data file per batch
+	#520. Column filter during loading data
+	h_keepVar <- function(.vars){
+		if (keep_all_col) {
+			rlang::expr(tidyselect::everything())
+		} else {
+			substitute(tidyselect::any_of(.vars))
+		}
+	}
+
+	#540. Define the function for reading one data file per batch
 	ABP_parallel <- function(i){
 		#001. Set environment for multiprocessing
 		if (.parallel) {
@@ -861,46 +915,41 @@ aggrByPeriod <- function(
 		}
 
 		#100. Set parameters
-		inDat <- parse_calcDat[i, paste0(indat_col_parse, '.Parsed')]
+		inDat <- exist_calcDat %>% dplyr::pull(paste0(indat_col_parse, '.Parsed')) %>% dplyr::nth(i)
 		if (f_get_in_df) {
-			inDat_df <- parse_calcDat[i, indat_col_df]
+			inDat_df <- exist_calcDat %>% dplyr::pull(indat_col_df) %>% dplyr::nth(i)
 		} else {
 			inDat_df <- NULL
 		}
-		inDat_type <- parse_calcDat[i, indat_col_type]
-		L_d_curr<- parse_calcDat[i, 'dates'] %>% strftime('%Y%m%d')
+		inDat_type <- exist_calcDat %>% dplyr::pull(indat_col_type) %>% dplyr::nth(i)
+		L_d_curr <- exist_calcDat %>% dplyr::pull('dates') %>% dplyr::nth(i) %>% strftime('%Y%m%d')
+		if (is.list(fImp.opt)) {
+			.opt_this <- fImp.opt[[inDat_type]]
+		} else {
+			#In case a list is stored internally in each cell, we do not recurse the extraction
+			.opt_this <- exist_calcDat[i,fImp.opt] %>% unlist(recursive = F)
+			if (is.character(.opt_this)) {
+				.opt_this <- .opt_this %>% str2expression() %>% eval()
+			}
+		}
+		if (is.null(.opt_this)) .opt_this <- list()
 
 		#300. Prepare the function to apply to the process list
-		imp_func <- list(
-			RAM = list(
-				.func = std_read_RAM
-				,.opt = list(inDat)
-			)
-			,R = list(
-				.func = std_read_R
-				#[Quote: https://www.r-bloggers.com/2013/08/a-new-r-trick-for-me-at-least/ ]
-				,.opt = c(list(inDat), list(inDat_df), fImp.opt$R)
-			)
-			,SAS = list(
-				.func = std_read_SAS
-				,.opt = c( list(inDat), fImp.opt$SAS )
-			)
+		dataIO$add(inDat_type)
+		.opt_in <- list(
+			'infile' = inDat
+			#For unification purpose, some APIs would omit below arguments
+			,'key' = inDat_df
 		)
-
-		#400. Create a list of unique column names for selection from the input data
-		if (keep_all_col) {
-			select_func <- dplyr::select_all
-		} else {
-			#We do not have to [union] the column names as [dplyr::select_at] will always select a column once
-			select_func <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,aggrVar))
-		}
+		.opt_in <- modifyList(.opt_in, .opt_this)
 
 		#500. Call functions to import data from current path
 		#We have the create a symbol for [rlang] syntax of bang-bang operator
 		aggrSym <- rlang::sym(aggrVar)
-		imp_data <- do.call( imp_func[[inDat_type]]$.func, imp_func[[inDat_type]]$.opt ) %>%
+		imp_data <- do.call(dataIO[[inDat_type]]$pull, .opt_in) %>%
 			#100. Only select necessary columns
-			select_func() %>%
+			dplyr::rename_all(toupper) %>%
+			dplyr::select(eval(h_keepVar(c(byVar,copyVar,aggrVar)))) %>%
 			#900. Create identifier of current data within the time series
 			dplyr::mutate(
 				.Period = 'A'
@@ -918,27 +967,26 @@ aggrByPeriod <- function(
 	}
 
 	#550. Create a list of imported data frames and bind all rows of them together as one data frame
+	#551. Debug mode
+	if (fDebug){
+		message(glue::glue('[{LfuncName}]Import data files in {ifelse(.parallel, "Parallel", "Sequential")} mode...'))
+	}
+
 	#[IMPOTANT] There could be fields/columns in the same name but not the same types in different data files,
 	#            but we throw the errors at the step [dplyr::bind_rows] to ask user to correct the input data,
 	#            instead of guessing the correct types here, for it takes quite a lot of unnecessary effort.
 	if (.parallel) {
-		#001. Debug mode
-		if (fDebug){
-			message('[',LfuncName,']','Import data files in Parallel mode...')
-		}
-
 		#100. Set the cores to be used
 		doParallel::registerDoParallel(cores = cores)
 
 		#900. Read the files and combine them by rows
 		#We do not directly combine the data, for there may be columns with different classes.
 		files_import <- foreach::foreach( i = seq_len(n_files) ) %dopar% ABP_parallel(i)
-	} else {
-		#001. Debug mode
-		if (fDebug){
-			message('[',LfuncName,']','Import data files in Sequential mode...')
-		}
 
+		#990. Ensure the process is closed
+		#Quote: https://www.r-bloggers.com/2015/02/how-to-go-parallel-in-r-basics-tips/
+		doParallel::stopImplicitCluster()
+	} else {
 		#900. Read the files sequentially
 		#We do not directly combine the data, for there may be columns with different classes.
 		files_import <- lapply( seq_len(n_files), ABP_parallel )
@@ -982,16 +1030,9 @@ aggrByPeriod <- function(
 	#610. Data for the Leading Period
 	#The values in this data should be subtracted from those in the Actual Calculation Period
 	if (fLeadCalc) {
-		#300. Create a list of unique column names for selection from the input data
-		if (keep_all_col) {
-			sel_LP <- dplyr::select_all
-		} else {
-			sel_LP <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,'.CalcLead.'))
-		}
-
 		#500. Only retrieve certain columns for Leading Period
 		ABP_set_LP <- ABP_LeadPeriod[['data']] %>%
-			sel_LP() %>%
+			dplyr::select(eval(h_keepVar(c(byVar,copyVar,'.CalcLead.')))) %>%
 			tidyr::replace_na(list('.CalcLead.' = 0)) %>%
 			dplyr::mutate(
 				.Period = 'L'
@@ -1006,35 +1047,22 @@ aggrByPeriod <- function(
 	#630. Data for [chkDat], i.e. Checking Period
 	if (fUsePrev) {
 		#300. Prepare the function to apply to the process list
-		imp_func <- list(
-			RAM = list(
-				.func = std_read_RAM
-				,.opt = list(chkDat)
-			)
-			,R = list(
-				.func = std_read_R
-				#[Quote: https://www.r-bloggers.com/2013/08/a-new-r-trick-for-me-at-least/ ]
-				,.opt = c(list(chkDat), list(chkDat_df), fImp.opt$R)
-			)
-			,SAS = list(
-				.func = std_read_SAS
-				,.opt = c( list(chkDat), fImp.opt$SAS )
-			)
+		dataIO$add(chkDatType)
+		.opt_chk <- list(
+			'infile' = chkDat
+			#For unification purpose, some APIs would omit below arguments
+			,'key' = chkDat_df
 		)
-
-		#500. Call functions to import data from current path
-		#510. Create a list of unique column names for selection from the input data
-		if (keep_all_col) {
-			sel_CP <- dplyr::select_all
-		} else {
-			sel_CP <- purrr::partial(dplyr::select_at, .vars = c(byVar,copyVar,chkDatVar))
-		}
+		.opt_thischk <- chkDat.opt[[chkDatType]]
+		if (is.null(.opt_thischk)) .opt_thischk <- list()
+		.opt_chk <- modifyList(.opt_chk, .opt_thischk)
 
 		#590. Load the data and conduct the requested transformation
 		#We have the create a symbol for [rlang] syntax of bang-bang operator
 		chkDatSym <- rlang::sym(chkDatVar)
-		ABP_set_CP <- do.call( imp_func[[chkDatType]]$.func, imp_func[[chkDatType]]$.opt ) %>%
-			sel_CP() %>%
+		ABP_set_CP <- do.call(dataIO[[chkDatType]]$pull, .opt_chk) %>%
+			dplyr::rename_all(toupper) %>%
+			dplyr::select(eval(h_keepVar(c(byVar,copyVar,chkDatVar)))) %>%
 			dplyr::mutate(
 				.Period = 'C'
 				,.date = 'Checking'
@@ -1058,7 +1086,7 @@ aggrByPeriod <- function(
 
 	#760. Identify the columns to <copy> to the result, i.e. retain their respective values at the last record
 	if (keep_all_col) {
-		copy_cols <- colnames(ABP_setall)[!colnames(ABP_setall) %in% c(sort_cols,grp_cols,'.Tmp_Val')]
+		copy_cols <- colnames(ABP_setall)[!colnames(ABP_setall) %in% c(sort_cols,grp_cols,'.Tmp_Val','.CalcLead.')]
 	} else {
 		copy_cols <- copyVar[!copyVar %in% c(sort_cols,grp_cols,'.Tmp_Val')]
 	}
@@ -1222,21 +1250,6 @@ if (FALSE){'
 
 #[Full Test Program;]
 if (FALSE){
-	#001. Load environment
-	#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
-	lst_pkg <- deparse(substitute(c(
-		rlang, dplyr, doParallel, foreach, tidyr
-	)))
-	#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
-	lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
-	lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
-	lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
-
-	suppressPackageStartupMessages(
-		sapply(lst_pkg, function(x){library(x,character.only = TRUE)})
-	)
-	tmcn::setchs(rev=F)
-
 	#010. Load user defined functions
 	source('D:\\R\\autoexec.r')
 

@@ -44,19 +44,19 @@ def kfFunc_ts_roll(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate     :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                    #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |kDays      :   Positive number of days to roll back from <inDate>                                                                  #
-#   |               [0               ] <Default> Function will raise error if it is NOT positive                                        #
+#   |inDate      :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                   #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |kDays       :   Positive number of days to roll back from <inDate>                                                                 #
+#   |                [0               ] <Default> Function will raise error if it is NOT positive                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |kw         :   Any other arguments that are required by <kfCore_ts_agg>                                                            #
+#   |kw          :   Any other arguments that are required by <kfCore_ts_agg>                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[DataFrame]:   See the return result from <kfCore_ts_agg>                                                                          #
+#   |[DataFrame] :   See the return result from <kfCore_ts_agg>                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -77,11 +77,11 @@ def kfFunc_ts_roll(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |intnx                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |kfCore_ts_agg                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -196,25 +196,32 @@ if __name__=='__main__':
     #[ASSUMPTION]
     #[1] Below date indicates the beginning of one KPI among those in the config table
     G_d_rpt = '20160526'
+    cfg_kpi_file = os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
     cfg_kpi = (
         pd.read_excel(
-            os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
-            ,dtype = object
+            cfg_kpi_file
+            ,sheet_name = 'KPIConfig'
+            ,dtype = 'object'
         )
-        .rename(columns = {
-            'D_BGN' : '_D_BGN'
-            ,'D_END' : '_D_END'
-            ,'F_KPI_INUSE' : '_F_KPI_INUSE'
-            ,'N_LIB_PATH_SEQ' : '_N_LIB_PATH_SEQ'
-        })
         .assign(**{
-            'D_BGN' : lambda x: asDates(x['_D_BGN'])
-            ,'D_END' : lambda x: asDates(x['_D_END'])
-            ,'F_KPI_INUSE' : lambda x: x['_F_KPI_INUSE'].astype(int)
-            ,'N_LIB_PATH_SEQ' : lambda x: x['_N_LIB_PATH_SEQ'].astype(int)
+            'C_LIB_NAME' : lambda x: x['C_LIB_NAME'].fillna('')
+        })
+        .merge(
+            pd.read_excel(
+                cfg_kpi_file
+                ,sheet_name = 'LibConfig'
+                ,dtype = 'object'
+            )
+            ,on = 'C_LIB_NAME'
+            ,how = 'left'
+        )
+        .assign(**{
+            'D_BGN' : lambda x: asDates(x['D_BGN'])
+            ,'D_END' : lambda x: asDates(x['D_END'])
+            ,'F_KPI_INUSE' : lambda x: x['F_KPI_INUSE'].astype(int)
+            ,'N_LIB_PATH_SEQ' : lambda x: x['N_LIB_PATH_SEQ'].fillna(0).astype(int)
             ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('')
         })
-        .loc[:, lambda x: ~x.columns.str.startswith('_')]
     )
 
     #150. Mapper to indicate the aggregation

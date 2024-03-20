@@ -1,21 +1,25 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the names of the provided list in recursion                                                  #
+#   |This function is intended to convert the length-1 character string into the number of positions of each character in ASCII table   #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[QUOTE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://www.r-bloggers.com/2011/03/ascii-code-table-in-r/                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x            :   List for which to extract the names                                                                               #
+#   |x            :   Character string with length-1, but unlimited number of characters                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>        :   Vector of names with possible duplications removed                                                                #
+#   |[vector    ] :   Numeric vector indicating ASCII values of all characters of the provided string                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20211218        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20240214        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
@@ -28,58 +32,28 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |vctrs                                                                                                                          #
+#   |   |base                                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-#001. Append the list of required packages to the global environment
-#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
-lst_pkg <- deparse(substitute(c(
-	vctrs
-)))
-#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
-lst_pkg <- paste0(lst_pkg, collapse = '')
-lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
-lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
-lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
-options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
-
-getListNames <- function(x) {
-	rstOut <- names(x)
-	for (m in x) {
-		if (rlang::is_named(m)) {
-			rstOut <- c(rstOut, Recall(m))
-		}
-	}
-	rstOut <- base::unique(rstOut)
-	return(rstOut)
-}
+asc <- function(x) { strtoi(charToRaw(x),16L) }
 
 #[Full Test Program;]
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#100. Prepare a complex list
-		v_list <- list(
-			'aa' = list(
-				'bb' = 1
-				,'cc' = list(
-					'aa' = 3
-					,'dd' = 5
-				)
-			)
-			,'ee' = list(
-				'ff' = 2
-				,'gg' = 4
-			)
-			,list(
-				'hh' = 6
-			)
-		)
+		x1 <- 'A'
+		x2 <- 'A test string'
 
-		#200. Get the names
-		v_names <- getListNames(v_list)
+		#100. Obtain the ASCII value
+		x1_asc <- asc(x1)
+		# 65
+
+		#200. Obtain ASCII values of all characters within the same string
+		x2_asc <- asc(x2)
+		# [1]  65  32 116 101 115 116  32 115 116 114 105 110 103
+
 	}
 }

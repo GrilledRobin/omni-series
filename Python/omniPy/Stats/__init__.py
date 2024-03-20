@@ -20,6 +20,7 @@ from .sim_matrix_cosine import sim_matrix_cosine
 from .userBasedCF import userBasedCF
 from .gcdBitwise import gcdBitwise
 from .gcdExtInteger import gcdExtInteger
+from .highWaterMark import highWaterMark
 
 #200.   Define available resources.
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     , 'calcKS'
     , 'cov_matrix' , 'cor_matrix' , 'sim_matrix_cosine' , 'userBasedCF'
     , 'gcdBitwise', 'gcdExtInteger'
+    , 'highWaterMark'
 ]

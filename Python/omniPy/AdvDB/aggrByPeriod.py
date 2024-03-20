@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys, os, ast
 import re
 import datetime as dt
 import numpy as np
@@ -13,10 +13,10 @@ from collections.abc import Iterable
 from pathos.threading import ThreadPool
 from warnings import warn
 from functools import partial
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from omniPy.Dates import asDates, UserCalendar, ObsDates
-from omniPy.AdvOp import debug_comp_datcols, thisFunction, modifyDict
-from omniPy.AdvDB import parseDatName, DataIO
+from omniPy.AdvOp import debug_comp_datcols, thisFunction, modifyDict, vecStack
+from omniPy.AdvDB import parseDatName, DataIO, validateDMCol
 
 def aggrByPeriod(
     inDatPtn : Union[str, pd.DataFrame] = None
@@ -60,7 +60,7 @@ def aggrByPeriod(
     ,kw_DataIO : dict = {}
     ,**kw
 ) -> dict:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -89,157 +89,161 @@ def aggrByPeriod(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |110.   Input dataset information: (Daily snapshot of database)                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDatPtn   :   Naming pattern of the series of datasets for calculation (such as Daily Account Balances)                           #
-#   |               [IMPORTANT] If a pd.DataFrame is provided, it MUST match below naming convention:                                   #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |               |Column Name     |Required?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |FileName        |Yes        | The naming pattern of data files to be located in the candidate paths                #
-#   |               |FilePath        |Yes        | The naming pattern of the candidate paths to store the data (incl. file name)        #
-#   |               |PathSeq         |Yes        | The sequence of candidate paths to search for the data file. Should the same data    #
-#   |               |                |           |  exist in many among these paths, the one with the smaller [PathSeq] is retrieved    #
-#   |               |[inDatType]     |Yes        | The types of data files that indicates the method for this function to import data   #
-#   |               |                |           | [RAM     ] Try to load the data frame from RAM in current session                    #
-#   |               |                |           | [HDFS    ] Try to import as HDFStore file                                            #
-#   |               |                |           | [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                              #
-#   |               |[in_df]         |No         | For some cases, such as [inDatType=HDFS] there should be such an additional field    #
-#   |               |                |           |  indicating the name of data.frame stored in the data file (i.e. container)          #
-#   |               |                |           | It is required if [inDatType] on any record is [HDFS]                                #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#   |                                     variable [trans_var].                                                                         #
-#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#   |                                              translated by the value of Python variable [G_d_curr] in the parent frame            #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |inDatType  :   The type of data files that indicates the method for this function to import data                                   #
-#   |               [SAS             ] <Default> Try to import as the SAS dataset                                                       #
-#   |               [RAM             ]           Try to load the data frame from RAM in current environment                             #
-#   |               [HDFS            ]           Try to import as HDFStore file                                                         #
-#   |               [<column name>   ]           Column name indicating the data file type if [inDatPtn] is provided a pd.DataFrame     #
-#   |in_df      :   For some containers, such as [inDatType=HDFS] we should provide the name of data.frame stored inside it for loading #
-#   |               [None            ] <Default> No need for default SAS data loading                                                   #
-#   |               [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame           #
-#   |fImp_opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the argument [inDatType]                                                 #
-#   |               [SAS             ] <Default> Options for [omniPy.AdvDB.std_read_SAS]                                                #
-#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                       #
-#   |               [{<name>:<dict>} ]           Other dictionaries for different engines, such as [R=dict()] and [HDFS=dict()]         #
+#   |inDatPtn    :   Naming pattern of the series of datasets for calculation (such as Daily Account Balances)                          #
+#   |                [IMPORTANT] If a pd.DataFrame is provided, it MUST match below naming convention:                                  #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Required?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |FileName        |Yes        | The naming pattern of data files to be located in the candidate paths               #
+#   |                |FilePath        |Yes        | The naming pattern of the candidate paths to store the data (incl. file name)       #
+#   |                |PathSeq         |Yes        | The sequence of candidate paths to search for the data file. Should the same data   #
+#   |                |                |           |  exist in many among these paths, the one with the smaller [PathSeq] is retrieved   #
+#   |                |[inDatType]     |Yes        | The types of data files that indicates the method for this function to import data  #
+#   |                |                |           | [RAM     ] Try to load the data frame from RAM in current session                   #
+#   |                |                |           | [HDFS    ] Try to import as HDFStore file                                           #
+#   |                |                |           | [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                             #
+#   |                |[in_df]         |No         | For some cases, such as [inDatType=HDFS] there should be such an additional field   #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
+#   |                |                |           | It is required if [inDatType] on any record is [HDFS]                               #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
+#   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
+#   |                                      variable [trans_var].                                                                        #
+#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
+#   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
+#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
+#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
+#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |inDatType   :   The type of data files that indicates the method for this function to import data                                  #
+#   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
+#   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
+#   |                [HDFS            ]           Try to import as HDFStore file                                                        #
+#   |                [<column name>   ]           Column name indicating the data file type if [inDatPtn] is provided a pd.DataFrame    #
+#   |in_df       :   For some containers, such as [inDatType=HDFS] we should provide the name of data.frame stored inside it for loading#
+#   |                [None            ] <Default> No need for default SAS data loading                                                  #
+#   |                [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame          #
+#   |fImp_opt    :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the argument [inDatType]                                                #
+#   |                [SAS             ] <Default> Options for [AdvDB.std_read_SAS]                                                      #
+#   |                                             [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                     #
+#   |                [{<name>:<dict>} ]           Other dictionaries for different engines, such as [R=dict()] and [HDFS=dict()]        #
+#   |                [<col. name>     ]           Column name in <inDatPtn> that stores the options as a literal string that can be     #
+#   |                                               parsed as a <dict>                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#   |               [None            ] <Default> For time series process, please ensure this argument is manually defined, otherwise    #
-#   |                                             the result is highly unexpected                                                       #
-#   |fTrans_opt :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                         #
-#   |               [{}              ] <Default> Use default options in [apply_MapVal]                                                  #
-#   |               [<dict>          ]           Use alternative options as provided by a dict, see documents of [apply_MapVal]         #
+#   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
+#   |                [None            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
+#   |                                              the result is highly unexpected                                                      #
+#   |fTrans_opt  :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                        #
+#   |                [{}              ] <Default> Use default options in [apply_MapVal]                                                 #
+#   |                [<dict>          ]           Use alternative options as provided by a dict, see documents of [apply_MapVal]        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones  #
-#   |               [True            ] <Default> Use multiple CPU cores to load the data files in parallel                              #
-#   |               [False           ]           Load the data files sequentially                                                       #
-#   |cores      :   Number of system cores to read the data files in parallel                                                           #
-#   |               [4               ] <Default> No need when [_parallel=False]                                                         #
+#   |_parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones #
+#   |                [True            ] <Default> Use multiple CPU cores to load the data files in parallel                             #
+#   |                [False           ]           Load the data files sequentially                                                      #
+#   |cores       :   Number of system cores to read the data files in parallel                                                          #
+#   |                [4               ] <Default> No need when [_parallel=False]                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn    :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please     #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |dateEnd    :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please    #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |160.   Retrieval of previously aggregated result for Checking Period                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |chkDatPtn  :   Naming pattern of the datasets that store the previously aggregated KPI for minimization of system effort, such as  #
-#   |                MTD Daily Average Balance by Account                                                                               #
-#   |               [IMPORTANT] This pattern will be translated by [fTrans], hence please ensure the correct convention                 #
-#   |               [None            ] <Default> Function will not use existing results for performance improvement                     #
-#   |chkDatType :   The type of data files for Checking Period that indicates the method for this function to import data               #
-#   |               [SAS             ] <Default> Try to import as the SAS dataset                                                       #
-#   |               [RAM             ]           Try to load the data frame from RAM in current environment                             #
-#   |               [HDFS            ]           Try to import as HDFStore file                                                         #
-#   |chkDatVar  :   Variable name in the [data as of Checking Period], which is used for calculation in [Checking Period]               #
-#   |               [None            ] <Default> Not in use if [Checking Period] is not involved, or raise error when required          #
-#   |               [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                 #
-#   |chkDat_df  :   For some containers, such as [inDatType=HDFS] we should provide the name of data.frame stored inside it for loading #
-#   |               [None            ] <Default> No need for default SAS data loading                                                   #
-#   |chkDat_opt :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the field [inDatType]                                                    #
-#   |               [SAS             ] <Default> Options for [omniPy.AdvDB.std_read_SAS]                                                #
-#   |                                            [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                      #
-#   |               [{<name>:<dict>} ]           Other named lists for different engines, such as [R=dict()] and [HDFS=dict()]          #
-#   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will set it the same as [dateBgn]                                             #
+#   |chkDatPtn   :   Naming pattern of the datasets that store the previously aggregated KPI for minimization of system effort, such as #
+#   |                 MTD Daily Average Balance by Account                                                                              #
+#   |                [IMPORTANT] This pattern will be translated by [fTrans], hence please ensure the correct convention                #
+#   |                [None            ] <Default> Function will not use existing results for performance improvement                    #
+#   |chkDatType  :   The type of data files for Checking Period that indicates the method for this function to import data              #
+#   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
+#   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
+#   |                [HDFS            ]           Try to import as HDFStore file                                                        #
+#   |chkDatVar   :   Variable name in the [data as of Checking Period], which is used for calculation in [Checking Period]              #
+#   |                [None            ] <Default> Not in use if [Checking Period] is not involved, or raise error when required         #
+#   |                [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                #
+#   |chkDat_df   :   For some containers, such as [inDatType=HDFS] we should provide the name of data.frame stored inside it for loading#
+#   |                [None            ] <Default> No need for default SAS data loading                                                  #
+#   |chkDat_opt  :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the field [inDatType]                                                   #
+#   |                [SAS             ] <Default> Options for [AdvDB.std_read_SAS]                                                      #
+#   |                                             [encoding = 'GB18030' ]  <Default> Read SAS data in this encoding                     #
+#   |                [{<name>:<dict>} ]           Other named lists for different engines, such as [R=dict()] and [HDFS=dict()]         #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will set it the same as [dateBgn]                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |byVar      :   The list/vector of column names that are to be used as the group to aggregate the KPI                               #
-#   |               [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                         #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |copyVar    :   The list/vector of column names that are to be copied during the aggregation                                        #
-#   |               [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                            #
-#   |               [Note 2] Only those values in the Last Existing observation/record can be copied to the output                      #
-#   |               [None            ] <Default> There is no additional column to be retained for the output                            #
-#   |               [_all_           ]           Retain all related columns from all sources                                            #
-#   |aggrVar    :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                 #
-#   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
-#   |outVar     :   The single column name as the aggregated value in the output data                                                   #
-#   |               [A_VAL_OUT       ] <Default> Function will output this column                                                       #
+#   |byVar       :   The list/vector of column names that are to be used as the group to aggregate the KPI                              #
+#   |                [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                        #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |copyVar     :   The list/vector of column names that are to be copied during the aggregation                                       #
+#   |                [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                           #
+#   |                [Note 2] Only those values in the Last Existing observation/record can be copied to the output                     #
+#   |                [None            ] <Default> There is no additional column to be retained for the output                           #
+#   |                [_all_           ]           Retain all related columns from all sources                                           #
+#   |aggrVar     :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                #
+#   |                [A_KPI_VAL       ] <Default> Function will aggregate this column                                                   #
+#   |outVar      :   The single column name as the aggregated value in the output data                                                  #
+#   |                [A_VAL_OUT       ] <Default> Function will output this column                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |180.   Indicators and methods for aggregation                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |genPHMul   :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with     #
-#   |                proper Multipliers, to minimize the system effort                                                                  #
-#   |               [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays #
-#   |                                            in terms of the indicator [calcInd]                                                    #
-#   |                                            [IMPORTANT] Function will ignore any existing data on Public Holidays                  #
-#   |               [False           ]           Function will NOT generate pseudo data for Public Holidays                             #
-#   |                                            [IMPORTANT] Function will raise error if there is no existing data on Public Holidays  #
-#   |calcInd    :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                           #
-#   |               [C               ] <Default> Conduct calculation based on Calendar Days                                             #
-#   |               [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect  #
-#   |               [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect #
-#   |funcAggr   :   The function to aggregate the input time series data. It should be provided a [function]                            #
-#   |               [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions          #
-#   |               [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed      #
-#   |               [<other aggr.>   ]           Other aggregation functions that are supported in current environment                  #
-#   |                                            [IMPORTANT] One can define specific aggregation function and use it here               #
+#   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
+#   |                 proper Multipliers, to minimize the system effort                                                                 #
+#   |                [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
+#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
+#   |                [False           ]           Function will NOT generate pseudo data for Public Holidays                            #
+#   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
+#   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
+#   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
+#   |                [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions         #
+#   |                [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed     #
+#   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
+#   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#   |               [False           ] <Default> Do not print debug messages during calculation                                         #
-#   |               [True            ]           Print debug messages during calculation                                                #
-#   |miss_files :   Name of the global variable to store the debug data frame with missing file paths and names                         #
-#   |               [G_miss_files    ] <Default> If any data files are missing, please check this global variable to see the details    #
-#   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
-#   |err_cols   :   Name of the global variable to store the debug data frame with error column information                             #
-#   |               [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details   #
-#   |               [chr string      ]           User defined name of global variable that stores the debug information                 #
-#   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
-#   |               [ <dict>         ] <Default> See the function definition as the default argument of usage                           #
-#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
-#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
-#   |kw         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one     #
+#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |                [False           ] <Default> Do not print debug messages during calculation                                        #
+#   |                [True            ]           Print debug messages during calculation                                               #
+#   |miss_files  :   Name of the global variable to store the debug data frame with missing file paths and names                        #
+#   |                [G_miss_files    ] <Default> If any data files are missing, please check this global variable to see the details   #
+#   |                [chr string      ]           User defined name of global variable that stores the debug information                #
+#   |err_cols    :   Name of the global variable to store the debug data frame with error column information                            #
+#   |                [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details  #
+#   |                [chr string      ]           User defined name of global variable that stores the debug information                #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |                [ <dict>         ] <Default> See the function definition as the default argument of usage                          #
+#   |kw_DataIO   :   Arguments to instantiate <DataIO>                                                                                  #
+#   |                [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                          #
+#   |kw          :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[dict]     :   The dictionary that contains below keys as results:                                                                 #
-#   |               [data            ] [pd.DataFrame] that contains the combined result                                                 #
-#   |               [ <miss_files>   ] [None] if all data files are successfully loaded, or [pd.DataFrame] that contains the paths to   #
-#   |                                   the data files that are required but missing                                                    #
-#   |               [ <err_cols>     ] [None] if all data files are successfully loaded, or [pd.DataFrame] that contains the column     #
-#   |                                   names as well as the data files in which they are located, which cannot be concatenated due to  #
-#   |                                   different [dtypes]                                                                              #
+#   |[dict]      :   The dictionary that contains below keys as results:                                                                #
+#   |                [data            ] [pd.DataFrame] that contains the combined result                                                #
+#   |                [ <miss_files>   ] [None] if all data files are successfully loaded, or [pd.DataFrame] that contains the paths to  #
+#   |                                    the data files that are required but missing                                                   #
+#   |                [ <err_cols>     ] [None] if all data files are successfully loaded, or [pd.DataFrame] that contains the column    #
+#   |                                    names as well as the data files in which they are located, which cannot be concatenated due to #
+#   |                                    different [dtypes]                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -250,7 +254,7 @@ def aggrByPeriod(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210529        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [omniPy.AdvDB.parseDatName] as standardization     #
+#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [AdvDB.parseDatName] as standardization     #
 #   |      |[2] Introduce an argument [outDTfmt] aligning above change, to bridge the mapping from [fTrans] to the date series          #
 #   |      |[3] Correct the part of frame lookup when assigning values to global variables for user request                             #
 #   |______|____________________________________________________________________________________________________________________________#
@@ -316,6 +320,12 @@ def aggrByPeriod(
 #   |      |[2] Aligned the searching logic for <chkEnd>, now facilitate the scenario: calculate rolling 10-day ANR only on workdays and#
 #   |      |     need to leverage the result on the previous workday                                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240209        | Version | 4.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce function <validateDMCol> to unify the validation of related columns                                           #
+#   |      |[2] Fixed the bug when <copyVar> is specified while the result is unexpected                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -325,23 +335,25 @@ def aggrByPeriod(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, datetime, numpy, pandas, math, statistics, collections, pathos, warnings, functools, typing                           #
+#   |   |sys, os, ast, datetime, numpy, pandas, math, statistics, collections, pathos, warnings, functools, typing                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |UserCalendar                                                                                                               #
 #   |   |   |ObsDates                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |debug_comp_datcols                                                                                                         #
 #   |   |   |thisFunction                                                                                                               #
 #   |   |   |modifyDict                                                                                                                 #
+#   |   |   |vecStack                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
+#   |   |   |validateDMCol                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -354,23 +366,22 @@ def aggrByPeriod(
     recall = thisFunction()
 
     #012. Parameter buffer
+    def h_convStr(vec : Any, func : callable = str.upper):
+        if isinstance(vec, str):
+            return(func(vec))
+        else:
+            return(vec)
+
     if isinstance(inDatPtn, pd.DataFrame):
         if inDatType not in inDatPtn.columns:
             raise ValueError(f'[{LfuncName}][inDatType] must be an existing column in the data frame [inDatPtn]!')
-        if 'HDFS' in inDatPtn[inDatType]:
-            if in_df not in inDatPtn.columns:
-                raise ValueError(f'[{LfuncName}][in_df] must be an existing column in the data frame [inDatPtn]!')
 
-        inDatCfg = inDatPtn.copy(deep=True)
+        inDatCfg = inDatPtn
     else:
         if (not inDatPtn) | (not isinstance(inDatPtn, str)):
             raise TypeError(f'[{LfuncName}][inDatPtn] must be a single character string!')
         if not inDatType: inDatType = 'SAS'
         inDatType = inDatType.upper()
-        if inDatType not in ['SAS','HDFS','RAM']:
-            raise ValueError(f'[{LfuncName}][inDatType] should be any among [SAS, HDFS, RAM]!')
-        if inDatType in ['HDFS']:
-            if not in_df: raise ValueError(f'[{LfuncName}][in_df] is not provided for [inDatType={inDatType}]!')
 
         inDatCfg = pd.DataFrame(
             {
@@ -378,7 +389,7 @@ def aggrByPeriod(
                 ,'PathSeq' : pd.Series(1, dtype = 'int8')
                 ,'FileName' : os.path.basename(inDatPtn)
                 ,'FileType' : inDatType
-                ,'DF_NAME' : pd.Series(in_df, dtype = 'object')
+                ,'DF_NAME' : pd.Series([in_df], dtype = 'object')
             }
             ,index = [0]
         )
@@ -391,45 +402,18 @@ def aggrByPeriod(
     if not dateEnd: raise ValueError(f'[{LfuncName}][dateEnd] is not provided!')
     if chkDatPtn:
         if not isinstance(chkDatPtn, str): raise TypeError(f'[{LfuncName}][chkDatPtn] must be a single character string!')
-    if not chkDatType: chkDatType = 'SAS'
     chkDatType = chkDatType.upper()
-    if chkDatType not in ['SAS','HDFS','RAM']:
-        raise ValueError(f'[{LfuncName}][chkDatType] should be any among [SAS, HDFS, RAM]!')
-    if not chkBgn:
+    if chkBgn is None:
         print(f'[{LfuncName}][chkBgn] is not provided. It will be set the same as [dateBgn].')
         chkBgn = dateBgn
-    if chkDatType in ['HDFS']:
-        if not chkDat_df: raise ValueError(f'[{LfuncName}][chkDat_df] is not provided for [chkDatType={chkDatType}]!')
-    if isinstance(chkDatVar, str):
-        chkDatVar = chkDatVar.upper()
 
-    if isinstance(byVar, str):
-        byVar = [byVar]
-    elif isinstance(byVar, Iterable):
-        byVar = list(byVar)
-    else:
-        raise TypeError(f'[{LfuncName}][byVar] should be either [str] or [list of str] instead of [{type(byVar)}]!')
-    if not np.alltrue([ isinstance(v,str) for v in byVar ]):
-        raise TypeError(f'[{LfuncName}][byVar] should only be a list of [str]!')
-    byVar = [ s.upper() for s in byVar ]
+    if chkDatVar is not None:
+        chkDatVar = h_convStr(validateDMCol(chkDatVar)[0])
 
-    if isinstance(copyVar, str):
-        copyVar = [copyVar]
-    elif isinstance(copyVar, Iterable):
-        copyVar = list(copyVar)
-    elif copyVar is None:
-        copyVar = []
-    else:
-        raise TypeError(f'[{LfuncName}][copyVar] should be either [str] or [list of str] instead of [{type(copyVar)}]!')
-    if copyVar:
-        if not np.alltrue([ isinstance(v,str) for v in copyVar ]):
-            raise TypeError(f'[{LfuncName}][copyVar] should only be a list of [str]!')
-    copyVar = [ s.upper() for s in copyVar ]
+    aggrVar = h_convStr(validateDMCol(aggrVar)[0])
+    byVar = [ h_convStr(v) for v in validateDMCol(byVar) ]
+    copyVar = [ h_convStr(v) for v in validateDMCol(copyVar) ]
 
-    if (not aggrVar) | (not isinstance(aggrVar, str)):
-        print(f'[{LfuncName}][aggrVar] is not provided, use the default one [A_KPI_VAL] instead.')
-        aggrVar = 'A_KPI_VAL'
-    aggrVar = aggrVar.upper()
     if not isinstance(genPHMul, bool):
         print(
             f'[{LfuncName}][genPHMul] is not provided as logical value.'
@@ -438,17 +422,16 @@ def aggrByPeriod(
         genPHMul = True
     if not calcInd: calcInd = 'C'
     calcInd = calcInd.upper()
-    if calcInd not in ['C','W','T']:
-        raise ValueError(f'[{LfuncName}][calcInd] should be any among [C, W, T]!')
+    if calcInd not in (vfyVal := ['C','W','T']):
+        raise ValueError(f'[{LfuncName}][calcInd] should be any among {str(vfyVal)}!')
     if not callable(funcAggr): raise TypeError(f'[{LfuncName}][funcAggr] should be provided a function!')
     if not isinstance(fDebug, bool): fDebug = False
     if (not outVar) | (not isinstance(outVar, str)): outVar = 'A_VAL_OUT'
     if (not miss_files) | (not isinstance(miss_files, str)): miss_files = 'G_miss_files'
     if (not err_cols) | (not isinstance(err_cols, str)): err_cols = 'G_err_cols'
-    if kw is None: kw = {}
 
     #020. Local environment
-    keep_all_col = '_ALL_' in [ f.upper() for f in copyVar ]
+    keep_all_col = '_ALL_' in copyVar
     indat_col_parse = 'FilePath'
     indat_col_file = 'FileName'
     indat_col_dirseq = 'PathSeq'
@@ -460,6 +443,25 @@ def aggrByPeriod(
         indat_col_type = 'FileType'
         indat_col_df = 'DF_NAME'
     f_get_in_df = indat_col_df in inDatCfg.columns
+    if isinstance(fImp_opt, dict):
+        opt_ram = fImp_opt.get('RAM', None)
+        if isinstance(opt_ram, dict):
+            opt_ram = {
+                'exist_Opt' : pd.Series(
+                    [ opt_ram for i in range(len(inDatCfg)) ]
+                    ,dtype = 'O'
+                    ,index = inDatCfg.index
+                )
+            }
+        else:
+            opt_ram = {}
+    elif inDatCfg.columns.isin(fImp_opt_col := validateDMCol(fImp_opt)).any():
+        opt_ram = {'exist_Opt' : inDatCfg[fImp_opt_col[0]]}
+    else:
+        raise ValueError(
+            f'[{LfuncName}]<fImp_opt> must be dict or existing name in <inDatCfg>'
+            +f', given <{str(fImp_opt)}> as type <{type(fImp_opt).__name__}>'
+        )
 
     outDict = {
         'data' : None
@@ -575,7 +577,19 @@ def aggrByPeriod(
     #100. Calculate the summary for the leading period from [chkBgn] to [dateBgn], if applicable
     #110. Calculate the prerequisites for the data as of Checking Period
     if isinstance(chkDatPtn, str) & isinstance(chkBgn, dt.date):
-        #100. Determine the name of the data as dependency in Checking Period
+        #050. Determine the options to search for RAM objects if any
+        if chkDatType == 'RAM':
+            opt_chk_ram = chkDat_opt.get('RAM')
+            if isinstance(opt_chk_ram, dict):
+                opt_chk_ram = {
+                    'exist_Opt' : [opt_chk_ram]
+                }
+            else:
+                opt_chk_ram = {}
+        else:
+            opt_chk_ram = {}
+
+        #300. Determine the name of the data as dependency in Checking Period
         parse_chkDat = parseDatName(
             datPtn = chkDatPtn
             ,parseCol = None
@@ -584,6 +598,7 @@ def aggrByPeriod(
             ,inRAM = (chkDatType=='RAM')
             ,chkExist = True
             ,dict_map = fTrans
+            ,**opt_chk_ram
             ,**fTrans_opt
         )
 
@@ -669,7 +684,9 @@ def aggrByPeriod(
             ,outVar = '.CalcLead.'
             ,miss_files = miss_files
             ,err_cols = err_cols
+            ,outDTfmt = outDTfmt
             ,fDebug = fDebug
+            ,**kw
         )
 
         #199. Debug mode
@@ -786,6 +803,7 @@ def aggrByPeriod(
         ,inRAM = (inDatCfg[indat_col_type]=='RAM')
         ,chkExist = True
         ,dict_map = fTrans
+        ,**opt_ram
         ,**fTrans_opt
     )
 
@@ -796,7 +814,6 @@ def aggrByPeriod(
         .sort_values([indat_col_file, indat_col_date, indat_col_dirseq])
         .groupby([indat_col_file, indat_col_date], as_index = False)
         .head(1)
-        .copy(deep=True)
     )
     n_files = len(exist_calcDat)
 
@@ -821,7 +838,7 @@ def aggrByPeriod(
     if len(nonexist_calcDat):
         #500. Output a global data frame storing the information of the missing data files
         # sys._getframe(1).f_globals.update({ miss_files : parse_calcDat[~parse_calcDat['datPtn.chkExist']].copy(deep=True) })
-        outDict.update({ miss_files : nonexist_calcDat.copy(deep=True) })
+        outDict.update({ miss_files : nonexist_calcDat })
 
         #999. Abort the process
         warn(f'[{LfuncName}]Some data files do not exist! Check the data frame [{miss_files}] in the output result!')
@@ -843,7 +860,21 @@ def aggrByPeriod(
     if ABP_errors: return(outDict)
 
     #500. Import the source data within the Actual Calculation Period
-    #510. Define the function for reading one data file per batch
+    #520. Column filter during loading data
+    def h_keepVar(df : pd.DataFrame, cols : Iterable):
+        if keep_all_col:
+            return(df.columns)
+        else:
+            keepVars = (
+                pd.concat([vecStack(v) for v in cols])
+                .astype({'.val.' : 'O'})
+                .assign(**{
+                    '.val.' : lambda x: x['.val.'].apply(h_convStr)
+                })
+            )
+            return(df.head(0).rename(columns = partial(h_convStr, func = str.upper)).columns.isin(keepVars['.val.']))
+
+    #540. Define the function for reading one data file per batch
     def ABP_parallel(i):
         #100. Set parameters
         #We use [df.iat()] in case its index is nonlexical i.e. non-ordinal
@@ -855,6 +886,13 @@ def aggrByPeriod(
         inDat_type = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(indat_col_type)]
         L_date = exist_calcDat.iat[i, exist_calcDat.columns.get_loc('dates')]
         L_d_curr = L_date.strftime('%Y%m%d')
+        if isinstance(fImp_opt, dict):
+            _opt_this = fImp_opt.get(inDat_type,{})
+        else:
+            #Quote: https://stackoverflow.com/questions/988228/convert-a-string-representation-of-a-dictionary-to-a-dictionary/
+            _opt_this = exist_calcDat.iat[i, exist_calcDat.columns.get_loc(fImp_opt_col[0])]
+            if not isinstance(_opt_this, dict):
+                _opt_this = ast.literal_eval(_opt_this)
 
         #300. Prepare the function to apply to the process list
         dataIO.add(inDat_type)
@@ -863,25 +901,19 @@ def aggrByPeriod(
             #For unification purpose, some APIs would omit below arguments
             ,'key' : inDat_df
         }
-        modifyDict(_opt_in, fImp_opt.get(inDat_type,{}), inplace = True)
+        modifyDict(_opt_in, _opt_this, inplace = True)
 
         #309. Debug mode
         if fDebug:
             print(f'[{LfuncName}]Loading from file: <{inDat}>')
-
-        #400. Create a list of unique column names for selection from the input data
-        if keep_all_col:
-            select_at = lambda x: x.columns
-        else:
-            select_at = list(Counter(byVar + copyVar + [aggrVar]).keys())
 
         #500. Call functions to import data from current path
         #590. Load the data and conduct the requested transformation
         imp_data = (
             dataIO[inDat_type].pull(**_opt_in)
             #100. Only select necessary columns
-            .rename(str.upper, axis = 1)
-            .loc[:, select_at].copy(deep=True)
+            .rename(h_convStr, axis = 1)
+            .loc[:, partial(h_keepVar, cols = [byVar, copyVar, aggrVar])]
             #300. Fill [NaN] values with 0 to avoid meaningless results
             .fillna(value = { aggrVar : 0 })
             #900. Create identifier of current data within the time series
@@ -971,17 +1003,10 @@ def aggrByPeriod(
     #610. Data for the Leading Period
     #The values in this data should be subtracted from those in the Actual Calculation Period
     if fLeadCalc:
-        #300. Create a list of unique column names for selection from the input data
-        if keep_all_col:
-            sel_LP = lambda x: x.columns
-        else:
-            sel_LP = list(Counter(byVar + copyVar + ['.CalcLead.']).keys())
-
         #500. Only retrieve certain columns for Leading Period
         ABP_set_LP = (
             ABP_LeadPeriod.get('data')
-            .loc[:, sel_LP]
-            .copy(deep=True)
+            .loc[:, partial(h_keepVar, cols = [byVar, copyVar, '.CalcLead.'])]
             .fillna(value = { '.CalcLead.' : 0 })
             .assign(**{
                 '.Period' : 'L'
@@ -1005,19 +1030,12 @@ def aggrByPeriod(
         modifyDict(_opt_chk, chkDat_opt.get(chkDatType,{}), inplace = True)
 
         #500. Call functions to import data from current path
-        #510. Create a list of unique column names for selection from the input data
-        if keep_all_col:
-            sel_CP = lambda x: x.columns
-        else:
-            sel_CP = list(Counter(byVar + copyVar + [chkDatVar]).keys())
-
         #590. Load the data and conduct the requested transformation
         ABP_set_CP = (
             dataIO[chkDatType].pull(**_opt_chk)
             #100. Only select necessary columns
-            .rename(str.upper, axis = 1)
-            .loc[:, sel_CP]
-            .copy(deep=True)
+            .rename(h_convStr, axis = 1)
+            .loc[:, partial(h_keepVar, cols = [byVar, copyVar, chkDatVar])]
             .assign(**{
                 '.Period' : 'C'
                 ,'.date' : 'Checking'
@@ -1034,10 +1052,10 @@ def aggrByPeriod(
 
     #700. Aggregate by the provided function
     #710. Create a list of unique column names for sorting in the input data
-    sort_cols = list(Counter(byVar + ['.N_ORDER']).keys())
+    sort_cols = list(set(byVar + ['.N_ORDER']))
 
     #730. Create a group of unique column names for eliminating excessive ones
-    grp_cols = list(Counter(byVar + ['.Period', '.date']).keys())
+    grp_cols = list(set(byVar + ['.Period', '.date']))
 
     #760. Identify the columns to <copy> to the result, i.e. retain their respective values at the last record
     if keep_all_col:

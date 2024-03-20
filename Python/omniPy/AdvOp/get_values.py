@@ -9,9 +9,10 @@ def get_values(
     *arg
     ,inplace : bool = True
     ,instance : Any = object
+    ,scope : str | list[str] = ['f_locals','f_globals']
     ,**kw
-) -> 'Get the values by regarding the provided [values] as variables':
-    #000.   Info.
+) -> Any:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -27,28 +28,33 @@ def get_values(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |arg        :   Any positional arguments that represent [variable names] for search                                                 #
-#   |               [IMPORTANT] Function will NOT validate whether these values can act as [variable name] by syntax                    #
-#   |inplace    :   Whether to keep the output the same as the input values if any cannot be found as [variable names] from the frames  #
-#   |               [True       ] <Default> Keep the input values as output if they cannot be identified as [variables]                 #
-#   |               [False      ]           Output [None] for those which cannot be identified as [variables]                           #
-#   |instance   :   Instance of which to identify the object, or callable if we need to find one                                        #
-#   |               [<see def.> ] <Default> Search for all objects                                                                      #
-#   |               [instance   ]           Anyone that can be used in function <isinstance>                                            #
-#   |               [callable   ]           Search for callable, as this is actually not an instance                                    #
-#   |kw         :   Various named parameters, whose [names] are used as names in output, while their [values] will be used to search as #
-#   |                [variable names] within all frames along the call stacks                                                           #
+#   |arg         :   Any positional arguments that represent [variable names] for search                                                #
+#   |                [IMPORTANT] Function will NOT validate whether these values can act as [variable name] by syntax                   #
+#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as [variable names] from the frames #
+#   |                [True        ] <Default> Keep the input values as output if they cannot be identified as [variables]               #
+#   |                [False       ]           Output [None] for those which cannot be identified as [variables]                         #
+#   |instance    :   Instance of which to identify the object, or callable if we need to find one                                       #
+#   |                [<see def.>  ] <Default> Search for all objects                                                                    #
+#   |                [instance    ]           Anyone that can be used in function <isinstance>                                          #
+#   |                [callable    ]           Search for callable, as this is actually not an instance                                  #
+#   |scope       :   Which scope to search for the variables in the frames along the call stacks                                        #
+#   |                IMPORTANT: This must be provided a sequence or a single string, indicating the search order of the scopes          #
+#   |                [see def.    ] <Default> Search for the variables in <f_locals> and then <f_globals> until the last try            #
+#   |                [f_locals    ]           Only search for the variables in <f_locals> of every frame along the call stacks          #
+#   |                [f_globals   ]           Only search for the variables in <f_globals> of every frame along the call stacks         #
+#   |kw          :   Various named parameters, whose [names] are used as names in output, while their [values] will be used to search as#
+#   |                 [variable names] within all frames along the call stacks                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Various>  :   This function output different values in below convention:                                                          #
-#   |               [1] If [kw] is provided with at least one element, return a [dict], with:                                           #
-#   |                   [names ] [str('.arg' + pos. num)] for [positional arguments] and [keys] for [kw]                                #
-#   |                   [values] when NOT found:                                                                                        #
-#   |                            [None          ] if [inplace==False]                                                                   #
-#   |                            [input values  ] if [inplace==True]                                                                    #
-#   |               [2] If there is only one positional argument provided, return the value assigned to it if any                       #
-#   |               [3] In other cases (i.e. multiple positional arguments), return a [tuple] with values in the same order as provided #
+#   |<Various>   :   This function output different values in below convention:                                                         #
+#   |                [1] If [kw] is provided with at least one element, return a [dict], with:                                          #
+#   |                    [names ] [str('.arg' + pos. num)] for [positional arguments] and [keys] for [kw]                               #
+#   |                    [values] when NOT found:                                                                                       #
+#   |                             [None          ] if [inplace==False]                                                                  #
+#   |                             [input values  ] if [inplace==True]                                                                   #
+#   |                [2] If there is only one positional argument provided, return the value assigned to it if any                      #
+#   |                [3] In other cases (i.e. multiple positional arguments), return a [tuple] with values in the same order as provided#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -67,6 +73,11 @@ def get_values(
 #   | Log  |[1] Introduce new argument <instance> to indicate which instance or <callable> is to be retrieved in terms of the searching #
 #   |      |     priority, i.e. from the closest stack to the top one                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240203        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <scope> to enable searching for the variable in <f_globals> of the frames as well                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -76,7 +87,7 @@ def get_values(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, collections                                                                                                               #
+#   |   |sys, collections, typing                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -93,6 +104,12 @@ def get_values(
     #012. Parameter buffer
     if inplace is None: inplace = True
     if not isinstance( inplace , bool ): inplace = True
+    vld_scope = ['f_locals','f_globals']
+    if isinstance(scope, str):
+        scope = [scope]
+    vfy_scope = [ s for s in scope if s not in vld_scope ]
+    if len(vfy_scope):
+        raise ValueError(f'[{LfuncName}][scope] must be among {str(vld_scope)}!')
     if (not arg) and (not kw): return()
 
     #050. Local parameters
@@ -103,14 +120,21 @@ def get_values(
     if kw: dict_rest.update(kw)
 
     #100. Search for the input values within all frames along the call stacks
-    frame = sys._getframe()
+    frame = sys._getframe(1)
     #Avoid errors to be raised when reaching the global environment
     #Quote: https://stackoverflow.com/questions/39265823/python-sys-getframe
     while len(dict_rest) and frame:
         #100. Update the [dict] for output and the [list] for pop-out when found
         for k,v in dict_rest.items():
             #100. Try to get the value for the input [value] by regarding it as [variable name] in current frame
-            val = frame.f_locals.get(v)
+            #[ASSUMPTION]
+            #[1] When searching for a variable in both scopes, while it exists in both, the search result is only from <f_globals>
+            #     of current frame <Python <= 3.11.2>
+            val = [ obj for s in scope if (obj := frame.__getattribute__(s).get(v)) is not None ]
+            if len(val) > 0:
+                val = val[0]
+            else:
+                val = None
 
             #300. Verify its instance
             if instance is callable:
@@ -202,6 +226,7 @@ if __name__=='__main__':
 
     testf()
     print(v_rst)
+    # {'.arg1': 3, 'testvar1': 2, '.arg0': 'ff', 'testvar2': 'ee'}
 
     #200. Test output with [inplace==False]
     v_rst2 = {}
@@ -213,12 +238,15 @@ if __name__=='__main__':
 
     testf2()
     print(v_rst2)
+    # {'.arg1': 3, 'testvar1': 2, '.arg0': None, 'testvar2': None}
 
     #300. Test output with only one input value
     print( get_values('aa') )
+    # 1
 
     #400. Test output with only positional arguments
     print( get_values(*v_list) )
+    # ('ff', 3)
 
     #700. Test real case
     fTrans = {
@@ -232,6 +260,7 @@ if __name__=='__main__':
 
     get_list_val = get_values(**fTrans)
     print(get_list_val)
+    # {'&L_curdate.': '20160310', '&L_curMon.': '201603', '&c_date\\.': '20160310', '&L_prevMon.': 'G_m_prev'}
 
     #800. Test when the variable names are stored in a [collections.abc.Iterable]
     v_df = pd.DataFrame({ 'vars':['aa' , 'ee'] })

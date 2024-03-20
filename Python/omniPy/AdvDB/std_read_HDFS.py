@@ -101,14 +101,16 @@ def std_read_HDFS(
     }
 
     #550. In case the raw API takes any variant keywords, we also identify them
+    #[ASSUMPTION]
+    #[1] <format> argument is prevented from provision in <pandas>
     if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
-        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw and k not in ['usecols','columns','path_or_buf'] }
+        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw and k not in ['usecols','columns','path_or_buf','format'] }
     else:
         kw_varkw = {}
 
     #590. Create the final keyword arguments for calling the function
     kw_final = {
-        **{ k:v for k,v in kw.items() if k in kw_raw and k not in ['usecols','columns','path_or_buf'] }
+        **{ k:v for k,v in kw.items() if k in kw_raw and k not in ['usecols','columns','path_or_buf','format'] }
         ,**kw_varkw
     }
 

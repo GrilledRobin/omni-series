@@ -1,46 +1,36 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
+#   |This function acts as a [helper] one to standardize the writing of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [...] that have no negative impact to current function call        #
+#   |[1] We could pass various parameters into one single expression [kw] that have no negative impact to current function call         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
-#   |key         :   The name of the data.frame stored in the RData to read into RAM                                                    #
-#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
-#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
-#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
+#   |indat       :   <list> with its <names> as the literal names (as character string) to be exported, while the <values> as the       #
+#   |                 corresponding objects.                                                                                            #
+#   |outfile     :   PathLike object indicating the full path of the exported data file                                                 #
+#   |funcConv    :   Function to mutate the input data frame before exporting it                                                        #
+#   |                [<see def.>  ] <Default> Do not apply further process upon the data                                                #
+#   |                [function    ]           Function that takes only one positional argument with data.frame type                     #
+#   |kw_save     :   Named parameters for <save>, excluding <...>, <list>, <file>, <envir> as they are already provided                 #
+#   |                 [IMPORTANT   ] To ensure the same behavior, when any API that is designed to push the data in {key:value} fashion #
+#   |                                 , please set the same argument to differ the process                                              #
 #   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
+#   |<int>       :   Return code from the encapsulated function call                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20210503        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20240215        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20231209        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce argument <funcConv> to enable mutation of the loaded data and thus save RAM consumption                       #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20240213        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce argument <usecols> to filter columns before applying <funcConv> for standardization purpose                   #
-#   |      |[2] The provided column list is matched to all columns in the source data in the first place, so that anyone that is NOT in #
-#   |      |     the source can be ignored, rather than triggering exception                                                            #
-#   |      |[4] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and <k> rows      #
-#   |      |[5] Superfluous arguments are now eliminated without triggering exception                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -51,16 +41,19 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |glue, magrittr, rlang, dplyr, tidyselect                                                                                       #
+#   |   |rlang, glue                                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |300.   Dependent functions                                                                                                         #
+#   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |   |get_values                                                                                                                 #
+#   |   |   |gen_locals                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	glue, magrittr, rlang, dplyr, tidyselect
+	rlang, glue
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -69,108 +62,110 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-#We should use the pipe operands supported by below package
-library(magrittr)
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-std_read_R <- function(
-	infile
-	,key
+std_write_R <- function(
+	indat
+	,outfile
 	,funcConv = function(x) x
+	,kw_save = list()
 	,...
 ){
-	#001. Handle parameters
+	#010. Parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
 	LfuncName <- deparse(sys.call()[[1]])
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	if (missing(key)) stop(glue::glue('[{LfuncName}][key] is not provided!'))
+
+	#012. Handle the parameter buffer.
+	if (!all(typeof(indat) == 'list')) {
+		stop(glue::glue('[{LfuncName}]<indat> must be a named list, while <{toString(typeof(indat))}> is given!'))
+	}
 
 	#013. Define the local environment.
-	kw <- rlang::list2(...)
+	rc <- 0
 	myenv <- new.env()
 
-	#100. Determine the <usecols>
-	usecols <- kw[['usecols']] %>% unlist() %>% {.[!is.na(.)]}
-	has_usecols <- !is.null(usecols)
-
-	#500. Overwrite the keyword arguments
-	params_load <- formals(load)
+	#500. Overwrite the keyword arguments for writing the data
+	params_save <- formals(save)
 
 	#510. Obtain all defaults of keyword arguments of the function
-	kw_raw <- params_load[!names(params_load) %in% c('file','envir', '...')]
-
-	#550. In case the raw API takes any variant keywords, we also identify them
-	if ('...' %in% names(params_load)) {
-		kw_varkw <- kw[!names(kw) %in% c(names(kw_raw),'file','envir','usecols')]
-	} else {
-		kw_varkw <- list()
-	}
+	#[ASSUMPTION]
+	#[1] We do not retrieve the VAR_KEYWORD args of the function, as it is designed for other purpose
+	kw_raw_save <- params_save[!names(params_save) %in% c('list','file','envir','...')]
 
 	#590. Create the final keyword arguments for calling the function
-	kw_final <- c(
-		kw[(names(kw) %in% names(kw_raw)) & !(names(kw) %in% c('file','envir','usecols'))]
-		,kw_varkw
+	kw_fnl_save <- kw_save[(names(kw_save) %in% names(kw_raw_save)) & !(names(kw_save) %in% c('list','file','envir'))]
+
+	#600. Convert the data as per requested and save them to temporary frame for later output
+	rstOut <- sapply(
+		indat
+		,function(x) funcConv(x)
+		,simplify = F
+		,USE.NAMES = T
 	)
 
-	#700. Load the data directly
-	vec_files <- do.call(
-		load
-		,c(
-			list(
-				infile
-				,envir = myenv
-			)
-			,kw_final
-		)
-	)
+	#690. Create corresponding local variables in temporary frame
+	do.call(gen_locals, c(rstOut, list(frame = myenv)))
 
-	#800. Filter the columns
-	rstOut <- myenv[[key]]
-	if (has_usecols) {
-		rstOut %<>% dplyr::select(tidyselect::any_of(usecols))
-	}
+	#800. Write the data with API
+	do.call(save, c(list(list = names(rstOut), file = outfile, envir = myenv), kw_fnl_save))
 
 	#900. Clear the temporary environment
 	rm(myenv)
 
-	#999. Return the table
-	return(rstOut)
+	#999. Return the result
+	return(rc)
 }
 
 #[Full Test Program;]
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#100. Create data frame
-		testdf <- data.frame(
-			v1 = c(0,1)
-			,v2 = c('a','b')
-			,stringsAsFactors = F
+		#010. Load user defined functions
+		source('D:\\R\\autoexec.r')
+
+		library(magrittr)
+
+		#100. Create data in RAM
+		aaa <- data.frame(a = c(1,3,5), b = c(5,7,8))
+		bbb <- data.frame(b = c(9,7,5), d = c(7,5,3))
+
+		#200. Write the table to harddisk
+		outf <- file.path(getwd(), 'vfyR.RData')
+		rc <- std_write_R(
+			list(
+				'aaa' = aaa
+				,'bbb' = bbb
+			)
+			,outf
+			,funcConv = function(x){x %>% dplyr::select(-tidyselect::any_of('b'))}
 		)
-		testloc <- getwd()
-		testfile <- file.path(testloc, 'testloadR.RData')
-		save('testdf', file = testfile)
 
-		#200. Load the data, ignoring superfluous arguments
-		vfydf1 <- std_read_R(testfile, 'testdf', nonsense = 'abc')
-		lapply(vfydf1, class)
+		#300. Verify the written data
+		vfyaaa <- std_read_R(outf, 'aaa')
+		#   a
+		# 1 1
+		# 2 3
+		# 3 5
 
-		#300. Load the data with specific columns, ignoring those not existing in the source
-		vfydf2 <- std_read_R(testfile, 'testdf', usecols = c('v1','v3'))
-		lapply(vfydf2, class)
+		vfybbb <- std_read_R(outf, 'bbb')
+		#   d
+		# 1 7
+		# 2 5
+		# 3 3
 
-		#900. Load the data by requesting a column that does not exist
-		vfyempty <- std_read_R(testfile, 'testdf', usecols = c('v3'))
-		class(vfyempty)
-		# [1] "data.frame"
-		str(vfyempty)
-		# 'data.frame':	2 obs. of  0 variables
+		#309. Check whether the input object is modified
+		print(bbb)
+		#   b d
+		# 1 9 7
+		# 2 7 5
+		# 3 5 3
 
 		#990. Purge
-		if (file.exists(testfile)) file.remove(testfile)
+		if (file.exists(outf)) rc <- file.remove(outf)
 
 	}
 }

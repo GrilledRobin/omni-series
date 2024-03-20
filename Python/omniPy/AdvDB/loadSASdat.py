@@ -45,17 +45,17 @@ def loadSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inFile     :   The input SAS dataset full path, including the file extension, such as [a.sas7bdat]                                 #
-#   |               [IMPORTANT]: This parameter is the same as [filename_path] of the function [pyreadstat.read_sas7bdat]               #
-#   |dt_map     :   Mapping table to convert the SAS datetime values into [datetime]                                                    #
-#   |               [ <dict>     ]  <Default> Check the function definition for details                                                 #
-#   |kw         :   Various named parameters for [pyreadstat.read_sas7bdat] during import; see its official document                    #
+#   |inFile      :   The input SAS dataset full path, including the file extension, such as [a.sas7bdat]                                #
+#   |                [IMPORTANT]: This parameter is the same as [filename_path] of the function [pyreadstat.read_sas7bdat]              #
+#   |dt_map      :   Mapping table to convert the SAS datetime values into [datetime]                                                   #
+#   |                [ <dict>     ]  <Default> Check the function definition for details                                                #
+#   |kw          :   Various named parameters for [pyreadstat.read_sas7bdat] during import; see its official document                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[<tuple>]  :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):       #
-#   |               [pd.DataFrame] The data frame corresponding to the input SAS dataset                                                #
-#   |               [meta        ] pyr.metadata_container                                                                               #
+#   |[<tuple>]   :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):      #
+#   |                [pd.DataFrame] The data frame corresponding to the input SAS dataset                                               #
+#   |                [meta        ] pyr.metadata_container                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

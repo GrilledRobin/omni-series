@@ -52,42 +52,50 @@ def writeSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDat      :   Data frame to be exported, within which the date/time like columns will be converted by certain arguments           #
-#   |               [IMPORTANT] Only these dtypes can be recognized by SAS: <str>, <int>, <float>                                       #
-#   |outFile    :   PathLike object indicating the full path of the output file, including file extension <sas7bdat>, although it is    #
-#   |                not verified but removed imperatively, since SAS creates its extension by all means                                #
-#   |metaVar    :   Data frame that defines the meta information for SAS to import CSV datafile, see the example of the requirement     #
-#   |               [None        ] <Default> Function infers the meta config                                                            #
-#   |               If a data frame is provided, it should contain below columns                                                        #
-#   |               [NAME        ] <str    > Column name in SAS syntax                                                                  #
-#   |               [LABEL       ] <str    > [Optional] Column label in SAS syntax                                                      #
-#   |               [TYPE        ] <int    > Variable type, 1 for numeric, 2 for character                                              #
-#   |               [VARNUM      ] <int    > Position of variables in the SAS dataset, as well as in the interim CSV file               #
-#   |               [LENGTH      ] <int    > Variable length of the actual storage in SAS dataset                                       #
-#   |               [FORMAT      ] <str    > Format name in SAS syntax                                                                  #
-#   |               [FORMATL     ] <int    > Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>                        #
-#   |               [FORMATD     ] <int    > Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>                       #
-#   |               [INFORMAT    ] <str    > [Omitted] Informat name in SAS syntax                                                      #
-#   |               [INFORML     ] <int    > [Omitted] Informat length in SAS syntax, i.e. <w> in the definition <INFORMATw.d>          #
-#   |               [INFORMD     ] <int    > [Omitted] Informat decimal in SAS syntax, i.e. <d> in the definition <INFORMATw.d>         #
-#   |dt_map     :   Mapping table to convert the SAS datetime values into [datetime]                                                    #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |nlsMap     :   Mapping table to call SAS in native environment, see the directory <sasHome\nls>                                    #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |encoding   :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console    #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |sasReg     :   Path of the SAS installation in Windows Registry (to search for SAS executable)                                     #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |sasOpt     :   Additional options during the call to SAS executable                                                                #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
-#   |wd         :   Directory of the temporary files to reside                                                                          #
-#   |               [ <see def.> ] <Default> See definition of the function                                                             #
+#   |inDat       :   Data frame to be exported, within which the date/time like columns will be converted by certain arguments          #
+#   |                [IMPORTANT] Only these dtypes can be recognized by SAS: <str>, <int>, <float>                                      #
+#   |outFile     :   PathLike object indicating the full path of the output file, including file extension <sas7bdat>, although it is   #
+#   |                 not verified but removed imperatively, since SAS creates its extension by all means                               #
+#   |metaVar     :   Data frame that defines the meta information for SAS to import CSV datafile, see the example of the requirement    #
+#   |                [None        ] <Default> Function infers the meta config                                                           #
+#   |                If a data frame is provided, it should contain below columns                                                       #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |dtype      |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |VARNUM          |int        | Position of variables in the SAS dataset, as well as in the interim CSV file        #
+#   |                |NAME            |str        | Column name in SAS syntax                                                           #
+#   |                |FORMAT          |str        | Format name in SAS syntax                                                           #
+#   |                |TYPE            |int        | Variable type, 1 for numeric, 2 for character                                       #
+#   |                |LENGTH          |int        | Variable length of the actual storage in SAS dataset                                #
+#   |                |FORMATL         |int        | Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>                 #
+#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
+#   |                |                |           |              precision is always kept maximum during conversion                     #
+#   |                |FORMATD         |int        | Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>                #
+#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
+#   |                |                |           |              precision is always kept maximum during conversion                     #
+#   |                |LABEL           |str        | [Optional] Column label in SAS syntax                                               #
+#   |                |INFORMAT        |str        | [Omitted] Informat name in SAS syntax                                               #
+#   |                |INFORML         |str        | [Omitted] Informat length in SAS syntax, i.e. <w> in the definition <INFORMATw.d>   #
+#   |                |INFORMD         |str        | [Omitted] Informat decimal in SAS syntax, i.e. <d> in the definition <INFORMATw.d>  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |dt_map      :   Mapping table to define the format for the SAS datetime values                                                     #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
+#   |nlsMap      :   Mapping table to call SAS in native environment, see the directory <sasHome\nls>                                   #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
+#   |encoding    :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console   #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
+#   |sasReg      :   Path of the SAS installation in Windows Registry (to search for SAS executable)                                    #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
+#   |sasOpt      :   Additional options during the call to SAS executable                                                               #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
+#   |wd          :   Directory of the temporary files to reside                                                                         #
+#   |                [ <see def.> ] <Default> See definition of the function                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<int>      :   Integer return code from the communication with Windows Command Console during SAS programm execution               #
-#   |               [0           ] Execution successful                                                                                 #
-#   |               [non-0 int   ] Failure                                                                                              #
+#   |<int>       :   Integer return code from the communication with Windows Command Console during SAS programm execution              #
+#   |                [0           ] Execution successful                                                                                #
+#   |                [non-0 int   ] Failure                                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -472,6 +480,7 @@ if __name__=='__main__':
     import sys
     import os
     import pandas as pd
+    import numpy as np
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )

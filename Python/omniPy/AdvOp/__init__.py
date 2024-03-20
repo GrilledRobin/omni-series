@@ -7,6 +7,7 @@
 
 #100.   Import the local modules.
 from .thisFunction import thisFunction
+from .ls_frame import ls_frame
 from .Trie import Trie
 from .apply_MapVal import apply_MapVal
 from .debug_comp_datcols import debug_comp_datcols
@@ -53,7 +54,7 @@ __all__ = [
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'strNestedParser', 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
-    , 'thisFunction'
+    , 'thisFunction', 'ls_frame'
     , 'vecStack', 'vecUnstack'
     , 'SingletonMeta'
     , 'customLog', 'PrintToLog'

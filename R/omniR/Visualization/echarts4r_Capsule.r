@@ -706,9 +706,8 @@ echarts4r_Capsule <- function(
 	}
 
 	#600. Generate the charts
-	ch_html <- rlang::exec(
-		mapply
-		,h_charts
+	ch_html <- mapply(
+		h_charts
 		, vec_min, vec_max, vec_sym, y_min, y_max
 		, barHeight, barWidth, barBorderRadius, col_bar, col_grad
 		, symSize, col_sym

@@ -6,13 +6,14 @@ import warnings
 import datetime as dt
 import numpy as np
 import pandas as pd
+from functools import partial
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from omniPy.Dates import asDates, UserCalendar, ObsDates, intnx
-from omniPy.AdvOp import gen_locals, modifyDict
-from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi, aggrByPeriod
+from omniPy.AdvOp import modifyDict, vecStack
+from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi, aggrByPeriod, validateDMCol
 
 def kfCore_ts_agg(
     inKPICfg : pd.DataFrame = None
@@ -20,7 +21,7 @@ def kfCore_ts_agg(
     ,dateBgn : str | dt.date = None
     ,dateEnd : str | dt.date = None
     ,chkBgn : str | dt.date = None
-    ,_parallel : bool = True
+    ,_parallel : bool = False
     ,cores : int = 4
     ,aggrVar : str = 'A_KPI_VAL'
     ,byVar : Union[str, Iterable[str]] = None
@@ -59,7 +60,7 @@ def kfCore_ts_agg(
 #   |[1] Naming: <K>PI <F>actory <CORE> function to provide <T>ime <S>eries algorithms in terms of <AGG>regation methods                #
 #   |[2] KPIs listed in the mapper (on both sides) MUST have been registered in <inKPICfg>                                              #
 #   |[3] <D_BGN> of the aggregated KPI must be equal to or later than that of its corresponding Daily Snapshot KPI                      #
-#   |[4] Since <AggrByPeriod> does not verify <D_BGN>, please ensure NO DATA EXISTS for the registered Daily Snapshot KPIs before their #
+#   |[4] Since <aggrByPeriod> does not verify <D_BGN>, please ensure NO DATA EXISTS for the registered Daily Snapshot KPIs before their #
 #   |     respective <D_BGN>; otherwise those existing datasets will be inadvertently involved during aggregation                       #
 #   |[5] This function is the low level interface of calculation over the period during time series aggregation                         #
 #   |[6] One can realize various aggregation algorithms by providing customized <dateBgn>, <dateEnd> and <chkBgn>, with the common      #
@@ -81,146 +82,151 @@ def kfCore_ts_agg(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |110.   Input dataset information                                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKPICfg   :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                            #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |D_BGN           |No         | Beginning date of the KPI data file existence                                        #
-#   |               |D_END           |No         | Ending date of the KPI data file existence                                           #
-#   |               |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                              #
-#   |               |C_KPI_SHORTNAME |No         | Name of the KPI to verify the uniqueness of KPI ID, should be the same for each KPI  #
-#   |               |                |           |  if multiple candidate paths are defined for storage                                 #
-#   |               |F_KPI_INUSE     |No         | Column of type <int> indicating whether the KPI is in use for current database, as   #
-#   |               |                |           |  filter condition in the process                                                     #
-#   |               |C_KPI_FILE_TYPE |No         | File type to determine the API for data I/O process, see <DataIO>                    #
-#   |               |N_LIB_PATH_SEQ  |No         | Priority to determine the candidate paths when loading and writing data files, the   #
-#   |               |                |           |  lesser the higher. E.g. 1 represents the primary path, 2 indicates the backup       #
-#   |               |                |           |  location of historical data files                                                   #
-#   |               |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>       #
-#   |               |                |           | It can be empty for data type <RAM>                                                  #
-#   |               |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                           #
-#   |               |DF_NAME         |Yes        | For some cases, such as [inDatType=HDFS] there should be such an additional field    #
-#   |               |                |           |  indicating the name of data.frame stored in the data file (i.e. container)          #
-#   |               |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [HDFS]               #
-#   |               |options         |Yes        | Literal string representation of <dict> representing the options used for the API    #
-#   |               |                |           |  when loading and writing data files, see <DataIO>                                   #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#   |                                     variable [trans_var].                                                                         #
-#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#   |                                              translated by the value of Python variable [G_d_curr] in the parent frame            #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |mapper     :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                           #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |mapper_fr       |No         | ID of (usually) Daily Snapshot KPI, in the same type as <C_KPI_ID> in <inKPICfg>     #
-#   |               |mapper_to       |No         | ID of aggregated KPI, in the same type as <C_KPI_ID> in <inKPICfg>                   #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
+#   |inKPICfg    :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Nullable?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |D_BGN           |No         | Beginning date of the KPI data file existence                                       #
+#   |                |D_END           |No         | Ending date of the KPI data file existence                                          #
+#   |                |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                             #
+#   |                |F_KPI_INUSE     |No         | Column of type <int> indicating whether the KPI is in use for current database, as  #
+#   |                |                |           |  filter condition in the process                                                    #
+#   |                |C_KPI_FILE_TYPE |No         | File type to determine the API for data I/O process, see <DataIO>                   #
+#   |                |N_LIB_PATH_SEQ  |No         | Priority to determine the candidate paths when loading and writing data files, the  #
+#   |                |                |           |  lesser the higher. E.g. 1 represents the primary path, 2 indicates the backup      #
+#   |                |                |           |  location of historical data files                                                  #
+#   |                |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>      #
+#   |                |                |           | It can be empty for data type <RAM>                                                 #
+#   |                |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                          #
+#   |                |DF_NAME         |Yes        | For some cases, such as [inDatType=HDFS] there should be such an additional field   #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
+#   |                |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [HDFS]              #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
+#   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
+#   |                                      variable [trans_var].                                                                        #
+#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
+#   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
+#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
+#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
+#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |mapper      :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                          #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Nullable?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |mapper_fr       |No         | ID of (usually) Daily Snapshot KPI, in the same type as <C_KPI_ID> in <inKPICfg>    #
+#   |                |mapper_to       |No         | ID of aggregated KPI, in the same type as <C_KPI_ID> in <inKPICfg>                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#   |               [None            ] <Default> For time series process, please ensure this argument is manually defined, otherwise    #
-#   |                                             the result is highly unexpected                                                       #
-#   |fTrans_opt :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                         #
-#   |               [{}              ] <Default> Use default options in [apply_MapVal]                                                  #
-#   |               [<dict>          ]           Use alternative options as provided by a dict, see documents of [apply_MapVal]         #
+#   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
+#   |                [None            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
+#   |                                              the result is highly unexpected                                                      #
+#   |fTrans_opt  :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                        #
+#   |                [{}              ] <Default> Use default options in [apply_MapVal]                                                 #
+#   |                [<dict>          ]           Use alternative options as provided by a dict, see documents of [apply_MapVal]        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones  #
-#   |               [True            ] <Default> Use multiple CPU cores to load the data files in parallel                              #
-#   |               [False           ]           Load the data files sequentially                                                       #
-#   |cores      :   Number of system cores to read the data files in parallel                                                           #
-#   |               [4               ] <Default> No need when [_parallel=False]                                                         #
+#   |_parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones #
+#   |                [False           ]  <Default> Load the data files sequentially                                                     #
+#   |                [True            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
+#   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
+#   |                                               that RAM is the requested location for search                                       #
+#   |cores       :   Number of system cores to read the data files in parallel                                                          #
+#   |                [4               ] <Default> No need when [_parallel=False]                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn    :   Beginning of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please     #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |dateEnd    :   Ending of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please    #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |160.   Retrieval of previously aggregated result for Checking Period                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |chkBgn     :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please        #
-#   |                follow the syntax of this function during input                                                                    #
-#   |               [None            ] <Default> Function will set it the same as [dateBgn]                                             #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please       #
+#   |                 follow the syntax of this function during input                                                                   #
+#   |                [None            ] <Default> Function will set it the same as [dateBgn]                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |byVar      :   The list/vector of column names that are to be used as the group to aggregate the KPI                               #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |               [list[col. name] ]           <list> of column names                                                                 #
-#   |copyVar    :   The list/vector of column names that are to be copied during the aggregation                                        #
-#   |               [Note 1] Only those values in the Last Existing observation/record can be copied to the output                      #
-#   |               [None            ] <Default> There is no additional column to be retained for the output                            #
-#   |               [_all_           ]           Retain all related columns from all sources                                            #
-#   |               [list[col. name] ]           <list> of column names                                                                 #
-#   |aggrVar    :   The single column name in the KPI data file that represents the value to be applied by function [funcAggr]          #
-#   |               [A_KPI_VAL       ] <Default> Function will aggregate this column                                                    #
-#   |tableVar   :   The single column name in the KPI data file that represents the table creation date as Time Series Convention       #
-#   |               [D_TABLE         ] <Default> Function will update this column with <dateEnd>                                        #
+#   |byVar       :   The list/vector of column names that are to be used as the group to aggregate the KPI                              #
+#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |                [list[col. name] ]           <list> of column names                                                                #
+#   |copyVar     :   The list/vector of column names that are to be copied during the aggregation                                       #
+#   |                [Note 1] Only those values in the Last Existing observation/record can be copied to the output                     #
+#   |                [None            ] <Default> There is no additional column to be retained for the output                           #
+#   |                [_all_           ]           Retain all related columns from all sources                                           #
+#   |                [list[col. name] ]           <list> of column names                                                                #
+#   |aggrVar     :   The single column name in the KPI data file that represents the value to be applied by function [funcAggr]         #
+#   |                [A_KPI_VAL       ] <Default> Function will aggregate this column                                                   #
+#   |tableVar    :   The single column name in the KPI data file that represents the table creation date as Time Series Convention      #
+#   |                [D_TABLE         ] <Default> Function will update this column with <dateEnd>                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |180.   Indicators and methods for aggregation                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |genPHMul   :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with     #
-#   |                proper Multipliers, to minimize the system effort                                                                  #
-#   |               [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays #
-#   |                                            in terms of the indicator [calcInd]                                                    #
-#   |                                            [IMPORTANT] Function will ignore any existing data on Public Holidays                  #
-#   |               [False           ]           Function will NOT generate pseudo data for Public Holidays                             #
-#   |                                            [IMPORTANT] Function will raise error if there is no existing data on Public Holidays  #
-#   |calcInd    :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                           #
-#   |               [C               ] <Default> Conduct calculation based on Calendar Days                                             #
-#   |               [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect  #
-#   |               [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect #
-#   |funcAggr   :   The function to aggregate the input time series data. It should be provided a [function]                            #
-#   |               [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions          #
-#   |               [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed      #
-#   |               [<other aggr.>   ]           Other aggregation functions that are supported in current environment                  #
-#   |                                            [IMPORTANT] One can define specific aggregation function and use it here               #
+#   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
+#   |                 proper Multipliers, to minimize the system effort                                                                 #
+#   |                [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
+#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
+#   |                [False           ]           Function will NOT generate pseudo data for Public Holidays                            #
+#   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
+#   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
+#   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
+#   |                [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions         #
+#   |                [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed     #
+#   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
+#   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug     :   The switch of Debug Mode. Valid values are [F] or [T].                                                              #
-#   |               [False           ] <Default> Do not print debug messages during calculation                                         #
-#   |               [True            ]           Print debug messages during calculation                                                #
-#   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
-#   |               [ <dict>         ] <Default> See the function definition as the default argument of usage                           #
-#   |kw_d       :   Arguments for function [omniPy.Dates.asDates] to convert the [indate] where necessary                               #
-#   |               [<see def.>      ] <Default> Use the default arguments for [asDates]                                                #
-#   |kw_cal     :   Arguments for instantiating the class [omniPy.Dates.UserCalendar] if [cal] is NOT provided                          #
-#   |               [<see def.>      ] <Default> Use the default arguments for [UserCalendar]                                           #
-#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
-#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
-#   |kw         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one     #
+#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |                [False           ] <Default> Do not print debug messages during calculation                                        #
+#   |                [True            ]           Print debug messages during calculation                                               #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |                [ <dict>         ] <Default> See the function definition as the default argument of usage                          #
+#   |kw_d        :   Arguments for function [Dates.asDates] to convert the [indate] where necessary                                     #
+#   |                [<see def.>      ] <Default> Use the default arguments for [asDates]                                               #
+#   |kw_cal      :   Arguments for instantiating the class [Dates.UserCalendar] if [cal] is NOT provided                                #
+#   |                [<see def.>      ] <Default> Use the default arguments for [UserCalendar]                                          #
+#   |kw_DataIO   :   Arguments to instantiate <DataIO>                                                                                  #
+#   |                [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                          #
+#   |kw          :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[DataFrame]:   Data Frame indicating the process result with below columns:                                                        #
-#   |               |------------------------------------------------------------------------------------------------------------------ #
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |FilePath        |No         | Absolute path of the data files that are written by this process                     #
-#   |               |                |           | When file type is <RAM>, it represents the object name in current session            #
-#   |               |C_KPI_FILE_TYPE |No         | Same column retained from <inKPICfg>                                                 #
-#   |               |rc              |Yes        | Return code from the I/O, 0 indicates success, otherwise there are errors            #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
+#   |[DataFrame] :   Data Frame indicating the process result with below columns:                                                       #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Nullable?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |FilePath        |No         | Absolute path of the data files that are written by this process                    #
+#   |                |                |           | When file type is <RAM>, it represents the object name in current session           #
+#   |                |C_KPI_FILE_TYPE |No         | Same column retained from <inKPICfg>                                                #
+#   |                |rc              |Yes        | Return code from the I/O, 0 indicates success, otherwise there are errors           #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240114        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240203        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now only create local variables within current frame, to avoid environment pollution                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -231,21 +237,22 @@ def kfCore_ts_agg(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, ast, datetime, numpy, pandas, inspect, collections, warnings, typing                                                  #
+#   |   |sys, os, ast, datetime, numpy, pandas, functools, inspect, collections, warnings, typing                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |UserCalendar                                                                                                               #
 #   |   |   |ObsDates                                                                                                                   #
 #   |   |   |intnx                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
-#   |   |   |gen_locals                                                                                                                 #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |modifyDict                                                                                                                 #
+#   |   |   |vecStack                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
+#   |   |   |validateDMCol                                                                                                              #
 #   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_GetTimeSeriesForKpi                                                                                                  #
@@ -255,29 +262,25 @@ def kfCore_ts_agg(
 
     #010. Check parameters.
     #011. Prepare log text.
+    frame = sys._getframe()
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
+    LfuncName : str = frame.f_code.co_name
 
     #012. Parameter buffer
-    if not isinstance(inKPICfg, pd.DataFrame):
-        raise TypeError(f'[{LfuncName}][inKPICfg] must be of the type <pd.DataFrame>!')
-    if not isinstance(mapper, pd.DataFrame):
-        raise TypeError(f'[{LfuncName}][mapper] must be of the type <pd.DataFrame>!')
+    def h_convStr(vec : Any, func : callable):
+        if isinstance(vec, str):
+            return(func(vec))
+        else:
+            return(vec)
 
-    #[ASSUMPTION]
-    #[1] Column name, i.e. pd.Index, can be object of almost any type
-    #[2] n-tuple is the representation of pd.MultiIndex
-    #[3] We will hence not validate <aggrVar> and leave it to pandas
-    #[4] However, we have to append the special name as KPI ID during the process, hence we have to validate <byVar>
-    #[5] We will not validate the similar variables that are used in the call to other processes, and leave the validation to them
-    if isinstance(byVar, (str, tuple)):
-        byVar = [byVar]
-    elif isinstance(byVar, (pd.Series, pd.Index)):
-        byVar = byVar.to_list()
-    elif isinstance(byVar, Iterable):
-        byVar = list(byVar)
-    else:
-        raise TypeError(f'[{LfuncName}][byVar] should be valid name for <pandas> instead of [{type(byVar).__name__}]!')
+    if not isinstance(inKPICfg, (vfyType := pd.DataFrame)):
+        raise TypeError(f'[{LfuncName}][inKPICfg] must be of the type <{vfyType}>!')
+    if not isinstance(mapper, (vfyType := pd.DataFrame)):
+        raise TypeError(f'[{LfuncName}][mapper] must be of the type <{vfyType}>!')
+
+    aggrVar = validateDMCol(aggrVar)[0]
+    byVar = validateDMCol(byVar)
+    copyVar = validateDMCol(copyVar)
 
     if not isinstance(genPHMul, bool):
         print(
@@ -293,11 +296,13 @@ def kfCore_ts_agg(
 
     #020. Local environment
     #Below variable indicates the API name that can pull from or push to the file with specific <keys>
+    keep_all_col = '_ALL_' in [ h_convStr(v, func = str.upper) for v in copyVar ]
     hasKeys = ['HDFS']
     byInt = list(set(byVar + ['C_KPI_ID']))
     cfg_unique_row = ['C_KPI_ID','N_LIB_PATH_SEQ']
     dateBgn_d = asDates(dateBgn, **kw_d)
     dateEnd_d = asDates(dateEnd, **kw_d)
+    inObs = ObsDates(obsDate = dateEnd_d, **kw_cal)
     if chkBgn is None:
         if fDebug:
             print(f'[{LfuncName}]<chkBgn> is not provided, set it the same as <dateBgn>')
@@ -310,14 +315,28 @@ def kfCore_ts_agg(
             f'[{LfuncName}]<fTrans_opt> indicates NOT to ignore case'
             +', which is omitted as the function capitalizes pathnames during aggregation'
         )
+    int_sfx = '&kfcoredate.'
+    if int_sfx not in fTrans:
+        fTrans = {
+            int_sfx : 'core_curr___'
+            ,**{ k:v for k,v in fTrans.items() }
+        }
+        if 'core_curr___' not in outDTfmt:
+            outDTfmt = {
+                'core_curr___' : '%Y%m%d'
+                ,**{ k:v for k,v in outDTfmt.items() }
+            }
 
     #021. Instantiate the IO operator for data migration
+    #[ASSUMPTION]
+    #[1] We use separate IO tool for all internal process where necessary, to avoid unexpected result
     dataIO = DataIO(**kw_DataIO)
+    dataIO_int = DataIO(**kw_DataIO)
 
     #050. Determine <chkEnd> by the implication of <genPHMul>
     if genPHMul:
         chkEnd = (
-            intnx('day', dateEnd_d, -1, daytype = ('W' if calcInd=='C' else calcInd), kw_cal = kw_cal)
+            inObs.shiftDays(kshift = -1, preserve = False, daytype = ('W' if calcInd=='C' else calcInd))[0]
             .strftime('%Y%m%d')
         )
     else:
@@ -336,7 +355,6 @@ def kfCore_ts_agg(
         #[ASSUMPTION]
         #[1] Functionality of <Preservance> is the key to below process
         #[2] This restricts the usage of the source data, only when they are designed to exist
-        inObs = ObsDates(obsDate = dateEnd_d, **kw_cal)
         if calcInd != 'C':
             aggdaily = inObs.shiftDays(kshift = -1, preserve = True, daytype = calcInd)[0]
         else:
@@ -381,6 +399,15 @@ def kfCore_ts_agg(
         print(f'[{LfuncName}]Mapping from Daily KPI to periodical aggregation KPI: {str(mapper_dict)}')
 
     #300. Minimize the KPI config table for current process
+    #310. Function to join the paths out of pd.Series
+    def h_joinPath(srs : pd.Series):
+        vfy_srs = srs.apply(pd.isnull)
+        if vfy_srs.all():
+            return('')
+        else:
+            return(os.path.join(*srs))
+
+    #390. Mutation
     cfg_kpi = (
         inKPICfg
         .loc[lambda x: x['D_BGN'].le(dateEnd_d)]
@@ -395,7 +422,7 @@ def kfCore_ts_agg(
             ,'options' : lambda x: x['options'].fillna('{}').str.strip()
         })
         .assign(**{
-            'FilePath' : lambda x: x.apply( lambda row: os.path.join(row['C_LIB_PATH'], row['C_KPI_FILE_NAME']), axis = 1 )
+            'FilePath' : lambda x: x[['C_LIB_PATH','C_KPI_FILE_NAME']].apply(h_joinPath, axis = 1)
         })
     )
 
@@ -416,7 +443,21 @@ def kfCore_ts_agg(
     )
 
     #500. Helper functions
-    #510. Function to only retrieve the empty table structure with 0 length on axis 0
+    #520. Column filter during loading data
+    def h_keepVar(df : pd.DataFrame):
+        if keep_all_col:
+            return(df.columns)
+        else:
+            keepVars = (
+                pd.concat([vecStack(aggrVar),vecStack(byVar),vecStack(copyVar)])
+                .astype({'.val.' : 'O'})
+                .assign(**{
+                    '.val.' : lambda x: x['.val.'].apply(h_convStr, func = str.upper)
+                })
+            )
+            return(df.head(0).rename(columns = partial(h_convStr, func = str.upper)).columns.isin(keepVars['.val.']))
+
+    #560. Function to only retrieve the empty table structure with 0 length on axis 0
     def h_nullify(df : pd.DataFrame):
         return(df.head(0))
 
@@ -480,7 +521,9 @@ def kfCore_ts_agg(
             ,'SetAsBase' : 'k'
             ,'fTrans' : fTrans
             ,'fTrans_opt' : fTrans_opt
+            ,'outDTfmt' : outDTfmt
             ,'_parallel' : _parallel
+            ,'cores' : cores
             ,'fDebug' : fDebug
             ,'values_fn' : np.nansum
         }
@@ -526,7 +569,7 @@ def kfCore_ts_agg(
             #200. Helper functions
             #210. Function to only retrieve the involved map-to KPIs right after loading the data
             def h_to(df : pd.DataFrame):
-                return(df.loc[lambda x: x['C_KPI_ID'].isin(cfg_prd['C_KPI_ID'])])
+                return(df.loc[lambda x: x['C_KPI_ID'].isin(cfg_prd['C_KPI_ID']), h_keepVar])
 
             #300. Patch the behavior when loading data source
             kw_io = modifyDict(
@@ -580,7 +623,7 @@ def kfCore_ts_agg(
         #700. Aggregation for time series per input data file name
         #709. Debug mode
         if fDebug:
-            print(f'''[{LfuncName}]Aggregate Daily KPIs for output key: <row['DF_NAME']>''')
+            print(f'''[{LfuncName}]Aggregate Daily KPIs for output key: <{row['DF_NAME']}>''')
 
         #710. Helper function to handle each input
         def h_agg(incfg : pd.Series):
@@ -655,22 +698,37 @@ def kfCore_ts_agg(
                 print(f'''[{LfuncName}]From daily source file: {incfg['C_KPI_FILE_NAME']}''')
 
             #300. Only check the involved KPI during aggregation, to save system effort
+            #310. Register temporary API
+            dataIO_int.add('RAM')
+
+            #350. Differ the process
             if chkdat_vfy is not None:
                 if fDebug:
                     print(f'''[{LfuncName}]Create pseudo <chkDat> <chk_kpi_pd{chkEnd}> for current input''')
-                gen_locals(**{
-                    f'chk_kpi_pd{chkEnd}' : (
-                        chkdat_vfy
-                        .loc[lambda x: x['C_KPI_ID'].isin(cfg_input['C_KPI_ID'])]
-                        .loc[:, lambda x: ~x.columns.isin(['D_RecDate'])]
-                    )
-                })
+                dataIO_int['RAM'].push(
+                    indat = {
+                        'tmp' : (
+                            chkdat_vfy
+                            .loc[lambda x: x['C_KPI_ID'].isin(cfg_input['C_KPI_ID'])]
+                            .loc[:, lambda x: ~x.columns.isin(['D_RecDate'])]
+                        )
+                    }
+                    ,outfile = f'chk_kpi_pd{chkEnd}'
+                    ,frame = frame
+                )
             else:
                 if fDebug:
                     print(f'''[{LfuncName}]Remove the pseudo <chkDat> <chk_kpi_pd{chkEnd}> since it should not exist''')
-                gen_locals(**{
-                    f'chk_kpi_pd{chkEnd}' : None
-                })
+                dataIO_int['RAM'].push(
+                    indat = {
+                        'tmp' : None
+                    }
+                    ,outfile = f'chk_kpi_pd{chkEnd}'
+                    ,frame = frame
+                )
+
+            #390. Remove the temporary API
+            dataIO_int.remove('RAM')
 
             #700. Prepare arguments
             #710. Set arguments
@@ -685,8 +743,13 @@ def kfCore_ts_agg(
                 ,'cores' : cores
                 ,'dateBgn' : dateBgn_fnl
                 ,'dateEnd' : dateEnd_d
-                ,'chkDatPtn' : 'chk_kpi_pd&L_curdate.'
+                ,'chkDatPtn' : f'chk_kpi_pd{int_sfx}'
                 ,'chkDatType' : 'RAM'
+                ,'chkDat_opt' : {
+                    'RAM' : {
+                        'frame' : frame
+                    }
+                }
                 ,'chkDatVar' : aggrVar
                 ,'chkBgn' : chkBgn_fnl
                 ,'byVar' : byInt
@@ -773,7 +836,7 @@ def kfCore_ts_agg(
                 ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('').str.strip()
             })
             .assign(**{
-                'FilePath' : lambda x: x.apply( lambda row: os.path.join(row['C_LIB_PATH'], row['C_KPI_FILE_NAME']), axis = 1 )
+                'FilePath' : lambda x: x[['C_LIB_PATH','C_KPI_FILE_NAME']].apply(h_joinPath, axis = 1)
                 ,'inRAM' : lambda x: x['C_KPI_FILE_TYPE'].eq('RAM')
             })
             .loc[lambda x: x['FilePath'].str.upper().eq(row['FilePath'])]
@@ -799,16 +862,29 @@ def kfCore_ts_agg(
         if fDebug:
             print(f'''[{LfuncName}]Creating data file: <{outfile}>''')
 
-        #770. Options
-        #[ASSUMPTION]
-        #[1] During the writing of SAS data file, we can only set encoding <GB2312> in Chinese locale
-        opt_push = ast.literal_eval(row['options'])
-        if row['C_KPI_FILE_TYPE'] == 'SAS':
-            if opt_push.get('encoding', '').upper().startswith('GB'):
-                opt_push = modifyDict(
-                    opt_push
-                    ,{ 'encoding' : 'GB2312' }
+        #770. Patch the behavior to write data
+        if row['C_KPI_FILE_TYPE'] in hasKeys:
+            kw_patcher = {
+                'kw_put' : dict(
+                    rstOut
+                    .assign(**{
+                        'opt.ast.Parsed' : lambda x: x['options'].apply(ast.literal_eval)
+                    })
+                    [['DF_NAME','opt.ast.Parsed']]
+                    .values
                 )
+            }
+        else:
+            kw_patcher = ast.literal_eval(row['options'])
+
+            #[ASSUMPTION]
+            #[1] During the writing of SAS data file, we can only set encoding <GB2312> in Chinese locale
+            if row['C_KPI_FILE_TYPE'] == 'SAS':
+                if kw_patcher.get('encoding', '').upper().startswith('GB'):
+                    kw_patcher = modifyDict(
+                        kw_patcher
+                        ,{ 'encoding' : 'GB2312' }
+                    )
 
         #800. Push the data in accordance with the config table
         rc = (
@@ -816,9 +892,12 @@ def kfCore_ts_agg(
             .push(
                 dict(rstOut[['DF_NAME','agg_df']].values)
                 ,outfile
-                ,**opt_push
+                ,**kw_patcher
             )
         )
+
+        #899. Remove the API to purge the RAM used
+        dataIO.remove(row['C_KPI_FILE_TYPE'])
 
         #999. Output the result
         return({outfile : rc})
@@ -843,7 +922,10 @@ def kfCore_ts_agg(
     #719. Verify the duplication of file API options
     vfy_opt = (
         cfg_rst
-        [['FilePath','options']]
+        .loc[
+            lambda x: ~x['C_KPI_FILE_TYPE'].isin(hasKeys)
+            ,['FilePath','options']
+        ]
         .drop_duplicates()
         .groupby(['FilePath'], as_index = False)
         ['options']
@@ -868,24 +950,7 @@ def kfCore_ts_agg(
             'FilePath' : lambda x: x['rc_pre'].apply(lambda row: list(row.keys())[0])
             ,'rc' : lambda x: x['rc_pre'].apply(lambda row: list(row.values())[0])
         })
-        .assign(**{
-            'FilePath.Parsed' : lambda x: (
-                parseDatName(
-                    datPtn = x[['FilePath']]
-                    ,dates = dateEnd_d
-                    ,outDTfmt = outDTfmt
-                    ,chkExist = False
-                    ,dict_map = fTrans
-                    ,**fTrans_opt
-                )
-                .set_index('FilePath')
-                .reindex(x['FilePath'])
-                .set_index(x.index)
-                ['FilePath.Parsed']
-            )
-        })
-        [['FilePath.Parsed','C_KPI_FILE_TYPE','rc']]
-        .rename(columns = {'FilePath.Parsed' : 'FilePath'})
+        [['FilePath','C_KPI_FILE_TYPE','rc']]
     )
 
     #999. Validate the completion
@@ -917,25 +982,32 @@ if __name__=='__main__':
     #[ASSUMPTION]
     #[1] Below date indicates the beginning of one KPI among those in the config table
     G_d_rpt = '20160526'
+    cfg_kpi_file = os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
     cfg_kpi = (
         pd.read_excel(
-            os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
-            ,dtype = object
+            cfg_kpi_file
+            ,sheet_name = 'KPIConfig'
+            ,dtype = 'object'
         )
-        .rename(columns = {
-            'D_BGN' : '_D_BGN'
-            ,'D_END' : '_D_END'
-            ,'F_KPI_INUSE' : '_F_KPI_INUSE'
-            ,'N_LIB_PATH_SEQ' : '_N_LIB_PATH_SEQ'
-        })
         .assign(**{
-            'D_BGN' : lambda x: asDates(x['_D_BGN'])
-            ,'D_END' : lambda x: asDates(x['_D_END'])
-            ,'F_KPI_INUSE' : lambda x: x['_F_KPI_INUSE'].astype(int)
-            ,'N_LIB_PATH_SEQ' : lambda x: x['_N_LIB_PATH_SEQ'].astype(int)
+            'C_LIB_NAME' : lambda x: x['C_LIB_NAME'].fillna('')
+        })
+        .merge(
+            pd.read_excel(
+                cfg_kpi_file
+                ,sheet_name = 'LibConfig'
+                ,dtype = 'object'
+            )
+            ,on = 'C_LIB_NAME'
+            ,how = 'left'
+        )
+        .assign(**{
+            'D_BGN' : lambda x: asDates(x['D_BGN'])
+            ,'D_END' : lambda x: asDates(x['D_END'])
+            ,'F_KPI_INUSE' : lambda x: x['F_KPI_INUSE'].astype(int)
+            ,'N_LIB_PATH_SEQ' : lambda x: x['N_LIB_PATH_SEQ'].fillna(0).astype(int)
             ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('')
         })
-        .loc[:, lambda x: ~x.columns.str.startswith('_')]
     )
 
     #150. Mapper to indicate the aggregation
@@ -1095,8 +1167,6 @@ if __name__=='__main__':
     #[ASSUMPTION]
     #[1] Since <G_d_next> is later than <D_BGN> of <kpi2>, one should avoid calling the factory for <G_d_next> BEFORE the call
     #     to the factory for <G_d_rpt> is complete. i.e. the MTD calculation on the first data date should be ready
-    #[2] The factory does not validate the above data and will leverage any existing Daily KPI data file inadvertently, which
-    #     would produce unexpected result in such case
     G_d_next = intnx('day', G_d_rpt, 1, daytype = 'w').strftime('%Y%m%d')
     args_ts_mtd2 = modifyDict(
         args_ts_mtd

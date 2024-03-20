@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import sys, re
-import inspect
-from typing import Optional
-from omniPy.AdvDB import OpenSourceApiMeta
-from omniPy.AdvOp import modifyDict, importByStr, ls_frame
-
-class DataIO():
-    #000. Info.
-    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -20,7 +8,7 @@ class DataIO():
 #   |100.   Public method                                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[__init__]                                                                                                                     #
+#   |   |[initialize]                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -29,49 +17,49 @@ class DataIO():
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |apiPkgPull        :   <str     > Name of the package from which to obtain the API function to pull the data                #
-#   |   |   |                      [omniPy.AdvDB        ]<Default> Obtain the API from the dedicated package                            #
-#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
+#   |   |   |                      [NULL                ]<Default> Obtain the API from current session in global environment            #
+#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp$importByStr>                  #
 #   |   |   |apiPfxPull        :   <str     > Prefix of the puller API name to search                                                   #
 #   |   |   |                      [std_read_           ]<Default> Search for the API names by this prefix                              #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
 #   |   |   |apiSfxPull        :   <str     > Suffix of the puller API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
-#   |   |   |apiPullHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPullHdl        :   list[api:<function>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
+#   |   |   |                      [list[api:<function>]]          Function to process the pulled data for each API                     #
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
-#   |   |   |                      [omniPy.AdvDB        ]<Default> Obtain the API from the dedicated package                            #
-#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
+#   |   |   |                      [NULL                ]<Default> Obtain the API from current session in global environment            #
+#   |   |   |                      [<str>               ]          Package name valid for function <AdvOp$importByStr>                  #
 #   |   |   |apiPfxPush        :   <str     > Prefix of the pusher API name to search                                                   #
 #   |   |   |                      [std_write_          ]<Default> Search for the API names by this prefix                              #
 #   |   |   |                      [<str>               ]          Set a proper prefix to validate the search                           #
 #   |   |   |apiSfxPush        :   <str     > Suffix of the pusher API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
-#   |   |   |apiPushHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPushHdl        :   list[api:<function>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
-#   |   |   |argsPull          :   <dict    > Collection of keyword arguments set as default for <pull> methods when instantiating the  #
+#   |   |   |                      [list[api:<function>]]          Function to process the pushed data for each API                     #
+#   |   |   |argsPull          :   <list    > Collection of keyword arguments set as default for <pull> methods when instantiating the  #
 #   |   |   |                       class; <key> is the available API name, <value> is the kwargs for its <pull> method                 #
 #   |   |   |                      [<see def.>          ]<Default> Pull SAS datasets with encoding <GB18030> as maximum compatibility   #
-#   |   |   |                      [<dict>              ]          dict[<apiname> : dict[kw]]                                           #
-#   |   |   |argsPush          :   <dict    > Collection of keyword arguments set as default for <push> methods when instantiating the  #
+#   |   |   |                      [<list>              ]          list[<apiname> : list[kw]]                                           #
+#   |   |   |argsPush          :   <list    > Collection of keyword arguments set as default for <push> methods when instantiating the  #
 #   |   |   |                       class; <key> is the available API name, <value> is the kwargs for its <push> method                 #
 #   |   |   |                      [<see def.>          ]<Default> Push SAS datasets with encoding <GB2312> as maximum compatibility    #
-#   |   |   |                      [<dict>              ]          dict[<apiname> : dict[kw]]                                           #
-#   |   |   |lsPullOpt         :   <dict    > Options to list the <pull> callables given <apiPkgPull == None>                           #
+#   |   |   |                      [<list>              ]          list[<apiname> : list[kw]]                                           #
+#   |   |   |lsPullOpt         :   <list    > Options to list the <pull> functions given <apiPkgPull == NULL>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
-#   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
-#   |   |   |lsPushOpt         :   <dict    > Options to list the <push> callables given <apiPkgPush == None>                           #
+#   |   |   |                      [<list>              ]          See definition of <AdvOp$ls_frame>                                   #
+#   |   |   |lsPushOpt         :   <list    > Options to list the <push> functions given <apiPkgPush == NULL>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
-#   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
+#   |   |   |                      [<list>              ]          See definition of <AdvOp$ls_frame>                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   Only for initialization                                                                              #
+#   |   |   |<NULL>            :   Only for initialization                                                                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[add]                                                                                                                          #
@@ -82,20 +70,20 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |attr              :   <str     > Name of the dedicated API to register, e.g. SAS, HDFS or RAM                              #
-#   |   |   |apiPullHdl        :   <callable> Function with only one argument as handler to process the data pulled at once             #
+#   |   |   |.attr             :   <str     > Name of the dedicated API to register, e.g. SAS, R or RAM                                 #
+#   |   |   |apiPullHdl        :   <function> Function with only one argument as handler to process the data pulled at once             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [<callable>          ]          Function to process the pulled data                                  #
-#   |   |   |apiPushHdl        :   <callable> Function with only one argument as handler to process the data pushed at once             #
+#   |   |   |                      [<function>          ]          Function to process the pulled data                                  #
+#   |   |   |apiPushHdl        :   <function> Function with only one argument as handler to process the data pushed at once             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [<callable>          ]          Function to process the pushed data                                  #
-#   |   |   |argsPull          :   <dict    > kwargs for the <pull> method of the registered API as default arguments at initilization  #
-#   |   |   |argsPush          :   <dict    > kwargs for the <push> method of the registered API as default arguments at initilization  #
-#   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
+#   |   |   |                      [<function>          ]          Function to process the pushed data                                  #
+#   |   |   |argsPull          :   <list    > kwargs for the <pull> method of the registered API as default arguments at initilization  #
+#   |   |   |argsPush          :   <list    > kwargs for the <push> method of the registered API as default arguments at initilization  #
+#   |   |   |...               :   <list    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method only creates and instantiates the dynamic class by registering the API                   #
+#   |   |   |<NULL>            :   This method only creates and instantiates the dynamic class by registering the API                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[addfull]                                                                                                                      #
@@ -106,21 +94,21 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |apiPullHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPullHdl        :   list[api:<function>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
-#   |   |   |apiPushHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [list[api:<function>]]          Function to process the pulled data for each API                     #
+#   |   |   |apiPushHdl        :   list[api:<function>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
-#   |   |   |argsPull          :   <dict    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
-#   |   |   |argsPush          :   <dict    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
-#   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
+#   |   |   |                      [list[api:<function>]]          Function to process the pushed data for each API                     #
+#   |   |   |argsPull          :   <list    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
+#   |   |   |argsPush          :   <list    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
+#   |   |   |...               :   <list    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method only creates and instantiates the dynamic class by registering the APIs                  #
+#   |   |   |<NULL>            :   This method only creates and instantiates the dynamic class by registering the APIs                  #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[remove]                                                                                                                       #
@@ -131,11 +119,11 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |attr              :   <str     > Name of the dedicated API to deactivate                                                   #
+#   |   |   |.attr             :   <str     > Name of the dedicated API to deactivate                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method only deactivates the API                                                                 #
+#   |   |   |<NULL>            :   This method only deactivates the API                                                                 #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[removefull]                                                                                                                   #
@@ -146,18 +134,18 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |<NULL>            :   This method does not take external argument input                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method only deactivates the APIs                                                                #
+#   |   |   |<NULL>            :   This method only deactivates the APIs                                                                #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |400.   Private method                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[_chkactive_]                                                                                                                  #
+#   |   |[.chkactive.]                                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -166,14 +154,14 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |<NULL>            :   This method does not take external argument input                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not return any value, except that it aborts the process when necessary              #
+#   |   |   |<NULL>            :   This method does not return any value, except that it aborts the process when necessary              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[_rem_affix_]                                                                                                                  #
+#   |   |[.rem_affix.]                                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -209,7 +197,7 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Full set of available method names                                                                   #
+#   |   |   |<chr>             :   Full set of available method names                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[apipush]                                                                                                                      #
@@ -224,7 +212,7 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Full set of available method names                                                                   #
+#   |   |   |<chr>             :   Full set of available method names                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[apifull]                                                                                                                      #
@@ -239,7 +227,7 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Full set of available method names                                                                   #
+#   |   |   |<chr>             :   Full set of available method names                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[apidyn]                                                                                                                       #
@@ -254,7 +242,7 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Full set of available method names                                                                   #
+#   |   |   |<chr>             :   Full set of available method names                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[full]                                                                                                                         #
@@ -265,11 +253,11 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |<NULL>            :   This method does not take external argument input                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Full set of available APIs to <pull> or <push> data per request                                      #
+#   |   |   |<chr>             :   Full set of available APIs to <pull> or <push> data per request                                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[status]                                                                                                                       #
@@ -281,11 +269,11 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |<NULL>            :   This method does not take external argument input                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<dict>            :   dict[<API> : bool]                                                                                   #
+#   |   |   |<list>            :   list[<API> : bool]                                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[active]                                                                                                                       #
@@ -296,25 +284,19 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<None>            :   This method does not take external argument input                                                    #
+#   |   |   |<NULL>            :   This method does not take external argument input                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<set>             :   Set of active APIs                                                                                   #
+#   |   |   |<chr>             :   Set of active APIs                                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20240101        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20240217        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20240217        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Enable the tweak of handlers for both <pull> and <push> when calling the method <add> to register new API               #
-#   |      |[2] Make the search of APIs in current session more flexible, e.g. enable searching in provided frame                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -325,7 +307,7 @@ class DataIO():
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, inspect, typing                                                                                                       #
+#   |   |magrittr, glue, R6                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -333,463 +315,537 @@ class DataIO():
 #   |   |   |OpenSourceApiMeta                                                                                                          #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
-#   |   |   |importByStr                                                                                                                #
-#   |   |   |modifyDict                                                                                                                 #
+#   |   |   |isVEC                                                                                                                      #
 #   |   |   |ls_frame                                                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    '''
 
-    #002. Constructor
-    def __init__(
-        self
-        ,apiPkgPull : str = 'omniPy.AdvDB'
-        ,apiPfxPull : str = 'std_read_'
-        ,apiSfxPull : str = ''
-        ,apiPullHdl : dict[str, callable] = {}
-        ,apiPkgPush : str = 'omniPy.AdvDB'
-        ,apiPfxPush : str = 'std_write_'
-        ,apiSfxPush : str = ''
-        ,apiPushHdl : dict[str, callable] = {}
-        ,argsPull : dict = {
-            'SAS' : {
-                'encoding' : 'GB18030'
-            }
-        }
-        ,argsPush : dict = {
-            'SAS' : {
-                'encoding' : 'GB2312'
-            }
-        }
-        ,lsPullOpt : dict = {}
-        ,lsPushOpt : dict = {}
-    ):
-        #012. Parameter buffer
+#001. Append the list of required packages to the global environment
+#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
+lst_pkg <- deparse(substitute(c(
+	magrittr, glue, R6
+)))
+#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
+lst_pkg <- paste0(lst_pkg, collapse = '')
+lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
+lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
+lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
+options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-        #100. Assign values to local variables
-        self.apiPkgPull = apiPkgPull
-        self.apiPfxPull = apiPfxPull
-        self.apiSfxPull = apiSfxPull
-        self.apiPkgPush = apiPkgPush
-        self.apiPfxPush = apiPfxPush
-        self.apiSfxPush = apiSfxPush
-        self.argsPull = argsPull
-        self.argsPush = argsPush
-        self.lsPullOpt = lsPullOpt
-        self.lsPushOpt = lsPushOpt
+#We should use the pipe operands supported by below package
+library(magrittr)
+#We should use the big-bang operand [!!!] supported by below package
+library(rlang)
 
-        #300. Identify all <pull> methods matching the provided pattern of API names
-        self.hasPkgPull = False
-        if isinstance(self.apiPkgPull, str):
-            if len(self.apiPkgPull) > 0:
-                self.hasPkgPull = True
+#[ASSUMPTION]
+#[1] We use a verbose mode to create the class, just for storing the <class> itself to its instances
+#Below link demonstrates why we use <local> to create the class
+#Quote: https://github.com/r-lib/R6/issues/144
+DataIO <- local({
+mycls <- R6::R6Class(
+	classname = 'DataIO'
+	,public = list(
+		#002. Constructor
+		initialize = function(
+			apiPkgPull = NULL
+			,apiPfxPull = 'std_read_'
+			,apiSfxPull = ''
+			,apiPullHdl = list()
+			,apiPkgPush = NULL
+			,apiPfxPush = 'std_write_'
+			,apiSfxPush = ''
+			,apiPushHdl = list()
+			,argsPull = list(
+				'SAS' = list(
+					'encoding' = 'GB2312'
+				)
+			)
+			,argsPush = list(
+				'SAS' = list(
+					'encoding' = 'GB2312'
+				)
+			)
+			,lsPullOpt = list()
+			,lsPushOpt = list()
+		) {
+			#100. Assign values to local variables
+			self$..class.. <- mycls
+			self$apiPkgPull <- apiPkgPull
+			self$apiPfxPull <- apiPfxPull
+			self$apiSfxPull <- apiSfxPull
+			self$apiPkgPush <- apiPkgPush
+			self$apiPfxPush <- apiPfxPush
+			self$apiSfxPush <- apiSfxPush
+			self$argsPull <- argsPull
+			self$argsPush <- argsPush
+			self$lsPullOpt <- lsPullOpt
+			self$lsPushOpt <- lsPushOpt
 
-        self.hasPkgPush = False
-        if isinstance(self.apiPkgPush, str):
-            if len(self.apiPkgPush) > 0:
-                self.hasPkgPush = True
+			#200. Determine the scope from which to search for the functions
+			#[ASSUMPTION]
+			#[1] <nchar(NULL)> returns <logical(0)> instead of <0>
+			#[2] That is why we have to verify it at another step
+			self$hasPkgPull <- isVEC(self$apiPkgPull) & is.character(self$apiPkgPull) & (length(self$apiPkgPull) == 1)
+			if (self$hasPkgPull) {
+				if (nchar(self$apiPkgPull) == 0) self$hasPkgPull <- F
+			}
 
-        #300. Search for available APIs
-        #[ASSUMPTION]
-        #[1] Ensure the evaluation is only conducted once
-        this_full = self.full
-        self.__dict_active__ = { k:False for k in this_full }
+			self$hasPkgPush <- isVEC(self$apiPkgPush) & is.character(self$apiPkgPush) & (length(self$apiPkgPush) == 1)
+			if (self$hasPkgPush) {
+				if (nchar(self$apiPkgPush) == 0) self$hasPkgPush <- F
+			}
 
-        #700. Initialize the handlers
-        #[ASSUMPTION]
-        #[1] Avoid closure
-        def nohandle(x): return(x)
-        hdl_pull = {
-            a : (f if callable(f := apiPullHdl.get(a, None)) else nohandle)
-            for a in this_full
-        }
-        hdl_push = {
-            a : (f if callable(f := apiPushHdl.get(a, None)) else nohandle)
-            for a in this_full
-        }
-        self.apiPullHdl = hdl_pull
-        self.apiPushHdl = hdl_push
+			#300. Search for available APIs
+			this_full <- self$full
+			private$..vec_active.. <- sapply(this_full, function(x) F, simplify = T, USE.NAMES = T)
 
-    #200. Private methods
-    #210. Method to get attributes that are pre-defined at class instantiation
-    def __getattr__(self, attr):
-        if attr not in self.full:
-            raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not registered as an API!')
+			#700. Initialize the handlers
+			hdl_pull <- sapply(
+				this_full
+				,function(x) {
+					f <- apiPullHdl[[x]]
+					if (is.function(f)) {
+						return(f)
+					} else {
+						return(function(x) x)
+					}
+				}
+				,simplify = F
+				,USE.NAMES = T
+			)
+			hdl_push <- sapply(
+				this_full
+				,function(x) {
+					f <- apiPushHdl[[x]]
+					if (is.function(f)) {
+						return(f)
+					} else {
+						return(function(x) x)
+					}
+				}
+				,simplify = F
+				,USE.NAMES = T
+			)
+			self$apiPullHdl <- hdl_pull
+			self$apiPushHdl <- hdl_push
+		}
+		#005. Declaration of public attributes
+		,apiPkgPull = NULL
+		,apiPfxPull = NULL
+		,apiSfxPull = NULL
+		,apiPkgPush = NULL
+		,apiPfxPush = NULL
+		,apiSfxPush = NULL
+		,apiPullHdl = NULL
+		,apiPushHdl = NULL
+		,argsPull = NULL
+		,argsPush = NULL
+		,lsPullOpt = NULL
+		,lsPushOpt = NULL
+		,hasPkgPull = NULL
+		,hasPkgPush = NULL
+		,..class.. = NULL
+		#300. Public methods
+		#310. Add an API by its name
+		#[ASSUMPTION]
+		#[1] We do not pull data from the newly created API, since the dots <...> cannot be determined for which
+		#     of the available APIs, esp. when calling <self$addfull()>
+		,add = function(
+			.attr
+			,apiPullHdl = NULL
+			,apiPushHdl = NULL
+			,argsPull = list()
+			,argsPush = list()
+			,...
+		) {
+			#001. Verify whether the API can be found in the candidate packages
+			if (!.attr %in% self$full) {
+				stop(glue::glue('[{self$..class..$classname}]No method is found to register API for [{.attr}]!'))
+			}
 
-        vfy_lists = [ a for a,s in self.status.items() if not s ]
-        if attr in vfy_lists:
-            raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not an active API!')
+			#100. Tweak the handlers if provided
+			if (is.function(apiPullHdl)) {
+				hdl_pull <- apiPullHdl
+			} else {
+				hdl_pull <- self$apiPullHdl[[.attr]]
+			}
+			if (is.function(apiPushHdl)) {
+				hdl_push <- apiPushHdl
+			} else {
+				hdl_push <- self$apiPushHdl[[.attr]]
+			}
 
-        return(getattr(self, attr))
+			#200. Create API class on the fly
+			cls <- OpenSourceApiMeta(
+				classname = .attr
+				,apiPkgPull = self$apiPkgPull
+				,apiPfxPull = self$apiPfxPull
+				,apiSfxPull = self$apiSfxPull
+				,apiPullHdl = hdl_pull
+				,lsPullOpt = self$lsPullOpt
+				,apiPkgPush = self$apiPkgPush
+				,apiPfxPush = self$apiPfxPush
+				,apiSfxPush = self$apiSfxPush
+				,apiPushHdl = hdl_push
+				,lsPushOpt = self$lsPushOpt
+			)
 
-    #220. Method to enable slicing fashion during operation on APIs
-    #Quote: https://www.liaoxuefeng.com/wiki/1016959663602400/1017590712115904
-    def __getitem__(self, attr):
-        return(self.__getattr__(attr))
+			#200. Prepare keyword arguments for reading data from the API
+			#[ASSUMPTION]
+			#[1] We take the default keyword arguments in current API as top priority,
+			#     given neither <self$argsPull> nor <argsPull> is provided
+			#[2] Given <self$argsPull> is non-empty while <argsPull> is empty, we take <self$argsPull> to call the API
+			#[3] Given <argsPull> is provided, we call the API with it
+			kw_pull_init <- self$argsPull[[.attr]]
+			if (is.null(kw_pull_init)) kw_pull_init <- list()
+			kw_pull <- modifyList(kw_pull_init, argsPull, keep.null = T)
+			kw_push_init <- self$argsPush[[.attr]]
+			if (is.null(kw_push_init)) kw_push_init <- list()
+			kw_push <- modifyList(kw_push_init, argsPush, keep.null = T)
 
-    #300. Public methods
-    def add(
-        self
-        ,attr : str
-        ,apiPullHdl : Optional[callable] = None
-        ,apiPushHdl : Optional[callable] = None
-        ,argsPull : dict = {}
-        ,argsPush : dict = {}
-        ,**kw
-    ):
-        #001. Verify whether the API can be found in the candidate packages
-        if attr not in self.full:
-            raise ValueError(f'[{self.__class__.__name__}]No method is found to register API for [{attr}]!')
+			#500. Instantiate the API
+			obj <- cls$new(argsPull = kw_pull, argsPush = kw_push, ...)
 
-        #100. Tweak the handlers if provided
-        hdl_pull = apiPullHdl if callable(apiPullHdl) else self.apiPullHdl.get(attr)
-        hdl_push = apiPushHdl if callable(apiPushHdl) else self.apiPushHdl.get(attr)
+			#700. Add current API to the attribute list of current framework
+			#Quote: https://coolbutuseless.github.io/2021/02/19/modifying-r6-objects-after-creation/
+			self[[.attr]] <- obj
+			environment(self[[.attr]]) <- self$.__enclos_env__
 
-        #200. Create API class on the fly
-        #How to pass arguments to metaclass in class definition: (#2)
-        #Quote: https://stackoverflow.com/questions/27258557/
-        cls = OpenSourceApiMeta(
-            attr, (object,), {}
-            ,apiPkgPull = self.apiPkgPull
-            ,apiPfxPull = self.apiPfxPull
-            ,apiSfxPull = self.apiSfxPull
-            ,apiPullHdl = hdl_pull
-            ,lsPullOpt = self.lsPullOpt
-            ,apiPkgPush = self.apiPkgPush
-            ,apiPfxPush = self.apiPfxPush
-            ,apiSfxPush = self.apiSfxPush
-            ,apiPushHdl = hdl_push
-            ,lsPushOpt = self.lsPushOpt
-        )
+			#900. Modify private environment
+			private$..vec_active..[[.attr]] <- T
+			invisible()
+		}
+		#320. Add all available APIs to current private environment
+		,addfull = function(
+			apiPullHdl = list()
+			,apiPushHdl = list()
+			,argsPull = list()
+			,argsPush = list()
+			,...
+		) {
+			for (a in self$full) {
+				kw_pull <- argsPull[[a]]
+				if (is.null(kw_pull)) kw_pull <- list()
+				kw_push <- argsPush[[a]]
+				if (is.null(kw_push)) kw_push <- list()
+				self$add(
+					a
+					,apiPullHdl = apiPullHdl[[a]]
+					,apiPushHdl = apiPushHdl[[a]]
+					,argsPull = kw_pull
+					,argsPush = kw_push
+					,...
+				)
+			}
+			invisible()
+		}
+		#360. Remove API from private environment
+		,remove = function(.attr) {
+			attr_exist <- ls(self$.__enclos_env__$self, all.names = T, pattern = glue::glue('^{.attr}$'))
+			if (length(attr_exist) > 0) rm(list = .attr, pos = self$.__enclos_env__$self)
+			private$..vec_active..[[.attr]] <- F
+			invisible()
+		}
+		#370. Remove all active APIs from private environment
+		,removefull = function() {
+			lapply(self$full, self$remove)
+			invisible()
+		}
+	)
+	,private = list(
+		..vec_active.. = NULL
+		#410. Verify whether there is at least 1 active API in the private environment
+		,.chkactive. = function(funcname) {
+			if (length(self$active) == 0) {
+				stop(glue::glue('[{self$..class..$classname}][{funcname}] is empty as there is no active API!'))
+			}
+		}
+		#430. Remove the affixes from the API names
+		,.rem_affix. = function(mthdname, pfx = '', sfx = '') {
+			gsub(glue::glue('^{pfx}(.+){sfx}$'), '\\1', mthdname, fixed = F, perl = T)
+		}
+	)
+	#500. Read-only properties
+	,active = list(
+		#510. Obtain the available <pull> methods
+		apipull = function() {
+			#100. Local parameters
+			candopt_rx <- list(
+				'verbose' = FALSE
+				,'predicate' = is.function
+				,'ignore_case' = FALSE
+				,'multiline' = FALSE
+				,'comments' = FALSE
+				,'dotall' = FALSE
+			)
 
-        #300. Prepare keyword arguments for reading data from the API
-        #[ASSUMPTION]
-        #[1] We take the default keyword arguments in current API as top priority,
-        #     given neither <self.argsPull> nor <argsPull> is provided
-        #[2] Given <self.argsPull> is non-empty while <argsPull> is empty, we take <self.argsPull> to call the API
-        #[3] Given <argsPull> is provided, we call the API with it
-        #[4] Use the same logic to handle <argsPush>
-        kw_pull = modifyDict(self.argsPull.get(attr, {}), argsPull)
-        kw_push = modifyDict(self.argsPush.get(attr, {}), argsPush)
+			#300. Prepare the pattern for searching
+			#[ASSUMPTION]
+			#[1] We would call external function <glue::glue> for some conditions
+			#[2] Hence the variables are lazy-evaluated
+			#[3] Even if we add <.envir=> option to bind the call to current environment, it still fails
+			#[4] Therefore, we set the pattern by text manipulation before any external function call
+			apiPtnPull <- paste0('^',self$apiPfxPull,'.+',self$apiSfxPull,'$')
 
-        #500. Instantiate the API
-        obj = cls(argsPull = kw_pull, argsPush = kw_push, **kw)
+			#500. Differ the process
+			if (self$hasPkgPull) {
+				api_pull <- ls(
+					loadNamespace(self$apiPkgPull)
+					,all.names = T
+					,pattern = apiPtnPull
+				) %>%
+					sapply(function(x){is.function(get(x, envir = loadNamespace(self$apiPkgPull)))}) %>%
+					{Filter(isTRUE, .)} %>%
+					names()
+			} else {
+				lsPullOpt <- c(
+					candopt_rx
+					,self$lsPullOpt[!names(self$lsPullOpt) %in% c(names(candopt_rx),'pattern')]
+				)
+				api_pull <- do.call(
+					ls_frame
+					,c(
+						list(pattern = apiPtnPull)
+						,lsPullOpt
+					)
+				)
+			}
 
-        #700. Add current API to the attribute list of current framework
-        setattr(self, attr, obj)
+			#900. Output
+			return(api_pull)
+		}
+		#520. Obtain the available <push> methods
+		,apipush = function() {
+			#100. Local parameters
+			candopt_rx <- list(
+				'verbose' = FALSE
+				,'predicate' = is.function
+				,'ignore_case' = FALSE
+				,'multiline' = FALSE
+				,'comments' = FALSE
+				,'dotall' = FALSE
+			)
 
-        #900. Modify private environment
-        modifyDict(self.__dict_active__, { attr : True }, inplace = True)
+			#300. Prepare the pattern for searching
+			apiPtnPush <- paste0('^',self$apiPfxPush,'.+',self$apiSfxPush,'$')
 
-    #320. Add all available APIs to current private environment
-    def addfull(
-        self
-        ,apiPullHdl : dict[str, callable] = {}
-        ,apiPushHdl : dict[str, callable] = {}
-        ,argsPull : dict = {}
-        ,argsPush : dict = {}
-        ,**kw
-    ):
-        for a in self.full:
-            self.add(
-                a
-                ,apiPullHdl = apiPullHdl.get(a, None)
-                ,apiPushHdl = apiPushHdl.get(a, None)
-                ,argsPull = argsPull.get(a, {})
-                ,argsPush = argsPush.get(a, {})
-                ,**kw
-            )
+			#500. Differ the process
+			if (self$hasPkgPush) {
+				api_push <- ls(
+					loadNamespace(self$apiPkgPush)
+					,all.names = T
+					,pattern = apiPtnPush
+				) %>%
+					sapply(function(x){is.function(get(x, envir = loadNamespace(self$apiPkgPush)))}) %>%
+					{Filter(isTRUE, .)} %>%
+					names()
+			} else {
+				lsPushOpt <- c(
+					candopt_rx
+					,self$lsPushOpt[!names(self$lsPushOpt) %in% c(names(candopt_rx),'pattern')]
+				)
+				api_push <- do.call(
+					ls_frame
+					,c(
+						list(pattern = apiPtnPush)
+						,lsPushOpt
+					)
+				)
+			}
 
-    #360. Remove API from private environment
-    def remove(self, attr):
-        if attr in self.active:
-            delattr(self, attr)
-            modifyDict(self.__dict_active__, { attr : False }, inplace = True)
+			#900. Output
+			return(api_push)
+		}
+		#530. Obtain all methods for APIs
+		,apifull = function() {
+			return(base::union(self$apipull,self$apipush))
+		}
+		#535. Obtain dynamic methods for APIs, i.e. the methods created in current session
+		,apidyn = function() {
+			if (self$hasPkgPull) {
+				apipull <- NULL
+			} else {
+				apipull <- self$apipull
+			}
+			if (self$hasPkgPush) {
+				apipush <- NULL
+			} else {
+				apipush <- self$apipush
+			}
+			return(base::union(apipull,apipush))
+		}
+		#540. Obtain the full set of available APIs
+		,full = function() {
+			#500. Extract API name from the methods
+			apipull <- private$.rem_affix.(self$apipull, pfx = self$apiPfxPull, sfx = self$apiSfxPull)
+			apipush <- private$.rem_affix.(self$apipush, pfx = self$apiPfxPush, sfx = self$apiSfxPush)
 
-    #370. Remove all active APIs from private environment
-    def removefull(self):
-        for a in self.active:
-            self.remove(a)
+			#999. Return if there is either a <pull> method or <push> for the API
+			return(base::union(apipull,apipush))
+		}
+		#570. Obtain the status of all APIs
+		,status = function() {
+			return(private$..vec_active..)
+		}
+		#580. Obtain the names of active APIs
+		,active = function() {
+			return(names(Filter(isTRUE, private$..vec_active..)))
+		}
+	)
+	#[ASSUMPTION]
+	#[1] We have to unlock the instantiated object for member manipulation
+	#[2] Unlike Python, there is no <__slots__> for R, hence this operation is dangerous
+	,lock_objects = F
+)
 
-    #400. Private methods
-    #410. Verify whether there is at least 1 active API in the private environment
-    def _chkactive_(self):
-        LfuncName : str = sys._getframe(1).f_code.co_name
-        if len(self.active) == 0:
-            raise ValueError(f'[{self.__class__.__name__}][{LfuncName}] is empty as there is no active API!')
+return(mycls)
+})
 
-    #430. Remove the affixes from the API names
-    def _rem_affix_(self, mthdname : set, pfx : str = '', sfx : str = ''):
-        def h_r_a(m):
-            rstOut = m
-            if len(pfx):
-                rstOut = rstOut[len(pfx):]
-            if len(sfx):
-                rstOut = rstOut[:-len(sfx)]
-            return(rstOut)
-        return({ h_r_a(m) for m in mthdname })
+#[Full Test Program;]
+if (FALSE){
+	#Simple test
+	if (TRUE){
+		#010. Load user defined functions
+		dir_omniR <- 'D:\\R'
+		source(file.path(dir_omniR, 'autoexec.r'))
 
-    #500. Read-only properties
-    #510. Obtain the available <pull> methods
-    @property
-    def apipull(self):
-        #Quote: https://stackoverflow.com/questions/139180/how-to-list-all-functions-in-a-module
-        if self.hasPkgPull:
-            pkg_pull = importByStr(self.apiPkgPull, asModule = True)
-            api_pull = {
-                f
-                for f,o in inspect.getmembers_static(pkg_pull, predicate = callable)
-                if f.startswith(self.apiPfxPull) and f.endswith(self.apiSfxPull)
-            }
-        else:
-            lsPullOpt = {
-                'verbose' : False
-                ,'predicate' : callable
-                ,'flags' : re.NOFLAG
-                ,**{ k:v for k,v in self.lsPullOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
-            }
-            api_pull = {
-                f
-                for f in ls_frame(pattern = f'^{self.apiPfxPull}.+{self.apiSfxPull}$', **lsPullOpt)
-            }
+		#We should use the big-bang operand [!!!] supported by below package
+		library(rlang)
 
-        #999. Export
-        return(api_pull)
+		#100. Launch the tool with default arguments
+		cwd <- getwd()
+		dataIO <- DataIO$new()
 
-    #520. Obtain the available <push> methods
-    @property
-    def apipush(self):
-        if self.hasPkgPush:
-            pkg_push = importByStr(self.apiPkgPush, asModule = True)
-            api_push = {
-                f
-                for f,o in inspect.getmembers_static(pkg_push, predicate = callable)
-                if f.startswith(self.apiPfxPush) and f.endswith(self.apiSfxPush)
-            }
-        else:
-            lsPushOpt = {
-                'verbose' : False
-                ,'predicate' : callable
-                ,'flags' : re.NOFLAG
-                ,**{ k:v for k,v in self.lsPushOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
-            }
-            api_push = {
-                f
-                for f in ls_frame(pattern = f'^{self.apiPfxPush}.+{self.apiSfxPush}$', **lsPushOpt)
-            }
+		#200. List all available APIs at present
+		dataIO$full
+		# [1] "R"   "RAM" "SAS"
 
-        #999. Export
-        return(api_push)
+		#300. Convert data using SAS API
+		smpl_sas <- file.path(dir_omniR, 'omniR', 'AdvDB', 'test_loadsasdat.sas7bdat')
+		api <- 'SAS'
+		dataIO$add(api)
 
-    #530. Obtain all methods for APIs
-    @property
-    def apifull(self):
-        return(self.apipull | self.apipush)
+		#310. Load data
+		sas_pulled <- dataIO[[api]]$pull(smpl_sas)
+		# tibble [200 x 6] (S3: tbl_df/tbl/data.frame)
 
-    #535. Obtain dynamic methods for APIs, i.e. the methods created in current session
-    @property
-    def apidyn(self):
-        apipull = set() if self.hasPkgPull else self.apipull
-        apipush = set() if self.hasPkgPush else self.apipush
-        return(apipull | apipush)
+		#330. Redirect the pulled data
+		sas_pulled2 <- dataIO[[api]]$pulled
+		# tibble [200 x 6] (S3: tbl_df/tbl/data.frame)
 
-    #540. Obtain the full set of available APIs
-    @property
-    def full(self):
-        #500. Extract API name from the methods
-        apipull = self._rem_affix_(self.apipull, pfx = self.apiPfxPull, sfx = self.apiSfxPull)
-        apipush = self._rem_affix_(self.apipush, pfx = self.apiPfxPush, sfx = self.apiSfxPush)
+		#350. Write the data from RAM to the requested path
+		#355. Modify the inference of the output config
+		meta_sas <- inferContents(sas_pulled) %>%
+			dplyr::mutate(
+				!!rlang::sym('FORMATD') := ifelse(!!rlang::sym('NAME') == 'f_qpv', 0, !!rlang::sym('FORMATD'))
+			)
 
-        #999. Return if there is either a <pull> method or <push> for the API
-        return(apipull | apipush)
+		#359. Push the data to the destination using the modified meta config table
+		#[ASSUMPTION]
+		#[1] 'test' is a placeholder for this API, just for unification purpose
+		outf1 <- file.path(cwd, 'vfysas1.sas7bdat')
+		rc <- dataIO[[api]]$push(list('test' = sas_pulled), outfile = outf1, metaVar = meta_sas)
+		if (file.exists(outf1)) rc <- file.remove(outf1)
+		dataIO$remove(api)
 
-    #570. Obtain the status of all APIs
-    @property
-    def status(self):
-        return(self.__dict_active__)
+		#500. Convert data using RData API
+		smpl_R <- list(
+			'key1' = data.frame(aa = c(1,3,5), bb = c('c','d','e'))
+			,'key2' = data.frame(aa = c(5,4,8), bb = c('f','g','h'))
+		)
+		outf2 <- file.path(cwd, 'vfyRData1.RData')
+		api2 <- 'R'
+		dataIO$add(api2)
 
-    #580. Obtain the names of active APIs
-    @property
-    def active(self):
-        return({ k for k,v in self.status.items() if v })
-#End DataIO
+		#510. Write the data from RAM to the requested path
+		#[ASSUMPTION]
+		#[1] RData can store multiple objects in the same batch
+		rc <- dataIO[[api2]]$push(smpl_R, outfile = outf2)
 
-'''
-#-Notes- -Begin-
-#Full Test Program[1]:
-if __name__=='__main__':
-    #100.   Create envionment.
-    import os
-    import pandas as pd
-    import sys
-    from functools import partial
-    from collections.abc import Iterable
-    dir_omniPy : str = r'D:\Python\ '.strip()
-    if dir_omniPy not in sys.path:
-        sys.path.append( dir_omniPy )
-    from omniPy.AdvDB import DataIO
-    from omniPy.AdvDB import loadSASdat, inferContents
-    from omniPy.AdvOp import get_values
+		#530. Load data from above storage
+		#[ASSUMPTION]
+		#[1] As a unified process, the <pull> method can only pull one object from the API
+		R_pulled <- dataIO[[api2]]$pull(outf2, key = 'key2')
+		#   aa bb
+		# 1  5  f
+		# 2  4  g
+		# 3  8  h
 
-    cwd = os.getcwd()
+		#560. Change the handler of <pull> method for the API
+		#561. Prepare the function to remove the required column from the data frame
+		h_remcol <- function(x){x %>% dplyr::select(-tidyselect::any_of(c('bb','kk')))}
 
-    #100. Launch the tool with default arguments
-    dataIO = DataIO()
+		#563. Modify the handler
+		#[ASSUMPTION]
+		#[1] High order functions such as <purrr::partial> will prevent the internal environment binding of the masked function
+		#[2] That is why we cannot assign new methods in the commented way
+		# dataIO[[api2]]$hdlPull <- purrr::partial(h_remcol, col = c('bb','kk'))
+		dataIO[[api2]]$hdlPull <- h_remcol
 
-    #200. List all available APIs at present
-    dataIO.full
+		#570. Load data with the updated handler
+		R_chk <- dataIO[[api2]]$pull(outf2, key = 'key1')
+		#   aa
+		# 1  1
+		# 2  3
+		# 3  5
 
-    #300. Convert data using SAS API
-    smpl_sas = os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'test_loadsasdat.sas7bdat')
-    api = 'SAS'
-    dataIO.add(api)
+		#599. Purge
+		if (file.exists(outf2)) rc <- file.remove(outf2)
 
-    #310. Load data
-    #[ASSUMPTION]
-    #[1] Most of the arguments for this method come from <pyreadstat.read_sas7bdat>
-    #[2] Some of the arguments are from <omniPy.AdvDB.loadSASdat>
-    #[3] Rest of the arguments are from <omniPy.AdvDB.std_read_SAS>
-    #Quote: https://ofajardo.github.io/pyreadstat_documentation/_build/html/index.html#module-pyreadstat.pyreadstat
-    sas_pulled = dataIO.__getattribute__(api).pull(smpl_sas)
-    # Same as: dataIO.SAS.pull(smpl_sas)
+		#700. Operate in RAM
+		dat_before <- data.frame(a = c(2,5,9))
+		api3 <- 'RAM'
+		dataIO$add(api3)
 
-    #330. Redirect the pulled data
-    # A simpler way to operate on current API is to use slicing fashion
-    sas_pulled2 = dataIO[api].pulled
-    # pd.DataFrame
+		#710. Read data from RAM by its name and mutate it
+		h_conv <- function(df) {
+			df %>% dplyr::mutate('b' = c(5,4,1))
+		}
+		ram_redir <- dataIO[[api3]]$pull('dat_before', funcConv = h_conv)
+		#   a b
+		# 1 2 5
+		# 2 5 4
+		# 3 9 1
 
-    #350. Write the data from RAM to the requested path
-    #351. Load the meta information of the sample data
-    _, meta = loadSASdat(smpl_sas, metadataonly = True)
+		#750. Push the data to another address within RAM
+		#[ASSUMPTION]
+		#[1] Same as SAS, 'dummy' is a placeholder for this API, just for unification purpose
+		rc <- dataIO[[api3]]$push(list('dummy' = ram_redir), outfile = 'ram_new')
 
-    #355. Modify the inference of the output config
-    meta_sas = inferContents(sas_pulled)
-    meta_sas.loc[:, 'LENGTH'] = (
-        pd.Series(
-            meta.variable_storage_width.values()
-            ,index = meta.variable_storage_width.keys()
-            ,dtype = int
-        )
-        .reindex(meta_sas['NAME'])
-        .set_axis(meta_sas.index)
-    )
-    meta_sas.loc[:, 'LABEL'] = (
-        pd.Series(
-            meta.column_names_to_labels.values()
-            ,index = meta.column_names_to_labels.keys()
-            ,dtype = str
-        )
-        .reindex(meta_sas['NAME'])
-        .set_axis(meta_sas.index)
-    )
-    meta_sas.loc[lambda x: x['NAME'].eq('f_qpv'), 'FORMATD'] = 0
+		#770. Retrieve the exported data frame
+		ram_visible <- get_values('ram_new', mode = 'list')
+		#   a b
+		# 1 2 5
+		# 2 5 4
+		# 3 9 1
 
-    #359. Push the data to the destination using the modified meta config table
-    #[ASSUMPTION]
-    #[1] 'test' is a placeholder for this API, just for unification purpose
-    outf1 = os.path.join(cwd, 'vfysas1.sas7bdat')
-    rc = dataIO[api].push({'test' : sas_pulled}, outfile = outf1, metaVar = meta_sas)
-    if os.path.isfile(outf1): os.remove(outf1)
+		#790. Try to add an API that does not exist in vain
+		dataIO$add('pseudo')
+		# [DataIO]No method is found to register API for [pseudo]!
 
-    #500. Convert data using HDFS API
-    smpl_hdf = {
-        'key1' : pd.DataFrame({'aa' : [1,3,5], 'bb' : ['c','d','e']})
-        ,'key2' : pd.DataFrame({'aa' : [5,4,8], 'kk' : ['f','g','h']})
-    }
-    outf2 = os.path.join(cwd, 'vfyhdf1.hdf')
-    api2 = 'HDFS'
-    dataIO.add(api2)
+		#800. Create the instance by searching within the scope of a function
+		testIO <- function(){
+			frame <- environment()
+			std_read_SAS <- function(){print('local')}
+			std_write_HDFS <- function(){print('local')}
+			dataIO3 <- DataIO$new(
+				lsPullOpt = list('frame' = frame)
+				,lsPushOpt = list('frame' = frame)
+			)
+			print(dataIO3$full)
 
-    #510. Write the data from RAM to the requested path
-    #[ASSUMPTION]
-    #[1] HDFStore can store multiple objects in the same batch
-    rc = dataIO[api2].push(smpl_hdf, outfile = outf2)
+			#Check whether the API is from local scope
+			dataIO3$add('SAS')
+			rc <- dataIO3[['SAS']]$pull()
 
-    #530. Load data from above storage
-    #[ASSUMPTION]
-    #[1] As a unified process, the <pull> method can only pull one object from the API
-    hdf_pulled = dataIO[api2].pull(outf2, key = 'key2')
+			#Ensure there is no unexpected return value
+			invisible()
+		}
+		testIO()
+		# [1] "SAS"  "HDFS"
+		# [1] "local"
 
-    #560. Change the handler of <pull> method for the API of HDFS
-    #561. Prepare the function to remove the required column from the data frame
-    def h_remcol(df : pd.DataFrame, col : str | list[str]):
-        if isinstance(col, str):
-            col = [col]
-        elif not isinstance(col, Iterable):
-            raise TypeError('[col] should be Iterable!')
-        df_new = df.loc[:, lambda x: ~x.columns.isin(col)]
-        return(df_new)
-
-    #563. Modify the handler
-    dataIO[api2].hdlPull = partial(h_remcol, col = ['bb','kk'])
-
-    #570. Load data with the updated handler
-    hdf_chk = dataIO[api2].pull(outf2, key = 'key1')
-
-    #599. Purge
-    if os.path.isfile(outf2): os.remove(outf2)
-
-    #700. Operate in RAM
-    dat_before = pd.DataFrame({'a' : [2,5,9]})
-    api3 = 'RAM'
-    dataIO.add(api3)
-
-    #710. Read data from RAM by its name and mutate it
-    def h_conv(df):
-        df_new = df.assign(**{'b' : lambda x: pd.Series([5,4,1], index = x.index)})
-        return(df_new)
-    ram_redir = dataIO[api3].pull('dat_before', funcConv = h_conv)
-
-    #750. Push the data to another address within RAM
-    #[ASSUMPTION]
-    #[1] Same as SAS, 'dummy' is a placeholder for this API, just for unification purpose
-    rc = dataIO[api3].push({'dummy' : ram_redir}, outfile = 'ram_new')
-
-    #770. Retrieve the exported data frame
-    #[ASSUMPTION]
-    #[1] According to PEP-558, direct reference of the object updated into <f_locals> is unacceptable for <Python <= 3.13>
-    #[2] That is why <ram_new> is there and yet we can only reference it by below method
-    #Quote: https://peps.python.org/pep-0558/
-    ram_visible = get_values('ram_new', instance = pd.DataFrame)
-
-    #790. Try to add an API that does not exist in vain
-    #ValueError: [DataIO]No method is found to register API for [pseudo]!
-    dataIO.add('pseudo')
-
-    #800. Create the instance by searching the dynamically created APIs from current session
-    def std_read_SAS(): print('global')
-    def std_write_HDFS(): print('global')
-    dataIO2 = DataIO(apiPkgPull = None, apiPkgPush = None)
-    dataIO2.full
-    # {'HDFS', 'SAS'}
-
-    #810. Check whether the API is from a physical package
-    dataIO2.add('HDFS')
-    dataIO2['HDFS'].push()
-    # global
-
-    #850. Search within the scope of a function
-    def testIO():
-        frame = sys._getframe()
-        def std_read_SAS(): print('local')
-        def std_write_HDFS(): print('local')
-        dataIO3 = DataIO(
-            apiPkgPull = None
-            ,apiPkgPush = None
-            ,lsPullOpt = {'frame' : frame, 'scope' : 'f_locals'}
-            ,lsPushOpt = {'frame' : frame, 'scope' : 'f_locals'}
-        )
-        print(dataIO3.full)
-
-        #Check whether the API is from local scope
-        dataIO3.add('SAS')
-        dataIO3['SAS'].pull()
-
-    testIO()
-    # {'SAS', 'HDFS'}
-    # local
-
-#-Notes- -End-
-'''
+	}
+}

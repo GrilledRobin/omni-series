@@ -102,12 +102,16 @@ echarts4r.merge.tooltips <- function(
 	func_calls <- eval(rlang::expr(Reduce(paste0, !!lapply(df_trans, function(x){x %>% dplyr::pull(call_func)}))))
 
 	#500. Combine the HTML tags with the user requested method
-	join_tags <- rlang::exec(
+	join_tags <- do.call(
 		mapply
-		,container
-		,!!!lapply(df_trans, function(x){x %>% dplyr::pull(!!sym_tags)})
-		,USE.NAMES = FALSE
-		,SIMPLIFY = TRUE
+		,c(
+			list(container)
+			,lapply(df_trans, function(x){x %>% dplyr::pull(!!sym_tags)})
+			,list(
+				USE.NAMES = FALSE
+				,SIMPLIFY = TRUE
+			)
+		)
 	)
 
 	#900. Create the universal JS statements

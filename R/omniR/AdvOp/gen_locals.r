@@ -12,6 +12,9 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |...        :   Various named parameters, whose [names] will be used to create variables while [values] will be assigned to them    #
+#   |frame      :   <frame> object in which to create the variables                                                                     #
+#   |               [see def.   ] <Default> Create the variables in the caller frame                                                    #
+#   |               [frame      ]           Dedicated <frame> in which to create the variables                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -22,6 +25,13 @@
 #   | Date |    20210125        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240203        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <frame> to enable subtle control on the destination of created variables                             #
+#   |      |[2] In <R == 4.1.1>, <rlang::flatten_if> issues warning message even if the argument <predicate> returns FALSE, hence we set#
+#   |      |     the verification ahead of it to suppress the warning                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -50,7 +60,7 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-gen_locals <- function(...){
+gen_locals <- function(..., frame = sys.frame()){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
 	LfuncName <- deparse(sys.call()[[1]])
@@ -63,7 +73,7 @@ gen_locals <- function(...){
 	if (length(dots) == 1 && rlang::is_bare_list(dots[[1]])) {
 		dots <- dots[[1]]
 	}
-	dots <- rlang::flatten_if(dots, is_flattenable)
+	if (is_flattenable(dots)) dots <- rlang::flatten_if(dots, is_flattenable)
 	dots <- purrr::discard(dots, is.null)
 	in_names <- names(dots)
 
@@ -72,7 +82,7 @@ gen_locals <- function(...){
 		seq_along(dots)
 		,function(i){
 			#Here [sys.frame()] represents the frame of the caller program.
-			assign( in_names[[i]], dots[[i]], pos = sys.frame() )
+			assign( in_names[[i]], dots[[i]], pos = frame )
 		}
 	)
 
@@ -84,7 +94,57 @@ gen_locals <- function(...){
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#100. Assign values to below variables
+		#010. Load user defined functions
+		source('D:\\R\\autoexec.r')
+
+		#100. Test a list for variable creation
+		v_dict <- list(
+			aa = '1'
+			,bb = 2
+		)
+		gen_locals( v_dict )
+		message(glue::glue('aa={aa}'))
+		# aa=1
+
+		gen_locals(cc=3)
+		message(glue::glue('cc={cc}'))
+		# cc=3
+
+		myfunc <- function(){
+			curr_frame <- sys.frame()
+
+			func1 <- function(){
+				gen_locals(dd=4, frame = curr_frame)
+			}
+			func1()
+
+			message(glue::glue('dd={dd}'))
+
+			func2 <- function(){
+				message(glue::glue('dd+1={dd+1}'))
+
+				#Create variable in the top-most frame
+				ifr <- 1
+				while (T) {
+					frame <- parent.frame(ifr)
+					if (environmentName(frame) == 'R_GlobalEnv') break
+					ifr <- ifr + 1
+				}
+				gen_locals(ee=6, frame = frame)
+			}
+			func2()
+		}
+		myfunc()
+
+		#Test result: all assignments in the lower call stacks have been recycled
+		message(glue::glue('dd={dd}'))
+		# dd=4
+
+		#Find the variable created in the highest stack
+		message(get_values('ee'))
+		# 6
+
+		#800. Assign values to below variables
 		#It is the same method to call the functions you designed, so just copy all the parameters here
 		# to enable the partial test of the internal scripts in your function.
 		#[IMPORTANT] Remember to add names to all positional parameters before you call this function.
@@ -102,15 +162,6 @@ if (FALSE){
 		)
 
 		typeof(fImp.opt)
-
-		#300. Test a list for variable creation
-		lst_var <- list(
-			aa1 = 2
-			,aa2 = 'abc'
-		)
-		gen_locals( lst_var )
-
-		message(aa1)
 
 	}
 }

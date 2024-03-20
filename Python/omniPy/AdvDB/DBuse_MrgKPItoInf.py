@@ -7,8 +7,8 @@ import numpy as np
 from collections import Counter
 from collections.abc import Iterable
 from warnings import warn
-from typing import Optional, Union
-from omniPy.AdvDB import parseDatName, DBuse_SetKPItoInf
+from typing import Optional, Union, Any
+from omniPy.AdvDB import parseDatName, DBuse_SetKPItoInf, validateDMCol
 
 #For annotations in function arguments, see [PEP 604 -- Allow writing union types as X | Y] for [Python >= 3.10]
 def DBuse_MrgKPItoInf(
@@ -17,14 +17,14 @@ def DBuse_MrgKPItoInf(
     ,keyvar : Optional[Iterable] = None
     ,SetAsBase : str = 'I'
     ,KeepInfCol : bool = False
-    ,fTrans : Optional[dict] = None
+    ,fTrans : Optional[dict] = {}
     ,fTrans_opt : dict = {}
     ,fImp_opt : dict | str = {
         'SAS' : {
             'encoding' : 'GB18030'
         }
     }
-    ,_parallel : bool = True
+    ,_parallel : bool = False
     ,cores : int = 4
     ,fDebug : bool = False
     ,miss_skip : bool = True
@@ -62,102 +62,113 @@ def DBuse_MrgKPItoInf(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKPICfg   :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                            #
-#   |               [C_KPI_ID        ] : The ID of the KPI to be retrieved from the various data files.                                 #
-#   |               [N_LIB_PATH_SEQ  ] : The sequence of paths to search for the KPI data file in the same library alias                #
-#   |               [C_KPI_FILE_TYPE ] : The types of data files that indicates the method for this function to import data             #
-#   |                                    [RAM     ] Try to load the data frame from RAM in current R session                            #
-#   |                                    [HDFS    ] Try to import as HDFStore file                                                      #
-#   |                                    [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                                        #
-#   |               [DF_NAME         ] : For some cases, such as [C_KPI_FILE_TYPE=R] there should be such an additional field           #
-#   |                                     indicating the name of data.frame stored in the data file (i.e. container) for loading        #
-#   |                                    Default: [None] i.e. no need for such field when [C_KPI_FILE_TYPE=SAS]                         #
-#   |               [C_KPI_FILE_NAME ] : The names of data files for identification of file existence in all available paths            #
-#   |               [C_LIB_PATH      ] : The absolute paths to store the KPI data (excl. file name). Program will conduct translation   #
-#   |               [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local    #
-#   |                                     variable [trans_var].                                                                         #
-#   |                                    [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path         #
-#   |                                    [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance   #
-#   |                                          as data file names. in such case, names of the provided parameter are treated as strings #
-#   |                                          to be replaced; while the values of the provided parameter are treated as variables in   #
-#   |                                          the parent environment and are [get]ed for translation, e.g.:                            #
-#   |                                        [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be #
-#   |                                              translated by the value of Python variable [G_d_curr] in the parent frame            #
-#   |InfDat     :   The dataset that stores the descriptive information at certain level (Acct level or Cust level).                    #
-#   |               Default: [None]                                                                                                     #
-#   |keyvar     :   The vector of Key field names during the merge. This requires that the same Key fields exist in both data.          #
-#   |               [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                      #
-#   |               Default: [None]                                                                                                     #
-#   |SetAsBase  :   The merging method indicating which of above data is set as the base during the merge.                              #
-#   |               [I] Use "Inf" data as the base to left join the "KPI" data.                                                         #
-#   |               [K] Use "KPI" data as the base to left join the "Inf" data.                                                         #
-#   |               [B] Use either data as the base to inner join the other, meaning "both".                                            #
-#   |               [F] Use either data as the base to full join the other, meaning "full".                                             #
-#   |                Above parameters are case insensitive, while the default one is set as [I].                                        #
-#   |KeepInfCol :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                     #
-#   |               [False           ]  <Default> Use those in KPI data frames as output                                                #
-#   |               [True            ]            Keep those retained from [InfDat] as output                                           #
-#   |fTrans     :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process    #
-#   |               Default: [None]                                                                                                     #
-#   |fTrans_opt :   Additional options for value translation on [fTrans], see document for [omniPy.AdvOp.apply_MapVal]                  #
-#   |               [{}              ]  <Default> Use default options in [apply_MapVal]                                                 #
-#   |               [<dict>          ]            Use alternative options as provided by a list, see documents of [apply_MapVal]        #
-#   |fImp_opt   :   List of options during the data file import for different engines; each element of it is a separate list, too       #
-#   |               Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                     #
-#   |               [SAS             ]  <Default> Options for [pyreadstat.read_sas7bdat]                                                #
-#   |                                             [encoding = 'GB2312'  ]  <Default> Read SAS data in this encoding                     #
-#   |               [<dict>          ]            Other dicts for different engines, such as [R:{}] and [HDFS:{}]                       #
-#   |               [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be     #
-#   |                                              parsed as a <dict>                                                                   #
-#   |_parallel  :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones #
-#   |               [True            ]  <Default> Use multiple CPU cores to load the data files in parallel                             #
-#   |               [False           ]            Load the data files sequentially                                                      #
-#   |cores      :   Number of system cores to read the data files in parallel                                                           #
-#   |               Default: [4]                                                                                                        #
-#   |fDebug     :   The switch of Debug Mode. Valid values are [False] or [True].                                                       #
-#   |               Default: [False]                                                                                                    #
-#   |miss_skip  :   Whether to skip loading the files which are requested but missing in all provided paths                             #
-#   |               [True            ]  <Default> Skip missing files, but issue a message to inform the user                            #
-#   |               [False           ]            Abort the process if any of the requested files do not exist                          #
-#   |miss_files :   Name of the key in the output [dict] to store the debug data frame with missing file paths and names                #
-#   |               [G_miss_files    ]  <Default> If any data files are missing, please check this [key] to see the details             #
-#   |               [chr string      ]            User defined [key] of the output result that stores the debug information             #
-#   |err_cols   :   Name of the key in the output [dict] to store the debug data frame with error column information                    #
-#   |               [G_err_cols      ]  <Default> If any columns are invalidated, please check this [key] to see the details            #
-#   |               [chr string      ]            User defined [key] of the output result that stores the debug information             #
-#   |outDTfmt   :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                    #
-#   |               [ <dict>         ]  <Default> See the function definition as the default argument of usage                          #
-#   |dup_KPIs   :   Name of the key in the output [dict] to store the debug data frame with duplicated [C_KPI_SHORTNAME]                #
-#   |               [G_dup_kpiname   ]  <Default> If any duplication is found, please check this [key] to see the details               #
-#   |               [chr string      ]            User defined [key] of the output result that stores the debug information             #
-#   |AggrBy     :   The list/tuple of field names that are to be used as the classes to aggregate the source data.                      #
-#   |               [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                   #
-#   |               [<keyvar>        ]  <Default> The same as the list of [keyvar]                                                      #
-#   |values_fn  :   The same parameter as passed into function [pandas.DataFrame.pivot_table] to summarize the column [A_KPI_VAL]       #
-#   |               [np.sum          ]  <Default> Sum the values of input records of any KPI                                            #
-#   |               [<function>      ]            Function to be applied, as an object instead of a character string                    #
-#   |kw_DataIO  :   Arguments to instantiate <DataIO>                                                                                   #
-#   |               [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                           #
-#   |kw         :   The additional arguments for [pandas.DataFrame.pivot_table]                                                         #
-#   |               [IMPORTANT] Do not use these args: [index], [columns] and [aggfunc] as they are encapsulated in this function       #
+#   |inKPICfg    :   The dataset that stores the full configuration of the KPI. It MUST contain below fields:                           #
+#   |                |------------------------------------------------------------------------------------------------------------------#
+#   |                |Column Name     |Nullable?  |Description                                                                          #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                             #
+#   |                |C_KPI_SHORTNAME |No         | It will be translated into [colnames] in the output data frame                      #
+#   |                |                |           | [IMPORTANT] Ensure its values are valid according to the syntax in Python           #
+#   |                |C_KPI_BIZNAME   |Yes        | Currently not implemented in Python                                                 #
+#   |                |C_KPI_FILE_TYPE |No         | File type to determine the API for data I/O process, see <DataIO>                   #
+#   |                |N_LIB_PATH_SEQ  |No         | Priority to determine the candidate paths when loading and writing data files, the  #
+#   |                |                |           |  lesser the higher. E.g. 1 represents the primary path, 2 indicates the backup      #
+#   |                |                |           |  location of historical data files                                                  #
+#   |                |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>      #
+#   |                |                |           | It can be empty for data type <RAM>                                                 #
+#   |                |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                          #
+#   |                |DF_NAME         |Yes        | For some cases, such as [inDatType=HDFS] there should be such an additional field   #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
+#   |                |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [HDFS]              #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
+#   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
+#   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
+#   |                                      variable [trans_var].                                                                        #
+#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
+#   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
+#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
+#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
+#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |InfDat      :   The dataset that stores the descriptive information at certain level (Acct level or Cust level).                   #
+#   |                Default: [None]                                                                                                    #
+#   |keyvar      :   The vector of Key field names during the merge. This requires that the same Key fields exist in both data.         #
+#   |                [IMPORTANT] All attributes of [keyvar] are retained from [InfDat] if provided.                                     #
+#   |                Default: [None]                                                                                                    #
+#   |SetAsBase   :   The merging method indicating which of above data is set as the base during the merge.                             #
+#   |                [I] Use "Inf" data as the base to left join the "KPI" data.                                                        #
+#   |                [K] Use "KPI" data as the base to left join the "Inf" data.                                                        #
+#   |                [B] Use either data as the base to inner join the other, meaning "both".                                           #
+#   |                [F] Use either data as the base to full join the other, meaning "full".                                            #
+#   |                 Above parameters are case insensitive, while the default one is set as [I].                                       #
+#   |KeepInfCol  :   Whether to keep the columns from [InfDat] if they also exist in KPI data frames                                    #
+#   |                [False           ]  <Default> Use those in KPI data frames as output                                               #
+#   |                [True            ]            Keep those retained from [InfDat] as output                                          #
+#   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
+#   |                Default: [None]                                                                                                    #
+#   |fTrans_opt  :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                        #
+#   |                [{}              ]  <Default> Use default options in [apply_MapVal]                                                #
+#   |                [<dict>          ]            Use alternative options as provided by a list, see documents of [apply_MapVal]       #
+#   |fImp_opt    :   List of options during the data file import for different engines; each element of it is a separate list, too      #
+#   |                Valid names of the option lists are set in the field [inKPICfg$C_KPI_FILE_TYPE]                                    #
+#   |                [SAS             ]  <Default> Options for [pyreadstat.read_sas7bdat]                                               #
+#   |                                              [encoding = 'GB2312'  ]  <Default> Read SAS data in this encoding                    #
+#   |                [<dict>          ]            Other dicts for different engines, such as [R:{}] and [HDFS:{}]                      #
+#   |                [<col. name>     ]            Column name in <inKPICfg> that stores the options as a literal string that can be    #
+#   |                                               parsed as a <dict>                                                                  #
+#   |_parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones#
+#   |                [False           ]  <Default> Load the data files sequentially                                                     #
+#   |                [True            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
+#   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
+#   |                                               that RAM is the requested location for search                                       #
+#   |cores       :   Number of system cores to read the data files in parallel                                                          #
+#   |                Default: [4]                                                                                                       #
+#   |fDebug      :   The switch of Debug Mode. Valid values are [False] or [True].                                                      #
+#   |                Default: [False]                                                                                                   #
+#   |miss_skip   :   Whether to skip loading the files which are requested but missing in all provided paths                            #
+#   |                [True            ]  <Default> Skip missing files, but issue a message to inform the user                           #
+#   |                [False           ]            Abort the process if any of the requested files do not exist                         #
+#   |miss_files  :   Name of the key in the output [dict] to store the debug data frame with missing file paths and names               #
+#   |                [G_miss_files    ]  <Default> If any data files are missing, please check this [key] to see the details            #
+#   |                [chr string      ]            User defined [key] of the output result that stores the debug information            #
+#   |err_cols    :   Name of the key in the output [dict] to store the debug data frame with error column information                   #
+#   |                [G_err_cols      ]  <Default> If any columns are invalidated, please check this [key] to see the details           #
+#   |                [chr string      ]            User defined [key] of the output result that stores the debug information            #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |                [ <dict>         ]  <Default> See the function definition as the default argument of usage                         #
+#   |dup_KPIs    :   Name of the key in the output [dict] to store the debug data frame with duplicated [C_KPI_SHORTNAME]               #
+#   |                [G_dup_kpiname   ]  <Default> If any duplication is found, please check this [key] to see the details              #
+#   |                [chr string      ]            User defined [key] of the output result that stores the debug information            #
+#   |AggrBy      :   The list/tuple of field names that are to be used as the classes to aggregate the source data.                     #
+#   |                [IMPORTANT] This list of columns are NOT affected by [keyvar] during aggregation.                                  #
+#   |                [<keyvar>        ]  <Default> The same as the list of [keyvar]                                                     #
+#   |values_fn   :   The same parameter as passed into function [pandas.DataFrame.pivot_table] to summarize the column [A_KPI_VAL]      #
+#   |                [np.sum          ]  <Default> Sum the values of input records of any KPI                                           #
+#   |                [<function>      ]            Function to be applied, as an object instead of a character string                   #
+#   |kw_DataIO   :   Arguments to instantiate <DataIO>                                                                                  #
+#   |                [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                          #
+#   |kw          :   The additional arguments for [pandas.DataFrame.pivot_table]                                                        #
+#   |                [IMPORTANT] Do not use these args: [index], [columns] and [aggfunc] as they are encapsulated in this function      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<dict>     :   A dictionary that contains below keys:                                                                              #
-#   |               [data            ] [pd.DataFrame] that stores the result with columns including [available KPIs] and the pivoting   #
-#   |                                   [ID]s determined as:                                                                            #
-#   |                                  [1] If [InfDat] is not provided, we only use [AggrBy] as [ID] during pivoting                    #
-#   |                                  [2] If [InfDat] is provided:                                                                     #
-#   |                                      [1] If [AggrBy] has the same values as [keyvar], we add to [AggrBy] by all other columns     #
-#   |                                           than [keyvar] in [InfDat] as [ID]                                                       #
-#   |                                      [2] Otherwise we follow the rule when [InfDat] is not provided                               #
-#   |               [ <dup_KPIs>     ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the paths to the #
-#   |                                   data files that are required but missing                                                        #
-#   |               [ <miss_files>   ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the paths to the #
-#   |                                   data files that are required but missing                                                        #
-#   |               [ <err_cols>     ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the column names #
-#   |                                   as well as the data files in which they are located, which cannot be concatenated due to        #
-#   |                                   different [dtypes]                                                                              #
+#   |<dict>      :   A dictionary that contains below keys:                                                                             #
+#   |                [data            ] [pd.DataFrame] that stores the result with columns including [available KPIs] and the pivoting  #
+#   |                                    [ID]s determined as:                                                                           #
+#   |                                   [1] If [InfDat] is not provided, we only use [AggrBy] as [ID] during pivoting                   #
+#   |                                   [2] If [InfDat] is provided:                                                                    #
+#   |                                       [1] If [AggrBy] has the same values as [keyvar], we add to [AggrBy] by all other columns    #
+#   |                                            than [keyvar] in [InfDat] as [ID]                                                      #
+#   |                                       [2] Otherwise we follow the rule when [InfDat] is not provided                              #
+#   |                [ <dup_KPIs>     ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the paths to the#
+#   |                                    data files that are required but missing                                                       #
+#   |                [ <miss_files>   ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the paths to the#
+#   |                                    data files that are required but missing                                                       #
+#   |                [ <err_cols>     ] [None] if all KPI data are successfully loaded, or [pd.DataFrame] that contains the column names#
+#   |                                    as well as the data files in which they are located, which cannot be concatenated due to       #
+#   |                                    different [dtypes]                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -191,7 +202,7 @@ def DBuse_MrgKPItoInf(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210529        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [omniPy.AdvDB.parseDatName] as standardization     #
+#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [AdvDB.parseDatName] as standardization            #
 #   |      |[2] Introduce an argument [outDTfmt] aligning above change, to bridge the mapping from [fTrans] to the date series          #
 #   |      |[3] Correct the part of frame lookup when assigning values to global variables for user request                             #
 #   |______|____________________________________________________________________________________________________________________________#
@@ -207,6 +218,11 @@ def DBuse_MrgKPItoInf(
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |      |[2] Accept <fImp_opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240209        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce function <validateDMCol> to unify the validation of related columns                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -220,9 +236,10 @@ def DBuse_MrgKPItoInf(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_SetKPItoInf                                                                                                          #
+#   |   |   |validateDMCol                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -232,22 +249,22 @@ def DBuse_MrgKPItoInf(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
-    if inKPICfg is None: raise ValueError('['+LfuncName+']'+'[inKPICfg] is not provided!')
-    if InfDat is not None:
-        if not keyvar:
-            raise ValueError('['+LfuncName+']'+'[keyvar] is not provided for mapping to [InfDat]!')
-        if not isinstance(keyvar, Iterable):
-            raise TypeError('['+LfuncName+']'+'[keyvar] should be [Iterable]!')
-        if isinstance(keyvar, str):
-            keyvar = [keyvar.upper()]
+    def h_convStr(vec : Any, func : callable = str.upper):
+        if isinstance(vec, str):
+            return(func(vec))
         else:
-            keyvar = [ v.upper() for v in keyvar ]
+            return(vec)
+
+    if inKPICfg is None: raise ValueError(f'[{LfuncName}][inKPICfg] is not provided!')
+    if InfDat is not None:
+        keyvar = [ h_convStr(v) for v in validateDMCol(keyvar) ]
+        if not keyvar:
+            raise ValueError(f'[{LfuncName}][keyvar] is not provided for mapping to [InfDat]!')
     SetAsBase = SetAsBase.upper()
-    if SetAsBase not in ['I','K','B','F']:
-        raise ValueError('['+LfuncName+']'+'[SetAsBase] should be any among [I, K, B, F]!')
+    if SetAsBase not in (vfyVal := ['I','K','B','F']):
+        raise ValueError(f'[{LfuncName}][SetAsBase] should be any among {str(vfyVal)}!')
     if not isinstance(KeepInfCol, bool): KeepInfCol = False
     if fTrans_opt is None: fTrans_opt = {}
     if not isinstance(_parallel, bool): _parallel = False
@@ -258,14 +275,11 @@ def DBuse_MrgKPItoInf(
     if (not miss_files) | (not isinstance(miss_files, str)): miss_files = 'G_miss_files'
     if (not err_cols) | (not isinstance(err_cols, str)): err_cols = 'G_err_cols'
     if not dup_KPIs: dup_KPIs = 'G_dup_kpiname'
-    if not AggrBy: AggrBy = keyvar
-    if isinstance(AggrBy, str):
-        AggrBy = [AggrBy.upper()]
-    else:
-        AggrBy = [ v.upper() for v in AggrBy ]
     if not values_fn: values_fn = np.sum
+    AggrBy = [ h_convStr(v) for v in validateDMCol(AggrBy) ]
+    if not AggrBy: AggrBy = keyvar
     if not AggrBy:
-        raise ValueError('['+LfuncName+']'+'[AggrBy] is not provided for pivoting!')
+        raise ValueError(f'[{LfuncName}][AggrBy] is not provided for pivoting!')
 
     #050. Local environment
     outDict = {
@@ -295,17 +309,17 @@ def DBuse_MrgKPItoInf(
 
     #099. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Debug mode...')
-        print('['+LfuncName+']'+'Parameters are listed as below:')
+        print(f'[{LfuncName}]Debug mode...')
+        print(f'[{LfuncName}]Parameters are listed as below:')
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         getvar = sys._getframe().f_code.co_varnames
         for v in getvar:
             if v not in ['v','getvar']:
-                print('['+LfuncName+']'+'[{0}]=[{1}]'.format(v,locals().get(v)))
+                print(f'[{LfuncName}]'+'[{0}]=[{1}]'.format(v,locals().get(v)))
 
     #100. Translate the configurations once required
     #110. Define the full path of data files
-    KPICfg = inKPICfg.copy(deep=True).assign(
+    KPICfg = inKPICfg.assign(
         C_KPI_FULL_PATH = inKPICfg.apply( lambda x: os.path.join(x['C_LIB_PATH'], x['C_KPI_FILE_NAME']), axis = 1 )
     )
 
@@ -354,7 +368,7 @@ def DBuse_MrgKPItoInf(
     #290. Abort the process if any duplication is found
     if len(qc_KPI_id):
         #001. Print messages
-        warn('['+LfuncName+']'+'Below [C_KPI_SHORTNAME] are applied to more than 1 columns!')
+        warn(f'[{LfuncName}]Below [C_KPI_SHORTNAME] are applied to more than 1 columns!')
         print(qc_KPI_id)
 
         #500. Output a global data frame storing the information of the duplicated [C_KPI_SHORTNAME]
@@ -362,7 +376,7 @@ def DBuse_MrgKPItoInf(
         outDict.update({ dup_KPIs : qc_KPI_id })
 
         #999. Abort the process
-        warn('['+LfuncName+']'+'Check the data frame ['+dup_KPIs+'] in the output result for duplications!')
+        warn(f'[{LfuncName}]Check the data frame [{str(dup_KPIs)}] in the output result for duplications!')
         return(outDict)
 
     #300. Set together all the requested KPI data files WITHOUT [InfDat]
@@ -397,35 +411,32 @@ def DBuse_MrgKPItoInf(
     if InfDat is not None:
         #001. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Combine [InfDat] with the loaded KPI data...')
+            print(f'[{LfuncName}]Combine [InfDat] with the loaded KPI data...')
 
         #100. Mark the same columns in both data for further [drop] process
-        df_with_inf = (
-            InfDat.rename( str.upper, axis = 1 )
+        df_with_inf_pre = (
+            InfDat.rename( h_convStr, axis = 1 )
             .merge( KPI_set.get('data') , on = keyvar , how = comb_func[SetAsBase] , suffixes=('._inf_', '._kpi_') )
+            .loc[:, lambda x: ~x.columns.str.endswith('._kpi_' if KeepInfCol else '._inf_')]
         )
-
-        #300. Determine to drop any fields from above data as per indicated
-        sfx_drop = '._kpi_' if KeepInfCol else '._inf_'
-        df_with_inf = df_with_inf.loc[:, ~df_with_inf.columns.str.endswith(sfx_drop)].copy(deep=True)
 
         #500. Rename the rest of the additioinal columns
         sfx_rename = '._inf_' if KeepInfCol else '._kpi_'
-        col_rename = df_with_inf.columns[df_with_inf.columns.str.endswith(sfx_rename)].to_list()
+        col_rename = df_with_inf_pre.columns[df_with_inf_pre.columns.str.endswith(sfx_rename)].to_list()
         if col_rename:
             bat_rename = { v:v[:-len(sfx_rename)] for v in col_rename }
-            df_with_inf.rename(columns=bat_rename, inplace = True)
+            df_with_inf_pre.rename(columns=bat_rename, inplace = True)
 
         #700. Retrieve the names to be used for pivoting
         df_with_inf = (
-            df_with_inf.copy(deep=True)
+            df_with_inf_pre
             .merge( KPI_names , on = 'C_KPI_ID' , how = 'left' , suffixes=('', '._nam_') )
             .loc[:, lambda x: ~x.columns.str.endswith('._nam_')]
         )
     else:
         #001. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Process KPI data with no input of [InfDat]...')
+            print(f'[{LfuncName}]Process KPI data with no input of [InfDat]...')
 
         #100. Retrieve the names to be used for pivoting
         df_with_inf = (
@@ -439,24 +450,24 @@ def DBuse_MrgKPItoInf(
     #Quote: https://www.geeksforgeeks.org/python-check-if-two-lists-are-identical/
     #Quote: https://stackoverflow.com/questions/7828867/how-to-efficiently-compare-two-unordered-lists-not-sets-in-python
     if ( InfDat is not None ) & ( Counter(AggrBy) == Counter(keyvar) ):
-        list_inf = set([ v.upper() for v in InfDat.columns.to_list() ])
+        list_inf = set(InfDat.head(0).rename(columns = h_convStr).columns.to_list())
         list_agg = set(AggrBy)
         aggr_fnl = list(list_inf | list_agg)
 
         #Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Keep all columns that have the same names in [InfDat] as [ID] during pivoting...')
+            print(f'[{LfuncName}]Keep all columns that have the same names in [InfDat] as [ID] during pivoting...')
     else:
         aggr_fnl = AggrBy
 
         #Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Keep [AggrBy] as [ID] during pivoting...')
+            print(f'[{LfuncName}]Keep [AggrBy] as [ID] during pivoting...')
 
     #719. Debug mode
     if fDebug:
-        print('['+LfuncName+']'+'Columns used as [ID] during pivoting are listed as below:')
-        print('['+LfuncName+']'+'[aggr_fnl]:')
+        print(f'[{LfuncName}]Columns used as [ID] during pivoting are listed as below:')
+        print(f'[{LfuncName}][aggr_fnl]:')
         print(aggr_fnl)
 
     #730. Conduct pivoting
@@ -486,11 +497,11 @@ def DBuse_MrgKPItoInf(
         tbl_out[kpi_unify] = tbl_out[kpi_unify].astype(np.float64)
 
     #770. Retrieve those [aggr_fnl] without any KPI record but only existing in [InfDat]
-    chk_miss_aggr = df_with_inf.loc[pd.isnull(df_with_inf['C_KPI_ID'])].copy(deep=True)
+    chk_miss_aggr = df_with_inf.loc[pd.isnull(df_with_inf['C_KPI_ID'])]
     if len(chk_miss_aggr):
         #001. Debug mode
         if fDebug:
-            print('['+LfuncName+']'+'Correcting KPI columns for those in [InfDat] but without KPI records...')
+            print(f'[{LfuncName}]Correcting KPI columns for those in [InfDat] but without KPI records...')
 
         #100. Retrieve all KPIs for cartesian join to [aggr_fnl]
         aggr_kpis = (
@@ -554,7 +565,7 @@ def DBuse_MrgKPItoInf(
     #There is no attribute for columns in [pandas], hence we pass this step
     if 'C_KPI_BIZNAME' in inKPICfg.columns:
         if fDebug:
-            print('['+LfuncName+']'+'No function to add Business Name to column names as attribute.')
+            print(f'[{LfuncName}]No function to add Business Name to column names as attribute.')
 
     #910. Reset the table index if there is only one measure to output
     if rst_flatten:

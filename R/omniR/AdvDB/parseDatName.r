@@ -9,7 +9,7 @@
 #   |[1] Generate a list of file full paths in terms of the provided naming convention and date series, also check their existence if   #
 #   |     requested                                                                                                                     #
 #   |[2] Translate the string patterns in all cells of a provided data frame by the provided [dict_map], resembling the similar         #
-#   |     function as [omniR$AdvOp$apply_MapVal]                                                                                        #
+#   |     function as [AdvOp$apply_MapVal]                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -22,7 +22,7 @@
 #   |parseCol   :   The column(s) to be parsed if [datPtn] is provided a [data.frame]                                                   #
 #   |               [NULL            ] <Default> Parse all columns for [datPtn] where applicable                                        #
 #   |dates      :   Date series that is used to substitute the corresponding naming patterns in [datPtn] to generate valid data paths   #
-#   |               [ <date>         ]           Any value that can be parsed by the default arguments of [omniR$Dates$asDates]         #
+#   |               [ <date>         ]           Any value that can be parsed by the default arguments of [Dates$asDates]               #
 #   |outDTfmt   :   Format of dates as string to be used for substitution. Its [names] should exist in the [values] of [dict_map]       #
 #   |               [ <vec/list>     ] <Default> See the function definition as the default argument of usage                           #
 #   |inRAM      :   Whether the [datPtn] that corresponds to the full paths of data files indicates they are in RAM of current session  #
@@ -35,9 +35,15 @@
 #   |               [FALSE           ]           Do not check the existence of the parsed data paths                                    #
 #   |               [ <str>          ]           Try to locate the parsed data paths by appending the requested naming suffix, see      #
 #   |                                             the output naming convention as in [Return values]                                    #
-#   |dict_map   :   Same argument as in [omniR$AdvOp$apply_MapVal]                                                                      #
+#   |dict_map   :   Same argument as in [AdvOp$apply_MapVal]                                                                            #
 #   |               [NULL            ] <Default> Indicates that [datPtn] does not require translation by pattern                        #
-#   |...        :   Various named parameters for [omniR$AdvOp$apply_MapVal] during import; see its official document                    #
+#   |exist.Opt  :   Named arguments for the function <std_read_RAM> to search for objects in current session                            #
+#   |               [<see def.>      ] <Default> Only try to obtain object in current session without directions                        #
+#   |               [list            ]           Nested list: list<list1 of options, list2 of options, ...>, matching the length of     #
+#   |                                             <parseCol>                                                                            #
+#   |               [chr             ]           Character vector or list of single characters matching the length of <parseCol> that   #
+#   |                                             can be parsed into list of options per element                                        #
+#   |...        :   Various named parameters for [AdvOp$apply_MapVal] during import; see its official document                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -46,7 +52,7 @@
 #   |                   ['datPtn'] and ['datPtn.Parsed']                                                                                #
 #   |               [2] When [datPtn] is a [table], add column(s) with the translated paths as:                                         #
 #   |                   [names(datPtn)] and [ paste0(names(datPtn), '.Parsed') ]                                                        #
-#   |               [3] When [dates] is provided, add one column created by [omniR$Date$asDates] as:                                    #
+#   |               [3] When [dates] is provided, add one column created by [Date$asDates] as:                                          #
 #   |                   ['dates'] <dtype: date>                                                                                         #
 #   |               [4] When [datPtn] is a string or vector/list of strings, add one column with the indicator as:                      #
 #   |                   ['datPtn.inRAM']                                                                                                #
@@ -68,13 +74,23 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210829        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the argument [dfclass] and introduce a separate function [omniR$AdvOp$isDF] to validate the inputs               #
-#   |      |[2] Introduce the new function [omniR$AdvOp$get_values] to standardize the value retrieval of variables                     #
+#   | Log  |[1] Remove the argument [dfclass] and introduce a separate function [AdvOp$isDF] to validate the inputs                     #
+#   |      |[2] Introduce the new function [AdvOp$get_values] to standardize the value retrieval of variables                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230811        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <rlang::exec> to simplify the function call with spliced arguments in the examples                            #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240221        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed the bug when the function is called in a local environment                                                        #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240307        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <exist.Opt> to enable searching for objects in specific environment in RAM                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -88,13 +104,18 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvDB                                                                                                                          #
+#   |   |   |std_read_RAM                                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |gen_locals                                                                                                                 #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |get_values                                                                                                                 #
+#   |   |   |ls_frame                                                                                                                   #
+#   |   |   |re.escape                                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -123,11 +144,7 @@ parseDatName <- function(
 	,inRAM = FALSE
 	,chkExist = TRUE
 	,dict_map = NULL
-	,dfclass = c(
-		'data.frame' , 'tbl_df' , 'tbl'
-		, 'groupedData' , 'nfnGroupedData' , 'nfGroupedData' , 'nmGroupedData' , 'nffGroupedData'
-		, 'table' , 'tbl_cube' , 'spec_tbl_df'
-	)
+	,exist.Opt = NULL
 	,...
 ){
 	#001. Handle parameters
@@ -204,10 +221,42 @@ parseDatName <- function(
 		col_exist <- paste0(names_trans, '.', chkExist)
 	}
 
+	#090. Transform the options
+	krow_in <- nrow(df_ptn)
+	#091. Initialize the options
+	if (is.null(exist.Opt)) {
+		opt_int <- rep_len(list(list()), krow_in)
+	} else {
+		opt_int <- exist.Opt
+	}
+
+	#097. Verify whether the options can be applied to the data
+	if (length(opt_int) != krow_in) {
+		stop('[',LfuncName,']','Length of [exist.Opt] must be the same as the length of <datPtn>!')
+	}
+
+	#099. Assign a new column to the internal data frame
+	df_ptn[['.opts.']] <- opt_int
+
 	#100. Define helper functions to be applied to interim data frames
-	#[Assumptions]:
+	#[ASSUMPTION]
 	#[1] Helper functions are called within [dplyr::mutate], hence they only accept [vector] as arguments
 	#[2] All arguments for the helper functions are vectors in length of the same [nrow] of input table
+
+	#101. Retrieve the mapping from external frames as candidates
+	#[ASSUMPTION]
+	#[1] It is tested @20240221 R==4.1.1 that <get_values> called in <dplyr::mutate_at> cannot locate the local frames
+	#[2] Alternative is as below steps:
+	#    [1] Retrieve the candidates from current environment before applying <mutate_at>
+	#    [2] Save above candidates into a new environment
+	#    [3] <ls_frame> from this specific environment at later steps
+	cand_env <- new.env()
+	cand_mapper <- get_values(dict_map, inplace = F) %>%
+		setNames(dict_map) %>%
+		lapply(function(x){if (is.na(x)) return(NULL) else x})
+
+	#105. Save the candidates into a temporary environment
+	gen_locals(cand_mapper, frame = cand_env)
 
 	#110. Translate naming patterns by the mapping dictionary
 	rowTranslate <- function(col_dates, col_ptnDat){
@@ -220,11 +269,18 @@ parseDatName <- function(
 					var_locals <- sapply(outDTfmt, function(x){strftime(col_dates[[i]], x)}, simplify = F)
 
 					#900. Generate local variables
-					gen_locals( var_locals )
+					gen_locals(var_locals, frame = cand_env)
 				}
 
 				#400. Translate the mapping dictionary at first by the values of above local variables
-				get_Trans_val <- get_values(dict_map)
+				get_Trans_val <- dict_map %>%
+					sapply(
+						function(x) {
+							ls_frame(cand_env, pattern = paste0('^',re.escape(x),'$'), verbose = T)[[x]]
+						}
+						,simplify = F
+						,USE.NAMES = T
+					)
 
 				#700. Translate the naming patterns by the new mapping dictionary
 				rst <- apply_MapVal(col_ptnDat[[i]], dict_map = get_Trans_val, ... )
@@ -236,19 +292,36 @@ parseDatName <- function(
 	}
 
 	#150. Create column(s) that indicate the data file existence
-	rowExistence <- function(col_inRAM, col_ptnDat){
+	rowExistence <- function(col_inRAM, col_ptnDat, col_opt){
 		if (length(col_ptnDat)==0) return(logical(0))
-		sapply(
-			seq_along(col_ptnDat)
-			,function(i){
-				#Assumptions:
-				#[1] If the Information Table is in RAM, its [mode] is [list]. See details in [exists] function
-				if (col_inRAM[[i]]) rst <- exists(col_ptnDat[[i]], mode = 'list')
-				else rst <- file.exists(col_ptnDat[[i]])
+		mapply(
+			function(flag,ptn,opt){
+				#100. Handle options
+				if (is.character(opt)) {
+					opt_int <- opt %>% str2expression() %>% eval()
+				} else {
+					opt_int <- opt
+				}
+
+				#500. Verify existence
+				if (flag) {
+					rst <- do.call(std_read_RAM, c(
+						list('infile' = ptn)
+						,opt_int
+					)) %>%
+						isDF()
+				}
+				else {
+					rst <- file.exists(ptn)
+				}
 
 				#999. Return the result
 				return(rst)
 			}
+			,col_inRAM
+			,col_ptnDat
+			,col_opt
+			,SIMPLIFY = T
 		)
 	}
 
@@ -273,7 +346,7 @@ parseDatName <- function(
 	if (!is.null(col_exist)) {
 		ptn_exist <- ptn_comb
 		for (i in seq_along(names_trans)) {
-			ptn_exist %<>% dplyr::mutate_at(names_resolve[[i]], ~ rowExistence(!!rlang::sym(names_inRAM[[i]]), .))
+			ptn_exist %<>% dplyr::mutate_at(names_resolve[[i]], ~ rowExistence(!!rlang::sym(names_inRAM[[i]]), ., .opts.))
 		}
 		ptn_comb[col_exist] <- ptn_exist[names_resolve]
 	}
@@ -286,7 +359,7 @@ parseDatName <- function(
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		#010. Create envionment.
+		#010. Create environment.
 		#Below program provides the most initial environment and system options for best usage of [omniR]
 		source('D:\\R\\autoexec.r')
 
@@ -360,5 +433,46 @@ if (FALSE){
 			,!!!getOption('fmt.opt.def.GTSFK')
 		)
 		View(exist_dd)
+
+		#500. Test if the function is in an enclosed environment
+		lcl_func <- function(){
+			frame <- environment()
+			myenv <- new.env()
+
+			myenv[['aa20160503']] <- data.frame(a = c(1,4,5))
+			rc <- std_write_RAM(
+				list('vfy' = data.frame(b = c(1,4,5)))
+				,'aa20160602'
+				,frame = frame
+			)
+
+			int_func <- function(chkframe){
+				args_get <- c(
+					list(
+						datPtn = data.frame(path = 'aa&L_curdate.', stringsAsFactors = F)
+						,dates = c('20160602', '20160503')
+						,outDTfmt = getOption('fmt.parseDates')
+						,inRAM = T
+						,dict_map = getOption('fmt.def.GTSFK')
+						#[ASSUMPTION]
+						#[1] <datPtn> has length as 1 hence below list matches its length
+						#[2] Provide the similar nested list in the same length as <datPtn>
+						,exist.Opt = list(list('frame' = chkframe))
+					)
+					,getOption('fmt.opt.def.GTSFK')
+				)
+
+				exist_get <- do.call(parseDatName, args_get)
+
+				return(exist_get[['path.chkExist']])
+			}
+
+			print(paste0('from <frame>: <', paste0(int_func(frame), collapse = ','), '>'))
+			print(paste0('from <myenv>: <', paste0(int_func(myenv), collapse = ','), '>'))
+		}
+
+		lcl_func()
+		# [1] "from <frame>: <TRUE,FALSE>"
+		# [1] "from <myenv>: <FALSE,TRUE>"
 	}
 }

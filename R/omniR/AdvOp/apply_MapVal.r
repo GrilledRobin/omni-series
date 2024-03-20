@@ -19,7 +19,7 @@
 #   |                             define the process for a multiple match                                                               #
 #   |preserve    :   Logical value indicating whether to preserve the input values if they cannot be mapped in the given dictionary     #
 #   |                 [TRUE        ]  <Default> Preserve the original values if there is mo mapping for them                            #
-#   |                 [FALSE       ]             Discard the input values and output an [NA] in place if there is no mapping for them   #
+#   |                 [FALSE       ]            Discard the input values and output an [NA] in place if there is no mapping for them    #
 #   |placeholder :   The placeholder for output if the length (i.e. number of elements) of the entire input vector is 0                 #
 #   |                 [TRUE        ]  <Default> Output a zero-length placeholder in the same type as the values in [dict_map]           #
 #   |                 [FALSE       ]            Do not output a placeholder                                                             #
@@ -104,6 +104,11 @@
 #   |      |[3] Known limitation: '\$', '\\$' and '\\\$' cannot be differentiated for [full.match] when preparing proper [regex]        #
 #   |      |    Solution for this: avoid to provide '$' to indicate a line-end in [dict_map], as it is handled in the function          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240214        | Version | 6.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fix the bug when the matching result is <FALSE> rather than <NA>                                                        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -117,6 +122,8 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |re.escape                                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -225,7 +232,11 @@ apply_MapVal <- function(
 	}
 
 	#170. Combine all patterns into one, using [|] to indicate [any] during the matching
-	dict_comb <- paste0(names(dict_map), collapse = '|')
+	if (PRX) {
+		dict_comb <- paste0(names(dict_map), collapse = '|')
+	} else {
+		dict_comb <- paste0(re.escape(names(dict_map)), collapse = '|')
+	}
 
 	#300. Determine whether the function conducts the substitution by [regex] or [fixed]
 	#[ASSUMPTION]
@@ -245,7 +256,7 @@ apply_MapVal <- function(
 			,c(
 				rlang::list2(
 					str = vec
-					,!!type_repl := dict_comb
+					,regex = dict_comb
 					,case_insensitive = ignore.case
 				)
 				,dots
@@ -269,13 +280,15 @@ apply_MapVal <- function(
 	}
 
 	#800. Set values for those among [vec], which has no match in any of the patterns in [dict_map]
-	if (any(is.na(v_match))) {
+	vfy_match <- v_match
+	vfy_match[is.na(vfy_match)] <- F
+	if (any(!vfy_match)) {
 		if (!preserve & !is.null(map_force)) {
-			outRst[is.na(v_match)] <- map_force
+			outRst[!vfy_match] <- map_force
 		} else if (!preserve) {
-			outRst[is.na(v_match)] <- NA
+			outRst[!vfy_match] <- NA
 		} else {
-			outRst[is.na(v_match)] <- vec[is.na(v_match)]
+			outRst[!vfy_match] <- vec[!vfy_match]
 		}
 	}
 
@@ -287,7 +300,10 @@ apply_MapVal <- function(
 if (FALSE){
 	#Simple test
 	if (TRUE){
-		library(dplyr)
+		#010. Create environment.
+		#Below program provides the most initial environment and system options for best usage of [omniR]
+		source('D:\\R\\autoexec.r')
+
 		mydict <- list(
 			'a' = 'old'
 			,'b' = 'new'
@@ -298,6 +314,7 @@ if (FALSE){
 
 		#100. Map the values in a vector
 		map_val <- apply_MapVal(usr_val, mydict)
+		# [1] "old" "new"
 
 		#200. Map the values in a data.frame
 		map_df <- usr_df %>%
@@ -306,6 +323,10 @@ if (FALSE){
 			)
 
 		View(map_df)
+		#   old new_var
+		# 1   a     old
+		# 2   b     new
+		# 3   d       d
 
 		#300. Test upon an empty data.frame
 		#[Quote: https://stackoverflow.com/questions/10689055/create-an-empty-data-frame ]
@@ -318,7 +339,11 @@ if (FALSE){
 				new_var = apply_MapVal(x, mydict)
 			)
 
-		glimpse(empty_map)
+		dplyr::glimpse(empty_map)
+		# Rows: 0
+		# Columns: 2
+		# $ x       <chr>
+		# $ new_var <chr>
 
 		#400. Test placeholder
 		mydict3 <- c(
@@ -328,9 +353,13 @@ if (FALSE){
 		)
 
 		aa <- iris
-		bb <- aa %>% filter(Sepal.Length == 100)
-		bb <- bb %>% mutate(test = apply_MapVal(Sepal.Length, mydict3))
+		bb <- aa %>% dplyr::filter(Sepal.Length == 100)
+		bb <- bb %>% dplyr::mutate(test = apply_MapVal(Sepal.Length, mydict3))
+		# [1] Sepal.Length Sepal.Width  Petal.Length
+		# [4] Petal.Width  Species      test
+		# <0 行> (或0-长度的row.names)
 		typeof(bb$test)
+		# [1] "character"
 
 		#500. Test different value types in the mapping dictionary
 		mydict4 <- list(
@@ -342,8 +371,10 @@ if (FALSE){
 		chkval <- c(4,3,5)
 
 		map2_vec <- apply_MapVal(chkval, mydict4)
+		# [1] "7"   "6.5" "5"
 
 		map2_withDefault <- apply_MapVal(chkval, mydict4, preserve = F, force_mark = '...')
+		# [1] "7"   "6.5" "10"
 
 		#600. Test to partially replace a number
 		mydict5 <- list(
@@ -357,12 +388,15 @@ if (FALSE){
 		#Below cases has the same effect, as [fPartial] can only be applied to [regex]
 		map3_vec <- apply_MapVal(chkval2, mydict5, fPartial = T, full.match = F)
 		map3_vec2 <- apply_MapVal(chkval2, mydict5, fPartial = F, full.match = F)
+		# [1] "4"    "13.5" "5"
 
 		#650. Test [fPartial] for [regex]
 		dict_part <- c('a.+b' = 'cc')
 		chkval3 <- 'a456bdd'
 		map4_vec <- apply_MapVal(chkval3, dict_part, fPartial = T, full.match = F, PRX = T)
+		# [1] "ccdd"
 		map4_vec2 <- apply_MapVal(chkval3, dict_part, fPartial = F, full.match = F, PRX = T)
+		# [1] "cc"
 
 		#700. Test multiple occurrences in one string
 		fTrans <- list(
@@ -413,6 +447,12 @@ if (FALSE){
 		#1.39 m when using [gregexpr] with [for] loops
 
 		head(test_result)
+		# [1] "rpt.sas7bdat"
+		# [2] "rpt_201603.sas7bdat"
+		# [3] "rpt_201603_20160310_20160310.sas7bdat"
+		# [4] "rpt.sas7bdat"
+		# [5] "rpt_201603.sas7bdat"
+		# [6] "rpt.sas7bdat"
 
 	}
 }

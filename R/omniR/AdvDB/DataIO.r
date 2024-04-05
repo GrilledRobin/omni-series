@@ -298,6 +298,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240405        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Enable to identify the methods being called, esp. for debug purpose                                                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -462,7 +467,7 @@ mycls <- R6::R6Class(
 		) {
 			#001. Verify whether the API can be found in the candidate packages
 			if (!.attr %in% self$full) {
-				stop(glue::glue('[{self$..class..$classname}]No method is found to register API for [{.attr}]!'))
+				stop(glue::glue('[{class(self)[[1]]}]No method is found to register API for [{.attr}]!'))
 			}
 
 			#100. Tweak the handlers if provided
@@ -510,6 +515,8 @@ mycls <- R6::R6Class(
 
 			#700. Add current API to the attribute list of current framework
 			#Quote: https://coolbutuseless.github.io/2021/02/19/modifying-r6-objects-after-creation/
+			#An alternative to bind function to <self> without accessing <.__enclos_env__>
+			#Quote: https://stackoverflow.com/questions/76064402/
 			self[[.attr]] <- obj
 			environment(self[[.attr]]) <- self$.__enclos_env__
 
@@ -557,9 +564,44 @@ mycls <- R6::R6Class(
 	,private = list(
 		..vec_active.. = NULL
 		#410. Verify whether there is at least 1 active API in the private environment
-		,.chkactive. = function(funcname) {
+		#List all public attributes in R6 Class
+		#Quote: https://stackoverflow.com/questions/63995788/
+		,.chkactive. = function() {
 			if (length(self$active) == 0) {
-				stop(glue::glue('[{self$..class..$classname}][{funcname}] is empty as there is no active API!'))
+				#100. Obtain the class of current active object
+				cls_self <- get(class(self)[[1]])
+
+				#500. Obtain the name of the caller function
+				parent_fun <- sys.function(-1)
+				funcname <- list(
+					cls_self$public_methods
+					,self$.__enclos_env__$.__active__
+					#[ASSUMPTION]
+					#[1] Below environment-like object contains all <public> and <active> methods inherited from <super>
+					,self$.__enclos_env__$super
+					#[ASSUMPTION]
+					#[1] Below environment-like object contains all <private> methods inherited from <super>
+					,self$.__enclos_env__$private
+				) %>%
+					{Filter(Negate(is.null), .)} %>%
+					lapply(as.environment) %>%
+					lapply(
+						function(e) {
+							e %>% eapply(function(x){
+								if (is.function(x)) identical(x, parent_fun)
+								else F
+							})
+						}
+					) %>%
+					{do.call(c, .)} %>%
+					unlist() %>%
+					{.[.]} %>%
+					names() %>%
+					unique() %>%
+					paste0(collapse = ',')
+
+				#900. Abort the process
+				stop(glue::glue('[{cls_self$classname}][{funcname}] is empty as there is no active API!'))
 			}
 		}
 		#430. Remove the affixes from the API names
@@ -847,5 +889,269 @@ if (FALSE){
 		# [1] "SAS"  "HDFS"
 		# [1] "local"
 
+	}
+
+	#Demo of how to inherit from the class
+	if (TRUE){
+		#010. Load user defined functions
+		dir_omniR <- 'D:\\R'
+		source(file.path(dir_omniR, 'autoexec.r'))
+
+		#We should use the pipe operands supported by below package
+		library(magrittr)
+
+		#050. Define a class only with data loaders, i.e. API only with <pull> method
+		#[1] Inherit methods from <DataIO>
+		LoaderOnly <- local({
+		mycls <- R6::R6Class(
+			classname = 'LoaderOnly'
+			,inherit = DataIO
+			,public = list(
+				#002. Constructor
+				initialize = function(
+					apiPkgPull = NULL
+					,apiPfxPull = 'loader_'
+					,argsPull = list()
+					,lsPullOpt = list()
+				) {
+					#200. Initialize the parent class
+					#[ASSUMPTION]
+					#[1] Since we defined <initialize>, we have to initialize the parent class manually
+					#[2] We disable search of <push> methods for API by setting an relatively impossible prefix
+					super$initialize(
+						apiPkgPull = apiPkgPull
+						,apiPfxPull = apiPfxPull
+						,apiSfxPull = ''
+						,apiPkgPush = NULL
+						,apiPfxPush = paste0('lo_', lubridate::now() %>% strftime('%Y%m%d%H%M%S') , '_')
+						,apiSfxPush = ''
+						,argsPull = argsPull
+						,lsPullOpt = lsPullOpt
+					)
+
+					#500. Identify current class
+					#[ASSUMPTION]
+					#[1] This step MUST BE set after the <initialize> call to the parent class
+					#[2] It actually overwrites the same variable in the parent class
+					#[3] One can set a unique name to enable storing all class information along the inheritance tree
+					self$..class.. <- mycls
+
+					#800. Prepare I/O tools
+					private$dataIO <- DataIO$new()
+				}
+				#005. Declaration of public attributes
+				,..class.. = NULL
+				#300. Public methods
+				#310. Save the result to harddisk
+				,save = function(addr, ...) {
+					rst <- c(
+						list(
+							'result' = self$result
+						)
+						,self$loaded %>% setNames(paste0(names(self$loaded), '.series'))
+						,self$rawdata %>% setNames(paste0(names(self$rawdata), '.rawdata'))
+					)
+					private$dataIO$add('R')
+					rc <- private$dataIO[['R']]$push(rst, addr, ...)
+					private$dataIO$remove('R')
+					return(rc)
+				}
+				#350. Load data from all active APIs
+				,loadactive = function(argsPull = list()) {
+					for (a in super$active) {
+						kw_pull <- argsPull[[a]]
+						if (!is.list(kw_pull)) kw_pull <- list()
+						do.call(self[[a]]$pull, modifyList(self$argsPull, kw_pull)) %>% invisible()
+					}
+				}
+			)
+			,private = list(
+				dataIO = NULL
+			)
+			#500. Read-only properties
+			,active = list(
+				loaded = function() {
+					sapply(
+						super$active
+						,function(a){self[[a]]$pulled[['data']][['series']]}
+						,simplify = F
+						,USE.NAMES = T
+					) %>%
+						{Filter(Negate(is.null), .)}
+				}
+				,apinames = function() {
+					super$.chkactive.()
+					sapply(
+						super$active
+						,function(a){self[[a]]$pulled[['name']]}
+						,simplify = F
+						,USE.NAMES = T
+					)
+				}
+				,addresses = function() {
+					super$.chkactive.()
+					sapply(
+						super$active
+						,function(a){self[[a]]$pulled[['address']]}
+						,simplify = F
+						,USE.NAMES = T
+					)
+				}
+				,rawdata = function() {
+					super$.chkactive.()
+					sapply(
+						super$active
+						,function(a){self[[a]]$pulled[['data']][['rawdata']]}
+						,simplify = F
+						,USE.NAMES = T
+					)
+				}
+				,result = function() {
+					super$.chkactive.()
+					srs <- do.call(c, self$loaded) %>% unique()
+					return(srs)
+				}
+			)
+			#[ASSUMPTION]
+			#[1] We have to unlock the instantiated object for member manipulation
+			#[2] Unlike Python, there is no <__slots__> for R, hence this operation is dangerous
+			,lock_objects = F
+		)
+
+		return(mycls)
+		})
+
+		#070. Define APIs
+		loader_api1 <- function(fname = 'API1') {
+			df <- data.frame(a = c(1,3,5), key = c('a','b','d'))
+			return(list(
+				'name' = 'test API1'
+				,'address' = fname
+				,'data' = list(
+					'rawdata' = df
+					,'series' = df %>% dplyr::pull('key')
+				)
+			))
+		}
+		loader_api2 <- function(fname = 'API2') {
+			df <- data.frame(a = c(2,4,6), key = c('b','e','f'))
+			return(list(
+				'name' = 'test API2'
+				,'address' = fname
+				,'data' = list(
+					'rawdata' = df
+					,'series' = df %>% dplyr::pull('key')
+				)
+			))
+		}
+
+		#100. Instantiate the class with default arguments
+		loaderOnly <- LoaderOnly$new()
+
+		#110. List all available APIs at present
+		loaderOnly$full
+
+		#130. Register all APIs with default arguments, while not loading the data
+		loaderOnly$addfull()
+
+		#190. Purge all active APIs and remove their instances
+		loaderOnly$removefull()
+
+		#199. Try to list all names of the APIs in vain as they have been purged at above step
+		loaderOnly$apinames
+		# [LoaderOnly][apinames] is empty as there is no active API!
+
+		#200. Add API to read data
+		loaderOnly$add('api1')
+
+		#210. Check the address of current API
+		a1_data <- loaderOnly$api1$pull()
+		a1_data[['address']]
+		# [1] "API1"
+
+		#230. Refresh data from the API with default arguments
+		.non <- loaderOnly$api1$pull()
+
+		#300. Override the default arguments to register a specific API
+		diff_args <- list(
+			'api1' = list(
+				'fname' = 'adj. API1'
+			)
+			,'api2' = list(
+				'fname' = 'adj. API2'
+			)
+		)
+
+		#310. Register all available APIs with the modified arguments
+		loaderOnly$addfull(argsPull = diff_args)
+
+		#320. Load data from all APIs
+		loaderOnly$loadactive()
+
+		#330. Check the added data at current step
+		ttt <- loaderOnly$loaded
+		# $api1
+		# [1] "a" "b" "d"
+		#
+		# $api2
+		# [1] "b" "e" "f"
+
+		#340. Remove an API from the namespace, together with its retrieved data
+		loaderOnly$remove('api2')
+
+		#350. Register API with modified arguments
+		args_a2 <- diff_args[['api2']]
+		if (!is.list(args_a2)) args_a2 <- list()
+		loaderOnly$add('api2', argsPull = args_a2)
+		.non <- loaderOnly[['api2']]$pull()
+		.non[['address']]
+		# [1] "adj. API2"
+
+		#400. Check properties at current stage
+		#410. List the mappings of API names
+		loaderOnly$apinames
+		# $api1
+		# [1] "test API1"
+		#
+		# $api2
+		# [1] "test API2"
+
+		#430. Check the status of registered APIs
+		loaderOnly$status
+		# api1 api2
+		# TRUE TRUE
+
+		#450. Retrieve the final combined result as a vector
+		srs <- loaderOnly$result
+		# [1] "a" "b" "d" "e" "f"
+
+		#470. Retrieve the rawdata for a specific API
+		ccc <- loaderOnly$rawdata[['api2']]
+		#   a key
+		# 1 2   b
+		# 2 4   e
+		# 3 6   f
+
+		#500. Save the results to harddrive
+		f_rst <- 'D:\\Temp\\testLoader.RData'
+		rc <- loaderOnly$save(f_rst)
+
+		#600. Check the saved data
+		myenv <- new.env()
+		load(f_rst, envir = myenv)
+		ls(myenv)
+		# [1] "api1.rawdata" "api1.series"
+		# [3] "api2.rawdata" "api2.series"
+		# [5] "result"
+
+		vv1 <- myenv[['api1.rawdata']]
+		#   a key
+		# 1 1   a
+		# 2 3   b
+		# 3 5   d
+
+		#690. Remove the temporary file
+		rm(myenv)
+		if (file.exists(f_rst)) file.remove(f_rst)
 	}
 }

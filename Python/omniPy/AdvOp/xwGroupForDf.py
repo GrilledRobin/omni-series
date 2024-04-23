@@ -93,6 +93,11 @@ def xwGroupForDf(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug, now <kw_asGroup> takes the user input as top priority                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240423        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now respect the usage of <slice> during the preparation of <merge> on indexes                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -209,7 +214,10 @@ def xwGroupForDf(
             .cumsum()
         )
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
-        pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
+        #[ASSUMPTION]
+        #[1] <tail> as a slicer cannot be subtracted by 1
+        #[2] <tail> as a positional threshold should be subtracted by 1
+        pos = list(zip(idx_head[idx_head.ne(idx_tail)].sub(1).to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
 
     #130. Function to identify the positions other than [totals]
@@ -230,7 +238,7 @@ def xwGroupForDf(
             .cumsum()
         )
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
-        pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
+        pos = list(zip(idx_head[idx_head.ne(idx_tail)].sub(1).to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
 
     #300. Determine the position modifiers
@@ -253,7 +261,7 @@ def xwGroupForDf(
     merged_idx = { i:h_idx_merge_grp(i, 'index') for i in idx_to_merge }
     xlmerge_idx = [
         (
-            slice(data_top + h + mod_grp_row_head - 1, data_top + t - mod_grp_row_tail - 1 + 1, None)
+            slice(data_top + h + mod_grp_row_head, data_top + t - mod_grp_row_tail, None)
             ,slice(table_left + k, table_left + k + 1, None)
         )
         for k,v in merged_idx.items()
@@ -268,7 +276,7 @@ def xwGroupForDf(
     }
     xlmerge_idx_totals = [
         (
-            slice(data_top + h - 1, data_top + t - 1 + 1, None)
+            slice(data_top + h, data_top + t, None)
             ,slice(table_left + k, table_left + k + 1, None)
         )
         for k,v in merged_idx_totals.items()
@@ -281,7 +289,7 @@ def xwGroupForDf(
     xlmerge_hdr = [
         (
             slice(table_top + k, table_top + k + 1, None)
-            ,slice(data_left + h + mod_grp_col_head - 1, data_left + t - mod_grp_col_tail - 1 + 1, None)
+            ,slice(data_left + h + mod_grp_col_head, data_left + t - mod_grp_col_tail, None)
         )
         for k,v in merged_hdr.items()
         for h,t in v
@@ -296,7 +304,7 @@ def xwGroupForDf(
     xlmerge_hdr_totals = [
         (
             slice(table_top + k, table_top + k + 1, None)
-            ,slice(data_left + h - 1, data_left + t - 1 + 1, None)
+            ,slice(data_left + h, data_left + t, None)
         )
         for k,v in merged_hdr_totals.items()
         for h,t in v

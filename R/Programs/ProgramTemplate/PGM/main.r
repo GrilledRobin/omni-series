@@ -38,6 +38,7 @@ file_autoexec <- head(files_autoexec[file.exists(files_autoexec)], 1)
 
 #039. Load the user defined encironment, which includs initialization of user defined package
 source(file_autoexec)
+library(magrittr)
 
 #040. Enable the text writing to the log file
 #Below function is from [omniR$FileSystem]
@@ -94,14 +95,19 @@ if (length(args_in) > 0) {
 	}
 
 	#300. Modify the default arguments to create calendars
-	args_cln_mod <- modifyList(getOption('args.Calendar'), list(clnBgn = argBgn, clnEnd = argEnd))
+	args_cln_mod <- modifyList(getOption('args.Calendar'), list(clnBgn = argBgn, clnEnd = intnx('day',argEnd,30,daytype = 'C')))
 
 	#500. Create a fresh new calendar
 	G_clndr <- do.call(UserCalendar$new, args_cln_mod)
 
 	#700. Create a fresh new date observer
-	G_obsDates <- do.call(ObsDates$new, c(list(obsDate = argEnd), args_cln_mod))
+	#[ASSUMPTION]
+	#[1] It is often called on workdays
+	#[2] Ensure the same behavior when arguments are provided for this script, and when they are not
+	G_obsDates <- do.call(ObsDates$new, c(list(obsDate = intnx('day',argEnd,1,daytype = 'W')), args_cln_mod))
 }
+
+L_curdate <- intnx('day', G_obsDates$values, -1, daytype = 'W') %>% strftime('%Y%m%d')
 
 #052. Directories for current process
 dir_proc <- dirname(dir_curr)
@@ -164,8 +170,9 @@ i_len <- length(pgms_curr)
 #700. Print configurations into the log for debug
 #701. Prepare lists of parameters
 key_args <- c(
-	'dateBgn' = G_clndr$dateBgn %>% strftime('%Y-%m-%d')
-	,'dateEnd' = G_clndr$dateEnd %>% strftime('%Y-%m-%d')
+	'dateBgn' = G_clndr$dateBgn %>% strftime('%Y%m%d')
+	,'dateEnd' = G_clndr$dateEnd %>% strftime('%Y%m%d')
+	,'L_curdate' = L_curdate
 )
 key_dirs <- c(
 	'Process Home' = dir_curr
@@ -276,6 +283,7 @@ for (pgm in pgms_curr) {
 	withCallingHandlers(
 		source(pgm, encoding = head(readr::guess_encoding(pgm), 1))
 		,message = function(m){logger.info(m)}
+		,print = function(m){logger.info(m)}
 		,warning = function(w){logger.warning(w)}
 		,error = function(e){logger.error(e)}
 		,abort = function(e){logger.critical(e)}

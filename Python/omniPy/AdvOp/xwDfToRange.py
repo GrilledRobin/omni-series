@@ -217,6 +217,12 @@ def xwDfToRange(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when the input data is empty                                                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240423        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now respect the usage of <slice> during the preparation of <merge> on indexes                                           #
+#   |      |[2] Correct the format when some items on a <merged> index level are not eventually merged, as they only show up in one cell#
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -262,7 +268,7 @@ def xwDfToRange(
     #050. Local parameters
     seq_ranges = [
         'table','data.int','data.float','data'
-        ,'index','index.merge','header','header.merge','box'
+        ,'index','index.merge','index.merge.rest','header','header.merge','header.merge.rest','box'
         ,'index.False','header.False'
     ]
     row_adj = df.columns.nlevels if header else 0
@@ -295,8 +301,22 @@ def xwDfToRange(
             .cumsum()
         )
         idx_head = idx_tail.shift(1, fill_value = 0).add(1)
-        pos = list(zip(idx_head[idx_head.ne(idx_tail)].to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
+        #[ASSUMPTION]
+        #[1] <tail> as a slicer cannot be subtracted by 1
+        #[2] <tail> as a positional threshold should be subtracted by 1
+        pos = list(zip(idx_head[idx_head.ne(idx_tail)].sub(1).to_list(), idx_tail[idx_head.ne(idx_tail)].to_list()))
         return(pos)
+
+    #120. Function to extract the rest of the indexers when any level is to be <merged while some items are not eventually merged
+    #[ASSUMPTION]
+    #[1] If an item in a level to be <merged> only shows up once in the index, it is usually NOT in the scope of merging cells
+    #[2] That is why we need to extract such items to apply the same format as the <merged> ranges
+    def h_resi_idx(idx : pd.Index, slicers : list[tuple[int, int]], logname : str = 'fmtRestIdx'):
+        indexer = set.union(*[
+            set(pandasParseIndexer(idx, slice(*s), idxall = idxall, logname = logname))
+            for s in slicers
+        ])
+        return([(k, k + 1) for k in range(len(idx)) if k not in indexer])
 
     #170. Function to create zebra stripes in terms of EXCEL COM API as conditional formatting
     #171. Determine the benchmark cell, including row indices if any, to calculate the zebra stripes
@@ -376,23 +396,35 @@ def xwDfToRange(
     merged_idx = { i:h_idx_merge_grp(i, 'index') for i in idx_to_merge }
     xlmerge_idx = [
         (
-            slice(data_top + h - 1, data_top + t - 1 + 1, None)
+            slice(data_top + h, data_top + t, None)
             ,slice(table_left + k, table_left + k + 1, None)
         )
         for k,v in merged_idx.items()
         for h,t in v
     ]
 
-    #220. Merged headers
+    #220. Rest index slicers when they cannot be merged eventually
+    merged_idx_rest = {
+        lvl : h_resi_idx(df.index, slicer_list, logname = 'fmtRestIdx')
+        for lvl,slicer_list in merged_idx.items()
+    }
+
+    #250. Merged headers
     merged_hdr = { i:h_idx_merge_grp(i, 'columns') for i in hdr_to_merge }
     xlmerge_hdr = [
         (
             slice(table_top + k, table_top + k + 1, None)
-            ,slice(data_left + h - 1, data_left + t - 1 + 1, None)
+            ,slice(data_left + h, data_left + t, None)
         )
         for k,v in merged_hdr.items()
         for h,t in v
     ]
+
+    #260. Rest header slicers when they cannot be merged eventually
+    merged_hdr_rest = {
+        lvl : h_resi_idx(df.columns, slicer_list, logname = 'fmtRestHdr')
+        for lvl,slicer_list in merged_hdr.items()
+    }
 
     #400. Define dedicated ranges
     #410. Range for the entire table
@@ -444,20 +476,40 @@ def xwDfToRange(
     #431. Ranges expanded from the vertically merged index levels
     xlrng['index.merge'] = [
         (
-            slice(data_top + h - 1, data_top + t - 1 + 1, None)
+            slice(data_top + h, data_top + t, None)
             ,slice(table_left + k, table_right + 1, None)
         )
         for k,v in merged_idx.items()
         for h,t in v
     ]
 
-    #432. Ranges expanded from the horizontally merged column levels
+    #432. Ranges expanded from the vertically merged index levels (for the items that are NOT eventually merged)
+    xlrng['index.merge.rest'] = [
+        (
+            slice(data_top + h, data_top + t, None)
+            ,slice(table_left + k, table_right + 1, None)
+        )
+        for k,v in merged_idx_rest.items()
+        for h,t in v
+    ]
+
+    #435. Ranges expanded from the horizontally merged column levels
     xlrng['header.merge'] = [
         (
             slice(table_top + k, table_bottom + 1, None)
-            ,slice(data_left + h - 1, data_left + t - 1 + 1, None)
+            ,slice(data_left + h, data_left + t, None)
         )
         for k,v in merged_hdr.items()
+        for h,t in v
+    ]
+
+    #436. Ranges expanded from the horizontally merged column levels (for the items that are NOT eventually merged)
+    xlrng['header.merge.rest'] = [
+        (
+            slice(table_top + k, table_bottom + 1, None)
+            ,slice(data_left + h, data_left + t, None)
+        )
+        for k,v in merged_hdr_rest.items()
         for h,t in v
     ]
 

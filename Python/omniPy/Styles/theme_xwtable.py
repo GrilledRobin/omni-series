@@ -42,6 +42,11 @@ def theme_xwtable(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240423        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added options as <index.merge.rest> and <header.merge.rest> for finer tuning of formatting                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -265,6 +270,7 @@ def theme_xwtable(
             ,'val' : xwVA.xlVAlignTop
         }
     }
+    themes['BlackGold']['index.merge.rest'] = {k:v for k,v in themes['BlackGold']['index.merge'].items()}
 
     #Ranges expanded from the horizontally merged column levels
     themes['BlackGold']['header.merge'] = {
@@ -300,6 +306,7 @@ def theme_xwtable(
             ,'val' : xwVA.xlVAlignTop
         }
     }
+    themes['BlackGold']['header.merge.rest'] = {k:v for k,v in themes['BlackGold']['header.merge'].items()}
 
     #Ranges when [index] is not to be exported
     themes['BlackGold']['index.False'] = {
@@ -413,6 +420,7 @@ def theme_xwtable(
             ,'val' : xwVA.xlVAlignTop
         }
     }
+    themes['SAS']['index.merge.rest'] = {k:v for k,v in themes['SAS']['index.merge'].items()}
 
     #Ranges expanded from the horizontally merged column levels
     themes['SAS']['header.merge'] = {
@@ -421,6 +429,7 @@ def theme_xwtable(
             ,'val' : xwVA.xlVAlignTop
         }
     }
+    themes['SAS']['header.merge.rest'] = {k:v for k,v in themes['SAS']['header.merge'].items()}
 
     #900. Export
     return(themes.get(theme, {}))

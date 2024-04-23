@@ -14,6 +14,7 @@ import time
 import progressbar
 import datetime as dt
 import subprocess as sp
+from win32com.client import GetObject
 from selenium import webdriver
 from selenium.webdriver.ie.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -56,6 +57,19 @@ files_h = [
 ]
 files_all = files_w + files_h
 L_stpflnm = [ os.path.join(dir_Downloads, f) for f in files_all ]
+
+#[ASSUMPTION]
+#[1] We do not use the package <wmi> as it is too slow
+#使用Python玩转WMI
+#Quote: https://segmentfault.com/a/1190000021661055
+mywmi = GetObject('winmgmts:/root/cimv2')
+# mywmi = GetObject('winmgmts:') #更简单的写法
+processes = mywmi.ExecQuery('Select * from Win32_Process where Name="msedge.exe"')
+for p in processes:
+    try:
+        p.Terminate()
+    except:
+        pass
 
 #060. Setup IE options
 #selenium在启动IE浏览器的时候，能否像chrome那样配置user-agent启动参数

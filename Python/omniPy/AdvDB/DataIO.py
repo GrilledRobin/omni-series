@@ -418,8 +418,7 @@ class DataIO():
         if attr not in self.full:
             raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not registered as an API!')
 
-        vfy_lists = [ a for a,s in self.status.items() if not s ]
-        if attr in vfy_lists:
+        if attr not in self.active:
             raise AttributeError(f'[{self.__class__.__name__}][{attr}] is not an active API!')
 
         return(getattr(self, attr))

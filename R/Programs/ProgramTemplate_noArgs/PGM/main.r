@@ -235,6 +235,7 @@ for (pgm in pgms_curr) {
 	withCallingHandlers(
 		source(pgm)
 		,message = function(m){logger.info(m)}
+		,print = function(m){logger.info(m)}
 		,warning = function(w){logger.warning(w)}
 		,error = function(e){logger.error(e)}
 		,abort = function(e){logger.critical(e)}

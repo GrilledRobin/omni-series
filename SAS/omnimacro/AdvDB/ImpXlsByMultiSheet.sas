@@ -6,6 +6,12 @@
 	,outDAT		=
 	,procLIB	=	WORK
 	,fDebug		=	0
+	,impOpt		=	%nrstr(
+		MIXED		=	YES;
+		SCANTEXT	=	YES;
+		USEDATE		=	YES;
+		SCANTIME	=	YES;
+	)
 );
 %*000.	Info.;
 /*-------------------------------------------------------------------------------------------------------------------------------------*\
@@ -103,6 +109,11 @@
 |	|      |[2] Single quotation marks cannot exist at the beginning and ending of the Sheet Name. This is because the EXCEL do not		|
 |	|      |     accept them to embrace other characters in Sheet Name.																	|
 |	|      |[3] Spaces cannot exist at the beginning of the Sheet Name for SAS import, although they are accepted in EXCEL.				|
+|	|______|____________________________________________________________________________________________________________________________|
+|	|___________________________________________________________________________________________________________________________________|
+|	| Date |	20240508		| Version |	5.10		| Updater/Creator |	Lu Robin Bin												|
+|	|______|____________________|_________|_____________|_________________|_____________________________________________________________|
+|	| Log  |[1] Change the options in <Import> Procedure into argument for more flexibility												|
 |	|______|____________________________________________________________________________________________________________________________|
 |---------------------------------------------------------------------------------------------------------------------------------------|
 |400.	User Manual.																													|
@@ -371,10 +382,13 @@ run;
 		%else %do;
 			GETNAMES	=	YES;
 		%end;
-		MIXED		=	YES;
-		SCANTEXT	=	YES;
-		USEDATE		=	YES;
-		SCANTIME	=	YES;
+		%*Quote: https://communities.sas.com/t5/SAS-Programming/USEDATE-SCANTIME-when-importing-Excel/td-p/407794 ;
+		%*Quote: https://go.documentation.sas.com/doc/fr/pgmsascdc/9.4_3.5/acpcref/n0msy4hy1so0ren1acm90iijxn8j.htm ;
+		%*[ASSUMPTION];
+		%*[1] Different options lead to different results, hence we need to set them as input arguments for diversity concerns.;
+		%*[2] If there are quoted statements, we avoid <unquote> them in case of unexpected results.;
+		%*[3] Due to above reason, we add a semicolon to below statement to validate the syntax.;
+		&impOpt.;
 	RUN;
 %end;
 

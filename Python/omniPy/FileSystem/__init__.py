@@ -9,6 +9,7 @@
 from .getMemberByStrPattern import getMemberByStrPattern
 from .MSExcelSaveAs import MSExcelSaveAs
 from .getMSDNKnownFolderIDDoc import getMSDNKnownFolderIDDoc
+from .winKnownFoldersOLE import winKnownFoldersOLE
 from .winKnownFolders import winKnownFolders
 from .winUserShellFolders import winUserShellFolders
 from .winReg_QueryValue import winReg_QueryValue
@@ -18,7 +19,7 @@ from .winReg_getInfByStrPattern import winReg_getInfByStrPattern
 __all__ = [
     'getMemberByStrPattern'
     ,'MSExcelSaveAs'
-    ,'getMSDNKnownFolderIDDoc'
+    ,'getMSDNKnownFolderIDDoc','winKnownFoldersOLE'
     ,'winKnownFolders'
     ,'winUserShellFolders'
     ,'winReg_QueryValue'

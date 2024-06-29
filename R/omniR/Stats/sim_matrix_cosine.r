@@ -59,6 +59,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240613        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce cache for the compiled DLL to expose C++ functions across R sessions                                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -72,10 +77,10 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Stats                                                                                                                    #
+#   |   |Stats                                                                                                                          #
 #   |   |   |eigenMapMatMult       (See function definition in [MatrixMultiplication.cpp])                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |match.arg.x                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -102,6 +107,21 @@ sim_matrix_cosine <- function(x,y=NULL,adj=F,dim = c('col','row')){
 	if (is.null(y)) y <- x
 	y_pseudo <- identical(x, y)
 	dim <- match.arg.x(dim, arg.func = tolower)
+
+	#050. Expose the C++ functions
+	thisenv <- new.env()
+	path_uni <- getOption('path.omniR')
+	if (is.null(path_uni)) {
+		stop('[',LfuncName,']Option [path.omniR] is not defined, cannot locate C++ functions to expose for calculation!')
+	}
+	cachedir <- file.path(path_uni, '__rcache__')
+	if (!dir.exists(cachedir)) dir.create(cachedir, recursive = T)
+	#Below may take quite a time, almost 20s
+	Rcpp::sourceCpp(
+		file.path(path_uni, 'Stats', 'MatrixMultiplication.cpp')
+		,env = thisenv
+		,cacheDir = cachedir
+	)
 
 	#100. Transpose the matrices to facilitate a stable algorithm
 	#It is preferred to handle transposition outside this function while always using [col] for calculation
@@ -161,7 +181,7 @@ sim_matrix_cosine <- function(x,y=NULL,adj=F,dim = c('col','row')){
 	# 	dot_xy <- crossprod(x, y)
 	# }
 	#[Quote: [MatrixMultiplication.cpp]]
-	dot_xy <- eigenMapMatMult( Rfast::transpose(x), y )
+	dot_xy <- thisenv$eigenMapMatMult( Rfast::transpose(x), y )
 
 	#520. Retrieve the respective norms of all columns
 	#Sum the squares of all rows within each column respectively, then obtain the respective square root
@@ -182,7 +202,7 @@ sim_matrix_cosine <- function(x,y=NULL,adj=F,dim = c('col','row')){
 	# } else {
 	# 	crossprod_xy_norm <- tcrossprod(norm_x, norm_y)
 	# }
-	crossprod_xy_norm <- eigenMapMatMult( norm_x, Rfast::transpose(norm_y) )
+	crossprod_xy_norm <- thisenv$eigenMapMatMult( norm_x, Rfast::transpose(norm_y) )
 
 	#590. Calculate the cosine similarity for columns in pairs
 	#When [x==y], the output matrix is symmetric while the diagonal is always 1, for every column is perfectly same to itself
@@ -215,9 +235,7 @@ if (FALSE){
 		)
 		tmcn::setchs(rev=F)
 		omniR <- 'D:\\R\\omniR'
-		#We use [file.path] to create path names instead of using [paste], to set compatibility of different OS.
-		#Below may take quite a time, almost 20s
-		Rcpp::sourceCpp(normalizePath(file.path(omniR, 'Stats', 'MatrixMultiplication.cpp')))
+		source(file.path(dirname(omniR), 'autoexec.r'))
 
 		# read user play data and song data from the internet
 		# play_data <- 'https://static.turi.com/datasets/millionsong/10000.txt' %>%

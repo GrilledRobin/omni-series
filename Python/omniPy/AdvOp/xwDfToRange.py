@@ -82,13 +82,13 @@ def xwDfToRange(
 #   |stripe      :   Logical value indicating whether to create stripes on data rows, resembling the empirical EXCEL styles             #
 #   |                [True        ] <Default> Create stripes on data rows, as well as df.index.get_level_values(-1) if [index=True]     #
 #   |                [False       ]           Do not create stripes                                                                     #
-#   |theme       :   Theme of styles for the exported range, see details in [omniPy.Styles.theme_xwtable]                               #
+#   |theme       :   Theme of styles for the exported range, see details in [Styles.theme_xwtable]                                      #
 #   |                [BlackGold   ] <Default> Default theme                                                                             #
 #   |                [<str>       ]           Other predefined theme name                                                               #
 #   |fmtIdx      :   List of dicts, in which the items represent various value indicating which items to be patched on index:           #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
-#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
+#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
 #   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
@@ -97,8 +97,8 @@ def xwDfToRange(
 #   |                                          pd.Index                                                                                 #
 #   |fmtRow      :   List of dicts, in which the items represent various value indicating which rows to be patched by what formats:     #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
-#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
+#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
 #   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
@@ -107,8 +107,8 @@ def xwDfToRange(
 #   |                                          pd.Index                                                                                 #
 #   |fmtHdr      :   List of dicts, in which the items represent various value indicating which items to be patched on column names:    #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
-#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
+#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
 #   |                [<str>       ]           Index of columns to be formatted, must be at least one tuple enclosed by a list for a     #
@@ -117,8 +117,8 @@ def xwDfToRange(
 #   |                                          pd.Index                                                                                 #
 #   |fmtCol      :   List of dicts, in which the items represent various value indicating which columns to be patched by what formats:  #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, column name, or Iterable of the previous) to #
-#   |                 the column while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                      #
-#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                 the column while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                             #
+#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
 #   |                [IMPORTANT   ] The formatting applied to columns is later than that applied to rows, hence overwrites it anyway    #
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
@@ -128,8 +128,8 @@ def xwDfToRange(
 #   |                                          pd.Index                                                                                 #
 #   |fmtCell     :   List of dicts, in which the items represent various value indicating which cells to be patched:                    #
 #   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [omniPy.AdvOp.rsetattr], see                       #
-#   |                 the function [omniPy.Styles.theme_xwtable] for its usage                                                          #
+#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
+#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
 #   |                Possible values for 'slicer' are as below:                                                                         #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
 #   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
@@ -236,11 +236,11 @@ def xwDfToRange(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |rsetattr                                                                                                                   #
 #   |   |   |pandasParseIndexer                                                                                                         #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Styles                                                                                                                  #
+#   |   |Styles                                                                                                                         #
 #   |   |   |theme_xwtable                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -312,6 +312,8 @@ def xwDfToRange(
     #[1] If an item in a level to be <merged> only shows up once in the index, it is usually NOT in the scope of merging cells
     #[2] That is why we need to extract such items to apply the same format as the <merged> ranges
     def h_resi_idx(idx : pd.Index, slicers : list[tuple[int, int]], logname : str = 'fmtRestIdx'):
+        if not slicers:
+            return([])
         indexer = set.union(*[
             set(pandasParseIndexer(idx, slice(*s), idxall = idxall, logname = logname))
             for s in slicers

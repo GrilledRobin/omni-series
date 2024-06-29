@@ -122,8 +122,16 @@ if (FALSE){
 		#Quote: https://mivilisnet.wordpress.com/2020/02/04/how-to-find-the-windows-version-using-registry/
 		winver <- winReg_QueryValue('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion', 'CurrentVersion')
 
-		#400. Retrieve the Display Language Code of current Windows OS
-		message(winReg_QueryValue('HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Locale'))
+		#400. Retrieve the <Language for non-Unicode Programs> of current Windows OS
+		#[ASSUMPTION]
+		#[1] In case there is a pre-defined key <Default> (rather than <(Default)>), we obtain its value
+		#[2] Otherwise we obtain the <(Default)> value during OS installation
+		#Quote: https://serverfault.com/questions/957167/windows-10-1809-region-language-registry-keys
+		get_locale <- winReg_QueryValue('HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Locale', 'Default')
+		if (is.na(get_locale)) {
+			get_locale <- winReg_QueryValue('HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\Locale')
+		}
+		message(get_locale)
 
 		#500. Test calculation in [dplyr]
 		library(magrittr)

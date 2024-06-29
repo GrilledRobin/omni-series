@@ -22,6 +22,7 @@ from .selCatVar import selCatVar
 from .selNumVar import selNumVar
 from .trimCatVar import trimCatVar
 from .getWinUILanguage import getWinUILanguage
+from .getWinNonUCPgmLanguage import getWinNonUCPgmLanguage
 from .pandasPivot import pandasPivot
 from .rgetattr import rgetattr
 from .rsetattr import rsetattr
@@ -48,7 +49,7 @@ __all__ = [
     'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
     , 'modifyDict', 'importByStr'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
-    , 'getWinUILanguage'
+    , 'getWinUILanguage', 'getWinNonUCPgmLanguage'
     , 'pandasPivot'
     , 'rgetattr' , 'rsetattr' , 'tryProc'
     , 'pandasParseIndexer'

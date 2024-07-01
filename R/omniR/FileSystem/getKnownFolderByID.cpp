@@ -2,8 +2,8 @@
 // Quote: https://stackoverflow.com/questions/33394934/converting-std-cxx11string-to-stdstring
 #define _GLIBCXX_USE_CXX11_ABI 0
 // Quote: https://teuder.github.io/rcpp4everyone_en/050_c++11.html
-// [[Rcpp::plugins("cpp11")]]
 */
+// [[Rcpp::plugins("cpp11")]]
 #include <windows.h>
 #include <libloaderapi.h>
 #include <rpcdce.h>
@@ -51,13 +51,19 @@ https://stackoverflow.com/questions/8696653/dynamically-load-a-function-from-a-d
 https://learn.microsoft.com/zh-cn/windows/win32/api/combaseapi/nf-combaseapi-clsidfromstring
 <CoTaskMemFree>
 https://learn.microsoft.com/zh-cn/windows/win32/api/combaseapi/nf-combaseapi-cotaskmemfree
+
+How to reference a constant as the default value of the argument of a function
+https://www.runoob.com/cplusplus/cpp-references.html
+Below statement issues warning on some system
+SEXP getKnownFolderByID(std::wstring fid, const DWORD& dwFlag = KF_FLAG_DEFAULT);
+Unable to parse C++ default value 'KF_FLAG_DEFAULT' for argument dwFlag of function getKnownFolderByID
 */
 
 typedef HRESULT (__stdcall *ptr_CLSIDFromString)(LPCOLESTR, LPCLSID);
 typedef HRESULT (__stdcall *ptr_CoTaskMemFree)(LPVOID);
 
 // [[Rcpp::export]]
-SEXP getKnownFolderByID(std::wstring fid, DWORD dwFlag = 0x00000000){
+SEXP getKnownFolderByID(std::wstring fid, const DWORD& dwFlag = KF_FLAG_DEFAULT){
 	// 100. Load the functions from the DLL at runtime
 	// [ASSUMPTION]
 	// [1] Below two functions reside in the DLL which we aim to load at runtime

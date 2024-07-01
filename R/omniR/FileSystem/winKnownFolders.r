@@ -49,6 +49,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20240701        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add a value mapping                                                                                                     #
+#   |      |[2] Make the C++ function more intuitive by referencing a constant than to provide a similar default value                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -127,6 +133,7 @@ winKnownFolders <- function(
 		,'Captures' = 'AppCaptures'
 		,'Application Shortcuts' = 'ApplicationShortcuts'
 		,'CD Burning' = 'CDBurning'
+		,'Camera Roll' = 'CameraRoll'
 		,'Common Administrative Tools' = 'CommonAdminTools'
 		,'Common Programs' = 'CommonPrograms'
 		,'Common Start Menu' = 'CommonStartMenu'
@@ -237,11 +244,15 @@ winKnownFolders <- function(
 	}
 
 	#400. Expose the C++ functions into a temporary R environment
+	#[ASSUMPTION]
+	#[1] Below statement issues warning on some system, but it does not impact the call, hence we ignore it
+	#    warning: Unable to parse C++ default value 'KF_FLAG_DEFAULT' for argument dwFlag of function getKnownFolderByID
 	Rcpp::sourceCpp(
 		cpp_file
 		,env = thisenv
 		,cacheDir = cachedir
-	)
+	) %>%
+		suppressWarnings()
 
 	#700. Conduct the query
 	rstOut <- sapply(

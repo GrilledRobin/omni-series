@@ -14,6 +14,7 @@ from .calcWoE import calcWoE
 from .calcIV import calcIV
 from .chisq_SingleVar import chisq_SingleVar
 from .calcKS import calcKS
+from .rotateSpheroid import rotateSpheroid
 from .cov_matrix import cov_matrix
 from .cor_matrix import cor_matrix
 from .sim_matrix_cosine import sim_matrix_cosine
@@ -27,6 +28,7 @@ __all__ = [
     'genPerfData' , 'countEvent' , 'catVarEncoder'
     , 'calcWoE' , 'calcIV' , 'chisq_SingleVar'
     , 'calcKS'
+    , 'rotateSpheroid'
     , 'cov_matrix' , 'cor_matrix' , 'sim_matrix_cosine' , 'userBasedCF'
     , 'gcdBitwise', 'gcdExtInteger'
     , 'highWaterMark'

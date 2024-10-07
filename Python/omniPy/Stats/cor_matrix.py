@@ -3,8 +3,7 @@
 
 import numpy as np
 import sys, warnings
-#Below function is defined in the file with same name in the same directory as current script
-from .cov_matrix import cov_matrix
+from omniPy.Stats import cov_matrix
 
 def cor_matrix( x , y = None , rowvar = False ) -> 'Correlation Coefficient between each column in a matrix to all others':
     #000.   Info.
@@ -121,6 +120,7 @@ if __name__=='__main__':
     #010.   Create envionment.
     import time
     import sys
+    import numpy as np
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )

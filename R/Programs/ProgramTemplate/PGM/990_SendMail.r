@@ -3,7 +3,9 @@
 #[2] Send an email on behalf of another account with attachments
 #[3] Embed the pictures into HTML mail body
 #Quote: https://win32com.goermezer.de/microsoft/ms-office/send-email-with-outlook-and-python.html
-logger.info('Send Email')
+#[ASSUMPTION]
+#[1] <message> is captured via user defined handler in <main.r>, hence we use it directly for logging
+message('Send Email')
 
 #Quote: https://www.listendata.com/2015/12/send-email-from-r.html
 library(RDCOMClient)
@@ -15,10 +17,14 @@ library(RDCOMClient)
 #[5] Ensure [outlook] is logged in and active at background/foreground
 
 #010. Parameters
+#[ASSUMPTION]
+#[1] It is tested that <glue> causes error, presumably due to the lazy-evaluation mechanism of R
+#[2] Hence we do not use <glue> to parse the text
 L_srcflnm <- file.path(dir_data_raw, 'emailbody.txt')
 
 #200. Load the mail body text
-mailBody <- readLines(L_srcflnm) %>% paste0(collapse = '<br>')
+mailBody <- readLines(L_srcflnm) %>%
+	paste0(collapse = '<br/>')
 
 #300. Dispatch the API
 outlook <- COMCreate('Outlook.Application')
@@ -49,9 +55,12 @@ img_id <- 'MyId1'
 att[['PropertyAccessor']]$SetProperty(PR_ATTACH_MIME_TAG, paste0('image/', att_ext))
 att[['PropertyAccessor']]$SetProperty(PR_ATTACH_CONTENT_ID, img_id)
 
+#[ASSUMPTION]
+#[1] It is tested that the HTML body MUST ends with <\n>, otherwise fails
 mailbody <- paste0(
-	'<h1>Text body</h1><br><br>',mailBody,'<br><br>'
-	,'<h1>Test body with image</h1><br><br><br><br> <img src="cid:',img_id,'" height=42 width=42>'
+	'<h1>Text body</h1><br/><br/>',mailBody,'<br/><br/>'
+	,'<h1>Test body with image</h1><br/><br/><br/><br/> <img src="cid:',img_id,'" height=42 width=42>'
+	,'\n'
 )
 mail[['HTMLBody']] <- mailbody
 

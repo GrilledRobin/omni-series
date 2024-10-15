@@ -171,7 +171,7 @@ def rotateSpheroid(
     #[4] 坐标的旋转变换和坐标系的旋转变换 https://blog.csdn.net/jc15988821760/article/details/133345301
     #[5] 右手坐标系 3d变换基础：平移、旋转、缩放（仿射变换）详解——公式推导 https://blog.csdn.net/shenquanyue/article/details/103262512
     #[6] 左手坐标系 3D坐标系中 点 的 平移、旋转和缩放 https://blog.csdn.net/qq_20828983/article/details/81481437
-	#[7] 三维向量绕任意轴的旋转公式 https://blog.csdn.net/FreeSouthS/article/details/112576370
+    #[7] 三维向量绕任意轴的旋转公式 https://blog.csdn.net/FreeSouthS/article/details/112576370
     #[8] Python中如何实现三维图像（体素）旋转 https://zhuanlan.zhihu.com/p/571309602
     #[9] 三个方向同时旋转，需要做矩阵乘法
     #100. Initialize the position into a matrix
@@ -248,9 +248,6 @@ def rotateSpheroid(
     #[ASSUMPTION]
     #[1] Below sequence during multiplication is important!
     return(posNew.dot(movMat).dot(scaleMat)[:,:-1])
-
-    #900. Combine the arrays
-    return( np.stack((newX, newY, newZ)) )
 #End rotateSpheroid
 
 '''

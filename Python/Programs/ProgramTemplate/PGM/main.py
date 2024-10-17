@@ -45,7 +45,7 @@ if path_omniPy not in sys.path:
     sys.path.append( path_omniPy )
 
 #027. Enable the function to execute other scripts in the same environment
-from omniPy.AdvOp import exec_file, modifyDict, customLog, PrintToLog
+from omniPy.AdvOp import exec_file, modifyDict, customLog, PrintToLog, thisShell
 from omniPy.Dates import UserCalendar, ObsDates, intnx
 from omniPy.FileSystem import getMemberByStrPattern, winReg_getInfByStrPattern
 
@@ -64,7 +64,8 @@ logger = customLog(__name__, False, mode = 'w', logfile = log_name, logWarnings 
 logger = customLog('', True, mode = 'a', logfile = log_name, logWarnings = True)
 
 #037. Enable the logger to capture <print> results in both console and logfile
-PrintToLog(logger)
+if thisShell() in ['CLI']:
+    PrintToLog(logger)
 
 #040. Load useful user-defined environment
 #Check the [__doc__] of below script for its detailed output

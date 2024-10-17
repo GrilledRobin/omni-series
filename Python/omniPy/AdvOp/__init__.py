@@ -6,6 +6,7 @@
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
 #100.   Import the local modules.
+from .thisShell import thisShell
 from .thisFunction import thisFunction
 from .ls_frame import ls_frame
 from .Trie import Trie
@@ -55,7 +56,7 @@ __all__ = [
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'strNestedParser', 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
-    , 'thisFunction', 'ls_frame'
+    , 'thisShell', 'thisFunction', 'ls_frame'
     , 'vecStack', 'vecUnstack'
     , 'SingletonMeta'
     , 'customLog', 'PrintToLog'

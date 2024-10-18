@@ -79,6 +79,11 @@ class PrintToLog(metaclass = SingletonMeta):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20241018        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when <sys.stdout.isatty()> is required in any process                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -124,6 +129,15 @@ class PrintToLog(metaclass = SingletonMeta):
         else:
             self._buf.append(record)
 
+    #200. Get the attributes which are not patched in this class
+    #[ASSUMPTION]
+    #[1] When running a <shiny> app, <sys.stdout.isatty()> is called to configure the default formatter, hence we bring it in
+    #[2] https://stackoverflow.com/questions/858623/how-to-recognize-whether-a-script-is-running-on-a-tty
+    #[3] <__getattr__> will only catch the non-existent attributes
+    #[4] http://www.sefidian.com/2021/06/06/python-__getattr__-and-__getattribute__-magic-methods/
+    def __getattr__(self, attr):
+        return(getattr(self.stdout, attr))
+
     #900. Setup the method to avoid warning messages showing NO ATTRIBUTE of <flush>
     #[ASSUMPTION]
     #[1] <logging> has already flushed each message before emitting
@@ -142,7 +156,7 @@ if __name__=='__main__':
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import customLog, PrintToLog
+    from omniPy.AdvOp import customLog, PrintToLog, thisShell
 
     #100. Setup loggers
     #[IMPORTANT]
@@ -154,7 +168,11 @@ if __name__=='__main__':
     logger = customLog('', True, mode = 'a', logWarnings = True)
 
     #200. Enable the logger to capture <print> results in both console and logfile
-    PrintToLog(logger)
+    #[ASSUMPTION]
+    #[1] When the script is running in an interactive Python, the <stdout> may be locked due to <asyncio>
+    #[2] That is why we only test the file logging in a CLI
+    if thisShell() in ['CLI']:
+        PrintToLog(logger)
 
     #300. Test the log function
     #Below message can now be captured into the logfile

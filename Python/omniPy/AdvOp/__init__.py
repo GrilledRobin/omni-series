@@ -8,6 +8,7 @@
 #100.   Import the local modules.
 from .thisShell import thisShell
 from .thisFunction import thisFunction
+from .simplifyDeco import simplifyDeco
 from .ls_frame import ls_frame
 from .Trie import Trie
 from .apply_MapVal import apply_MapVal
@@ -52,7 +53,7 @@ __all__ = [
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage', 'getWinNonUCPgmLanguage'
     , 'pandasPivot'
-    , 'rgetattr' , 'rsetattr' , 'tryProc'
+    , 'rgetattr' , 'rsetattr' , 'simplifyDeco' , 'tryProc'
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'strNestedParser', 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'

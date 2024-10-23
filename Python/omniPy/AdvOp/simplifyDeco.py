@@ -1,45 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time
+import types
 from functools import wraps
-from omniPy.AdvOp import simplifyDeco
 
-@simplifyDeco
-def tryProc(
+def simplifyDeco(
     fn : callable
-    ,times : int = 1
-    ,interval : float = 0.0
 ) -> callable:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to act as a decorator factory to create decorator of any function, so that the decorated function is     #
-#   | always being called with tries of certain times until it still fails                                                              #
+#   |This function is intended to decorate the dedicated decorator so that the wrapped decorator can be called in several conventional  #
+#   | ways. See the [Full Test Program] section for the detailed usage                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |The decorated decorator can be called in below ways, given the signature of <deco> as: deco(fn, *args, **kw)                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] If one tries to overwrite some file using a function, while the file to be overwritten is locked by unknown reason, this       #
-#   |     decorator provides an n-time re-try for the process not to be aborted immediately                                             #
+#   |[1] @deco              #If there is no <*args> and the necessary <kw> have default values or being handled                         #
+#   |[2] @deco()            #If there is no <*args> and the necessary <kw> have default values or being handled                         #
+#   |[3] @deco(*args, **kw) #Normal way of a parametric decorator invocation                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Quote:                                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] http://www.pythontutorial.net/advanced-python/python-decurator-arguments/                                                      #
-#   |[2] https://stackoverflow.com/questions/5481623/python-dynamically-add-decorator-to-class-methods-by-decorating-class              #
-#   |[3] https://stackoverflow.com/questions/653368/how-to-create-a-decorator-that-can-be-used-either-with-or-without-parameters        #
+#   |[1] https://stackoverflow.com/questions/653368/how-to-create-a-decorator-that-can-be-used-either-with-or-without-parameters        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fn          :   The callable to be decorated                                                                                       #
-#   |times       :   How many times to try the decorated process                                                                        #
-#   |                 [1           ] <Default> Call the function once                                                                   #
-#   |                 [<int>       ]           Call the function by <n> times                                                           #
-#   |interval    :   <float> number of seconds to sleep before the next trials to be called, given the first call fails                 #
-#   |                 [<0.0>       ] <Default> Does not sleep between each two calls                                                    #
+#   |fn          :   The callable decorator to enable multiple calling methods                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -47,19 +37,9 @@ def tryProc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20230401        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20241023        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20230403        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new argument <interval> to control the interval between each try                                                    #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20231023        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new argument <fn> by wrapping itself with a decorator to enable simplified call, see User Manual for details        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -70,37 +50,32 @@ def tryProc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |time, functools                                                                                                                #
+#   |   |types, functools                                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |AdvOp                                                                                                                          #
-#   |   |   |simplifyDeco                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
     #010. Check parameters.
+    if not isinstance(fn, types.FunctionType):
+        raise NotImplementedError('Class decorator is not designed to be wrapped with extra arguments!')
 
     #012. Parameter buffer
 
     #500. Create the decorator
     @wraps(fn)
-    def wrapper(*pos, **kw):
-        #100. Try the function for certain times
-        for k in range(times):
-            print(f'[{fn.__name__}] try the process, counting: {str(k)}')
-            try:
-                rstOut = fn(*pos, **kw)
-                return(rstOut)
-            except:
-                time.sleep(interval)
-                continue
+    def deco(*args, **kwargs):
+        if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
+            # actual decorated function
+            return(fn(args[0]))
+        else:
+            # decorator arguments
+            return(lambda realf: fn(realf, *args, **kwargs))
 
-        #999. Raise exception if it still fails
-        raise RuntimeError(f'[{fn.__name__}] failed for {str(times)} times! Program terminated!')
-
-    return(wrapper)
-#End tryProc
+    #999. Return the decorator
+    return(deco)
+#End simplifyDeco
 
 '''
 #-Notes- -Begin-
@@ -111,37 +86,34 @@ if __name__=='__main__':
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import tryProc
+    from omniPy.AdvOp import simplifyDeco
 
     #100. Define test function
-    @tryProc(5, interval = 1)
-    def testfunc(x,y):
-        return(x/y)
+    @simplifyDeco
+    def mult(f, factor=2):
+        @wraps(f)
+        def wrap(*args, **kwargs):
+            return factor*f(*args,**kwargs)
+        return wrap
 
-    #200. Test valid numbers
-    testfunc(4,2)
-    # [testfunc] try the process, counting: 0
-    # Out[11]: 2.0
+    # try normal
+    @mult
+    def f(x, y):
+        return x + y
 
-    #300. Test invalid numbers
-    testfunc(4,0)
-    # RuntimeError: [testfunc] failed for 5 times! Program terminated!
+    # try args
+    @mult(3)
+    def f2(x, y):
+        return x*y
 
-    #400. Decorate the function in a simplified way, using default parameters
-    @tryProc
-    def testfunc2(x,y):
-        return(x/y)
+    # try kwargs
+    @mult(factor=5)
+    def f3(x, y):
+        return x - y
 
-    testfunc2(4,0)
-    # RuntimeError: [testfunc2] failed for 1 times! Program terminated!
-
-    #450. Same function as above
-    @tryProc()
-    def testfunc3(x,y):
-        return(x/y)
-
-    testfunc3(4,0)
-    # RuntimeError: [testfunc3] failed for 1 times! Program terminated!
+    assert f(2,3) == 10
+    assert f2(2,5) == 30
+    assert f3(8,1) == 5*7
 
 #-Notes- -End-
 '''

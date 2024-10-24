@@ -8,6 +8,7 @@
 #100.   Import the local modules.
 #[IMPORTANT] The sequence of below statements should align the dependency tree,
 #             i.e. the definition of the latter function depends on the former one
+from .wrapAsGroupedFunc import wrapAsGroupedFunc
 from .validateDMCol import validateDMCol
 from .parseHDFStoreInfo import parseHDFStoreInfo
 from .loadSASdat import loadSASdat
@@ -40,7 +41,7 @@ __all__ = [
     , 'loadSASdat', 'std_read_HDFS', 'std_read_RAM', 'std_read_SAS'
     , 'aggrByPeriod'
     , 'parseDatName'
-    , 'OpenSourceApiMeta'
+    , 'OpenSourceApiMeta', 'wrapAsGroupedFunc'
     , 'inferContents', 'writeSASdat', 'std_write_HDFS', 'std_write_RAM', 'std_write_SAS', 'DataIO'
     , 'kfCore_ts_agg'
     , 'kfFunc_ts_mtd', 'kfFunc_ts_roll', 'kfFunc_ts_fullmonth'

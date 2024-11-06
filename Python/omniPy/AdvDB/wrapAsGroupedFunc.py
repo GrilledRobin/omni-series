@@ -35,7 +35,7 @@ def wrapAsGroupedFunc(
 #   |    [b] Make a <df.reindex> to slice the <df> before calculation                                                                   #
 #   |    [c] During the call of <pd.GroupBy.agg> or <pd.pivot_table>, make it a partial function with all other arguments provided as   #
 #   |         the dedicated values                                                                                                      #
-#   |    [d] The return value must be a single scalable, repensenting a single cell in the pivot table                                  #
+#   |    [d] The return value must be a single scalar, repensenting a single cell in the pivot table                                    #
 #   |[2] Now we wrap these functionalities for you, so that you do not need to think of the mechanism to realize it                     #
 #   |[3] Your focus can be set on realizing the complex aggregation on an intact dataframe, so that the wrapper applies it to every     #
 #   |     slice of the same dataframe given various grouping conditions                                                                 #
@@ -228,7 +228,7 @@ if __name__=='__main__':
     #    [b] Make a <df.reindex> to slice the <df> before calculation
     #    [c] During the call of <pd.GroupBy.agg> or <pd.pivot_table>, make it a partial function with all other arguments provided as
     #         the dedicated values
-    #    [d] The return value must be a single scalable, repensenting a single cell in the pivot table
+    #    [d] The return value must be a single scalar, repensenting a single cell in the pivot table
     #[2] Here we simulate the behavior of a Weighted Average calculation
     def wgtAvg_base(srs : pd.Series, df : pd.DataFrame, col : str, wgt : str):
         df = df.reindex(srs.index).copy(deep = True)

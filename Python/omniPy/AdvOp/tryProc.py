@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time
+import time, traceback
 from functools import wraps
 from omniPy.AdvOp import simplifyDeco
 
@@ -57,9 +57,14 @@ def tryProc(
 #   | Log  |[1] Add new argument <interval> to control the interval between each try                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20231023        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20241023        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Add new argument <fn> by wrapping itself with a decorator to enable simplified call, see User Manual for details        #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20241106        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Collect tracebacks and exceptions for all failures, for logging and handling purposes                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -86,18 +91,34 @@ def tryProc(
     #500. Create the decorator
     @wraps(fn)
     def wrapper(*pos, **kw):
+        #010. Prepare the collection of tracebacks
+        tbs = [f'[{fn.__name__}] failed for {str(times)} times! Program terminated!']
+        errors = []
+
         #100. Try the function for certain times
         for k in range(times):
             print(f'[{fn.__name__}] try the process, counting: {str(k)}')
             try:
                 rstOut = fn(*pos, **kw)
                 return(rstOut)
-            except:
+            except Exception as e:
+                tbs.append('\n'.join([
+                    f'[{fn.__name__}]<Failure {str(k)}>'
+                    ,traceback.format_exc()
+                ]))
+                errors.append(e)
                 time.sleep(interval)
                 continue
 
         #999. Raise exception if it still fails
-        raise RuntimeError(f'[{fn.__name__}] failed for {str(times)} times! Program terminated!')
+        #[ASSUMPTION]
+        #[1] We need to print the error message in the log
+        #[2] Also store the exceptions (instead of the messages) in the exception object, for error handling where necessary
+        #[3] Quote: https://stackoverflow.com/questions/12826291/raise-two-errors-at-the-same-time
+        raise ExceptionGroup(
+            '\n'.join(tbs)
+            ,errors
+        )
 
     return(wrapper)
 #End tryProc

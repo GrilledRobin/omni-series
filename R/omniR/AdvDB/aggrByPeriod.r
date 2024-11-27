@@ -259,6 +259,11 @@
 #   | Log  |[1] Upper-case <byVar>, <copyVar> and  <aggrVar> in the return result to make it compatible to most of the data engines     #
 #   |      |[2] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20241127        | Version | 4.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed the bug by adding <rowwise> for the non-vectorized function call                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -1121,7 +1126,9 @@ aggrByPeriod <- function(
 		dplyr::summarise(!!outSym := LFuncAggr(.Tmp_Val, ...), .groups = 'keep') %>%
 		dplyr::ungroup() %>%
 		#910. Correct the output value for the function [MEAN]
-		dplyr::mutate_at(outVar, ~ifelse(identical(funcAggr,mean), ./periodOut, .))
+		dplyr::rowwise() %>%
+		dplyr::mutate_at(outVar, ~ifelse(identical(funcAggr,mean), ./periodOut, .)) %>%
+		dplyr::ungroup()
 
 	#999. Return the table
 	outDict[['data']] <- outDat

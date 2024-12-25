@@ -11,6 +11,7 @@ from .thisFunction import thisFunction
 from .simplifyDeco import simplifyDeco
 from .ls_frame import ls_frame
 from .Trie import Trie
+from .alignWidth import alignWidth
 from .apply_MapVal import apply_MapVal
 from .debug_comp_datcols import debug_comp_datcols
 from .exec_file import exec_file
@@ -48,7 +49,7 @@ from .PrintToLog import PrintToLog
 
 #200.   Define available resources.
 __all__ = [
-    'Trie', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
+    'Trie', 'alignWidth', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
     , 'modifyDict', 'importByStr'
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage', 'getWinNonUCPgmLanguage'

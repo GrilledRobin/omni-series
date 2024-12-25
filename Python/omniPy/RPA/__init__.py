@@ -11,6 +11,7 @@ from .getDesktopWindows import getDesktopWindows
 from .setForegroundWindow import setForegroundWindow
 from .setClipboard import setClipboard
 from .clicks import clicks
+from .controlIME import controlIME
 
 #200.   Define available resources.
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     ,'setForegroundWindow'
     ,'setClipboard'
     ,'clicks'
+    ,'controlIME'
 ]

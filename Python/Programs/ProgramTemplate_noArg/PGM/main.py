@@ -6,6 +6,9 @@ import os, sys, re, logging
 from itertools import product
 from inspect import getsourcefile
 from packaging import version
+#[ASSUMPTION]
+#[1] Below 3rd-party packages require Anaconda to be installed, or PIP to install
+from wcwidth import wcswidth
 
 #003. Find the location of current script
 #Quote: https://www.geeksforgeeks.org/how-to-get-directory-of-current-script-in-python/
@@ -43,7 +46,7 @@ if path_omniPy not in sys.path:
     sys.path.append( path_omniPy )
 
 #027. Enable the function to execute other scripts in the same environment
-from omniPy.AdvOp import exec_file, customLog, PrintToLog, thisShell
+from omniPy.AdvOp import exec_file, customLog, PrintToLog, thisShell, alignWidth
 from omniPy.FileSystem import getMemberByStrPattern, winReg_getInfByStrPattern
 
 #030. Prepare logging
@@ -130,7 +133,11 @@ key_dirs = {
     ,'SAS omnimacro' : SAS_omnimacro
 }
 key_tolog = {**key_args, **key_dirs}
-mlen_prms = max([ len(k) for k in key_tolog.keys() ])
+#[ASSUMPTION]
+#[1] We obtain the displayed width of the string, e.g. 2 for a Chinese character
+#[2] Quote: https://blog.csdn.net/weixin_45715159/article/details/106176454
+#[3] We do the same for below messaging
+mlen_prms = max([ wcswidth(k) for k in key_tolog.keys() ])
 
 #710. Print parameters
 #[ASSUMPTION]
@@ -138,13 +145,13 @@ mlen_prms = max([ len(k) for k in key_tolog.keys() ])
 logger.info('-' * 80)
 logger.info('Process Parameters:')
 for k,v in key_tolog.items():
-    logger.info('<' + k.ljust(mlen_prms, ' ') + '>: <' + v + '>')
+    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + v + '>')
 
 #720. Print existence of key directories
 logger.info('-' * 80)
 logger.info('Existence of above key locations:')
 for k,v in key_dirs.items():
-    logger.info('<' + k.ljust(mlen_prms, ' ') + '>: <' + str(os.path.isdir(v)) + '>')
+    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + str(os.path.isdir(v)) + '>')
 
 if not all([ os.path.isdir(v) for v in key_dirs.values() ]):
     raise RuntimeError('Some among the key locations DO NOT exist! Program terminated!')
@@ -203,14 +210,26 @@ if pgm_executed:
 logger.info('-' * 80)
 logger.info('Subordinate scripts to be called in below order:')
 i_nums = len(str(i_len))
+#[ASSUMPTION]
 #Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
-mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
+# mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
+#[1] Above solution cannot get the displayed width of the MBCS character string
+#[2] We leverage <wcwidth> for such process
+#[3] By doing this, the messages shown in Command Console will be aligned with the same length
+#[4] However, in the text editors using mono space fonts such as <Courier New> will have weird spacing
+mlen_pgms = max([ wcswidth(os.path.basename(p[0])) for p in pgms_curr ])
 for i in range(i_len):
     #100. Pad the sequence numbers by leading zeros, to make the log audience-friendly
     i_char = str(i+1).zfill(i_nums)
 
+    #300. Obtain the script file name
+    fname_scr = os.path.basename(pgms_curr[i][0])
+
+    #500. Determine the padding
+    scr_pad = alignWidth(fname_scr, width = mlen_pgms)
+
     #999. Print the message
-    logger.info('<' + i_char + '>: <' + os.path.basename(pgms_curr[i][0]).ljust(mlen_pgms, ' ') + '>')
+    logger.info(f'<{i_char}>: <{scr_pad}>')
 
 #800. Call the subordinate scripts that are previously found
 logger.info('-' * 80)

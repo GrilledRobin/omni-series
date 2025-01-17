@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 
 #001. Import necessary functions for processing.
-import sys, re
-#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature
+import sys
 from typing import Optional
-from omniPy.AdvOp import importByStr, modifyDict, ls_frame
+from omniPy.AdvOp import DynMethodLookup
 
 #100. Definition of the class.
 class OpenSourceApiMeta(type):
@@ -212,6 +210,12 @@ class OpenSourceApiMeta(type):
 #   | Log  |[1] Make <apiPullHdl> and <apiPushHdl> optional to enable stability when invalid input is taken                             #
 #   |      |[2] Make the search in current session more flexible, e.g. enable searching in provided frame                               #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250104        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce the descriptor <DynMethodLookup> to unify the function to search for methods                                  #
+#   |      |[2] Modify the internal attribute names to avoid conflict with the system attributes                                        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -221,14 +225,12 @@ class OpenSourceApiMeta(type):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, inspect, typing                                                                                                       #
+#   |   |sys, typing                                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
-#   |   |   |importByStr                                                                                                                #
-#   |   |   |modifyDict                                                                                                                 #
-#   |   |   |ls_frame                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |DynMethodLookup                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -263,145 +265,20 @@ class OpenSourceApiMeta(type):
         if not isinstance(apiSfxPush, str): apiSfxPush = ''
         if not callable(apiPullHdl) : apiPullHdl = lambda x: x
         if not callable(apiPushHdl) : apiPushHdl = lambda x: x
-        lsPullOpt = {
-            'verbose' : True
-            ,'predicate' : callable
-            ,'flags' : re.NOFLAG
-            ,**{ k:v for k,v in lsPullOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
-        }
-        lsPushOpt = {
-            'verbose' : True
-            ,'predicate' : callable
-            ,'flags' : re.NOFLAG
-            ,**{ k:v for k,v in lsPushOpt.items() if k not in ['pattern','verbose','predicate','flags'] }
-        }
-        hasPkgPull = False
-        if isinstance(apiPkgPull, str):
-            if len(apiPkgPull) > 0:
-                hasPkgPull = True
-        hasPkgPush = False
-        if isinstance(apiPkgPush, str):
-            if len(apiPkgPush) > 0:
-                hasPkgPush = True
 
         #100. Assign values to local variables
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
         allargs = sys._getframe().f_code.co_varnames
         mcs.__exargs__ = [ v for v in allargs if v not in ['mcs', 'cls', 'bases', 'attrs'] ]
 
-        #200. Define dynamic data reader based on pattern: <apiPfxPull + cls + apiSfxPull>
-        def pull(self, *pos, **kw):
-            #100. Define dynamic data reader
-            apiPtnPull = str(apiPfxPull) + cls + str(apiSfxPull)
-
-            #200. Prepare the callable core for creating the reader method
-            try:
-                if hasPkgPull:
-                    __func_pull__ = importByStr('.' + apiPtnPull, package = apiPkgPull)
-                else:
-                    __func_pull__ = list(ls_frame(pattern = f'^{apiPtnPull}$', **lsPullOpt).values())
-                    if len(__func_pull__) == 1:
-                        __func_pull__ = __func_pull__[0]
-                    else:
-                        __func_pull__ = None
-            except:
-                __func_pull__ = None
-
-            #300. Verify whether the core reader is callable on the fly
-            if not callable(__func_pull__):
-                raise TypeError(f'[{cls}][{apiPtnPull}] is not callable!')
-
-            #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
-            #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-            kw_new = modifyDict(self.__inputkw_pull__, kw)
-            sig_raw = signature(__func_pull__).parameters.values()
-
-            #510. Obtain all defaults of keyword arguments of the raw API
-            kw_raw = {
-                s.name : s.default
-                for s in sig_raw
-                if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-                and s.default is not s.empty
-            }
-
-            #550. In case the raw API takes any variant keywords, we also identify them
-            #[ASSUMPTION]
-            #[1] This only validates when the API takes variant keywords
-            #[2] If the created class takes keyword arguments for both <pull> and <push>, there will not be KeyError raised
-            #     when we add below handler to eliminate superfluous arguments for current API
-            if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
-                kw_varkw = { k:v for k,v in kw_new.items() if k not in kw_raw }
-            else:
-                kw_varkw = {}
-
-            #590. Create the final keyword arguments for calling the API
-            kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
-
-            #900. Pull the data from the API
-            self.__pulled__ = self.hdlPull(__func_pull__(*pos, **kw_final))
-
-            #900. Return values
-            #[ASSUMPTION]
-            #[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
-            # return(self)
-            return(self.pulled)
-
-        #300. Define dynamic data writer based on pattern: <apiPfxPush + cls + apiSfxPush>
-        def push(self, *pos, **kw):
-            #100. Define dynamic data writer
-            apiPtnPush = str(apiPfxPush) + cls + str(apiSfxPush)
-
-            #200. Prepare the callable core for creating the writer method
-            try:
-                if hasPkgPush:
-                    __func_push__ = importByStr('.' + apiPtnPush, package = apiPkgPush)
-                else:
-                    __func_push__ = list(ls_frame(pattern = f'^{apiPtnPush}$', **lsPushOpt).values())
-                    if len(__func_push__) == 1:
-                        __func_push__ = __func_push__[0]
-                    else:
-                        __func_push__ = None
-            except:
-                __func_push__ = None
-
-            #300. Verify whether the core writer is callable on the fly
-            if not callable(__func_push__):
-                raise TypeError(f'[{cls}][{apiPtnPush}] is not callable!')
-
-            #500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
-            #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-            kw_new = modifyDict(self.__inputkw_push__, kw)
-            sig_raw = signature(__func_push__).parameters.values()
-
-            #510. Obtain all defaults of keyword arguments of the raw API
-            kw_raw = {
-                s.name : s.default
-                for s in sig_raw
-                if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-                and s.default is not s.empty
-            }
-
-            #550. In case the raw API takes any variant keywords, we also identify them
-            if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
-                kw_varkw = { k:v for k,v in kw_new.items() if k not in kw_raw }
-            else:
-                kw_varkw = {}
-
-            #590. Create the final keyword arguments for calling the API
-            kw_final = modifyDict({ k:v for k,v in kw_new.items() if k in kw_raw }, kw_varkw)
-
-            #900. Push the data via the API
-            self.__pushed__ = self.hdlPush(__func_push__(*pos, **kw_final))
-
-            #900. Return values
-            return(self.pushed)
-
         #400. Define the private environment of the class to be created
         #410. Initialization structure
         # attrs['__init__'] = __init
 
         #430. Slots to protect the privacy
-        slots = ('__pulled__','__pushed__','__hdlpull__','__hdlpush__','__inputkw_pull__','__inputkw_push__','__inputkw__')
+        slots = (
+            '__pulled___','__pushed___','__hdlpull___','__hdlpush___','__inputkw_pull___','__inputkw_push___','__inputkw___'
+        )
         if '__slots__' in attrs:
             attrs['__slots__'] += slots
         else:
@@ -409,16 +286,14 @@ class OpenSourceApiMeta(type):
 
         #450. Methods
         #451. Public methods
-        attrs['pull'] = pull
-        attrs['push'] = push
 
         #450. Private methods
         if '__init__' in attrs:
-            attrs['__init_org__'] = attrs['__init__']
+            attrs['__init_org___'] = attrs['__init__']
             attrs.pop('__init__')
         else:
             def funcLambda(self, *pos, **kw): pass
-            attrs['__init_org__'] = funcLambda
+            attrs['__init_org___'] = funcLambda
 
         #460. Properties
         #461. Read-only properties, aka active bindings
@@ -442,6 +317,64 @@ class OpenSourceApiMeta(type):
         #     created while NOT instantiated
         setattr(newcls, '__init__', newcls.init(newcls, apiPullHdl, apiPushHdl))
 
+        #700. Assign additional methods
+        #710. Create the <pull> and <push> methods
+        #[ASSUMPTION]
+        #[1] Descriptors only work when used as class variables. When put in instances, they have no effect.
+        #    https://docs.python.org/3/howto/descriptor.html
+        #[2] When assigning the descriptor to a class attribute in metaclass, i.e. <mcs.pull_> and <mcs.push_>
+        #    [1] <instance> is passed an object (not the newly created class) to below descriptor, demonstrating that descriptors
+        #         are invoked after <newcls> is created by <__new__> and before it is instantiated by <__init__>
+        #    [2] Since <mcs.pull_> and <mcs.push_> are class attributes, every time they are invoked, the descriptor will be called,
+        #         which will consume excessive system resources
+        #    [3] For this case, the descriptor is triggered once (or twice given both methods can be found) in the <if> clause
+        #    [4] The same descriptor is called once per <setattr> statement due to the same reason
+        #    [5] That is why we have to avoid such design
+        #[3] When assigning the descriptor to a local variable, i.e. <pull_> and <push_>
+        #    [1] There is no extra descriptor triggered during the class creation
+        #    [2] The descriptor is only triggered once at getting the attribute via dot syntax, in the instantiated object
+        #    [3] When the descriptor is triggered, <instance> is passed as not <None>; hence we need to bind the returned callable
+        #         to the <instance> for correct processing
+        pull_ = DynMethodLookup(
+            apiCls = cls
+            ,apiPkg = apiPkgPull
+            ,apiPfx = apiPfxPull
+            ,apiSfx = apiSfxPull
+            ,lsOpt = lsPullOpt
+            ,attr_handler = 'hdlPull'
+            ,attr_kwInit = '__inputkw_pull___'
+            ,attr_assign = '__pulled___'
+            ,attr_return = 'pulled'
+            ,coerce_ = True
+        )
+        push_ = DynMethodLookup(
+            apiCls = cls
+            ,apiPkg = apiPkgPush
+            ,apiPfx = apiPfxPush
+            ,apiSfx = apiSfxPush
+            ,lsOpt = lsPushOpt
+            ,attr_handler = 'hdlPush'
+            ,attr_kwInit = '__inputkw_push___'
+            ,attr_assign = '__pushed___'
+            ,attr_return = 'pushed'
+            ,coerce_ = True
+        )
+
+        #715. Verify whether the class should be created
+        setattr(mcs, 'pull_', pull_)
+        setattr(mcs, 'push_', push_)
+        #[ASSUMPTION]
+        #[1] This step would trigger the descriptor by providing <instance == None>
+        #[2] Since we need to verify both methods, <coerce_> should be set as <True> to prevent early exception from being raised
+        if (mcs.pull_ is None) and (mcs.push_ is None):
+            raise TypeError(f'[{mcs.__name__}]No method found for class [{cls}] creation!')
+        delattr(mcs, 'pull_')
+        delattr(mcs, 'push_')
+
+        #719. Creation
+        setattr(newcls, 'pull', pull_)
+        setattr(newcls, 'push', push_)
+
         #999. Export
         return( newcls )
 
@@ -462,14 +395,14 @@ class OpenSourceApiMeta(type):
             self.hdlPush = hdlPush
 
             #010. Hijack the original <__init__> and conduct its process ahead of the processes defined in the metaclass
-            self.__init_org__(*pos, **kw)
+            self.__init_org___(*pos, **kw)
 
             #100. Assign values to local variables
-            self.__pulled__ = None
-            self.__pushed__ = None
-            self.__inputkw_pull__ = argsPull
-            self.__inputkw_push__ = argsPush
-            self.__inputkw__ = kw
+            self.__pulled___ = None
+            self.__pushed___ = None
+            self.__inputkw_pull___ = argsPull
+            self.__inputkw_push___ = argsPush
+            self.__inputkw___ = kw
 
         return(__init__)
 
@@ -479,22 +412,22 @@ class OpenSourceApiMeta(type):
     #[2] There should not be references of any private variables that are bound to <mcs> within these method definitions,
     #     as they are only valid for use at metaclass level, just similar to MACRO facility in SAS
     def pulled(self):
-        return(self.__pulled__)
+        return(self.__pulled___)
 
     def pushed(self):
-        return(self.__pushed__)
+        return(self.__pushed___)
 
     def getHdlPull(self):
-        return(self.__hdlpull__)
+        return(self.__hdlpull___)
 
     def setHdlPull(self, func : callable):
-        self.__hdlpull__ = func
+        self.__hdlpull___ = func
 
     def getHdlPush(self):
-        return(self.__hdlpush__)
+        return(self.__hdlpush___)
 
     def setHdlPush(self, func : callable):
-        self.__hdlpush__ = func
+        self.__hdlpush___ = func
 
 #End OpenSourceApiMeta
 
@@ -536,13 +469,13 @@ if __name__=='__main__':
     #230. Check if it is successful
     #[ASSUMPTION]
     #[1] Below statements return the same result
-    #Return: RAM
     rst.get('address')
     aaa_obj.pulled.get('address')
+    # RAM
 
     #250. Try to obtain a non-existing property since <__init__> is not customized
-    #AttributeError: 'testMeta' object has no attribute 'bcd'
     aaa_obj.bcd
+    # AttributeError: 'testMeta' object has no attribute 'bcd'
 
     #300. Create a class in a conventional way
     #301. Prepare the function to remove the key <address> from the pulled data
@@ -566,15 +499,15 @@ if __name__=='__main__':
     bbb = testMeta()
 
     #310. Try to obtain data from a non-existing API
-    #AttributeError: 'NoneType' object has no attribute 'get'
     bbb.pulled.get('address')
+    # AttributeError: 'NoneType' object has no attribute 'get'
 
     #330. Manually read data from the API
     rst2 = bbb.pull()
 
     #350. Now check the result
-    #Return: 'test API'
     rst2.get('name')
+    # 'test API'
 
     #360. Try to obtain the removed attribute (by the customized handler)
     bbb.pulled.get('address', 'not exist')
@@ -582,6 +515,7 @@ if __name__=='__main__':
 
     #390. Try to obtain the customized attribute
     bbb.bcd
+    # 112
 
     #400. Create a universal framework to use API dynamically
     #[ASSUMPTION]
@@ -622,10 +556,17 @@ if __name__=='__main__':
         #[1] Pass <**kw> to indicate different arguments for different APIs
         #[2] Create the class of APIs on the fly, and assign their names as attributes to this framework
         def add(self, attr, argsPull = {}, **kw):
+            #010. Prepare an internal counter for each call of the API
+            def _init(self):
+                self.cnt = 0
+
             #100. Create API class on the fly
             #How to pass arguments to metaclass in class definition: (#2)
             #Quote: https://stackoverflow.com/questions/27258557/
-            cls = OpenSourceApiMeta(attr, (object,), {}, apiPkgPull = self.pkg_loader, apiPfxPull = self.pfx_loader)
+            cls = OpenSourceApiMeta(
+                attr, (object,), {'__slots__' : ('cnt',), '__init__' : _init}
+                , apiPkgPull = self.pkg_loader, apiPfxPull = self.pfx_loader
+            )
 
             #200. Prepare keyword arguments for reading data from the API
             #[ASSUMPTION]
@@ -651,10 +592,9 @@ if __name__=='__main__':
             modifyDict(self.__lists_active__, { attr : True }, inplace = True)
 
         #320. Add all available APIs to current private environment
-        def addfull(self, **kw):
-            kw_add = modifyDict(self.args_loader, kw)
+        def addfull(self, argsPull = {}):
             for a in self.full:
-                self.add(a, **kw_add.get(a, {}))
+                self.add(a, argsPull = argsPull.get(a, {}))
 
         #360. Remove API from private environment
         def remove(self, attr):
@@ -707,6 +647,7 @@ if __name__=='__main__':
 
     #510. List all available APIs at present
     addAPI.full
+    # ['testMeta']
 
     #530. Load data from all APIs with default arguments
     addAPI.addfull()
@@ -715,15 +656,15 @@ if __name__=='__main__':
     addAPI.purge()
 
     #599. Try to list all names of the APIs in vain as they have been purged at above step
-    #ValueError: [ApiOnTheFly][names] is empty as there is no active API!
     addAPI.names
+    # ValueError: [ApiOnTheFly][names] is empty as there is no active API!
 
     #600. Add the API defined above
     addAPI.add('testMeta')
 
     #610. Check the address of the data retrieved from current API
-    #Return: 'RAM'
     addAPI.testMeta.pulled.get('address')
+    # 'RAM'
 
     #630. Refresh data from the API with default arguments
     rst3 = addAPI.testMeta.pull()
@@ -736,7 +677,10 @@ if __name__=='__main__':
     }
 
     #705. Create a new API on the fly
-    def api_fly(arg_in = [5]):
+    #[ASSUMPTION]
+    #[1] Set this API as a method-like function, to count the times of call to it
+    def api_fly(self, arg_in = [5]):
+        self.cnt += 1
         return({
             'name' : 'on-the-fly'
             ,'address' : 'RAM'
@@ -748,7 +692,7 @@ if __name__=='__main__':
         })
 
     #710. Register and load data from all available APIs with the modified arguments
-    addAPI.addfull(**diff_args)
+    addAPI.addfull(argsPull = diff_args)
 
     #730. Check the added APIs at current step
     ttt = addAPI.added
@@ -757,25 +701,50 @@ if __name__=='__main__':
     addAPI.remove('testMeta')
 
     #750. Register and load data from a specific API with modified arguments
-    addAPI.add('fly', **diff_args.get('fly', {}))
+    addAPI.add('fly', argsPull = diff_args.get('fly', {}))
 
     #800. Check properties at current stage
     #810. List the mappings of API names
     addAPI.names
+    # {'fly': 'on-the-fly'}
 
     #830. Check the status of registered APIs
     addAPI.lists_active
+    # {'testMeta': False, 'fly': True}
 
     #850. Instantiate the framework with default arguments
     addAPI = ApiOnTheFly(args_loader = diff_args)
 
     #855. Load data from API with the modified default arguments
     addAPI.add('fly')
+
     addAPI.added
+    # {'fly': 0    2
+    #  1    3
+    #  2    4
+    #  dtype: int64}
+
+    addAPI.fly.cnt
+    # 1
+
+    #Verify the counter
+    rst4 = addAPI.fly.pull(arg_in = [5,6,7])
+
+    addAPI.fly.cnt
+    # 2
+
+    rst4 = addAPI.fly.pull([8])
+
+    addAPI.fly.pulled['data']['series']
+    # 0    8
+    # dtype: int64
+
+    addAPI.fly.cnt
+    # 3
 
     #900. Try to add an API that does not exist in vain
-    #TypeError: [pseudo][api_pseudo] is not callable!
     addAPI.add('pseudo')
+    # TypeError: [OpenSourceApiMeta]No method found for [pseudo] creation!
 
 #-Notes- -End-
 '''

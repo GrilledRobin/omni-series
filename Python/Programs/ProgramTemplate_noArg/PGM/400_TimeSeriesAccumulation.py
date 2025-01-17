@@ -6,24 +6,24 @@
 #[2] Concatenate the customer information files from different platforms (such as T1, T2, etc.)
 #[3] Leverage KPI data structure for data retrieval
 #[4] Minimize the RAM usage by reading the least data files at the same time
-logger.info('Accumulate the snapshot on time series')
+print('Accumulate the snapshot on time series')
 import os, re
 import datetime as dt
 import pandas as pd
 import numpy as np
 import pyreadstat as pyr
-from omniPy.Dates import asDates, intnx, UserCalendar
-from omniPy.AdvDB import parseDatName, loadSASdat, DBuse_GetTimeSeriesForKpi
+from omniPy.Dates import intnx, UserCalendar
+from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi
 from omniPy.AdvOp import modifyDict
 from omniPy.FileSystem import getMemberByStrPattern
 
 #Identify the reporting date as the end of the previous month to current execution date
-L_curdate = intnx('month', G_obsDates.values[0], -1, 'e', daytype = 'w')
+L_curdate = intnx('month', G_obsDates.values[0], -1, 'e', daytype = 'w').strftime('%Y%m%d')
 L_srcflnm1 = r'cust_T1_&L_curdate..sas7bdat'
 L_srcflnm2 = r'cust_T2_&L_curdate..sas7bdat'
 L_srcflnm3 = r'D:\R\omniR\SampleKPI\KPI\K1\cfg_kpi.sas7bdat'
 L_srcflnm4 = r'D:\R\omniR\SampleKPI\KPI\K1\cfg_lib.sas7bdat'
-L_stpflnm1 = os.path.join(dir_data_db, 'EverQ' + L_curdate.strftime('%Y%m%d') + '.hdf')
+L_stpflnm1 = os.path.join(dir_data_db, f'EverQ{L_curdate}.hdf')
 key_hdf_cust = 'MaxAUM_MonthEnd_cust'
 key_hdf_acct = 'MaxAUM_MonthEnd_acct'
 bgn_Proj = dt.date(2016,5,1)
@@ -39,6 +39,9 @@ map_pdttype = {
     '100100' : 'Type1'
     ,'100101' : 'Type2'
 }
+dataIO = DataIO()
+dataIO.add('SAS')
+dataIO.add('HDFS')
 
 #050. Helper functions
 #051. Function to extract the drive from an absolute path
@@ -49,11 +52,11 @@ def getBasePath(path):
 
     return(basePath, path[len(basePath):])
 
-logger.info('100. Import the KPI configuration')
+print('100. Import the KPI configuration')
 cfg_kpi = (
-    loadSASdat(L_srcflnm3, encoding = 'GB2312')[0]
+    dataIO['SAS'].pull(L_srcflnm3, encoding = 'GB2312')
     .merge(
-        loadSASdat(L_srcflnm4, encoding = 'GB2312')[0]
+        dataIO['SAS'].pull(L_srcflnm4, encoding = 'GB2312')
         ,on = 'C_KPI_DAT_LIB'
         ,how = 'left'
         ,suffixes = ('', '.y')
@@ -64,7 +67,7 @@ cfg_kpi = (
     })
 )
 
-logger.info('300. Determine the calculation period')
+print('300. Determine the calculation period')
 #310. Prepare the pattern of the source data paths
 #Below paths are from [main.py]
 drive_T1, relPath_T1 = getBasePath(dir_DM_T1)
@@ -92,7 +95,7 @@ parse_PM = getMemberByStrPattern(
     ,chkType = 1
     ,FSubDir = False
 )
-all_PM = [ m[0] for m in parse_PM if re.search(ptn_PM, m[0]).group(1) < L_curdate.strftime('%Y%m%d') ]
+all_PM = [ m[0] for m in parse_PM if re.search(ptn_PM, m[0]).group(1) < L_curdate ]
 
 #370. Set the period beginning as the next working day to above data if it exists
 if len(all_PM) == 0:
@@ -105,7 +108,7 @@ else:
 #390. Define the dates to retrieve all time series files
 L_clndr = UserCalendar( clnBgn = prd_bgn, clnEnd = L_curdate )
 
-logger.info('500. Calculate maximum AUM on daily basis')
+print('500. Calculate maximum AUM on daily basis')
 #510. Locate all source data files
 #[getOption] is from [autoexec.py]
 parse_data = parseDatName(
@@ -151,7 +154,7 @@ def h_calc(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM):
 
     #100. Retrieve AUM from different platforms
     aum_T1 = [
-        loadSASdat(f, encoding = 'GB2312', usecols = ['custID', 'a_aum'])[0]
+        dataIO['SAS'].pull(f, encoding = 'GB2312', usecols = ['custID', 'a_aum'])
         for f in cfg_T1['fullpath.Parsed']
     ]
 
@@ -160,7 +163,7 @@ def h_calc(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM):
         df, meta = pyr.read_sas7bdat(f, metadataonly = True)
         accttype = ['acct_type'] if 'acct_type' in meta.column_names else []
         cols = ['custID', 'a_aum'] + accttype
-        df = loadSASdat(f, encoding = 'GB2312', usecols = cols)[0]
+        df = dataIO['SAS'].pull(f, encoding = 'GB2312', usecols = cols)
         if 'acct_type' in meta.column_names:
             df = (
                 df.copy(deep = True)
@@ -266,11 +269,15 @@ loop_dates = loop_data['dates'].drop_duplicates().sort_values()
 #[1] We avoid to load all Time Series data into RAM at the same time
 #[2] Arguments [df_AUM] and [df_Prod] MUST be provided at each iteration, to validate the recursion
 for d in loop_dates:
-    logger.info('Processing ' + d.strftime('%Y-%m-%d'))
+    print('Processing ' + d.strftime('%Y-%m-%d'))
     cust_MaxAUM, acct_MaxAUM = h_calc(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM)
 
-logger.info('999. Save the result to harddrive')
+print('999. Save the result to harddrive')
 if os.path.isfile(L_stpflnm1): os.remove(L_stpflnm1)
-with pd.HDFStore(L_stpflnm1, mode = 'w') as store:
-    store.put(key_hdf_cust, cust_MaxAUM)
-    store.put(key_hdf_acct, acct_MaxAUM)
+rc = dataIO['HDFS'].push(
+    {
+        key_hdf_cust : cust_MaxAUM
+        ,key_hdf_acct : acct_MaxAUM
+    }
+    ,L_stpflnm1
+)

@@ -9,6 +9,7 @@
 from .thisShell import thisShell
 from .thisFunction import thisFunction
 from .simplifyDeco import simplifyDeco
+from .nameArgsByFormals import nameArgsByFormals
 from .ls_frame import ls_frame
 from .Trie import Trie
 from .alignWidth import alignWidth
@@ -47,6 +48,10 @@ from .SingletonMeta import SingletonMeta
 from .customLog import customLog
 from .PrintToLog import PrintToLog
 
+from .withDefaults import withDefaults
+from .lookupMethod import lookupMethod
+from .DynMethodLookup import DynMethodLookup
+
 #200.   Define available resources.
 __all__ = [
     'Trie', 'alignWidth', 'apply_MapVal' , 'debug_comp_datcols' , 'exec_file' , 'gen_locals' , 'get_values'
@@ -54,7 +59,7 @@ __all__ = [
     , 'initNumVar' , 'initCatVar' , 'selCatVar' , 'selNumVar' , 'trimCatVar'
     , 'getWinUILanguage', 'getWinNonUCPgmLanguage'
     , 'pandasPivot'
-    , 'rgetattr' , 'rsetattr' , 'simplifyDeco' , 'tryProc'
+    , 'rgetattr' , 'rsetattr' , 'simplifyDeco' , 'tryProc', 'nameArgsByFormals'
     , 'pandasParseIndexer'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
     , 'strNestedParser', 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
@@ -62,4 +67,5 @@ __all__ = [
     , 'vecStack', 'vecUnstack'
     , 'SingletonMeta'
     , 'customLog', 'PrintToLog'
+    , 'withDefaults', 'lookupMethod', 'DynMethodLookup'
 ]

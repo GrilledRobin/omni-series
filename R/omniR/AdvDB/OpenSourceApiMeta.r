@@ -111,40 +111,12 @@ OpenSourceApiMeta <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 
 	#012. Handle the parameter buffer.
-	if (!isVEC(apiPfxPull) | !is.character(apiPfxPull) | (length(apiPfxPull) != 1)) {
-		stop(glue::glue('[{LfuncName}]<apiPfxPull> must be a length-1 character string!'))
-	}
-	if (!isVEC(apiSfxPull) | !is.character(apiSfxPull) | (length(apiSfxPull) != 1)) {
-		stop(glue::glue('[{LfuncName}]<apiSfxPull> must be a length-1 character string!'))
-	}
-	if (!isVEC(apiPfxPush) | !is.character(apiPfxPush) | (length(apiPfxPush) != 1)) {
-		stop(glue::glue('[{LfuncName}]<apiPfxPush> must be a length-1 character string!'))
-	}
-	if (!isVEC(apiSfxPush) | !is.character(apiSfxPush) | (length(apiSfxPush) != 1)) {
-		stop(glue::glue('[{LfuncName}]<apiSfxPush> must be a length-1 character string!'))
-	}
 	if (!is.function(apiPullHdl)) {
 		apiPullHdl <- function(x) {x}
 	}
 	if (!is.function(apiPushHdl)) {
 		apiPushHdl <- function(x) {x}
 	}
-	candopt_rx <- list(
-		'verbose' = TRUE
-		,'predicate' = is.function
-		,'ignore_case' = FALSE
-		,'multiline' = FALSE
-		,'comments' = FALSE
-		,'dotall' = FALSE
-	)
-	lsPullOpt <- c(
-		candopt_rx
-		,lsPullOpt[!names(lsPullOpt) %in% c(names(candopt_rx),'pattern')]
-	)
-	lsPushOpt <- c(
-		candopt_rx
-		,lsPushOpt[!names(lsPushOpt) %in% c(names(candopt_rx),'pattern')]
-	)
 
 	#013. Define the local environment.
 	cls_kw <- rlang::list2(...)
@@ -161,30 +133,19 @@ OpenSourceApiMeta <- function(
 	.init_org. <- m_public[['initialize']]
 	hasInit <- is.function(.init_org.)
 	if (!hasInit) .init_org. <- function(...){}
-	#[ASSUMPTION]
-	#[1] <nchar(NULL)> returns <logical(0)> instead of <0>
-	#[2] That is why we have to verify it at another step
-	hasPkgPull <- isVEC(apiPkgPull) & is.character(apiPkgPull) & (length(apiPkgPull) == 1)
-	if (hasPkgPull) {
-		if (nchar(apiPkgPull) == 0) hasPkgPull <- F
-	}
-	hasPkgPush <- isVEC(apiPkgPush) & is.character(apiPkgPush) & (length(apiPkgPush) == 1)
-	if (hasPkgPush) {
-		if (nchar(apiPkgPush) == 0) hasPkgPush <- F
-	}
 
 	#050. Define a separate environment for variable substitution purpose
 	newcls_env <- new.env()
 	newcls_env$cls <- cls
 	newcls_env$apiPullHdl <- apiPullHdl
 	newcls_env$apiPushHdl <- apiPushHdl
+	newcls_env$apiPkgPull <- apiPkgPull
 	newcls_env$apiPfxPull <- apiPfxPull
 	newcls_env$apiSfxPull <- apiSfxPull
+	newcls_env$lsPullOpt <- lsPullOpt
+	newcls_env$apiPkgPush <- apiPkgPush
 	newcls_env$apiPfxPush <- apiPfxPush
 	newcls_env$apiSfxPush <- apiSfxPush
-	newcls_env$hasPkgPull <- hasPkgPull
-	newcls_env$hasPkgPush <- hasPkgPush
-	newcls_env$lsPullOpt <- lsPullOpt
 	newcls_env$lsPushOpt <- lsPushOpt
 
 	#100. Extract the rest of keyword arguments
@@ -203,160 +164,96 @@ OpenSourceApiMeta <- function(
 	#     leverage the argument <env> for <substitute> to only search for the dedicated variables during substitution
 
 	#210. Define dynamic data reader based on pattern: <apiPfxPull + cls + apiSfxPull>
+	#[ASSUMPTION]
+	#[1] If we directly set <pull.> as the callable method, we can still instantiate the class with success. But the method is only
+	#     searched at instantiation and will not be searched every time, i.e. it becomes static
+	#[2] There is no descriptor (see Python descriptor) in R6, so such method lookup cannot be done automatically
+	#[3] To make this method able to refresh at each call, we have to wrap <lookupMethod> in a private function
 	.pull. <- eval(substitute(function(...) {
-		#013. Define the local environment.
-		kw <- rlang::list2(...)
-
-		#100. Define dynamic data reader
-		apiPtnPull <- paste0(apiPfxPull, cls, apiSfxPull)
-
-		#200. Prepare the callable core for creating the reader method
-		if (hasPkgPull) {
-			..func_pull.. <- get(apiPtnPull, pos = loadNamespace(apiPkgPull), mode = 'function')
-		} else {
-			#[ASSUMPTION]
-			#[1] We would call external function <glue::glue> for some conditions
-			#[2] Hence the variables are lazy-evaluated
-			#[3] Even if we add <.envir=> option to bind the call to current environment, it still fails
-			#[4] Therefore, we set the pattern by text manipulation before any external function call
-			#[5] In case the pattern contains dots (as R allows), we also need to escape it to avoid error searching
-			..func_pull.. <- do.call(ls_frame, c(
-				list(pattern = paste0('^',apiPtnPull,'$'))
-				,lsPullOpt
-			))
-			if (length(..func_pull..) == 1) {
-				..func_pull.. <- ..func_pull..[[1]]
-			} else {
-				..func_pull.. <- NULL
-			}
-		}
-
-		#300. Verify whether the core reader is callable on the fly
-		if (!is.function(..func_pull..)) {
-			stop(glue::glue('[{self$..class..$classname}][{apiPtnPull}] is not callable!'))
-		}
-
-		#400. Correct the provided arguments during calling
-		#401. Retrieve the formals of the function
-		formals_raw <- formals(..func_pull..)
-
-		#450. Validate the effective arguments as provided
-		kw_ren <- nameArgsByFormals(kw, func = ..func_pull..)
-
-		#500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
-		kw_new <- modifyList(private$..inputkw_pull.., kw_ren, keep.null = T)
-
-		#510. Obtain all defaults of keyword arguments of the raw API
-		kw_raw <- formals_raw[!names(formals_raw) %in% c('...')]
-
-		#550. In case the raw API takes any variant keywords, we also identify them
-		#[ASSUMPTION]
-		#[1] This only validates when the API takes variant keywords
-		#[2] If the created class takes keyword arguments for both <pull> and <push>, there will not be KeyError raised
-		#     when we add below handler to eliminate superfluous arguments for current API
-		if ('...' %in% names(formals_raw)) {
-			kw_varkw <- kw_new[!names(kw_new) %in% names(kw_raw)]
-		} else {
-			kw_varkw <- list()
-		}
-
-		#590. Create the final keyword arguments for calling the API
-		kw_final <- c(
-			kw_new[names(kw_new) %in% names(kw_raw)]
-			,kw_varkw
+		pull. <- lookupMethod(
+			apiCls = cls
+			,apiPkg = apiPkgPull
+			,apiPfx = apiPfxPull
+			,apiSfx = apiSfxPull
+			,lsOpt = modifyList(
+				lsPullOpt
+				,list(
+					frame_from = sys.frame()
+				)
+			)
+			,attr_handler = self$hdlPull
+			,attr_kwInit = private$..inputkw_pull..
+			,attr_assign = private$..pulled..
+			,attr_return = self$pulled
+			,coerce_ = FALSE
+			,envir = self$.__enclos_env__
+			,privateName = '..lm_pull.'
 		)
-		# print(glue::glue('kw -> {paste0(paste(names(kw), as.character(kw), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue('kw_ren -> {paste0(paste(names(kw_ren), as.character(kw_ren), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue(
-		# 	'private$..inputkw_pull.. ->'
-		# 	,' {paste0(paste(names(private$..inputkw_pull..), as.character(private$..inputkw_pull..), sep = " -> "), collapse = ";")}'
-		# ))
-		# print(glue::glue('kw_new -> {paste0(paste(names(kw_new), as.character(kw_new), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue('kw_final -> {paste0(paste(names(kw_final), as.character(kw_final), sep = " -> "), collapse = ";")}'))
 
-		#900. Pull the data from the API
-		private$..pulled.. <- self$hdlPull(do.call(..func_pull.., kw_final))
-
-		#900. Return values
-		#[ASSUMPTION]
-		#[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
-		return(self$pulled)
+		environment(pull.) <- self$.__enclos_env__
+		return(pull.(...))
 	}, env = newcls_env))
+
+	#211. Verify the lookup at instantiation
+	vfy_pull. <- lookupMethod(
+		apiCls = cls
+		,apiPkg = apiPkgPull
+		,apiPfx = apiPfxPull
+		,apiSfx = apiSfxPull
+		,lsOpt = modifyList(
+			lsPullOpt
+			,list(
+				frame_from = sys.frame()
+			)
+		)
+		,coerce_ = TRUE
+	)
 
 	#220. Define dynamic data writer based on pattern: <apiPfxPush + cls + apiSfxPush>
 	.push. <- eval(substitute(function(...) {
-		#013. Define the local environment.
-		kw <- rlang::list2(...)
-
-		#100. Define dynamic data reader
-		apiPtnPush <- paste0(apiPfxPush, cls, apiSfxPush)
-
-		#200. Prepare the callable core for creating the reader method
-		if (hasPkgPush) {
-			..func_push.. <- get(apiPtnPush, pos = loadNamespace(apiPkgPush), mode = 'function')
-		} else {
-			..func_push.. <- do.call(ls_frame, c(
-				list(pattern = paste0('^',apiPtnPush,'$'))
-				,lsPushOpt
-			))
-			if (length(..func_push..) == 1) {
-				..func_push.. <- ..func_push..[[1]]
-			} else {
-				..func_push.. <- NULL
-			}
-		}
-
-		#300. Verify whether the core reader is callable on the fly
-		if (!is.function(..func_push..)) {
-			stop(glue::glue('[{self$..class..$classname}][{apiPtnPush}] is not callable!'))
-		}
-
-		#400. Correct the provided arguments during calling
-		#401. Retrieve the formals of the function
-		formals_raw <- formals(..func_push..)
-
-		#450. Validate the effective arguments as provided
-		kw_ren <- nameArgsByFormals(kw, func = ..func_push..)
-
-		#500. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
-		kw_new <- modifyList(private$..inputkw_push.., kw_ren, keep.null = T)
-
-		#510. Obtain all defaults of keyword arguments of the raw API
-		kw_raw <- formals_raw[!names(formals_raw) %in% c('...')]
-
-		#550. In case the raw API takes any variant keywords, we also identify them
-		#[ASSUMPTION]
-		#[1] This only validates when the API takes variant keywords
-		#[2] If the created class takes keyword arguments for both <pull> and <push>, there will not be KeyError raised
-		#     when we add below handler to eliminate superfluous arguments for current API
-		if ('...' %in% names(formals_raw)) {
-			kw_varkw <- kw_new[!names(kw_new) %in% names(kw_raw)]
-		} else {
-			kw_varkw <- list()
-		}
-
-		#590. Create the final keyword arguments for calling the API
-		kw_final <- c(
-			kw_new[names(kw_new) %in% names(kw_raw)]
-			,kw_varkw
+		push. <- lookupMethod(
+			apiCls = cls
+			,apiPkg = apiPkgPush
+			,apiPfx = apiPfxPush
+			,apiSfx = apiSfxPush
+			,lsOpt = modifyList(
+				lsPushOpt
+				,list(
+					frame_from = sys.frame()
+				)
+			)
+			,attr_handler = self$hdlPush
+			,attr_kwInit = private$..inputkw_push..
+			,attr_assign = private$..pushed..
+			,attr_return = self$pushed
+			,coerce_ = FALSE
+			,envir = self$.__enclos_env__
+			,privateName = '..lm_push.'
 		)
-		# print(glue::glue('kw -> {paste0(paste(names(kw), as.character(kw), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue('kw_ren -> {paste0(paste(names(kw_ren), as.character(kw_ren), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue(
-		# 	'private$..inputkw_push.. ->'
-		# 	,' {paste0(paste(names(private$..inputkw_push..), as.character(private$..inputkw_push..), sep = " -> "), collapse = ";")}'
-		# ))
-		# print(glue::glue('kw_new -> {paste0(paste(names(kw_new), as.character(kw_new), sep = " -> "), collapse = ";")}'))
-		# print(glue::glue('kw_final -> {paste0(paste(names(kw_final), as.character(kw_final), sep = " -> "), collapse = ";")}'))
 
-		#900. Pull the data from the API
-		private$..pushed.. <- self$hdlPush(do.call(..func_push.., kw_final))
-
-		#900. Return values
-		#[ASSUMPTION]
-		#[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
-		return(self$pushed)
+		environment(push.) <- self$.__enclos_env__
+		return(push.(...))
 	}, env = newcls_env))
+
+	#221. Verify the lookup at instantiation
+	vfy_push. <- lookupMethod(
+		apiCls = cls
+		,apiPkg = apiPkgPush
+		,apiPfx = apiPfxPush
+		,apiSfx = apiSfxPush
+		,lsOpt = modifyList(
+			lsPushOpt
+			,list(
+				frame_from = sys.frame()
+			)
+		)
+		,coerce_ = TRUE
+	)
+
+	#290. Assert if none of the methods can be loaded
+	if (!is.function(vfy_pull.) & !is.function(vfy_push.)) {
+		stop(glue::glue('[{LfuncName}]No method found for class [{cls}] creation!'))
+	}
 
 	#250. Define the <initialize> structure during instantiation of the newly created class
 	#Below link demonstrates the way to initialize an R6 Class together with its parent class generator
@@ -455,6 +352,8 @@ OpenSourceApiMeta <- function(
 							,..inputkw.. = NULL
 							,..hdlPull.. = NULL
 							,..hdlPush.. = NULL
+							,..lm_pull. = NULL
+							,..lm_push. = NULL
 						)
 						,keep.null = T
 					)
@@ -611,6 +510,12 @@ if (FALSE){
 							classname = .attr
 							,apiPkgPull = self$pkg_loader
 							,apiPfxPull = self$pfx_loader
+							,public = list(
+								initialize = function(){
+									self$cnt <- 0
+								}
+								,cnt = NULL
+							)
 						)
 
 						#200. Prepare keyword arguments for reading data from the API
@@ -730,6 +635,7 @@ if (FALSE){
 
 		#510. List all available APIs at present
 		addAPI$full
+		# [1] "fly"      "testMeta"
 
 		#530. Load data from all APIs with default arguments
 		addAPI$addfull()
@@ -739,7 +645,7 @@ if (FALSE){
 
 		#599. Try to list all names of the APIs in vain as they have been purged at above step
 		addAPI$active
-		# [ApiOnTheFly][active] is empty as there is no active API!
+		# character(0)
 
 		#600. Add the API defined above
 		addAPI$add('testMeta')
@@ -760,7 +666,13 @@ if (FALSE){
 		)
 
 		#705. Create a new API on the fly
+		#[ASSUMPTION]
+		#[1] According to the design of such metaclass, API callable cannot take <self> as an argument
+		#[2] However, the API can reference any internal variables, such as <self> and <private>, inside the body
+		#[3] This is because that the parameters passed to the API is evaluated before its environment is set inside the instance,
+		#     while the API is called afterwards
 		api_fly <- function(arg_in = 5) {
+			self$cnt <- self$cnt + 1
 			return(list(
 				'name' = 'on-the-fly'
 				,'address' = 'RAM'
@@ -801,12 +713,54 @@ if (FALSE){
 
 		#855. Load data from API with the modified default arguments
 		addAPI$add('fly')
-		addAPI[['fly']]$pull()
+		rst3 <- addAPI[['fly']]$pull()
 		print(addAPI[['fly']]$pulled[['data']][['dataframe']])
 		#   a
 		# 1 2
 		# 2 3
 		# 3 4
+
+		addAPI[['fly']]$cnt
+		# [1] 1
+
+		#Verify the counter
+		rst4 <- addAPI[['fly']]$pull(arg_in = list(5,6,7))
+
+		addAPI[['fly']]$cnt
+		# [1] 2
+
+		rst5 <- addAPI[['fly']]$pull(8)
+		print(addAPI[['fly']]$pulled[['data']][['dataframe']])
+		# a
+		# 1 8
+
+		addAPI[['fly']]$cnt
+		# [1] 3
+
+		#Change the API on the fly
+		api_fly <- function(arg_in = 5) {
+			self$cnt <- self$cnt + 1
+			return(list(
+				'name' = 'on-the-fly'
+				,'address' = 'RAM'
+				,'data' = list(
+					'rawdata' = c(5,6,7)
+					,'dataframe' = data.frame(a = arg_in)
+				)
+				,'rc' = 0
+			))
+		}
+
+		#[ASSUMPTION]
+		#[1] Now we can see that the data is retrieved from the updated API
+		#[2] This is NOT because of the lazy evaluation of R function, but because that we wrapped the dynamic method lookup in the
+		#     metaclass, so that each time the method is invoked, the internal callable will be searched and called
+		rst6 <- addAPI[['fly']]$pull(9)
+		print(addAPI[['fly']]$pulled[['data']][['rawdata']])
+		# [1] 5 6 7
+
+		addAPI[['fly']]$cnt
+		# [1] 4
 
 		#900. Try to add an API that does not exist in vain
 		addAPI$add('pseudo')

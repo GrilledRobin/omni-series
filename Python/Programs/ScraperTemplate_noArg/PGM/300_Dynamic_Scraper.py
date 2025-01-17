@@ -21,7 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from omniPy.AdvOp import getWinUILanguage, importByStr, modifyDict, ls_frame
+from omniPy.AdvOp import getWinUILanguage, importByStr, modifyDict, ls_frame, lookupMethod
 from omniPy.Dates import asDates
 from omniPy.RPA import getDesktopWindows
 from omniPy.FileSystem import winReg_getInfByStrPattern, winKnownFolders
@@ -319,31 +319,24 @@ class OpsWebsite:
             raise ValueError(f'[{self.__class__.__name__}]No method is found to register API for [{attr}]!')
 
         #500. Import the method
-        #Quote: https://stackoverflow.com/questions/972/adding-a-method-to-an-existing-object-instance-in-python
-        apiPtnPull = str(self.apiPfxPull) + attr + str(self.apiSfxPull)
-        try:
-            if self.hasPkgPull:
-                __func_pull__ = importByStr('.' + apiPtnPull, package = self.apiPkgPull)
-            else:
-                __func_pull__ = list(ls_frame(pattern = f'^{apiPtnPull}$', **self.lsPullOpt).values())
-                if len(__func_pull__) == 1:
-                    __func_pull__ = __func_pull__[0]
-                else:
-                    __func_pull__ = None
-        except:
-            __func_pull__ = None
-
-        #700. Verify whether the core reader is callable on the fly
-        if not callable(__func_pull__):
-            raise TypeError(f'[{self.__class__.__name__}][{apiPtnPull}] is not callable!')
-
-        #900. Bind the method to current instance
-        setattr(self, f'down_{attr}', types.MethodType(__func_pull__, self))
+        func_ = lookupMethod(
+            apiCls = attr
+            ,apiPkg = self.apiPkgPull
+            ,apiPfx = self.apiPfxPull
+            ,apiSfx = self.apiSfxPull
+            ,lsOpt = self.lsPullOpt
+            ,attr_handler = None
+            ,attr_kwInit = None
+            ,attr_assign = None
+            ,attr_return = None
+            ,coerce_ = False
+        )
+        setattr(self, f'down_{attr}', types.MethodType(func_, self))
 
         #950. Update the API status
         modifyDict(self.__dict_active__, { attr : True }, inplace = True)
 
-    def addful(self):
+    def addfull(self):
         for a in self.full:
             self.add(a)
 

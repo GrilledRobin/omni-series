@@ -8,6 +8,7 @@ from typing import Any
 
 def ls_frame(
     frame = None
+    ,frame_from = None
     ,predicate : Callable[[Any, ...], bool] = lambda x: True
     ,scope : str | list[str] = ['f_locals','f_globals']
     ,pattern : str | re.Pattern = r'.*'
@@ -30,9 +31,12 @@ def ls_frame(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |frame       :   <frame> object in which to search for objects                                                                      #
+#   |frame       :   <frame> object in which to search for objects, prior to <frame_from>                                               #
 #   |                [None        ] <Default> Search in all frames along the call stack                                                 #
 #   |                [frame       ]           Dedicated <frame> in which to search the objects                                          #
+#   |frame_from  :   <frame> object along the stacks from which to search for objects, omitted if <frame> is provided                   #
+#   |                [None        ] <Default> Search in all frames along the call stack from current one                                #
+#   |                [frame       ]           <frame> along the stack from which to search the objects                                  #
 #   |predicate   :   Callable predicate to apply to the objects as found, only those with True predicates will be returned              #
 #   |                [<see def.>  ] <Default> Do not apply predicate                                                                    #
 #   |                [callable    ]           Callable with the first argument to be applied upon the object as found, and return bool  #
@@ -63,6 +67,13 @@ def ls_frame(
 #   | Date |    20240218        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250104        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add argument <frame_from> to enable search along the call stack from a specific frame                                   #
+#   |      |[2] if <frame> is provided, <frame_from> will then be omitted                                                               #
+#   |      |[3] if neither <frame> nor <frame_from> is provided, current frame and its call stack will be searched                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -127,7 +138,7 @@ def ls_frame(
             return(list(rstOut.keys()))
 
     #500. Search starting from the parent frame and backwards
-    frame = sys._getframe(1)
+    frame = frame_from or sys._getframe(1)
     rstOut = {}
     #Avoid errors to be raised when reaching the global environment
     #Quote: https://stackoverflow.com/questions/39265823/python-sys-getframe

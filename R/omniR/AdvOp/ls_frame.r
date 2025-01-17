@@ -12,9 +12,12 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |frame       :   <frame> object in which to search for objects                                                                      #
+#   |frame       :   <frame> object in which to search for objects, prior to <frame_from>                                               #
 #   |                [NULL        ] <Default> Search in all frames along the call stack                                                 #
 #   |                [frame       ]           Dedicated <frame> in which to search the objects                                          #
+#   |frame_from  :   <frame> object along the stacks from which to search for objects, omitted if <frame> is provided                   #
+#   |                [None        ] <Default> Search in all frames along the call stack from current one                                #
+#   |                [frame       ]           <frame> along the stack from which to search the objects                                  #
 #   |predicate   :   Function predicate to apply to the objects as found, only those with True predicates will be returned              #
 #   |                [<see def.>  ] <Default> Do not apply predicate                                                                    #
 #   |                [function    ]           Function with the first argument to be applied upon the object as found, and return bool  #
@@ -70,6 +73,7 @@ library(magrittr)
 
 ls_frame <- function(
 	frame = NULL
+	,frame_from = NULL
 	,predicate = function(x){TRUE}
 	,pattern = '.*'
 	,verbose = FALSE
@@ -128,12 +132,13 @@ ls_frame <- function(
 	}
 
 	#700. Search starting from the parent frame and backwards
-	ifr <- 1
+	if (is.environment(frame_from)) {
+		pframe <- frame_from
+	} else {
+		pframe <- parent.frame(1)
+	}
 	rstOut <- list()
 	while (T) {
-		#100. Retrieve the content of the parent frame to the previous one
-		pframe <- parent.frame(ifr)
-
 		#500. Glob the frame
 		rstInt <- h_globframe(pframe)
 
@@ -147,8 +152,8 @@ ls_frame <- function(
 		#Quote: https://www.r-bloggers.com/2011/06/environments-in-r/
 		if (environmentName(pframe) == 'R_GlobalEnv') break
 
-		#900. Increment the counter of parent frames
-		ifr <- ifr + 1
+		#900. Retrieve the content of the parent frame to the previous one
+		pframe <- parent.env(pframe)
 	}
 
 	#999. Export

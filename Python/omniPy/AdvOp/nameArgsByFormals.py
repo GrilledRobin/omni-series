@@ -127,7 +127,8 @@ def nameArgsByFormals(
         #600. Identify the arguments without defaults and without inputs as well
         #[ASSUMPTION]
         #[1] Both POSITIONAL_OR_KEYWORD and KEYWORD_ONLY can have arguments WITH or WITHOUT defaults
-        #[1] Within each <kind>, arguments WITHOUT defaults are always to the left of those WITH defaults
+        #[1] Within POSITIONAL_OR_KEYWORD, arguments WITHOUT defaults are always to the left of those WITH defaults
+        #[1] Within KEYWORD_ONLY, arguments WITHOUT defaults can be to the right of those WITH defaults
         sig_no_default = { i:s for i,s in sig_reorder.items() if s.default is s.empty }
 
         #690. Raise exception if not all these arguments have inputs

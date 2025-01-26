@@ -186,7 +186,7 @@ def lookupMethod(
         #     the Python sugar syntax @deco)
         __dfl_def_ = withDefaults(**kw_def)(__dfl_func_)
 
-        #500. Pull the data from the API
+        #500. Call the API
         rstOut = __dfl_def_(*pos, **kw)
 
         #600. Handle the result if required
@@ -293,6 +293,81 @@ if __name__=='__main__':
     # No longer print the pre-defined message as the method has already been bound to the instance
     testadd1.api001(30)
     # 40
+
+    #400. Protect the instance while allowing dynamic method look up
+    #[ASSUMPTION]
+    #[1] This solution enables looking up the method each time it is invoked in an instance
+    #[2] Use slots to prevent new attributes from being created
+    #    https://wiki.python.org/moin/UsingSlots
+    class MyClass2:
+        #100. Define slots to prevent attributes from modification
+        #[ASSUMPTION]
+        #[1] Defining slots will hence eliminate <__dict__> in the instance
+        #[2] Even if we add a slot of <__dict__> in this definition, it is empty
+        #[3] Be careful when using <cached_property> together with slots, or other similar objects that require access to <__dict__>
+        __slots__ = ('aaa',)
+
+        #200. Initialize
+        #[ASSUMPTION]
+        #[1] Even if we add a slot of <__dict__> in slots, we still cannot add attributes, e.g. <bbb>, in this structure
+        def __init__(self):
+            self.aaa = 10
+
+        #300. Define the method for dynamic look-up
+        #[ASSUMPTION]
+        #[1] Only define the method to access non-existing attributes
+        #[2] Do not set the newly found method as an attribute of the instance, otherwise it conflicts with above rule
+        #[3] <__dict__> and <__weakref__> may be accessed via <dir()>, we bypass look-up for them
+        def __getattr__(self, attr):
+            if attr in ['__dict__','__weakref__']:
+                return(super().__getattribute__(attr))
+
+            func_ = lookupMethod(
+                apiCls = attr
+                ,apiPkg = None
+                ,apiPfx = 'loader_'
+                ,apiSfx = ''
+                ,lsOpt = {}
+                ,attr_handler = None
+                ,attr_kwInit = None
+                ,attr_assign = None
+                ,attr_return = None
+                ,coerce_ = False
+            )
+            print('Identified the method for each time')
+            return(types.MethodType(func_, self))
+
+        #400. Define the protection to add new attributes
+        #[ASSUMPTION]
+        #[1] This method overwrites the functionality of <__slots__>
+        #[2] We define this method for demonstration of managing the attribute creation
+        def __setattr__(self, attr, value):
+            if attr not in dir(self):
+                raise AttributeError(f'[{self.__class__.__name__}]Not allowed to create attribute: {attr}')
+            return(super().__setattr__(attr, value))
+
+    testadd2 = MyClass2()
+    testadd2.api001(20)
+    # Identified the method for each time
+    # 30
+
+    # Look for the method again
+    testadd2.api001(30)
+    # Identified the method for each time
+    # 40
+
+    #410. Define another API
+    def loader_api002(self, b):
+        return(self.aaa - b * 2)
+
+    #420. Try to bind the method manually in vain
+    testadd2.api002 = types.MethodType(loader_api002, testadd2)
+    # AttributeError: [MyClass2]Not allowed to create attribute: api002
+
+    #430. Direct call of the new API is successful
+    testadd2.api002(5)
+    # Identified the method for each time
+    # 0
 
     #500. Embed this function into a descriptor
     #[ASSUMPTION]

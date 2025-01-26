@@ -335,34 +335,34 @@ class OpenSourceApiMeta(type):
         #    [2] The descriptor is only triggered once at getting the attribute via dot syntax, in the instantiated object
         #    [3] When the descriptor is triggered, <instance> is passed as not <None>; hence we need to bind the returned callable
         #         to the <instance> for correct processing
-        pull_ = DynMethodLookup(
-            apiCls = cls
-            ,apiPkg = apiPkgPull
-            ,apiPfx = apiPfxPull
-            ,apiSfx = apiSfxPull
-            ,lsOpt = lsPullOpt
-            ,attr_handler = 'hdlPull'
-            ,attr_kwInit = '__inputkw_pull___'
-            ,attr_assign = '__pulled___'
-            ,attr_return = 'pulled'
-            ,coerce_ = True
-        )
-        push_ = DynMethodLookup(
-            apiCls = cls
-            ,apiPkg = apiPkgPush
-            ,apiPfx = apiPfxPush
-            ,apiSfx = apiSfxPush
-            ,lsOpt = lsPushOpt
-            ,attr_handler = 'hdlPush'
-            ,attr_kwInit = '__inputkw_push___'
-            ,attr_assign = '__pushed___'
-            ,attr_return = 'pushed'
-            ,coerce_ = True
-        )
+        args_pull_ = {
+            'apiCls' : cls
+            ,'apiPkg' : apiPkgPull
+            ,'apiPfx' : apiPfxPull
+            ,'apiSfx' : apiSfxPull
+            ,'lsOpt' : lsPullOpt
+            ,'attr_handler' : 'hdlPull'
+            ,'attr_kwInit' : '__inputkw_pull___'
+            ,'attr_assign' : '__pulled___'
+            ,'attr_return' : 'pulled'
+        }
+        args_push_ = {
+            'apiCls' : cls
+            ,'apiPkg' : apiPkgPush
+            ,'apiPfx' : apiPfxPush
+            ,'apiSfx' : apiSfxPush
+            ,'lsOpt' : lsPushOpt
+            ,'attr_handler' : 'hdlPush'
+            ,'attr_kwInit' : '__inputkw_push___'
+            ,'attr_assign' : '__pushed___'
+            ,'attr_return' : 'pushed'
+        }
+        pull_ = DynMethodLookup(coerce_ = False, **args_pull_)
+        push_ = DynMethodLookup(coerce_ = False, **args_push_)
 
         #715. Verify whether the class should be created
-        setattr(mcs, 'pull_', pull_)
-        setattr(mcs, 'push_', push_)
+        setattr(mcs, 'pull_', DynMethodLookup(coerce_ = True, **args_pull_))
+        setattr(mcs, 'push_', DynMethodLookup(coerce_ = True, **args_push_))
         #[ASSUMPTION]
         #[1] This step would trigger the descriptor by providing <instance == None>
         #[2] Since we need to verify both methods, <coerce_> should be set as <True> to prevent early exception from being raised
@@ -744,7 +744,7 @@ if __name__=='__main__':
 
     #900. Try to add an API that does not exist in vain
     addAPI.add('pseudo')
-    # TypeError: [OpenSourceApiMeta]No method found for [pseudo] creation!
+    # TypeError: [OpenSourceApiMeta]No method found for class [pseudo] creation!
 
 #-Notes- -End-
 '''

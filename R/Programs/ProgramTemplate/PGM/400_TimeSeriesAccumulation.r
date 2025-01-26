@@ -27,19 +27,30 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvDB                                                                                                                    #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |parseDatName                                                                                                               #
+#   |   |   |DataIO                                                                                                                     #
+#   |   |   |DBuse_GetTimeSeriesForKpi                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |apply_MapVal                                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |FileSystem                                                                                                                     #
+#   |   |   |splitDrive                                                                                                                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |Dates                                                                                                                          #
 #   |   |   |intnx                                                                                                                      #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |UserCalendar                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-logger.info('Accumulate the snapshot on time series')
+#[ASSUMPTION]
+#[1] <message> can capture the contents from <print> and <message> as defined in <main.r>, so we can prepare the script in a
+#     more primitive R fashion
+message('Accumulate the snapshot on time series')
 
 #Identify the reporting date as the end of the previous month to current execution date
-L_curdate <- intnx('month', G_obsDates$values, -1, 'e', daytype = 'w') %>% strftime('%Y%m%d')
+L_curdate <- '20160505'
 L_srcflnm1 <- 'cust_T1_&L_curdate..sas7bdat'
 L_srcflnm2 <- 'cust_T2_&L_curdate..sas7bdat'
 L_srcflnm3 <- 'D:\\R\\omniR\\SampleKPI\\KPI\\K1\\cfg_kpi.sas7bdat'
@@ -49,7 +60,6 @@ key_hdf_cust <- 'MaxAUM_MonthEnd_cust'
 key_hdf_acct <- 'MaxAUM_MonthEnd_acct'
 bgn_Proj <- asDates('20160501')
 cond_Q <- 800000.0
-ex_env <- new.env()
 #The sequence of drives in below list determines the priority to search for the same file name
 drives <- paste0(c('D', 'E', 'F'), ':')
 #Keys in below dicts should exist in the field [C_KPI_ID] of [L_srcflnm3]
@@ -61,11 +71,17 @@ map_pdttype <- list(
 	'100100' = 'Type1'
 	,'100101' = 'Type2'
 )
+#[ASSUMPTION]
+#[1] Below IO tool sets the default encoding as <GB2312> for API of SAS, so we do not need to further provide <encoding=> during
+#     the call
+dataIO <- DataIO$new()
+dataIO$add('SAS')
+dataIO$add('R')
 
-logger.info('100. Import the KPI configuration')
-cfg_kpi <- haven::read_sas(L_srcflnm3, encoding = 'GB2312') %>%
+message('100. Import the KPI configuration')
+cfg_kpi <- dataIO[['SAS']]$pull(L_srcflnm3) %>%
 	dplyr::left_join(
-		haven::read_sas(L_srcflnm4, encoding = 'GB2312')
+		dataIO[['SAS']]$pull(L_srcflnm4)
 		,by = 'C_KPI_DAT_LIB'
 		,suffix = c('','.y')
 	) %>%
@@ -74,7 +90,7 @@ cfg_kpi <- haven::read_sas(L_srcflnm3, encoding = 'GB2312') %>%
 		,!!rlang::sym('C_KPI_FILE_NAME') := paste0(!!rlang::sym('C_KPI_DAT_NAME'), '.sas7bdat')
 	)
 
-logger.info('300. Determine the calculation period')
+message('300. Determine the calculation period')
 #310. Prepare the pattern of the source data paths
 #Below paths are from [main.r]
 relPath_T1 <- dir_DM_T1 %>% splitDrive() %>% sapply('[[', 2)
@@ -126,7 +142,7 @@ if (length(all_PM) == 0) {
 #390. Define the dates to retrieve all time series files
 L_clndr <- UserCalendar$new( clnBgn = prd_bgn, clnEnd = L_curdate )
 
-logger.info('500. Calculate maximum AUM on daily basis')
+message('500. Calculate maximum AUM on daily basis')
 #510. Locate all source data files
 #Below options are from [autoexec.r]
 parse_data <- rlang::exec(
@@ -153,11 +169,11 @@ loop_data <- parse_data %>%
 if (!is.null(output_PM)) {
 	db_env <- new.env()
 	load(output_PM, envir = db_env)
-	cust_maxAUM <- db_env$cust_maxAUM
-	acct_maxAUM <- db_env$acct_maxAUM
+	cust_MaxAUM <- db_env$cust_MaxAUM
+	acct_MaxAUM <- db_env$acct_MaxAUM
 	rm(db_env)
 } else {
-	cust_maxAUM <- do.call(
+	cust_MaxAUM <- do.call(
 		data.frame
 		,rlang::list2(
 			!!rlang::sym('custID') := character(0)
@@ -166,7 +182,7 @@ if (!is.null(output_PM)) {
 			,stringsAsFactors = F
 		)
 	)
-	acct_maxAUM <- do.call(
+	acct_MaxAUM <- do.call(
 		data.frame
 		,rlang::list2(
 			!!rlang::sym('custID') := character(0)
@@ -191,20 +207,19 @@ h_calc <- function(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM){
 	#100. Retrieve AUM from different platforms
 	aum_T1 <- lapply(
 		cfg_T1[['fullpath.Parsed']]
-		,haven::read_sas
-		,encoding = 'GB2312'
+		,dataIO[['SAS']]$pull
 		,col_select = c('custID','a_aum')
 	)
 
 	#150. Helper function to handle the situation when a column may not exist in a time series
 	procT2 <- function(f){
 		#100. Determine whether to filter the input data by the possibly existing field
-		df_model <- haven::read_sas(f, n_max = 0)
+		df_model <- dataIO[['SAS']]$pull(f, n_max = 0)
 		if ('acct_type' %in% names(df_model)) accttype <- 'acct_type' else accttype <- NULL
 		cols <- c('custID', 'a_aum', accttype)
 
 		#500. Load the data with the possible filter
-		df <- haven::read_sas(f, encoding = 'GB2312', col_select = cols)
+		df <- dataIO[['SAS']]$pull(f, col_select = cols)
 		if (!is.null(accttype)){
 			df %<>% dplyr::filter_at(accttype, ~. == 'N') %>% dplyr::select(-dplyr::any_of(accttype))
 		}
@@ -256,7 +271,7 @@ h_calc <- function(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM){
 		dplyr::bind_rows(aum_upd)
 
 	#500. Load the product balance for the customers to be updated
-	#510. Prepare the customer base for the retireval
+	#510. Prepare the customer base for the retrieval
 	cust_info <- aum_upd %>% dplyr::select_at('custID')
 
 	#530. Prepare the modification upon the default arguments with current business requirements
@@ -275,7 +290,7 @@ h_calc <- function(d, df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM){
 			,'SetAsBase' = 'i'
 			,'KeepInfCol' = FALSE
 			#Process in parallel for small number of small data files are MUCH SLOWER than sequential mode
-			,'_parallel' = FALSE
+			,'.parallel' = FALSE
 		)
 	)
 
@@ -313,15 +328,18 @@ loop_dates <- loop_data %>%
 #[2] Arguments [df_AUM] and [df_Prod] MUST be provided at each iteration, to validate the recursion
 #[3] <for> statement removes the class of the iterator, hence we only loop the process by positions
 for (i in seq_along(loop_dates)) {
-	logger.info('Processing ', strftime(loop_dates[[i]], '%Y-%m-%d'))
+	message('Processing ', strftime(loop_dates[[i]], '%Y-%m-%d'))
 	rst <- h_calc(loop_dates[[i]], df_AUM = cust_MaxAUM, df_Prod = acct_MaxAUM)
 	cust_MaxAUM <- rst[[1]]
 	acct_MaxAUM <- rst[[2]]
 }
 
-logger.info('999. Save the result to harddrive')
+message('999. Save the result to harddrive')
 if (file.exists(L_stpflnm1)) file.remove(L_stpflnm1)
-ex_env$cust_MaxAUM <- cust_MaxAUM
-ex_env$acct_MaxAUM <- acct_MaxAUM
-save(file = L_stpflnm1, envir = ex_env)
-rm(ex_env)
+rc <- dataIO[['R']].push(
+	rlang::list2(
+		!!rlang::sym(key_hdf_cust) := cust_MaxAUM
+		,!!rlang::sym(key_hdf_acct) := acct_MaxAUM
+	)
+	,L_stpflnm1
+)

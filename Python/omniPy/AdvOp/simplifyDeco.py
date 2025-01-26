@@ -83,6 +83,7 @@ def simplifyDeco(
 if __name__=='__main__':
     #010. Create envionment.
     import sys
+    from functools import wraps
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )

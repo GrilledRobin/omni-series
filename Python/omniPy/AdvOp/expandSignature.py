@@ -55,18 +55,23 @@ def expandSignature(
 #   |[2] <co_argcount>, <co_kwonlyargcount>, <co_posonlyargcount>, <co_varnames> are merged from <src> to <dst>                         #
 #   |[3] <co_nlocals> is merged in below way                                                                                            #
 #   |    [1] Number of arguments in <src> (rather than <co_nlocals> in <src> as we do not need its other local variables)               #
-#   |    [2] <co_nlocals> in <dst> with changes during the expansion of VAR_POSITIONAL and VAR_KEYWORD                                  #
+#   |    [2] Number of arguments in <dst> eliminating VAR_POSITIONAL and VAR_KEYWORD                                                    #
 #   |[4] <co_flags> is the bitwise OR of <src> and (<dst>.<co_flags> - CO_VARARGS - CO_VARKEYWORDS). E.g. if <src> is not a generator   #
 #   |     while <dst> is one, then the wrapped callable is still a generator                                                            #
 #   |    see: https://docs.python.org/3/library/inspect.html#inspect-module-co-flags                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |INSTANCE ATTRIBUTES                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] <__annotations__> is merged as it is to (only) describe the arguments                                                          #
+#   |[1] <__annotations__> is merged as it is to (only) describe the arguments, with <dst> prior to <src>                               #
 #   |[2] <__defaults__> is merged as it only contains the default values of POSITIONAL_OR_KEYWORD, from left to right with no skip      #
 #   |[3] <__kwdefaults__> is merged as it only contains the default values of KEYWORD_ONLY                                              #
 #   |[4] <__doc__> is merged if either has one, or None if neither has one                                                              #
 #   |[5] <__name__>, <__qualname__>, <__module__> are taken from <dst>                                                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |CAVEAT                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] This wrapper is designed to modify the signature rather than to bring it along, so it is not recommended to use together with  #
+#   |    <functools.wraps> unless with intention under certain cases, see examples for the reason and conclusion                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |QUOTE                                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -218,7 +223,22 @@ def expandSignature(
     doc_src = src.__doc__ or ''
 
     #520. Code Object Flags
-    flags_src = src.__code__.co_flags
+    #[ASSUMPTION]
+    #[1] It is tested that <co_varnames> is also matched against the indication in <co_flags>
+    #[2] Failure on the matching will lead to below exception
+    #    ValueError: code: co_varnames is too small
+    #[3] <co_flags> cannot be updated using <.replace()> method, so if the wrapper has <*pos>, CO_VARARGS is set to the
+    #     wrapped result anyway, same as CO_VARKEYWORDS
+    #[4] Hence, when we need to chain the expansion of signatures with many functions, direct search in
+    #     <src.__code__.co_flags> fails to indicate the correct flags of <*pos> and <**kw> when <src> is already expanded
+    #     with signatures of other functions
+    #[5] As a workaround, as as what <functools.wraps> does, we always prioritize the search for the flags in the newly
+    #     created attribute <__wrapped__> and do not provide alternatives like <follow_wrapped = False>, because it never
+    #     works for a nested expansion
+    if hasattr(src, '__wrapped__'):
+        flags_src = src.__wrapped__.__code__.co_flags
+    else:
+        flags_src = src.__code__.co_flags
 
     #800. Create the decorator
     def wrapper(dst : callable) -> callable:
@@ -680,19 +700,85 @@ if __name__=='__main__':
     # arg2 : 2
 
     #400. Real cases
-    #410. Create a method out of an existing function
-    def src3(arg1, *, arg3 = 3):
+    #410. Create a method out of an existing function with nested expansion
+    def src3(arg1, *, arg3 = 3, **kw):
         print('This is src3:')
         print(f'arg1 : {str(arg1)}')
         print(f'arg3 : {str(arg3)}')
+        print(f'kw : {str(kw)}')
+
     @expandSignature(src3)
-    def dst3(self, /, *pos, **kw):
+    def dst3(arg4, /, *pos, **kw):
         src3(*pos, **kw)
         print('This is dst3:')
+        print(f'arg4 : {str(arg4)}')
 
-    help(dst3)
-    # Help on function dst3 in module __main__:
-    # dst3(self, /, arg1, *, arg3=3)
+    @expandSignature(dst3)
+    def dst4(self, /, *pos, arg5, **kw):
+        dst3(*pos, **kw)
+        print('This is dst4:')
+        print(f'arg5 : {str(arg5)}')
+
+    help(dst4)
+    # Help on function dst4 in module __main__:
+    # dst4(self, arg4, /, arg1, *, arg5, arg3=3, **kw)
+
+    dst4(1, 4, 1, arg5 = 5, arg7 = 7)
+    # This is src3:
+    # arg1 : 1
+    # arg3 : 3
+    # kw : {'arg7': 7}
+    # This is dst3:
+    # arg4 : 4
+    # This is dst4:
+    # arg5 : 5
+
+    #450. Interaction with <functools.wraps>
+    from functools import wraps
+    @wraps(dst4)
+    def dst5(*pos, **kw):
+        return(dst4(*pos, **kw))
+
+    #[ASSUMPTION]
+    #[1] The signature seems correct as expected
+    #[2] However, <__name__> is the wrapped one instead of the wrapper, which is the design but not what we need
+    help(dst5)
+    # Help on function dst4 in module __main__:
+    # dst4(self, arg4, /, arg1, *, arg5, arg3=3, **kw)
+
+    #[ASSUMPTION]
+    #[1] <dst5.__code__.co_flags> is <15>, indicating both <*pos> and <**kw> exists in the signature
+    #[2] <dst5.__wrapped__.__code__.co_flags> is <31>, also including both <*pos> and <**kw>, as it directly retrieves
+    #     the value from <dst4.__code__.co_flags>
+    #[3] However in our design for an expanded callable
+    #    [1] <dst4.__code__.co_flags> is <31>, coming from the wrapper in <expandSignature> that takes both <*pos> and
+    #         <**kw>. This cannot be updated by any means
+    #    [2] <dst4.__wrapped__.__code__.co_flags> is (as what we do imperatively) <11>, which exactly matches its
+    #         signature, and is what we need to pass for a nested expansion
+    print(dst4.__code__.co_flags)
+    # 31
+    print(dst4.__wrapped__.__code__.co_flags)
+    # 11
+    print(dst5.__code__.co_flags)
+    # 15
+    print(dst5.__wrapped__.__code__.co_flags)
+    # 31
+
+    #[ASSUMPTION]
+    #[1] After above step, when we try to expand <dst5> to another callable, it fails because of the inconsistency between
+    #     <co_flags> (from either <dst5.__code__> or <dst5.__wrapped__.__code__>) and <dst5.__code__.co_varnames>
+    @expandSignature(dst5)
+    def dst6(*pos, **kw):
+        return(dst5(*pos, **kw))
+
+    # ValueError: code: co_varnames is too small
+
+    #[CONCLUSION]
+    #[1] For Python <= 3.11, <expandSignature> cannot wrap any function that is already wrapped by <functools.wraps>
+    #[2] One can replace most cases of decoration with <functools.wraps>, with some exceptions
+    #    [1] <AdvOp.simplifyDeco> is defined to wrap a decorator, instead of expand its signature
+    #    [2] <AdvOp.withDefaults> is defined to mask the signature
+    #[3] If one needs to chain the expansion, every intermediate expansion must be done by <expandSignature>
 
 #-Notes- -End-
 '''

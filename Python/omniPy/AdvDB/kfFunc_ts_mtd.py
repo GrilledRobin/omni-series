@@ -3,17 +3,24 @@
 
 import sys
 import datetime as dt
-#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature
+from omniPy.AdvOp import ExpandSignature
 from omniPy.Dates import asDates, intnx
 from omniPy.AdvDB import kfCore_ts_agg
 
-anno_return = kfCore_ts_agg.__annotations__.get('return', None)
+#[ASSUMPTION]
+#[1] We leave the annotation as empty, to inherit from the ancestor functions
+#[2] To avoid this block of comments being collected as docstring, we skip an empty line below
+eSig = ExpandSignature(kfCore_ts_agg)
 
+@eSig
 def kfFunc_ts_mtd(
     inDate : str | dt.date = None
+    ,dateBgn : str | dt.date = None
+    ,dateEnd : str | dt.date = None
+    ,chkBgn : str | dt.date = None
+    ,*pos
     ,**kw
-) -> anno_return:
+):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -42,16 +49,32 @@ def kfFunc_ts_mtd(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate      :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                   #
-#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |inDate        :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                 #
+#   |                  [None            ] <Default> Function will raise error if it is NOT provided                                     #
+#   |dateBgn       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |dateEnd       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |chkBgn        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |kw          :   Any other arguments that are required by <kfCore_ts_agg>                                                           #
+#   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
+#   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Anno>      :   See the return result from <kfCore_ts_agg>                                                                         #
+#   |<Anno>        :   See the return result from the ancestor function                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -64,6 +87,12 @@ def kfFunc_ts_mtd(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Make it the high level interface of the generalized core <kfCore_ts_agg> for more diversity                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] For the same functionality, enable diversified parameter provision in accordance with its expanded signature            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -73,10 +102,13 @@ def kfFunc_ts_mtd(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, datetime, inspect                                                                                                         #
+#   |   |sys, datetime                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |intnx                                                                                                                      #
@@ -95,53 +127,42 @@ def kfFunc_ts_mtd(
 
     #020. Local environment
 
-    #100. Get the signature of the core function
-    sig_core = signature(kfCore_ts_agg).parameters
-    fDebug = kw.get('fDebug', sig_core['fDebug'].default)
+    #200. Helper functions
 
-    #200. Clean up the parameters
-    #210. Identify all valid arguments for the core function
-    kw_raw = [
-        s.name
-        for s in sig_core.values()
-        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-        and s.default is not s.empty
-    ]
-
-    #230. Since the core function takes variant keywords, we also identify them
-    if len([ s.name for s in sig_core.values() if s.kind == s.VAR_KEYWORD ]) > 0:
-        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw }
-    else:
-        kw_varkw = {}
-
-    #250. Identify the arguments to be used
-    kw_oth = {
-        k:v
-        for k,v in kw.items()
-        if k in kw_raw
-        and (k not in kw_varkw)
-        and (k not in ['dateBgn','dateEnd','chkBgn'])
+    #300. Retrieve the necessary inputs
+    #310. Reshape the raw input
+    #[ASSUMPTION]
+    #[1] After the insertion, the arguments have been validated, so all updates to below result only need to be applied
+    #     by <eSig.updParams()>
+    args_dummy = {
+        'dateBgn' : None
+        ,'dateEnd' : None
+        ,'chkBgn' : None
     }
+    pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
 
-    #500. Tweak the parameters for function call
-    #550. Ending date
-    kw_d = kw_oth.get('kw_d', sig_core['kw_d'].default)
-    kw_cal = kw_oth.get('kw_cal', sig_core['kw_cal'].default)
+    #330. Retrieve the environment from the reshaped input
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
+
+    #350. Ending date
     dateEnd_d = asDates(inDate, **kw_d)
 
-    #570. Beginning date
+    #370. Beginning date
     #[ASSUMPTION]
     #[1] MTD aggregation always starts from the first calendar day of a month
     dtBgn = intnx('month', dateEnd_d, 0, 'b', daytype = 'c', kw_cal = kw_cal)
 
-    #599. Finalize the parameters
-    kw_fnl = {
+    #400. Identify the shared arguments between this function and its ancestor functions
+    args_share = {
         'dateBgn' : dtBgn
         ,'dateEnd' : dateEnd_d
         ,'chkBgn' : dtBgn
-        ,**kw_oth
-        ,**kw_varkw
     }
+
+    #900. Finalize the parameters
+    pos_fnl, kw_fnl = eSig.updParams(args_share, pos_in, kw_in)
 
     #989. Debug mode
     if fDebug:
@@ -152,14 +173,14 @@ def kfFunc_ts_mtd(
         print(f'[{LfuncName}][chkBgn]=[{str(dtBgn)}]')
 
     #999. Call the core function
-    return(kfCore_ts_agg(**kw_fnl))
+    return(eSig.src(*pos_fnl, **kw_fnl))
 #End kfFunc_ts_mtd
 
 '''
 #-Notes- -Begin-
 #Full Test Program[1]:
 if __name__=='__main__':
-    #010. Create envionment.
+    #010. Create environment.
     import sys, os, ast
     import numpy as np
     import pandas as pd

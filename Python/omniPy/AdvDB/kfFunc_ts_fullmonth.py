@@ -2,41 +2,24 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, ast
-import datetime as dt
 import numpy as np
 import pandas as pd
 from functools import partial
-#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature
-from collections.abc import Iterable
-from typing import Optional, Union, Any
+from typing import Any
 from omniPy.Dates import asDates, intnx
-from omniPy.AdvOp import modifyDict, vecStack
-from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi, kfCore_ts_agg, kfFunc_ts_mtd, validateDMCol
+from omniPy.AdvOp import modifyDict, vecStack, ExpandSignature
+from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi, kfFunc_ts_mtd, validateDMCol
 
-param_agg = signature(kfCore_ts_agg).parameters
+#[ASSUMPTION]
+#[1] We leave the annotation as empty, to inherit from the ancestor functions
+#[2] To avoid this block of comments being collected as docstring, we skip an empty line below
+eSig = ExpandSignature(kfFunc_ts_mtd)
 
+@eSig
 def kfFunc_ts_fullmonth(
-    inDate : str | dt.date = None
-    ,inKPICfg : pd.DataFrame = param_agg['inKPICfg'].default
-    ,mapper : pd.DataFrame = param_agg['mapper'].default
-    ,_parallel : bool = param_agg['_parallel'].default
-    ,cores : int = param_agg['cores'].default
-    ,aggrVar : str = param_agg['aggrVar'].default
-    ,byVar : Union[str, Iterable[str]] = param_agg['byVar'].default
-    ,copyVar : Union[str, Iterable[str]] = param_agg['copyVar'].default
-    ,tableVar : str = param_agg['tableVar'].default
-    ,genPHMul : bool = param_agg['genPHMul'].default
-    ,calcInd : str = param_agg['calcInd'].default
-    ,fDebug : bool = param_agg['fDebug'].default
-    ,fTrans : Optional[dict] = param_agg['fTrans'].default
-    ,fTrans_opt : dict = param_agg['fTrans_opt'].default
-    ,outDTfmt : dict = param_agg['outDTfmt'].default
-    ,kw_d : dict = param_agg['kw_d'].default
-    ,kw_cal : dict = param_agg['kw_cal'].default
-    ,kw_DataIO : dict = param_agg['kw_DataIO'].default
+    *pos
     ,**kw
-) -> pd.DataFrame:
+):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -63,72 +46,26 @@ def kfFunc_ts_fullmonth(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |110.   Input dataset information                                                                                                   #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKPICfg   :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |mapper     :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                           #
-#   |               |-------------------------------------------------------------------------------------------------------------------#
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |mapper_daily    |No         | ID of Daily Snapshot KPI, in the same type as <C_KPI_ID> in <inKPICfg>               #
-#   |               |mapper_mtd      |No         | ID of aggregated MTD KPI, in the same type as <C_KPI_ID> in <inKPICfg>               #
-#   |               |mapper_fm       |No         | ID of aggregated Full Month KPI, in the same type as <C_KPI_ID> in <inKPICfg>        #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |120.   Naming pattern translation/mapping                                                                                          #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fTrans     :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |               [IMPORTANT]There must be translation for string <&L_curdate.> in this mapper as it is preset in the program         #
-#   |fTrans_opt :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |130.   Multi-processing support                                                                                                    #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |_parallel  :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |cores      :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |150.   Calculation period control                                                                                                  #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate     :   The date to which to calculate the Full Month aggregation from the first calendar day in the same month             #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |170.   Column inclusion                                                                                                            #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |byVar      :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |copyVar    :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |aggrVar    :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |tableVar   :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |180.   Indicators and methods for aggregation                                                                                      #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |genPHMul   :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |calcInd    :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug     :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |outDTfmt   :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |kw_d       :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |kw_cal     :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |kw_DataIO  :   See definition of <AdvDB.kfCore_ts_agg>                                                                             #
-#   |kw         :   Any other arguments that are required by <kfCore_ts_agg>                                                            #
+#   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
+#   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[DataFrame]:   Data Frame indicating the process result with below columns (not inherited from <AdvDB.kfCore_ts_agg>):             #
-#   |               |-------------------------------------------------------------------------------------------------------------------#
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |FilePath        |No         | Absolute path of the data files that are written by this process                     #
-#   |               |                |           | When file type is <RAM>, it represents the object name in current session            #
-#   |               |C_KPI_FILE_TYPE |No         | Same column retained from <inKPICfg>                                                 #
-#   |               |rc              |Yes        | Return code from the I/O, 0 indicates success, otherwise there are errors            #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
+#   |<Anno>        :   See the return result from the ancestor function                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240211        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] For the same functionality, enable diversified parameter provision in accordance with its expanded signature            #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -139,7 +76,7 @@ def kfFunc_ts_fullmonth(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, ast, datetime, numpy, pandas, functools, inspect, collections, typing                                                 #
+#   |   |sys, os, ast, numpy, pandas, functools, typing                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -150,13 +87,13 @@ def kfFunc_ts_fullmonth(
 #   |   |AdvOp                                                                                                                          #
 #   |   |   |modifyDict                                                                                                                 #
 #   |   |   |vecStack                                                                                                                   #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvDB                                                                                                                          #
 #   |   |   |validateDMCol                                                                                                              #
 #   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_GetTimeSeriesForKpi                                                                                                  #
-#   |   |   |kfCore_ts_agg                                                                                                              #
 #   |   |   |kfFunc_ts_mtd                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -173,6 +110,29 @@ def kfFunc_ts_fullmonth(
             return(func(vec))
         else:
             return(vec)
+
+    #020. Local environment
+    args_share = {}
+    pos_in, kw_in = eSig.insParams(args_share, pos, kw)
+
+    inDate = eSig.getParam('inDate', pos_in, kw_in)
+    inKPICfg = eSig.getParam('inKPICfg', pos_in, kw_in)
+    mapper = eSig.getParam('mapper', pos_in, kw_in)
+    _parallel = eSig.getParam('_parallel', pos_in, kw_in)
+    cores = eSig.getParam('cores', pos_in, kw_in)
+    aggrVar = eSig.getParam('aggrVar', pos_in, kw_in)
+    byVar = eSig.getParam('byVar', pos_in, kw_in)
+    copyVar = eSig.getParam('copyVar', pos_in, kw_in)
+    tableVar = eSig.getParam('tableVar', pos_in, kw_in)
+    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in)
+    calcInd = eSig.getParam('calcInd', pos_in, kw_in)
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
+    fTrans = eSig.getParam('fTrans', pos_in, kw_in)
+    fTrans_opt = eSig.getParam('fTrans_opt', pos_in, kw_in)
+    outDTfmt = eSig.getParam('outDTfmt', pos_in, kw_in)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
+    kw_DataIO = eSig.getParam('kw_DataIO', pos_in, kw_in)
 
     if not isinstance(inKPICfg, (vfyType := pd.DataFrame)):
         raise TypeError(f'[{LfuncName}][inKPICfg] must be of the type <{vfyType}>!')
@@ -195,7 +155,6 @@ def kfFunc_ts_fullmonth(
         raise ValueError(f'[{LfuncName}][calcInd] should be any among {str(vldInd)}!')
     if not isinstance(fDebug, bool): fDebug = False
 
-    #020. Local environment
     keep_all_col = '_ALL_' in [ h_convStr(v, func = str.upper) for v in copyVar ]
     hasKeys = ['HDFS']
     mapper_chain = ['mapper_daily','mapper_mtd','mapper_fm']
@@ -674,28 +633,24 @@ def kfFunc_ts_fullmonth(
             ])
 
             #570. Prepare the modification upon the signature with Business requirement
+            #[ASSUMPTION]
+            #[1] Below local variables have been modified at earlier steps, so we cannot mix them up with the raw input
             args_mtd = {
                 'inDate' : lastCDofMon
                 ,'inKPICfg' : cfg_out
                 ,'mapper' : mapper_DtoFM
-                ,'_parallel' : _parallel
-                ,'cores' : cores
                 ,'aggrVar' : aggrVar
                 ,'byVar' : byVar
                 ,'copyVar' : copyVar
                 ,'tableVar' : tableVar
-                ,'fDebug' : fDebug
                 ,'fTrans' : fTrans
-                ,'fTrans_opt' : fTrans_opt
                 ,'outDTfmt' : outDTfmt
-                ,'kw_d' : kw_d
-                ,'kw_cal' : kw_cal
                 ,'kw_DataIO' : kw_io
-                ,**kw
             }
+            pos_mtd, kw_mtd = eSig.updParams(args_mtd, pos_in, kw_in)
 
             #590. Call the process
-            rc_int = kfFunc_ts_mtd(**args_mtd)
+            rc_int = eSig.src(*pos_mtd, **kw_mtd)
 
             #599. Assert the success
             if fDebug:
@@ -796,7 +751,7 @@ if __name__=='__main__':
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import exec_file, modifyDict, get_values
+    from omniPy.AdvOp import exec_file, modifyDict
     from omniPy.AdvDB import aggrByPeriod, kfFunc_ts_mtd, kfFunc_ts_fullmonth
     from omniPy.Dates import asDates, UserCalendar, intnx
 

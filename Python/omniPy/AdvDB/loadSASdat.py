@@ -8,11 +8,14 @@ import pyreadstat as pyr
 from collections import OrderedDict
 from collections.abc import Iterable
 from functools import partial
-from omniPy.AdvOp import apply_MapVal, modifyDict
+from omniPy.AdvOp import apply_MapVal, ExpandSignature
 from omniPy.Dates import asDates, asDatetimes, asTimes
 
+eSig = ExpandSignature(pyr.read_sas7bdat)
+
+@eSig
 def loadSASdat(
-    inFile
+    *pos
     ,dt_map : dict = {
         #[LHS] The original format in SAS loaded from [pyreadstat.read_sas7bdat] and stored in meta.original_variable_types
         #[RHS] The [function] to translate the corresponding values in the format of [LHS]
@@ -40,22 +43,22 @@ def loadSASdat(
 #   |[1] Read SAS dataset in different encoding                                                                                         #
 #   |[2] Eliminate the error reading of variable names when they have LABELS in SAS dataset, esp. when the LABEL contains MBCS/DBCS     #
 #   |[3] Convert the date-like values into [pandas], esp. for those beyond the limits of [pd.Timestamp]                                 #
+#   |[4] Ignore case during the column name filtration (as what SAS does)                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inFile      :   The input SAS dataset full path, including the file extension, such as [a.sas7bdat]                                #
-#   |                [IMPORTANT]: This parameter is the same as [filename_path] of the function [pyreadstat.read_sas7bdat]              #
-#   |dt_map      :   Mapping table to convert the SAS datetime values into [datetime]                                                   #
-#   |                [ <dict>     ]  <Default> Check the function definition for details                                                #
-#   |kw          :   Various named parameters for [pyreadstat.read_sas7bdat] during import; see its official document                   #
+#   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
+#   |dt_map        :   Mapping table to convert the SAS datetime values into [datetime]                                                 #
+#   |                  [ <dict>     ]  <Default> Check the function definition for details                                              #
+#   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[<tuple>]   :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):      #
-#   |                [pd.DataFrame] The data frame corresponding to the input SAS dataset                                               #
-#   |                [meta        ] pyr.metadata_container                                                                              #
+#   |[<tuple>]     :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):    #
+#   |                  [pd.DataFrame] The data frame corresponding to the input SAS dataset                                             #
+#   |                  [meta        ] pyr.metadata_container                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -80,6 +83,15 @@ def loadSASdat(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable user to provide kwarg <usecols=> with column names regardless of character case                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] Remove argument <inFile> as it is usually provided in positional pattern, and more importantly, it takes the same effect#
+#   |      |     as <filename_path> in its ancestor function                                                                            #
+#   |      |[3] Set the arguments with default values of this function as <KEYWORD_ONLY>, so that the keyword arguments of the ancestor #
+#   |      |     functions prepend them in the signature                                                                                #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -92,26 +104,23 @@ def loadSASdat(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
-#   |   |   |modifyDict                                                                                                                 #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |asDatetimes                                                                                                                #
 #   |   |   |asTimes                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001. Import necessary functions for processing.
-    #from imp import find_module
-
     #010. Check parameters.
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer
     if not isinstance(dt_map, dict):
         dt_map : dict = {
             r'(datetime|dateampm)+' : 'dt'
@@ -123,49 +132,56 @@ def loadSASdat(
             ,r'(jul)+' : 'd'
         }
 
-    #013. Define the local environment.
+    #013. Define the local environment
+    args_share = {}
     err_funcs = [ v for v in set(dt_map.values()) if v not in ['dt','t','d'] ]
     if err_funcs:
         raise ValueError(
             f'[{LfuncName}]Values of [dt_map] should be among [dt, t, d]! Check these: {str(err_funcs)}'
         )
 
-    #100. Determine the <usecols>
+    #060. Reshape the input parameters
+    #[ASSUMPTION]
+    #[1] Below function ensures the input parameters to be reshaped in keyword pattern as many as possible
+    #[2] It also obtain the default values, when there is no input, of related arguments to mimic the input
+    #[3] Hence it is safe to locate any inputs using their positions prior to their names and default values in line
+    #[4] After the insertion, the arguments have been validated, so all updates to below result only need to be applied
+    #     by <eSig.updParams()>
+    pos_in, kw_in = eSig.insParams(args_share, pos, kw)
+
+    #200. Helper functions
+
+    #300. Determine the <usecols>
     #[ASSUMPTION]
     #[1] SAS does not validate the character case of the column names
     #[2] There may be different character cases for the same column name in different SAS datasets
     #[3] When we use the unified API to load these datasets, we should be able to unify the column selection
     #[4] This would provide flexibility
-    #110. Split the kwargs
-    usecols = kw.get('usecols', None)
-    kw_fnl = { k:v for k,v in kw.items() if k != 'usecols' }
+    #310. Split the kwargs
+    usecols = eSig.getParam('usecols', pos_in, kw_in)
 
-    #150. Modify the <usecols> argument
-    if ('usecols' in kw) and (usecols is not None):
+    #350. Modify the <usecols> argument
+    if usecols is not None:
         #010. Standardize the input
         if not isinstance(usecols, Iterable):
             raise TypeError(f'[{LfuncName}]<usecols> must be Iterable, given <{type(usecols).__name__}>')
 
-        #100. Fabricate the kwargs to only retrieve the meta structure of the input file
-        kw_meta = modifyDict(
-            { k:v for k,v in kw_fnl.items() if k != 'metadataonly' }
-            ,{ 'metadataonly' : True }
-        )
+        #100. Fabricate the parameters to only retrieve the meta structure of the input file
+        args_meta = args_share | {'usecols' : None, 'metadataonly' : True}
+        pos_meta, kw_meta = eSig.updParams(args_meta, pos_in, kw_in)
 
         #300. Retrieve the meta structure
-        _, meta_col = pyr.read_sas7bdat(inFile, **kw_meta)
+        _, meta_col = eSig.src(*pos_meta, **kw_meta)
 
         #500. Search for the possible matching of the provided column names
         newcol = [ v for v in meta_col.column_names if v.upper() in [ u.upper() for u in usecols ] ]
 
         #900. Update the kwargs for the actual data retrieval
-        kw_fnl = modifyDict(
-            kw_fnl
-            ,{ 'usecols' : newcol }
-        )
+        args_setcol = args_share | {'usecols' : newcol}
+        pos_in, kw_in = eSig.updParams(args_setcol, pos_in, kw_in)
 
-    #300. Read the SAS dataset
-    df, meta = pyr.read_sas7bdat(inFile, **kw_fnl)
+    #400. Read the SAS dataset
+    df, meta = eSig.src(*pos_in, **kw_in)
 
     #500. Correct the character column dtype if the input data is empty
     #This is because [pyreadstat] will convert them to [float64] imperatively.
@@ -178,7 +194,7 @@ def loadSASdat(
         #300. Compile a Regular Expression for the usage inside the loop
         rx_sasvar = re.compile(r'^[fn]?c_\w+', re.I)
 
-        #500. Correction of the case when the column type is no specified
+        #500. Correction of the case when the column type is not specified
         #In such case we can only expect the creator of the data makes use of column naming convention as below.
         cols_null = [
             k for k,v in meta.original_variable_types.items()
@@ -235,14 +251,15 @@ def loadSASdat(
 #-Notes- -Begin-
 #Full Test Program[1]:
 if __name__=='__main__':
-    #010. Create envionment.
+    #010. Create environment.
     import sys
+    from inspect import signature
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import loadSASdat
 
-    #100. Load the SAS dataset wich Chinese Characters and missing values
+    #100. Load the SAS dataset with Chinese Characters and missing values
     tt , meta_tt = loadSASdat( dir_omniPy + r'omniPy\AdvDB\test_loadsasdat.sas7bdat' , encoding = 'GB2312' )
     tt.head()
     tt.dtypes
@@ -263,5 +280,12 @@ if __name__=='__main__':
     tt3.head()
     tt3.dtypes
     meta_tt3.original_variable_types
+
+    #400. Check the signature of the wrapped function
+    sig_fn = signature(loadSASdat).parameters.values()
+    args = { s.name : s.default for s in sig_fn }
+    print(str(args))
+
+    help(loadSASdat)
 #-Notes- -End-
 '''

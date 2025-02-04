@@ -4,17 +4,26 @@
 import sys
 import datetime as dt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature
+from inspect import signature, Parameter
+from omniPy.AdvOp import nameArgsByFormals, ExpandSignature
 from omniPy.Dates import asDates, intnx
 from omniPy.AdvDB import kfCore_ts_agg
 
-anno_return = kfCore_ts_agg.__annotations__.get('return', None)
+#[ASSUMPTION]
+#[1] We leave the annotation as empty, to inherit from the ancestor functions
+#[2] To avoid this block of comments being collected as docstring, we skip an empty line below
+eSig = ExpandSignature(kfCore_ts_agg)
 
+@eSig
 def kfFunc_ts_roll(
     inDate : str | dt.date = None
     ,kDays : int = 0
+    ,dateBgn : str | dt.date = None
+    ,dateEnd : str | dt.date = None
+    ,chkBgn : str | dt.date = None
+    ,*pos
     ,**kw
-) -> anno_return:
+):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -44,25 +53,47 @@ def kfFunc_ts_roll(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate      :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                   #
-#   |                 follow the syntax of this function during input                                                                   #
-#   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
-#   |kDays       :   Positive number of days to roll back from <inDate>                                                                 #
-#   |                [0               ] <Default> Function will raise error if it is NOT positive                                       #
+#   |inDate        :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                 #
+#   |                   follow the syntax of this function during input                                                                 #
+#   |                  [None            ] <Default> Function will raise error if it is NOT provided                                     #
+#   |kDays         :   Positive number of days to roll back from <inDate>                                                               #
+#   |                  [0               ] <Default> Function will raise error if it is NOT positive                                     #
+#   |dateBgn       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |dateEnd       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |chkBgn        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |kw          :   Any other arguments that are required by <kfCore_ts_agg>                                                           #
+#   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
+#   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[DataFrame] :   See the return result from <kfCore_ts_agg>                                                                         #
+#   |<Anno>        :   See the return result from the ancestor function                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240114        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] For the same functionality, enable diversified parameter provision in accordance with its expanded signature            #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -77,6 +108,10 @@ def kfFunc_ts_roll(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |nameArgsByFormals                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |intnx                                                                                                                      #
@@ -99,65 +134,92 @@ def kfFunc_ts_roll(
 
     #020. Local environment
     k_roll = 1 - kDays
-
-    #100. Get the signature of the core function
-    sig_core = signature(kfCore_ts_agg).parameters
-    fDebug = kw.get('fDebug', sig_core['fDebug'].default)
-
-    #200. Clean up the parameters
-    #210. Identify all valid arguments for the core function
-    kw_raw = [
-        s.name
-        for s in sig_core.values()
-        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-        and s.default is not s.empty
-    ]
-
-    #230. Since the core function takes variant keywords, we also identify them
-    if len([ s.name for s in sig_core.values() if s.kind == s.VAR_KEYWORD ]) > 0:
-        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw }
-    else:
-        kw_varkw = {}
-
-    #250. Identify the arguments to be used
-    kw_oth = {
-        k:v
-        for k,v in kw.items()
-        if k in kw_raw
-        and (k not in kw_varkw)
-        and (k not in ['dateBgn','dateEnd','chkBgn'])
+    sig_in = signature(kfCore_ts_agg).parameters.values()
+    sig_patch = {
+        i : s
+        for i,s in enumerate(sig_in)
+        if s.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
     }
 
-    #500. Tweak the parameters for function call
-    #510. Ending date
-    kw_d = kw_oth.get('kw_d', sig_core['kw_d'].default)
-    kw_cal = kw_oth.get('kw_cal', sig_core['kw_cal'].default)
+    #200. Helper functions
+    #210. Function to identify the input value by argument name
+    def h_getInput(arg : str, pos_src : tuple, kw_src : dict):
+        if len(pos_src) > (arg_loc := [ i for i,s in enumerate(sig_in) if s.name == arg ][0]):
+            return(pos_src[arg_loc])
+        else:
+            return(kw_src.get(arg))
+
+    #250. Function to reshape the input parameters in terms of the signature
+    def h_reshape(args_patch : dict, pos_src : tuple, kw_src : dict):
+        #100. Positional inputs
+        #[ASSUMPTION]
+        #[1] In general, we would process the list (even empty) of arguments shared by both callables in below way
+        #    [1] If len(pos) > 0, identify all POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD of the shared arguments and insert them into
+        #         <*pos> from left to right in terms of their locations in the signature of <src>. If len(pos) == 0, there is
+        #         nothing to do as: either there is no positional argument in <src>, or all arguments for <src> can be translated
+        #         into keyword input
+        #    [2] Overwrite all these arguments in <**kw>, including those processed at above step
+        pos_in = list(pos_src)
+        if len(pos_src) > 0:
+            pos_patch = { i:s.name for i,s in sig_patch.items() if s.name in args_patch }
+            for i in sorted(list(pos_patch.keys())):
+                pos_in.insert(i, args_patch.get(pos_patch.get(i)))
+
+        #500. Keywords
+        #[ASSUMPTION]
+        #[1] No matter whether <*pos> is patched, it is safe to add <args_share> into the keyword input, as we will patch all inputs
+        #     in one batch later, by allowing (and deduplicating) multiple inputs for the same arguments
+        #[2] We must use the explicit input of <args_share> to replace the possible keyword in <kw> to ensure the correct syntax
+        kw_in = kw_src | args_patch
+
+        #900. Reshape the input parameters
+        return(nameArgsByFormals(kfCore_ts_agg, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True))
+
+    #300. Retrieve the necessary inputs
+    #310. Reshape the raw input
+    #[ASSUMPTION]
+    #[1] After the insertion, the arguments have been validated, so all updates to below result only need to be applied
+    #     by <eSig.updParams()>
+    args_dummy = {
+        'dateBgn' : None
+        ,'dateEnd' : None
+        ,'chkBgn' : None
+    }
+    pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
+
+    #330. Retrieve the environment from the reshaped input
+    fDebug = h_getInput('fDebug', pos_in, kw_in)
+    kw_d = h_getInput('kw_d', pos_in, kw_in)
+    kw_cal = h_getInput('kw_cal', pos_in, kw_in)
+    calcInd = h_getInput('calcInd', pos_in, kw_in)
+    genPHMul = h_getInput('genPHMul', pos_in, kw_in)
+
+    #350. Ending date
     dateEnd_d = asDates(inDate, **kw_d)
 
-    #530. Beginning date
+    #370. Beginning date
     #[ASSUMPTION]
     #[1] Rolling days aggregation requires the indication of <daytype>
-    calcInd = kw_oth.get('calcInd', sig_core['calcInd'].default)
     dtBgn = intnx('day', dateEnd_d, k_roll, 'b', daytype = calcInd, kw_cal = kw_cal)
 
-    #550. Determine <chkEnd> by the implication of <genPHMul>
-    genPHMul = kw_oth.get('genPHMul', sig_core['genPHMul'].default)
+    #380. Determine <chkEnd> by the implication of <genPHMul>
     if genPHMul:
         chkEnd_d = intnx('day', dateEnd_d, -1, daytype = ('W' if calcInd=='C' else calcInd), kw_cal = kw_cal)
     else:
         chkEnd_d = intnx('day', dateEnd_d, -1, daytype = 'C', kw_cal = kw_cal)
 
-    #570. Determine <chkBgn>
+    #390. Determine <chkBgn>
     chkBgn = intnx('day', chkEnd_d, k_roll, 'b', daytype = calcInd, kw_cal = kw_cal)
 
-    #599. Finalize the parameters
-    kw_fnl = {
+    #400. Identify the shared arguments between this function and its ancestor functions
+    args_share = {
         'dateBgn' : dtBgn
         ,'dateEnd' : dateEnd_d
         ,'chkBgn' : chkBgn
-        ,**kw_oth
-        ,**kw_varkw
     }
+
+    #900. Finalize the parameters
+    pos_fnl, kw_fnl = eSig.updParams(args_share, pos_in, kw_in)
 
     #989. Debug mode
     if fDebug:
@@ -168,7 +230,7 @@ def kfFunc_ts_roll(
         print(f'[{LfuncName}][chkBgn]=[{str(chkBgn)}]')
 
     #999. Call the core function
-    return(kfCore_ts_agg(**kw_fnl))
+    return(eSig.src(*pos_fnl, **kw_fnl))
 #End kfFunc_ts_roll
 
 '''
@@ -184,7 +246,7 @@ if __name__=='__main__':
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import exec_file, modifyDict, get_values
+    from omniPy.AdvOp import exec_file, modifyDict
     from omniPy.AdvDB import aggrByPeriod, kfFunc_ts_roll
     from omniPy.Dates import asDates, UserCalendar, intnx
 

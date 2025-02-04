@@ -5,7 +5,7 @@ import sys, re
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from typing import Optional
-from omniPy.AdvOp import importByStr, ls_frame, withDefaults
+from omniPy.AdvOp import importByStr, ls_frame, ExpandSignature
 
 def lookupMethod(
     apiCls : str = None
@@ -80,6 +80,11 @@ def lookupMethod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -98,6 +103,7 @@ def lookupMethod(
 #   |   |   |modifyDict                                                                                                                 #
 #   |   |   |ls_frame                                                                                                                   #
 #   |   |   |withDefaults                                                                                                               #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -160,7 +166,19 @@ def lookupMethod(
         and s.name == 'self'
     ] == [0]
 
+    #600. Prepare a decorator to expand the signature of the function to be returned
+    eSig = ExpandSignature(__dfl_func_)
+
     #700. Define a method-like callable to wrap the original API
+    #[ASSUMPTION]
+    #[1] We do not expand the signature of below function, but set its attribute <__wrapped__> as the decorated one
+    #[2] This is because that when it is decorated, all parameters passed to call it will be mutated and thus we never
+    #     know which value is the input at runtime and which is retained from the default value, and thus the patching of
+    #     the default values within the bound instance also fails
+    #[3] For this reason, the returned callable is no longer suitable to be wrapped by <ExpandSignature> in a chain, but it
+    #     is OK as it is designed to be bound to an instance and not likely to be mutated or expanded
+    #[4] To avoid this block of comments being collected as docstring, we skip an empty line below
+
     def func_(self, *pos, **kw):
         #010. Local environment
         clsname_ = apiCls or self.__class__.__name__
@@ -168,7 +186,9 @@ def lookupMethod(
         #100. Verify input parameters
         #101. Create a pseudo parameter when necessary
         if has_self:
-            pos = (self,) + pos
+            args_share = {'self' : self}
+        else:
+            args_share = {}
 
         #300. Identify whether there are default values for API call, as provided at instantiation
         if attr_kwInit:
@@ -178,16 +198,20 @@ def lookupMethod(
         else:
             kw_def = {}
 
-        #500. Wrap the API by setting defaults for necessary arguments
+        #330. Patch the input by the required default values (instead of the default values in the signature)
         #[ASSUMPTION]
-        #[1] This will also enable keyword provision for POSITIONAL_ONLY arguments and positional input for KEYWORD_ONLY, that say,
-        #     various input patterns for all kinds of arguments
-        #[2] Below decorator accepts arguments so it is a double-wrapper, we thus have to call it in this way (as we cannot use
-        #     the Python sugar syntax @deco)
-        __dfl_def_ = withDefaults(**kw_def)(__dfl_func_)
+        #[1] It is safe if we only patch <**kw>, and the reasons are as below
+        #    [1] If the provision of any positional argument is in <*pos>, and we add its patched default value in <**kw>; then
+        #         the one in <**kw> is ignored by validation in <eSig>
+        #    [2] If the provision of any keyword argument is in <**kw>, we do not provide its patched default value, and just
+        #         use the provision
+        kw_patch = kw | { k:v for k,v in kw_def.items() if k not in kw }
+
+        #350. Reshape the inputs
+        pos_fnl, kw_fnl = eSig.insParams(args_share, pos, kw_patch)
 
         #500. Call the API
-        rstOut = __dfl_def_(*pos, **kw)
+        rstOut = __dfl_func_(*pos_fnl, **kw_fnl)
 
         #600. Handle the result if required
         #[ASSUMPTION]
@@ -207,6 +231,8 @@ def lookupMethod(
             return(getattr(self, attr_return))
         else:
             return(rstOut)
+
+    func_.__wrapped__ = eSig(func_)
 
     #900. Export
     return(func_)
@@ -460,6 +486,6 @@ if __name__=='__main__':
 
     #560. Try to assign the API with another object
     testadd5.api001 = 111
-    # AttributeError: [MyClass2]Attribute [api001] is read-only!
+    # AttributeError: [MyClass5]Attribute [api001] is read-only!
 #-Notes- -End-
 '''

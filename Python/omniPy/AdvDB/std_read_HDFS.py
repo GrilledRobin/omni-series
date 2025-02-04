@@ -3,14 +3,22 @@
 
 import os, sys
 import pandas as pd
-from inspect import signature
+from collections.abc import Iterable
 from typing import Union, Optional
+from omniPy.AdvOp import ExpandSignature
 from omniPy.AdvDB import parseHDFStoreInfo
 
+eSig = ExpandSignature(pd.read_hdf)
+
+@eSig
 def std_read_HDFS(
     infile : Union[str, os.PathLike, pd.HDFStore]
     ,key : Optional[object] = None
     ,funcConv : callable = lambda x: x
+    ,usecols : Iterable[str | tuple[str]] = None
+    ,path_or_buf : Union[str, os.PathLike, pd.HDFStore] = None
+    ,columns : Iterable[str] = None
+    ,*pos
     ,**kw
 ) -> pd.DataFrame:
     #000. Info.
@@ -20,24 +28,42 @@ def std_read_HDFS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |CONCLUSION                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [kw] that have no negative impact to current function call         #
+#   |[1] Retain the signatures of all ancestor functions for easy program design                                                        #
+#   |[2] Add aliases of necessary arguments to enable standardized call                                                                 #
+#   |[3] In most cases when this function is called in a standardized way, the first argument is provided in positional pattern         #
+#   |[4] In order to call the function with standardized keywords, one must also wrap it with <AdvOp.withDefaults>, see examples        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
-#   |key         :   The name of the data frame stored in the HDF file to read into RAM                                                 #
-#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
-#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
-#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
-#   |kw          :   Various named parameters for the encapsulated function call if applicable                                          #
+#   |infile        :   The name (as character string) of the file or data frame to read into RAM, superseding <path_or_buf> if provided #
+#   |key           :   The name of the data frame stored in the HDF file to read into RAM                                               #
+#   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
+#   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
+#   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
+#   |usecols       :   Iterable of column names to keep from the retrieved data, superseding <columns> if it is not None                #
+#   |                   [None        ] <Default> Keep all columns                                                                       #
+#   |path_or_buf   :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as <infile>                                                         #
+#   |columns       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <usecols> so it no #
+#   |                   longer takes effect                                                                                             #
+#   |                   [<see def.>  ] <Default> Use the same input as <usecols>                                                        #
+#   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
+#   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
+#   |[df]          :   The data frame to be read into RAM from the source                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,6 +91,13 @@ def std_read_HDFS(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the unnecessary restrictions on arguments, and leave them to the caller process                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] Make <usecols> supersede <columns> to standardize the call                                                              #
+#   |      |[3] For the same functionality, enable diversified parameter provision in accordance with its expanded signature            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -74,12 +107,15 @@ def std_read_HDFS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |os, sys, pandas, inspect, typing                                                                                               #
+#   |   |os, sys, pandas, typing, collections                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |parseHDFStoreInfo                                                                                                          #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -88,102 +124,93 @@ def std_read_HDFS(
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #500. Overwrite the keyword arguments
-    #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-    sig_raw = signature(pd.read_hdf).parameters.values()
+    #012. Handle the parameter buffer.
+    if usecols is not None:
+        if not isinstance(usecols, Iterable):
+            raise TypeError(f'[{LfuncName}]<usecols> must be non-str Iterable, while <{type(usecols).__name__}> is given!')
+        if isinstance(usecols, str):
+            raise TypeError(f'[{LfuncName}]<usecols> must be non-str Iterable, while <str> is given!')
+    if columns is not None:
+        if not isinstance(columns, Iterable):
+            raise TypeError(f'[{LfuncName}]<columns> must be non-str Iterable, while <{type(columns).__name__}> is given!')
+        if isinstance(columns, str):
+            raise TypeError(f'[{LfuncName}]<columns> must be non-str Iterable, while <str> is given!')
+        if usecols is None:
+            raise NotImplementedError(f'[{LfuncName}]Please use <usecols> instead as a standardized call!')
 
-    #510. Obtain all defaults of keyword arguments of the function
-    kw_raw = {
-        s.name : s.default
-        for s in sig_raw
-        if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-        and s.default is not s.empty
+    #013. Define the local environment.
+    rst_col = []
+
+    #050. Identify the format of the source
+    fmt_src = (
+        parseHDFStoreInfo(infile)
+        .loc[lambda x: x['key'].eq(key), 'format']
+        .iat[0]
+    )
+
+    #059. Raise exception if the dedicated object is not recognized
+    if fmt_src not in ['table','fixed']:
+        raise TypeError(f'[{LfuncName}]Format <{fmt_src}> of the key <{key}> is not recognized!')
+
+    #100. Identify the shared arguments between this function and its ancestor functions
+    #[ASSUMPTION]
+    #[1] We do not use <or> syntax as the input object may not have definition of <truth value>
+    args_share = {
+        'path_or_buf' : infile
+        ,'key' : key
     }
 
-    #550. In case the raw API takes any variant keywords, we also identify them
-    #[ASSUMPTION]
-    #[1] <format> argument is prevented from provision in <pandas>
-    if len([ s.name for s in sig_raw if s.kind == s.VAR_KEYWORD ]) > 0:
-        kw_varkw = { k:v for k,v in kw.items() if k not in kw_raw and k not in ['usecols','columns','path_or_buf','format'] }
-    else:
-        kw_varkw = {}
+    #200. Helper functions
 
-    #590. Create the final keyword arguments for calling the function
-    kw_final = {
-        **{ k:v for k,v in kw.items() if k in kw_raw and k not in ['usecols','columns','path_or_buf','format'] }
-        ,**kw_varkw
-    }
-
-    #700. Determine the <usecols>
-    #710. Split the kwargs
-    usecols = kw.get('usecols', None)
-    columns = kw.get('columns', None)
-    has_usecols = ('usecols' in kw) and (usecols is not None)
-    has_columns = ('columns' in kw) and (columns is not None)
-    cols_req = []
-    kw_col = {}
-    fmt_src = 'table'
-
-    #719. Raise exception
-    if has_usecols and has_columns:
-        raise KeyError(f'[{LfuncName}]Cannot specify <usecols> and <columns> at the same time!')
-
-    #730. Combine the requests
-    #[ASSUMPTION]
-    #[1] We do not use <isinstance>, but leave the exception to be raised
-    if has_usecols:
-        cols_req = [ v for v in usecols ]
-    if has_columns:
-        cols_req = [ v for v in columns ]
-
-    #750. Modify the <columns> argument
-    if len(cols_req) > 0:
-        #100. Pre-load the data structure
-        kw_struct = { k:v for k,v in kw_final.items() if k not in ['start','stop'] }
-        kw_norow = { 'start' : 0, 'stop' : 0 }
-        struct = pd.read_hdf( infile, key, **kw_struct, **kw_norow )
-
-        #500. Identify the columns that are in the source
-        kw_col = { 'columns' : { v for v in struct.columns if v in cols_req } }
-
-        #900. Identify the format of the source
-        fmt_src = (
-            parseHDFStoreInfo(infile)
-            .loc[lambda x: x['key'].eq(key), 'format']
-            .iat[0]
-        )
-
-    #800. Load the data with the column filter
-    #810. Helper function to slice the data frame at axis-1
+    #210. Function to slice the data frame at axis-1
     def h_flt(df : pd.DataFrame):
-        if len(kw_col) == 0:
+        if usecols is None:
             return(slice(len(df.columns)))
         else:
-            return(df.columns.isin(kw_col.get('columns')))
+            return(df.columns.isin(rst_col))
 
-    #850. Differ the process
-    if len(cols_req) == 0:
-        rstOut = pd.read_hdf( infile, key, **kw_final )
+    #500. Determine the correct <columns> to load the data
+    if usecols is not None:
+        #100. Tweak the shared arguments to retrieve the data structure
+        args_struct = args_share | {'columns' : None, 'start' : 0, 'stop' : 0}
+
+        #200. Prepare the correct inputs for the ancestor function
+        pos_struct, kw_struct = eSig.insParams(args_struct, pos, kw)
+
+        #100. Pre-load the data structure
+        struct = eSig.src( *pos_struct, **kw_struct )
+
+        #500. Identify the columns that are in the source
+        rst_col = [v for v in struct.columns if v in usecols]
+
+    #900. Load the data with the column filter
+    #910. Prepare the proper arguments
+    args_fnl = args_share | {'columns' : (None if fmt_src == 'fixed' else rst_col)}
+    pos_fnl, kw_fnl = eSig.insParams(args_fnl, pos, kw)
+
+    #930. Eliminate excessive parameters
+    #[ASSUMPTION]
+    #[1] In some standard process, there may be extra arguments passed, e.g. <format=>
+    #[2] In <pd.HDFStore>, such arguments are not allowed
+    #[3] Since they are extra, they cannot be positional arguments, hence all inputs will be translated into keywords
+    #[4] That is why we only need to shrink the keywords
+    kw_fnl = { k:v for k,v in kw_fnl.items() if k not in ['format'] }
+
+    #990. Differ the process
+    if fmt_src == 'table':
+        return(funcConv(eSig.src( *pos_fnl, **kw_fnl )))
     else:
-        if fmt_src == 'table':
-            rstOut = pd.read_hdf( infile, key, **kw_final, **kw_col )
-        elif fmt_src == 'fixed':
-            rstOut = (
-                pd.read_hdf( infile, key, **kw_final )
-                .loc[:, h_flt]
-            )
-        else:
-            raise TypeError(f'[{LfuncName}]Format <{fmt_src}> of the key <{key}> is not recognized!')
-
-    #900. Import data
-    return( funcConv(rstOut) )
+        return(funcConv(
+            eSig.src( *pos_fnl, **kw_fnl )
+            .iloc[:, h_flt]
+        ))
 #End std_read_HDFS
 
 '''
 #-Notes- -Begin-
 #Full Test Program[1]:
 if __name__=='__main__':
-    #010. Create envionment.
+    #010. Create environment.
     import os
     import sys
     import pandas as pd
@@ -192,7 +219,7 @@ if __name__=='__main__':
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import std_read_HDFS
 
-    file_tmp = r'D:\Temp\aaa.hdf'
+    file_tmp = os.path.join(os.getcwd(), 'aaa.hdf')
     aaa = pd.DataFrame({'a' : [2,4,6], 'b' : [1,5,9]})
     bbb = pd.DataFrame({'d' : [5,9]})
 
@@ -206,7 +233,7 @@ if __name__=='__main__':
         store.put('bbb', bbb, format = 'fixed')
 
     #200. Load the data with specified columns, ignoring those not in the table
-    vfy_aaa = std_read_HDFS(file_tmp, 'aaa', columns = ['a','c'])
+    vfy_aaa = std_read_HDFS(file_tmp, 'aaa', usecols = ['a','c'])
 
     #300. Load empty data with none of the required columns existing in the source
     #[ASSUMPTION]

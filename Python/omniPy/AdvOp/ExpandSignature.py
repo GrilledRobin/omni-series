@@ -270,7 +270,7 @@ class ExpandSignature:
     __slots__ = (
         'src','arg_kind'
         ,'sig_src','sig_src_bykind','sig_patch'
-        ,'args_src','named_src','po_src','pk_src_wo_def','pk_src_w_def','pos_src','ko_src','ko_src_w_def','kw_src'
+        ,'args_src','named_src','defaulted_src','po_src','pk_src_wo_def','pk_src_w_def','pos_src','ko_src','ko_src_w_def','kw_src'
         ,'doc_src','flags_src'
     )
 
@@ -312,6 +312,9 @@ class ExpandSignature:
 
         #305. Named arguments
         self.named_src = {s.name : s.default for s in self.sig_src if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
+
+        #307. Arguments with default values
+        self.defaulted_src = {s.name : s.default for s in self.sig_src if s.default is not s.empty}
 
         #310. POSITIONAL_ONLY
         self.po_src = {s.name : s.default for s in self.sig_src_bykind['POSITIONAL_ONLY'].values()}
@@ -379,7 +382,7 @@ class ExpandSignature:
     #[6] Simple method is as below
     #Quote: https://docs.python.org/3/library/inspect.html#inspect-module-co-flags
     def _hasFlag(self, flags : int, flag : int) -> bool:
-        return(flags & flag != 0)
+        return((flags & flag) == flag)
 
     #130. Null function to take over the merged signature
     def _nullfn(self, flags : int) -> callable:
@@ -632,12 +635,13 @@ class ExpandSignature:
             #300. Split keyword parameters
             in_ko_dst = {k:v for k,v in in_kw.items() if k in ko_dst}
             in_ko_src = {k:v for k,v in in_kw.items() if k in ko_fr_src}
+            in_kw_rest = {k:v for k,v in in_kw.items() if k not in ko}
 
             #500. Prepare the adjustment on those POSITIONAL_OR_KEYWORD which are translated into keyword input
-            kw_wo_def_dst = {k:v for k,v in in_kw.items() if k in pk_dst_wo_def}
-            kw_wo_def_src = {k:v for k,v in in_kw.items() if k in pk_wo_def_fr_src}
-            kw_w_def_dst = {k:v for k,v in in_kw.items() if k in pk_dst_w_def}
-            kw_w_def_src = {k:v for k,v in in_kw.items() if k in pk_w_def_fr_src}
+            kw_wo_def_dst = {k:v for k,v in in_kw_rest.items() if k in pk_dst_wo_def}
+            kw_wo_def_src = {k:v for k,v in in_kw_rest.items() if k in pk_wo_def_fr_src}
+            kw_w_def_dst = {k:v for k,v in in_kw_rest.items() if k in pk_dst_w_def}
+            kw_w_def_src = {k:v for k,v in in_kw_rest.items() if k in pk_w_def_fr_src}
             adj_pk_wo_def_dst = tuple(kw_wo_def_dst.values())
             adj_pk_wo_def_src = tuple(kw_wo_def_src.values())
             adj_pk_w_def_dst = tuple(kw_w_def_dst.values())
@@ -646,9 +650,8 @@ class ExpandSignature:
             #600. Identify VAR_KEYWORD
             in_vk_src = {
                 k:v
-                for k,v in in_kw.items()
-                if k not in ko
-                and k not in (kw_wo_def_dst | kw_wo_def_src | kw_w_def_dst | kw_w_def_src)
+                for k,v in in_kw_rest.items()
+                if k not in (kw_wo_def_dst | kw_wo_def_src | kw_w_def_dst | kw_w_def_src)
             }
 
             #800. Prepare the parameters for the call
@@ -672,7 +675,22 @@ class ExpandSignature:
 
     #500. Function to identify the input value by argument name
     def getParam(self, arg : str, pos_src : tuple, kw_src : dict):
-        pos_in, kw_in = nameArgsByFormals(self.src, pos_ = pos_src, kw_ = kw_src, coerce_ = True, strict_ = True)
+        #[ASSUMPTION]
+        #[1] If there are holes in <pos_src> while we can neither obtain their default values in the signature, the final call
+        #     would fail
+        #[2] Below process still cannot verify which arguments are missing inputs
+        #[3] Hence it is safe to retrieve the parameter value to the call to <src> by following below steps
+        #    [1] Call <insParams> when knowing which arguments are missing, i.e. all the shared arguments of <src> and <dst>,
+        #         this step is always required if there are shared arguments to ensure correct positioning
+        #    [2] Call <updParams> when there should be changes or calculation upon above result (not required when not needed)
+        #    [3] Call this method to get the final input value from above result
+        pos_in, kw_in = nameArgsByFormals(
+            self.src
+            ,pos_ = pos_src
+            ,kw_ = (kw_src | { k:v for k,v in self.defaulted_src.items() if k not in kw_src })
+            ,coerce_ = True
+            ,strict_ = True
+        )
         if len(pos_in) > (arg_loc := [ i for i,s in enumerate(self.sig_src) if s.name == arg ][0]):
             return(pos_in[arg_loc])
         else:
@@ -680,7 +698,15 @@ class ExpandSignature:
 
     #600. Function to insert the dedicated input parameters in terms of the signature
     def insParams(self, args_ins : dict, pos_src : tuple, kw_src : dict):
-        #100. Positional inputs
+        #[ASSUMPTION]
+        #[1] We cannot standardize the input as <updParams> does, as the input has some holes as we know at the wrapping, while
+        #     the function <nameArgsByFormals> would skip the holes in <pos_src> which causes mismatching of positional parameters
+
+        #100. Prepare the patch
+        pos_patch = { i:s.name for i,s in self.sig_patch.items() if s.name in args_ins }
+        pos_in = list(pos_src)
+
+        #300. Positional inputs
         #[ASSUMPTION]
         #[1] In general, we would process the list (even empty) of arguments shared by both callables in below way
         #    [1] If len(pos) > 0, identify all POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD of the shared arguments and insert them into
@@ -688,17 +714,15 @@ class ExpandSignature:
         #         nothing to do as: either there is no positional argument in <src>, or all arguments for <src> can be translated
         #         into keyword input
         #    [2] Overwrite all these arguments in <**kw>, including those processed at above step
-        pos_in = list(pos_src)
         if len(pos_src) > 0:
-            pos_patch = { i:s.name for i,s in self.sig_patch.items() if s.name in args_ins }
             for i in sorted(list(pos_patch.keys())):
                 pos_in.insert(i, args_ins.get(pos_patch.get(i)))
 
         #500. Keywords
         #[ASSUMPTION]
-        #[1] No matter whether <*pos> is patched, it is safe to add <args_share> into the keyword input, as we will patch all inputs
+        #[1] No matter whether <*pos> is patched, it is safe to add <args_ins> into the keyword input, as we will patch all inputs
         #     in one batch later, by allowing (and deduplicating) multiple inputs for the same arguments
-        #[2] We must use the explicit input of <args_share> to replace the possible keyword in <kw> to ensure the correct syntax
+        #[2] We must use the explicit input of <args_ins> to replace the possible keyword in <kw> to ensure the correct syntax
         kw_in = kw_src | args_ins
 
         #900. Reshape the input parameters
@@ -708,10 +732,16 @@ class ExpandSignature:
 
     #700. Function to update the dedicated input parameters in terms of the signature
     def updParams(self, args_upd : dict, pos_src : tuple, kw_src : dict):
-        #010. Prepare the patch
+        #010. Ensure the input has the same structure as the signature
+        #[ASSUMPTION]
+        #[1] If there are holes in <pos_src>, we would never know which are the one to update, hence we will not allow missing
+        #     inputs by setting <strict_ = True>
+        pos_raw, kw_raw = nameArgsByFormals(self.src, pos_ = pos_src, kw_ = kw_src, coerce_ = True, strict_ = True)
+
+        #100. Prepare the patch
         pos_patch = { i:s.name for i,s in self.sig_patch.items() if s.name in args_upd }
-        pos_in = list(pos_src)
-        len_pos_src = len(pos_src)
+        pos_in = list(pos_raw)
+        len_pos_src = len(pos_raw)
 
         #100. Positional inputs
         #[ASSUMPTION]
@@ -722,10 +752,10 @@ class ExpandSignature:
 
         #500. Keywords
         #[ASSUMPTION]
-        #[1] No matter whether <*pos> is patched, it is safe to add <args_share> into the keyword input, as we will patch all inputs
+        #[1] No matter whether <*pos> is patched, it is safe to add <args_upd> into the keyword input, as we will patch all inputs
         #     in one batch later, by allowing (and deduplicating) multiple inputs for the same arguments
-        #[2] We must use the explicit input of <args_share> to replace the possible keyword in <kw> to ensure the correct syntax
-        kw_in = kw_src | args_upd
+        #[2] We must use the explicit input of <args_upd> to replace the possible keyword in <kw> to ensure the correct syntax
+        kw_in = kw_raw | args_upd
 
         #900. Reshape the input parameters
         #[ASSUMPTION]

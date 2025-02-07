@@ -139,6 +139,7 @@ def kfFunc_ts_mtd(
         ,'dateEnd' : None
         ,'chkBgn' : None
     }
+    eSig.vfyConflict(args_dummy)
     pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
 
     #330. Retrieve the environment from the reshaped input

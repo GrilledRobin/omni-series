@@ -127,6 +127,9 @@ class ExpandSignature:
 #   |   |   |                       the potential call of <src>                                                                         #
 #   |   |   |pos_src           :   <tuple   > Parameters passed to the positional arguments for the call to <src>                       #
 #   |   |   |kw_src            :   <dict    > Parameters passed to the keyword arguments for the call to <src>                          #
+#   |   |   |inc_default       :   <bool    > Whether to include the default values if no input is provided at runtime                  #
+#   |   |   |                      [True                ]<Default> Include the default values if no input is provided at runtime        #
+#   |   |   |                      [False               ]          Only obtain the input value at runtime                               #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -167,6 +170,21 @@ class ExpandSignature:
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |tuple[tuple,dict] :   The same result returned from <nameArgsByFormals>                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[vfyConflict]                                                                                                                  #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to Verify the conflict of argument names at runtime, to secure the dynamic signature expansion #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |args_share        :   <dict    > The argument names shared by both callables that are declared to be excluded              #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |None              :   This method is only used to raise exception if conflict is detected                                  #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -272,6 +290,8 @@ class ExpandSignature:
         ,'sig_src','sig_src_bykind','sig_patch'
         ,'args_src','named_src','defaulted_src','po_src','pk_src_wo_def','pk_src_w_def','pos_src','ko_src','ko_src_w_def','kw_src'
         ,'doc_src','flags_src'
+        ,'dst'
+        ,'args_dst','named_dst'
     )
 
     #100. Initialize by extracting the signature of the ancestor
@@ -415,6 +435,7 @@ class ExpandSignature:
     #300. Create the decorator
     def _wrapper(self, dst : callable) -> callable:
         #100. Retrieve the signature of the callable
+        self.dst = dst
         sig_dst = signature(dst).parameters.values()
         sig_dst_bykind = {
             n : {
@@ -430,7 +451,10 @@ class ExpandSignature:
 
         #200. Identify specific arguments
         #201. All arguments
-        args_dst = {s.name : s.default for s in sig_dst}
+        self.args_dst = args_dst = {s.name : s.default for s in sig_dst}
+
+        #205. Named arguments
+        self.named_dst = {s.name : s.default for s in sig_dst if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
 
         #210. POSITIONAL_ONLY
         po_dst = {s.name : s.default for s in sig_dst_bykind['POSITIONAL_ONLY'].values()}
@@ -674,7 +698,20 @@ class ExpandSignature:
         return(deco)
 
     #500. Function to identify the input value by argument name
-    def getParam(self, arg : str, pos_src : tuple, kw_src : dict):
+    def getParam(self, arg : str, pos_src : tuple, kw_src : dict, *, inc_default : bool = True):
+        #100. Determine the approach
+        if inc_default:
+            args_getdef = {
+                'kw_' : (kw_src | { k:v for k,v in self.defaulted_src.items() if k not in kw_src })
+                ,'strict_' : True
+            }
+        else:
+            args_getdef = {
+                'kw_' : kw_src
+                ,'strict_' : False
+            }
+
+        #500. Reshape the input
         #[ASSUMPTION]
         #[1] If there are holes in <pos_src> while we can neither obtain their default values in the signature, the final call
         #     would fail
@@ -687,10 +724,11 @@ class ExpandSignature:
         pos_in, kw_in = nameArgsByFormals(
             self.src
             ,pos_ = pos_src
-            ,kw_ = (kw_src | { k:v for k,v in self.defaulted_src.items() if k not in kw_src })
             ,coerce_ = True
-            ,strict_ = True
+            ,**args_getdef
         )
+
+        #900. Prioritize the retrieval
         if len(pos_in) > (arg_loc := [ i for i,s in enumerate(self.sig_src) if s.name == arg ][0]):
             return(pos_in[arg_loc])
         else:
@@ -761,6 +799,11 @@ class ExpandSignature:
         #[ASSUMPTION]
         #[1] If the parameters are still insufficient, exceptions will be raised here
         return(nameArgsByFormals(self.src, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True))
+
+    #800. Verify the conflict of argument names in both callables, except those declared as acceptable
+    def vfyConflict(self, args_share : dict = {}):
+        if (arg_conflict := [ k for k in self.named_dst.keys() if k in self.args_src and k not in args_share ]):
+            raise NotImplementedError(f'[{self.dst.__name__}]Detected conflict arguments: {str(arg_conflict)}')
 
     #900. Set the instance as a decorator
     def __call__(self, dst : callable):

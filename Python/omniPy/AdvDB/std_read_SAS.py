@@ -107,6 +107,7 @@ def std_read_SAS(
     args_share = {
         'filename_path' : infile
     }
+    eSig.vfyConflict(args_share)
 
     #700. Insert the patched values into the input parameters
     pos_out, kw_out = eSig.insParams(args_share, pos, kw)

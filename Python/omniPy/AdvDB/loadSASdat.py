@@ -134,6 +134,7 @@ def loadSASdat(
 
     #013. Define the local environment
     args_share = {}
+    eSig.vfyConflict(args_share)
     err_funcs = [ v for v in set(dt_map.values()) if v not in ['dt','t','d'] ]
     if err_funcs:
         raise ValueError(

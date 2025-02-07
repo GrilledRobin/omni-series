@@ -158,7 +158,9 @@ def std_read_HDFS(
     args_share = {
         'path_or_buf' : infile
         ,'key' : key
+        ,'columns' : None
     }
+    eSig.vfyConflict(args_share)
 
     #200. Helper functions
 

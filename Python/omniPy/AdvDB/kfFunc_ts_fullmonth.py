@@ -113,6 +113,7 @@ def kfFunc_ts_fullmonth(
 
     #020. Local environment
     args_share = {}
+    eSig.vfyConflict(args_share)
     pos_in, kw_in = eSig.insParams(args_share, pos, kw)
 
     inDate = eSig.getParam('inDate', pos_in, kw_in)

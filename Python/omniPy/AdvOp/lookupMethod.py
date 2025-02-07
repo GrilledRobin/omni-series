@@ -211,7 +211,7 @@ def lookupMethod(
         pos_fnl, kw_fnl = eSig.insParams(args_share, pos, kw_patch)
 
         #500. Call the API
-        rstOut = __dfl_func_(*pos_fnl, **kw_fnl)
+        rstOut = eSig.src(*pos_fnl, **kw_fnl)
 
         #600. Handle the result if required
         #[ASSUMPTION]
@@ -233,6 +233,7 @@ def lookupMethod(
             return(rstOut)
 
     func_.__wrapped__ = eSig(func_)
+    func_.__doc__ = f'Expanded from: {eSig.src.__name__}\n{eSig.src.__doc__}' if eSig.src.__doc__ else None
 
     #900. Export
     return(func_)

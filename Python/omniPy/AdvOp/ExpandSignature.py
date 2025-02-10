@@ -816,12 +816,11 @@ class ExpandSignature:
 if __name__=='__main__':
     #010. Create environment.
     import sys
-    from inspect import signature, Parameter
     from typing import Any
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import nameArgsByFormals, withDefaults
+    from omniPy.AdvOp import withDefaults
     from omniPy.AdvOp import ExpandSignature
 
     #050. Define a universal function to print the private environment
@@ -962,23 +961,29 @@ if __name__=='__main__':
 
     #400. Real cases
     #410. Create a method out of an existing function with nested expansion
+    #[ASSUMPTION]
+    #[1] If you need to chain the expansion, make sure either of below designs is set
+    #    [1] Each of the nodes is in a separate module
+    #    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
     def src3(arg1, *, arg3 = 3, **kw):
         print('This is src3:')
         print(f'arg1 : {str(arg1)}')
         print(f'arg3 : {str(arg3)}')
         print(f'kw : {str(kw)}')
 
-    @ExpandSignature(src3)
+    @(eSig := ExpandSignature(src3))
     def dst3(arg4, /, *pos, **kw):
         src3(*pos, **kw)
         print('This is dst3:')
         print(f'arg4 : {str(arg4)}')
+        print(f'arg3 : {str(eSig.getParam("arg3", pos, kw))}')
 
-    @ExpandSignature(dst3)
+    @(eSig2 := ExpandSignature(dst3))
     def dst4(self, /, *pos, arg5, **kw):
         dst3(*pos, **kw)
         print('This is dst4:')
         print(f'arg5 : {str(arg5)}')
+        print(f'arg3 : {str(eSig2.getParam("arg3", pos, kw))}')
 
     help(dst4)
     # Help on function dst4 in module __main__:
@@ -991,8 +996,10 @@ if __name__=='__main__':
     # kw : {'arg7': 7}
     # This is dst3:
     # arg4 : 4
+    # arg3 : 3
     # This is dst4:
     # arg5 : 5
+    # arg3 : 3
 
     #450. Interaction with <functools.wraps>
     from functools import wraps

@@ -4,7 +4,6 @@
 import sys
 import warnings
 import pandas as pd
-from collections.abc import Iterable
 from functools import partial
 from typing import Optional
 from operator import itemgetter
@@ -12,10 +11,12 @@ from omniPy.AdvOp import modifyDict, ExpandSignature
 
 #[ASSUMPTION]
 #[1] We leave the annotation as empty, to inherit from the ancestor functions
-#[2] To avoid this block of comments being collected as docstring, we skip an empty line below
-eSig = ExpandSignature(pd.pivot_table)
+#[2] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+#[3] To avoid this block of comments being collected as docstring, we skip an empty line below
 
-@eSig
+@(eSig := ExpandSignature(pd.pivot_table))
 def pandasPivot(
     df : pd.DataFrame
     ,rowSortAsc : bool = True
@@ -184,6 +185,12 @@ def pandasPivot(
 #   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |      |[2] For the same functionality, enable diversified parameter provision in accordance with its expanded signature            #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250210        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added support of input as <pd.Grouper> for <index> and <columns>, now literally support all inputs for <index> and      #
+#   |      |     <columns> that are accepted by the ancestor function                                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -193,7 +200,7 @@ def pandasPivot(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, warnings, pandas, collections, functools, typing, operator                                                                #
+#   |   |sys, warnings, pandas, functools, typing, operator                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -218,13 +225,13 @@ def pandasPivot(
     posColSubt = posColSubt.lower()
     cand_pos = ['after','before']
     if posRowTot not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posRowTot]:[{0}] must be among: [{1}]!'.format(posRowTot, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posRowTot]:[{str(posRowTot)}] must be among: [{str(cand_pos)}]!')
     if posRowSubt not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posRowSubt]:[{0}] must be among: [{1}]!'.format(posRowSubt, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posRowSubt]:[{str(posRowSubt)}] must be among: [{str(cand_pos)}]!')
     if posColTot not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posColTot]:[{0}] must be among: [{1}]!'.format(posColTot, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posColTot]:[{str(posColTot)}] must be among: [{str(cand_pos)}]!')
     if posColSubt not in cand_pos:
-        raise ValueError('[' + LfuncName + '][posColSubt]:[{0}] must be among: [{1}]!'.format(posColSubt, ','.join(cand_pos)))
+        raise ValueError(f'[{LfuncName}][posColSubt]:[{str(posColSubt)}] must be among: [{str(cand_pos)}]!')
 
     #030. Prepare correct structure of the input parameters for the call to <src>
     #[ASSUMPTION]
@@ -245,14 +252,33 @@ def pandasPivot(
 
     #050. Local parameters
     var_rows = eSig.getParam('index', pos_fnl, kw_fnl) or []
-    var_cols = eSig.getParam('columns', pos_fnl, kw_fnl) or []
-    if isinstance(var_rows, str) or (not isinstance(var_rows, Iterable)):
+    if isinstance(var_rows, str):
         var_rows = [var_rows]
-    if isinstance(var_cols, str) or (not isinstance(var_cols, Iterable)):
+    if var_rows:
+        if isinstance(var_rows, pd.Grouper):
+            var_rows = list(
+                df.groupby(var_rows)
+                [eSig.getParam('values', pos_fnl, kw_fnl)].min()
+                .index.names
+            )
+        else:
+            var_rows = list(df.set_index(var_rows).index.names)
+
+    var_cols = eSig.getParam('columns', pos_fnl, kw_fnl) or []
+    if isinstance(var_cols, str):
         var_cols = [var_cols]
+    if var_cols:
+        if isinstance(var_cols, pd.Grouper):
+            var_cols = list(
+                df.groupby(var_cols)
+                [eSig.getParam('values', pos_fnl, kw_fnl)].min()
+                .index.names
+            )
+        else:
+            var_cols = list(df.set_index(var_cols).index.names)
+
     f_rows = len(var_rows) > 0
     f_cols = len(var_cols) > 0
-
     if not f_rows:
         fRowTot = fRowSubt = False
     if not f_cols:
@@ -282,14 +308,14 @@ def pandasPivot(
     val_any = [ k for c in list(val_unique.values()) for k in list(c.keys()) ]
     if f_totals_row:
         if fRowTot and (rowTot in val_any):
-            raise ValueError('[' + LfuncName + '][rowTot]:[{0}] conflicts with the data dimension values!'.format(str(rowTot)))
+            raise ValueError(f'[{LfuncName}][rowTot]:[{str(rowTot)}] conflicts with the data dimension values!')
         if fRowSubt and (rowSubt in val_any):
-            raise ValueError('[' + LfuncName + '][rowSubt]:[{0}] conflicts with the data dimension values!'.format(str(rowSubt)))
+            raise ValueError(f'[{LfuncName}][rowSubt]:[{str(rowSubt)}] conflicts with the data dimension values!')
     if f_totals_col:
         if fColTot and (colTot in val_any):
-            raise ValueError('[' + LfuncName + '][colTot]:[{0}] conflicts with the data dimension values!'.format(str(colTot)))
+            raise ValueError(f'[{LfuncName}][colTot]:[{str(colTot)}] conflicts with the data dimension values!')
         if fColSubt and (colSubt in val_any):
-            raise ValueError('[' + LfuncName + '][colSubt]:[{0}] conflicts with the data dimension values!'.format(str(colSubt)))
+            raise ValueError(f'[{LfuncName}][colSubt]:[{str(colSubt)}] conflicts with the data dimension values!')
 
     #100. Helper functions
     #110. Function to reorder the given dict with continuous sequence, starting from 0
@@ -621,6 +647,7 @@ if __name__=='__main__':
         ,values = ['invc','gc']
         ,aggfunc = { 'invc' : [np.nansum, srs_nunique], 'gc' : [np.nanmean, np.nanmax] }
         ,fill_value = 0
+        ,observed = False
         ,rowSortAsc = False
         ,fRowTot = True
         ,fRowSubt = True

@@ -6,9 +6,12 @@ import pandas as pd
 from omniPy.AdvOp import ExpandSignature
 from omniPy.AdvDB import loadSASdat
 
-eSig = ExpandSignature(loadSASdat)
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
 
-@eSig
+@(eSig := ExpandSignature(loadSASdat))
 def std_read_SAS(
     infile : str | os.PathLike
     ,funcConv : callable = lambda x: x

@@ -12,10 +12,12 @@ from omniPy.AdvDB import parseDatName, DataIO, DBuse_GetTimeSeriesForKpi, kfFunc
 
 #[ASSUMPTION]
 #[1] We leave the annotation as empty, to inherit from the ancestor functions
-#[2] To avoid this block of comments being collected as docstring, we skip an empty line below
-eSig = ExpandSignature(kfFunc_ts_mtd)
+#[2] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+#[3] To avoid this block of comments being collected as docstring, we skip an empty line below
 
-@eSig
+@(eSig := ExpandSignature(kfFunc_ts_mtd))
 def kfFunc_ts_fullmonth(
     *pos
     ,**kw

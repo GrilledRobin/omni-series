@@ -8,9 +8,12 @@ from typing import Union, Optional
 from omniPy.AdvOp import ExpandSignature
 from omniPy.AdvDB import parseHDFStoreInfo
 
-eSig = ExpandSignature(pd.read_hdf)
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
 
-@eSig
+@(eSig := ExpandSignature(pd.read_hdf))
 def std_read_HDFS(
     infile : Union[str, os.PathLike, pd.HDFStore]
     ,key : Optional[object] = None

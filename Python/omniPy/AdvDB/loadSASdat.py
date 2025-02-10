@@ -11,9 +11,12 @@ from functools import partial
 from omniPy.AdvOp import apply_MapVal, ExpandSignature
 from omniPy.Dates import asDates, asDatetimes, asTimes
 
-eSig = ExpandSignature(pyr.read_sas7bdat)
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
 
-@eSig
+@(eSig := ExpandSignature(pyr.read_sas7bdat))
 def loadSASdat(
     *pos
     ,dt_map : dict = {

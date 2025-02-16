@@ -172,6 +172,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed the bug when the config data has <options> and yet it cannot be parsed correctly                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -247,7 +252,7 @@ kfCore_ts_agg <- function(
 	,kw_cal = formals(UserCalendar$public_methods$initialize)[
 		!(names(formals(UserCalendar$public_methods$initialize)) %in% c('dateBgn', 'dateEnd', 'clnBgn', 'clnEnd'))
 	]
-	,kw_DataIO = list()
+	,kw_DataIO = as.list(formals(DataIO$public_methods$initialize))
 	,...
 ){
 	#001. Handle parameters
@@ -884,10 +889,9 @@ kfCore_ts_agg <- function(
 		if (u_ftype %in% hasKeys) {
 			opt_ex <- rstOut[['options']]
 			if (is.character(opt_ex)) {
-				opt_ex %<>% sapply(function(x){x %>% str2expression() %>% eval()}, simplify = F, USE.NAMES = F)
+				opt_ex %<>% str2expression() %>% eval()
 			}
-			names(opt_ex) <- rstOut[['DF_NAME']]
-			kw_patcher <- list('kw_put' = opt_ex)
+			kw_patcher <- opt_ex
 		} else {
 			kw_patcher <- u_opt
 			if (is.character(kw_patcher)) {

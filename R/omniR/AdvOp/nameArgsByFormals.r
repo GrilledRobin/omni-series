@@ -21,6 +21,9 @@
 #   |coerce_     :   Whether to try to remove excessive arguments silently (This is the only naming convention accepted by Python and R)#
 #   |                [TRUE        ] <Default> Remove excessive arguments                                                                #
 #   |                [FALSE       ]           Raise exceptions under certain situations                                                 #
+#   |strict_     :   Whether to allow less inputs than those arguments without defaults                                                 #
+#   |                [FALSE       ] <Default> Allow less inputs than the arguments without defaults                                     #
+#   |                [TRUE        ]           Raise exception when less inputs are passed than required                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -37,6 +40,11 @@
 #   | Date |    20250105        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Rewrite the entire function to support all scenarios                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250212        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce new argument <strict_> to separately handle the scenarios when insufficient parameters are passed to the call #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -72,6 +80,7 @@ nameArgsByFormals <- function(
 	func = function(){}
 	,args_ = pairlist()
 	,coerce_ = T
+	,strict_ = F
 ) {
 	#010. Parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -155,9 +164,8 @@ nameArgsByFormals <- function(
 	kw_in_before_dots <- kw_in[names_kw_in %in% names_raw[loc_kw_in_before_dots]]
 	len_kw_before_dots <- length(kw_in_before_dots)
 
-	#590. Raise exception if not silent
+	#580. Raise if duplicated parameters are provided
 	if (!coerce_) {
-		#100. Raise if duplicated parameters are provided
 		kw_dup <- unique(names(kw_pre[kw_dup_flag]))
 		len_kw_dup <- length(kw_dup)
 		if (len_kw_dup > 0) {
@@ -167,8 +175,10 @@ nameArgsByFormals <- function(
 			}
 			stop(glue::glue('[{LfuncName}]Duplicated keyword argument{plural} <{toString(names(kw_dup))}> provided for the function!'))
 		}
+	}
 
-		#300. Raise if positional arguments (without default values) after <...> are not provided
+	#590. Raise if positional arguments (without default values) after <...> are not provided
+	if (strict_) {
 		if (has_dots) {
 			#100. Identify the keyword parameters passed for the arguments after <...>
 			kw_in_after_dots <- kw_in[loc_kw_in > loc_dots]
@@ -215,9 +225,8 @@ nameArgsByFormals <- function(
 	}
 	len_pos_in <- length(pos_in)
 
-	#719. Raise exception if not silent
+	#718. Exception when more parameters provided than arguments
 	if (!coerce_) {
-		#100. Exception when more parameters provided than arguments
 		if (!has_dots) {
 			pos_err <- len_pos_in - max_k_pos
 			if (pos_err > 0) {
@@ -228,8 +237,11 @@ nameArgsByFormals <- function(
 				stop(glue::glue('[{LfuncName}]{pos_err} excessive positional argument{plural} provided!'))
 			}
 		}
+	}
 
-		#200. Raise if the provided parameters are less than the arguments
+	#719. Raise if the provided parameters are less than the arguments
+	if (strict_) {
+		#100. Determine the holes
 		#[ASSUMPTION]
 		#[1] Valid provision includes:
 		#    [1] All <kw_in> parameters
@@ -242,14 +254,14 @@ nameArgsByFormals <- function(
 			{.[!names(.) %in% names_kw_in]} %>%
 			{.[-seq_len(len_pos_in)]}
 
-		#220. Tag those without default values
+		#200. Tag those without default values
 		pos_miss_flag <- flagPositional(pos_holes)
 
-		#250. Identify the number of formals that must be provided, i.e. until the last one-without-default-value
+		#500. Identify the number of formals that must be provided, i.e. until the last one-without-default-value
 		k_miss_least <- tail(seq_along(pos_holes)[pos_miss_flag], 1)
 		if (length(k_miss_least) == 0) k_miss_least <- 0
 
-		#290. Raise with rational messages
+		#900. Raise with rational messages
 		if (k_miss_least > 0) {
 			k_miss_most <- length(pos_holes)
 			plural <- ''
@@ -569,7 +581,7 @@ if (FALSE){
 		#[3] That is why the error message indicates we need to provide at least 2 more parameters to cover the
 		#     last argument-without-default-value
 		prov03 <- list(arg1 = 1, 2, 3)
-		nameArgsByFormals(testf_nodots, prov03, coerce_ = F)
+		nameArgsByFormals(testf_nodots, prov03, strict_ = T)
 		# [nameArgsByFormals]Require to provide 2 ~ 4 more parameters for the function!
 
 		#319. Specific provision
@@ -577,7 +589,7 @@ if (FALSE){
 		#[2] Hence <arg5> has no input
 		#[3] Although R allows such input and set a placeholder <arg5> in the type of <symbol>, we still raise its exception
 		prov04 <- list(arg1 = 1, 0, 3, 5)
-		nameArgsByFormals(testf_nodots, prov04, coerce_ = F)
+		nameArgsByFormals(testf_nodots, prov04, strict_ = T)
 		# [nameArgsByFormals]Require to provide 1 ~ 3 more parameters for the function!
 
 		#350. Where <...> exists
@@ -585,7 +597,7 @@ if (FALSE){
 		#[1] <arg5> should be provided as it is before <...> and has no default value
 		#[2] Same as above, <arg4> should also be provided as well to ensure the hole of <arg5> is filled
 		prov11 <- list(arg1 = 1, 2, 3, arg8 = 8)
-		nameArgsByFormals(testf_dots, prov11, coerce_ = F)
+		nameArgsByFormals(testf_dots, prov11, strict_ = T)
 		# [nameArgsByFormals]Require to provide 2 more parameters for the function!
 
 		#353. Exception when less keyword parameters are provided after <...>
@@ -594,7 +606,7 @@ if (FALSE){
 		#[3] Be cautious that <arg4, arg5> are still required to make a valid call, but since keyword check is done before positional
 		#     parameter check, that exception is not raised
 		prov12 <- list(arg1 = 1, 2, 3)
-		nameArgsByFormals(testf_dots, prov12, coerce_ = F)
+		nameArgsByFormals(testf_dots, prov12, strict_ = T)
 		# [nameArgsByFormals]Require keyword input for argument: <arg8>!
 
 	}

@@ -22,72 +22,24 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |110.   Input dataset information                                                                                                   #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKPICfg   :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |mapper     :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                           #
-#   |               |-------------------------------------------------------------------------------------------------------------------#
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |mapper_daily    |No         | ID of Daily Snapshot KPI, in the same type as <C_KPI_ID> in <inKPICfg>               #
-#   |               |mapper_mtd      |No         | ID of aggregated MTD KPI, in the same type as <C_KPI_ID> in <inKPICfg>               #
-#   |               |mapper_fm       |No         | ID of aggregated Full Month KPI, in the same type as <C_KPI_ID> in <inKPICfg>        #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |120.   Naming pattern translation/mapping                                                                                          #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fTrans     :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |               [IMPORTANT]There must be translation for string <&L_curdate.> in this mapper as it is preset in the program         #
-#   |fTrans.opt :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |130.   Multi-processing support                                                                                                    #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |.parallel  :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |cores      :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |150.   Calculation period control                                                                                                  #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate     :   The date to which to calculate the Full Month aggregation from the first calendar day in the same month             #
-#   |               [None            ] <Default> Function will raise error if it is NOT provided                                        #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |170.   Column inclusion                                                                                                            #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |byVar      :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |copyVar    :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |aggrVar    :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |tableVar   :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |180.   Indicators and methods for aggregation                                                                                      #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |genPHMul   :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |calcInd    :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug     :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |outDTfmt   :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |kw_d       :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |kw_cal     :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |kw_DataIO  :   See definition of <AdvDB$kfCore_ts_agg>                                                                             #
-#   |...        :   Any other arguments that are required by <kfCore_ts_agg>                                                            #
+#   |...           :   Any other arguments to expand from its ancestor; see its official document                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[DataFrame]:   Data Frame indicating the process result with below columns (not inherited from <AdvDB$kfCore_ts_agg>):             #
-#   |               |-------------------------------------------------------------------------------------------------------------------#
-#   |               |Column Name     |Nullable?  |Description                                                                           #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
-#   |               |FilePath        |No         | Absolute path of the data files that are written by this process                     #
-#   |               |                |           | When file type is <RAM>, it represents the object name in current session            #
-#   |               |C_KPI_FILE_TYPE |No         | Same column retained from <inKPICfg>                                                 #
-#   |               |rc              |Yes        | Return code from the I/O, 0 indicates success, otherwise there are errors            #
-#   |               |----------------+-----------+--------------------------------------------------------------------------------------#
+#   |<Anno>        :   See the return result from the ancestor function                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240319        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -110,12 +62,12 @@
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |match.arg.x                                                                                                                #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvDB                                                                                                                          #
 #   |   |   |DataIO                                                                                                                     #
 #   |   |   |parseDatName                                                                                                               #
 #   |   |   |DBuse_GetTimeSeriesForKpi                                                                                                  #
-#   |   |   |kfCore_ts_agg                                                                                                              #
 #   |   |   |kfFunc_ts_mtd                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -136,27 +88,12 @@ library(magrittr)
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-kfFunc_ts_fullmonth <- function(
-	inDate = NULL
-	,inKPICfg = formals(kfCore_ts_agg)[['inKPICfg']] %>% eval()
-	,mapper = formals(kfCore_ts_agg)[['mapper']] %>% eval()
-	,.parallel = formals(kfCore_ts_agg)[['.parallel']] %>% eval()
-	,omniR.ini = formals(kfCore_ts_agg)[['omniR.ini']] %>% eval()
-	,cores = formals(kfCore_ts_agg)[['cores']] %>% eval()
-	,aggrVar = formals(kfCore_ts_agg)[['aggrVar']] %>% eval()
-	,byVar = formals(kfCore_ts_agg)[['byVar']] %>% eval()
-	,copyVar = formals(kfCore_ts_agg)[['copyVar']] %>% eval()
-	,tableVar = formals(kfCore_ts_agg)[['tableVar']] %>% eval()
-	,genPHMul = formals(kfCore_ts_agg)[['genPHMul']] %>% eval()
-	,calcInd = formals(kfCore_ts_agg)[['calcInd']] %>% eval()
-	,fDebug = formals(kfCore_ts_agg)[['fDebug']] %>% eval()
-	,fTrans = formals(kfCore_ts_agg)[['fTrans']] %>% eval()
-	,fTrans.opt = formals(kfCore_ts_agg)[['fTrans.opt']] %>% eval()
-	,outDTfmt = formals(kfCore_ts_agg)[['outDTfmt']] %>% eval()
-	,kw_d = formals(kfCore_ts_agg)[['kw_d']] %>% eval()
-	,kw_cal = formals(kfCore_ts_agg)[['kw_cal']] %>% eval()
-	,kw_DataIO = formals(kfCore_ts_agg)[['kw_DataIO']] %>% eval()
-	,...
+kfFunc_ts_fullmonth <- local({
+#[ASSUMPTION]
+#[1] By instantiation of below class, we resemble a <class decorator> in Python
+deco <- ExpandSignature$new(kfFunc_ts_mtd, instance = 'eSig')
+myfunc <- deco$wrap(function(
+	...
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -164,6 +101,33 @@ kfFunc_ts_fullmonth <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
+
+	#020. Local environment
+	dots <- rlang::list2(...)
+	args_share <- list()
+	eSig$vfyConflict(args_share)
+	args_in <- eSig$updParams(args_share, dots)
+
+	inDate <- eSig$getParam('inDate', args_in) %>% eval()
+	inKPICfg <- eSig$getParam('inKPICfg', args_in) %>% eval()
+	mapper <- eSig$getParam('mapper', args_in) %>% eval()
+	.parallel <- eSig$getParam('.parallel', args_in) %>% eval()
+	omniR.ini <- eSig$getParam('omniR.ini', args_in) %>% eval()
+	cores <- eSig$getParam('cores', args_in) %>% eval()
+	aggrVar <- eSig$getParam('aggrVar', args_in) %>% eval()
+	byVar <- eSig$getParam('byVar', args_in) %>% eval()
+	copyVar <- eSig$getParam('copyVar', args_in) %>% eval()
+	tableVar <- eSig$getParam('tableVar', args_in) %>% eval()
+	genPHMul <- eSig$getParam('genPHMul', args_in) %>% eval()
+	calcInd <- eSig$getParam('calcInd', args_in) %>% eval()
+	fDebug <- eSig$getParam('fDebug', args_in) %>% eval()
+	fTrans <- eSig$getParam('fTrans', args_in) %>% eval()
+	fTrans.opt <- eSig$getParam('fTrans.opt', args_in) %>% eval()
+	outDTfmt <- eSig$getParam('outDTfmt', args_in) %>% eval()
+	kw_d <- eSig$getParam('kw_d', args_in) %>% eval()
+	kw_cal <- eSig$getParam('kw_cal', args_in) %>% eval()
+	kw_DataIO <- eSig$getParam('kw_DataIO', args_in) %>% eval()
+
 	if (!isDF(inKPICfg)) {
 		stop(glue::glue('[{LfuncName}][inKPICfg] must be a data frame, provided <{toString(class(inKPICfg))}>!'))
 	}
@@ -185,7 +149,12 @@ kfFunc_ts_fullmonth <- function(
 		)
 		genPHMul <- T
 	}
-	calcInd <- match.arg.x(calcInd, arg.func = toupper)
+	calcInd <- match.arg.x(
+		calcInd
+		,choices = formals(eSig$src)[['calcInd']]
+		,arg.func = toupper
+		,choices.func = toupper
+	)
 	if (!is.logical(fDebug)) fDebug <- F
 
 	#020. Local environment
@@ -195,7 +164,6 @@ kfFunc_ts_fullmonth <- function(
 	#[2] Hence we have to evaluate the list of arguments before splicing them during the call of <rlang::exec>
 	#[3] As a classic practice, use <do.call> instead to ensure the first-level evaluation of arguments
 	# kw_d %<>% sapply(eval, simplify = F, USE.NAMES = T)
-	kw <- rlang::list2(...)
 	if ('_ALL_' %in% copyVar) {
 		keep_all_col <- T
 	} else {
@@ -608,10 +576,9 @@ kfFunc_ts_fullmonth <- function(
 		if (u_ftype %in% hasKeys) {
 			opt_ex <- rstInt[['kfts_org_opt']]
 			if (is.character(opt_ex)) {
-				opt_ex %<>% sapply(function(x){x %>% str2expression() %>% eval()}, simplify = F, USE.NAMES = F)
+				opt_ex %<>% str2expression() %>% eval()
 			}
-			names(opt_ex) <- rstInt[['kfts_org_key']]
-			kw_patcher <- list('kw_put' = opt_ex)
+			kw_patcher <- opt_ex
 		} else {
 			kw_patcher <- u_opt
 			if (is.character(kw_patcher)) {
@@ -726,26 +693,19 @@ kfFunc_ts_fullmonth <- function(
 				dplyr::bind_rows()
 
 			#570. Prepare the modification upon the signature with Business requirement
-			args_mtd <- rlang::list2(
+			args_mtd_pre <- rlang::list2(
 				'inDate' = lastCDofMon
 				,'inKPICfg' = cfg_out
 				,'mapper' = mapper_DtoFM
-				,'.parallel' = .parallel
-				,'omniR.ini' = omniR.ini
-				,'cores' = cores
 				,'aggrVar' = aggrVar
 				,'byVar' = byVar
 				,'copyVar' = copyVar
 				,'tableVar' = tableVar
-				,'fDebug' = fDebug
 				,'fTrans' = fTrans
-				,'fTrans.opt' = fTrans.opt
 				,'outDTfmt' = outDTfmt
-				,'kw_d' = kw_d
-				,'kw_cal' = kw_cal
 				,'kw_DataIO' = kw_io
-				,!!!kw
 			)
+			args_mtd <- eSig$updParams(args_mtd_pre, args_in)
 
 			#590. Call the process
 			rc_int <- do.call(kfFunc_ts_mtd, args_mtd)
@@ -853,7 +813,9 @@ kfFunc_ts_fullmonth <- function(
 
 	#999. Validate the completion
 	return(rstOut)
-}
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){

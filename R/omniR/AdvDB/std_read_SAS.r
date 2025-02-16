@@ -11,15 +11,34 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
-#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
-#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
-#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
-#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
+#   |infile        :   The name (as character string) of the file or data frame to read into RAM                                        #
+#   |key           :   The placeholder to standardize the argument list as other APIs, since the ancestor has no variable argument <...>#
+#   |                   , we must set a separate argument with no effect to achieve this                                                #
+#   |                   [<see def.>  ] <Default> Only a placeholder and takes no effect                                                 #
+#   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
+#   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
+#   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
+#   |usecols       :   <chr     > Character vector naming the columns to be kept during loading, actually it is done after loading the  #
+#   |                   entire file                                                                                                     #
+#   |                   [<see def.>  ] <Default> Keep all columns of <key>                                                              #
+#   |                   [chr         ]           Character vector as column names to keep                                               #
+#   |data_file     :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as indicated in <infile>                                            #
+#   |col_select    :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <usecols> so it no #
+#   |                   longer takes effect (However, if <usecols> is not provided while <col_select> is provided, the latter is used)  #
+#   |                   [<see def.>  ] <Default> Use the same input as <usecols>                                                        #
+#   |...           :   Various named parameters for the encapsulated function call if applicable                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
+#   |[df]          :   The data frame to be read into RAM from the source                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -43,6 +62,12 @@
 #   |      |[5] Superfluous arguments are now eliminated without triggering exception                                                   #
 #   |      |[6] <time> columns are converted by <asTimes> for standardization purpose                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] Since the function signature is now expanded, it may no longer ignore unkown parameters in terms of the ancestor        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -56,7 +81,10 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |Dates                                                                                                                          #
 #   |   |   |asTimes                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -77,9 +105,15 @@ library(magrittr)
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-std_read_SAS <- function(
+std_read_SAS <- local({
+deco <- ExpandSignature$new(read_sas, instance = 'eSig', srcEnv = NULL, srcPkg = 'haven')
+myfunc <- deco$wrap(function(
 	infile
 	,funcConv = function(x) x
+	,key = NULL
+	,usecols = NULL
+	,data_file = NULL
+	,col_select = NULL
 	,...
 ){
 	#010. Parameters
@@ -90,61 +124,35 @@ std_read_SAS <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 
 	#013. Define the local environment.
-	kw <- rlang::list2(...)
+	dots <- rlang::list2(...)
 	f_nullify <- F
 
-	#500. Overwrite the keyword arguments
-	params_read_sas <- formals(haven::read_sas)
-
-	#510. Obtain all defaults of keyword arguments of the function
-	kw_raw <- params_read_sas[!names(params_read_sas) %in% c('data_file','col_select', '...')]
-
-	#550. In case the raw API takes any variant keywords, we also identify them
-	if ('...' %in% names(params_read_sas)) {
-		kw_varkw <- kw[!names(kw) %in% c(names(kw_raw),'data_file','col_select','usecols')]
-	} else {
-		kw_varkw <- list()
-	}
-
-	#590. Create the final keyword arguments for calling the function
-	kw_final <- c(
-		kw[(names(kw) %in% names(kw_raw)) & !(names(kw) %in% c('data_file','col_select','usecols'))]
-		,kw_varkw
-	)
-
-	#700. Determine the <usecols>
-	#710. Split the kwargs
-	usecols <- kw[['usecols']] %>% unlist() %>% {.[!is.na(.)]}
-	col_select <- kw[['col_select']] %>% unlist() %>% {.[!is.na(.)]}
-	has_usecols <- !is.null(usecols)
-	has_col_select <- !is.null(col_select)
+	#100. Determine the <usecols>
+	usecols %<>% unlist() %>% {.[!is.na(.)]}
+	col_select %<>% unlist() %>% {.[!is.na(.)]}
 	cols_req <- NULL
-
-	#719. Raise exception
-	if (has_usecols & has_col_select) {
-		stop(glue::glue('[{LfuncName}]Cannot specify <usecols> and <col_select> at the same time!'))
+	if (!is.null(usecols)) {
+		cols_req <- usecols
+	} else if (!is.null(col_select)) {
+		cols_req <- col_select
 	}
+	has_usecols <- !is.null(cols_req)
 
-	#730. Combine the requests
-	if (has_usecols) cols_req <- usecols
-	if (has_col_select) cols_req <- col_select
+	#300. Identify the shared arguments between this function and its ancestor functions
+	args_empty <- list(
+		'data_file' = infile
+		,'col_select' = NULL
+	)
+	eSig$vfyConflict(args_empty)
 
-	#750. Handle requests by ignoring character case in column names
-	if (!is.null(cols_req)) {
+	#600. Handle requests by ignoring character case in column names
+	if (has_usecols) {
 		#100. Modify the arguments by setting the input number of observations as 0
-		kw_empty <- c(
-			kw_final[!names(kw_final) %in% c('n_max')]
-			,list('n_max' = 0)
-		)
+		args_empty <- c(args_empty, list('n_max' = 0))
+		args_int <- eSig$updParams(args_empty, dots)
 
 		#500. Load an empty data
-		df_empty <- do.call(
-			haven::read_sas
-			,c(
-				list(data_file = infile)
-				,kw_empty
-			)
-		)
+		df_empty <- do.call(eSig$src, args_int)
 		f_nocol <- ncol(df_empty) == 0
 
 		#900. Determine the columns to select
@@ -161,34 +169,23 @@ std_read_SAS <- function(
 			if (!f_nocol) {
 				cols_req <- names(df_empty)[[1]]
 			}
-			kw_final <- kw_empty
 			f_nullify <- T
 		}
 	}
 
-	#750. Modify the <col_select> argument
-	kw_col <- list('col_select' = cols_req)
+	#650. Modify the <col_select> argument
+	args_share <- c(
+		args_empty[!names(args_empty) %in% c('col_select')]
+		,list('col_select' = cols_req)
+	)
+
+	#700. Insert the patched values into the input parameters
+	args_out <- eSig$updParams(args_share, dots)
 
 	#800. Load the data
+	rstOut <- do.call(eSig$src, args_out)
 	if (f_nullify) {
-		rstOut <- do.call(
-			haven::read_sas
-			,c(
-				list(data_file = infile)
-				,kw_empty
-				,kw_col
-			)
-		) %>%
-			dplyr::select(-tidyselect::all_of(names(.)))
-	} else {
-		rstOut <- do.call(
-			haven::read_sas
-			,c(
-				list(data_file = infile)
-				,kw_final
-				,kw_col
-			)
-		)
+		rstOut %<>% dplyr::select(-tidyselect::all_of(names(.)))
 	}
 
 	#850. Convert the <time> columns
@@ -206,7 +203,9 @@ std_read_SAS <- function(
 
 	#999. Post process
 	return(funcConv(rstOut))
-}
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){
@@ -225,6 +224,9 @@ if (FALSE){
 		lapply(tt2, class)
 
 		#300. Load the SAS dataset with specific columns, regardless of the character case; also with a superfluous argument
+		#[ASSUMPTION]
+		#[1] <20250214> Extra parameters are no longer ignored, given the signature is expanded by a function without <...>
+		#[2] However, if the ancestor starts to take <...> in the future, the wrapped function ignores extra parameters automatically
 		tt3 <- std_read_SAS(
 			file.path(dir_omniPy, 'omniPy', 'AdvDB', 'test_loadsasdat.sas7bdat')
 			,usecols = 'dt_test'
@@ -232,7 +234,7 @@ if (FALSE){
 			#Below non-used argument is eliminated during the call
 			,nonsense = 'abc'
 		)
-		lapply(tt3, class)
+		# 参数没有用(nonsense = "abc")
 
 		#900. Load the SAS dataset by requesting a column (regardless of character case) that does not exist
 		tt_empty <- std_read_SAS(
@@ -243,7 +245,7 @@ if (FALSE){
 		class(tt_empty)
 		# [1] "tbl_df"     "tbl"        "data.frame"
 		str(tt_empty)
-		# tibble [200 x 0] (S3: tbl_df/tbl/data.frame)
+		# tibble [0 x 0] (S3: tbl_df/tbl/data.frame)
 		# Named list()
 
 	}

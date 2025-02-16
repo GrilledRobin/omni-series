@@ -13,8 +13,9 @@ from omniPy.AdvDB import loadSASdat
 
 @(eSig := ExpandSignature(loadSASdat))
 def std_read_SAS(
-    infile : str | os.PathLike
+    infile : str | os.PathLike = None
     ,funcConv : callable = lambda x: x
+    ,inFile : str | os.PathLike = None
     ,filename_path : str | os.PathLike = None
     ,*pos
     ,**kw
@@ -38,10 +39,11 @@ def std_read_SAS(
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |infile        :   The name (as character string) of the file or data frame to read into RAM, superseding <filename_path>           #
+#   |                   [<see def.>  ] <Default> None input will lead to exception                                                      #
 #   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
 #   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
 #   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
-#   |filename_path :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
+#   |inFile        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
 #   |                   longer takes effect                                                                                             #
 #   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
 #   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
@@ -50,6 +52,9 @@ def std_read_SAS(
 #   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
 #   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
 #   |                   [<see def.>  ] <Default> Use the same input as <infile>                                                         #
+#   |filename_path :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <infile>                                                          #
 #   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
 #   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -83,6 +88,11 @@ def std_read_SAS(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250211        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add backward compatibility for the old projects                                                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -108,7 +118,8 @@ def std_read_SAS(
 
     #100. Identify the shared arguments between this function and its ancestor functions
     args_share = {
-        'filename_path' : infile
+        'inFile' : (infile or inFile or filename_path)
+        ,'filename_path' : (infile or inFile or filename_path)
     }
     eSig.vfyConflict(args_share)
 

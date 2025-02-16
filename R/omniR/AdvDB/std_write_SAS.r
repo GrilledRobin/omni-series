@@ -11,24 +11,41 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indat       :   1-item <list> with its value as the data frame or its literal name (as character string) to be exported, while the #
-#   |                 key of it is not validated, since SAS dataset only contains one data frame per file.                              #
-#   |                 [IMPORTANT   ] This argument is for standardization purpose to construct a unified API                            #
-#   |outfile     :   PathLike object indicating the full path of the exported data file                                                 #
-#   |funcConv    :   Function to mutate the input data frame before exporting it                                                        #
-#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
-#   |                 [function    ]           Function that takes only one positional argument with data.frame type                    #
-#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
+#   |indat         :   1-item <list> with its value as the data frame or its literal name (as character string) to be exported, while   #
+#   |                   the key of it is not validated, since SAS dataset only contains one data frame per file.                        #
+#   |                   [IMPORTANT   ] This argument is for standardization purpose to construct a unified API                          #
+#   |outfile       :   PathLike object indicating the full path of the exported data file                                               #
+#   |funcConv      :   Function to mutate the input data frame before exporting it                                                      #
+#   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
+#   |                   [function    ]           Function that takes only one positional argument with data.frame type                  #
+#   |inDat         :   The same argument in the ancestor function, which is a placeholder in this one, omitted and overwritten as       #
+#   |                   <indat> is of different input type so it no longer takes effect                                                 #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as indicated in <indat>                                             #
+#   |outFile       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <outfile> so it no #
+#   |                   longer takes effect                                                                                             #
+#   |                   [<see def.>  ] <Default> Use the same input as <outfile>                                                        #
+#   |...           :   Various named parameters for the encapsulated function call if applicable                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<int>       :   Return code from the encapsulated function call                                                                    #
+#   |<int>         :   Return code from the encapsulated function call                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240215        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -43,12 +60,13 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvDB                                                                                                                    #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |writeSASdat                                                                                                                #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isVEC                                                                                                                      #
 #   |   |   |get_values                                                                                                                 #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -66,10 +84,22 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-std_write_SAS <- function(
+#[ASSUMPTION]
+#[1] When we need the immediate effect of the signature expansion, we need to instantiate <ExpandSignature> before the function
+#     is defined
+#[2] To make the instance holding various methods unique, we set both the instance and the function in the same <local> environment
+#[3] Using <local()> will immediately evaluate all statements inside it, hence we have to prepare sufficient resources before
+#     executing below script, e.g. ensure <ExpandSignature> is defined in current environment
+std_write_SAS <- local({
+#[ASSUMPTION]
+#[1] By instantiation of below class, we resemble a <class decorator> in Python
+deco <- ExpandSignature$new(writeSASdat, instance = 'eSig')
+myfunc <- deco$wrap(function(
 	indat
 	,outfile
 	,funcConv = function(x) x
+	,inDat = NULL
+	,outFile = NULL
 	,...
 ){
 	#010. Parameters
@@ -87,37 +117,29 @@ std_write_SAS <- function(
 		stop(glue::glue('[{LfuncName}]<indat> must be a 1-item list, while <{toString(length(indat))}> are given!'))
 	}
 
-	#013. Define the local environment.
-	kw <- rlang::list2(...)
+	#020. Local environment.
+	dots <- rlang::list2(...)
 
-	#500. Overwrite the keyword arguments
-	params_write_sas <- formals(writeSASdat)
-
-	#510. Obtain all defaults of keyword arguments of the function
-	kw_raw <- params_write_sas[!names(params_write_sas) %in% c('inDat','outFile','...')]
-
-	#550. In case the raw API takes any variant keywords, we also identify them
-	if ('...' %in% names(params_write_sas)) {
-		kw_varkw <- kw[!names(kw) %in% c(names(kw_raw),'inDat','outFile')]
-	} else {
-		kw_varkw <- list()
+	#100. Identify the shared arguments between this function and its ancestor functions
+	val_in <- indat[[1]]
+	if (isVEC(val_in)) if (is.character(val_in)) {
+		val_in <- get_values(val_in, inplace = F, mode = 'list')
 	}
-
-	#590. Create the final keyword arguments for calling the function
-	kw_final <- c(
-		kw[(names(kw) %in% names(kw_raw)) & !(names(kw) %in% c('inDat','outFile'))]
-		,kw_varkw
+	val_out <- funcConv(val_in)
+	args_share <- list(
+		'inDat' = val_out
+		,'outFile' = outfile
 	)
+	eSig$vfyConflict(args_share)
 
-	#700. Identify the data frame to be exported
-	val <- indat[[1]]
-	if (isVEC(val)) if (is.character(val)) {
-		val <- get_values(val, inplace = F, mode = 'list')
-	}
+	#700. Insert the patched values into the input parameters
+	args_out <- eSig$updParams(args_share, dots)
 
 	#999. Return the result
-	return(do.call(writeSASdat, c(list(funcConv(val), outFile = outfile), kw_final)))
-}
+	return(do.call(eSig$src, args_out))
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){

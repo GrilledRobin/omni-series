@@ -3,9 +3,7 @@
 
 import sys
 import datetime as dt
-#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature, Parameter
-from omniPy.AdvOp import nameArgsByFormals, ExpandSignature
+from omniPy.AdvOp import ExpandSignature
 from omniPy.Dates import asDates, intnx
 from omniPy.AdvDB import kfCore_ts_agg
 
@@ -111,7 +109,6 @@ def kfFunc_ts_roll(
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
-#   |   |   |nameArgsByFormals                                                                                                          #
 #   |   |   |ExpandSignature                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |Dates                                                                                                                          #
@@ -136,46 +133,6 @@ def kfFunc_ts_roll(
 
     #020. Local environment
     k_roll = 1 - kDays
-    sig_in = signature(kfCore_ts_agg).parameters.values()
-    sig_patch = {
-        i : s
-        for i,s in enumerate(sig_in)
-        if s.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
-    }
-
-    #200. Helper functions
-    #210. Function to identify the input value by argument name
-    def h_getInput(arg : str, pos_src : tuple, kw_src : dict):
-        if len(pos_src) > (arg_loc := [ i for i,s in enumerate(sig_in) if s.name == arg ][0]):
-            return(pos_src[arg_loc])
-        else:
-            return(kw_src.get(arg))
-
-    #250. Function to reshape the input parameters in terms of the signature
-    def h_reshape(args_patch : dict, pos_src : tuple, kw_src : dict):
-        #100. Positional inputs
-        #[ASSUMPTION]
-        #[1] In general, we would process the list (even empty) of arguments shared by both callables in below way
-        #    [1] If len(pos) > 0, identify all POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD of the shared arguments and insert them into
-        #         <*pos> from left to right in terms of their locations in the signature of <src>. If len(pos) == 0, there is
-        #         nothing to do as: either there is no positional argument in <src>, or all arguments for <src> can be translated
-        #         into keyword input
-        #    [2] Overwrite all these arguments in <**kw>, including those processed at above step
-        pos_in = list(pos_src)
-        if len(pos_src) > 0:
-            pos_patch = { i:s.name for i,s in sig_patch.items() if s.name in args_patch }
-            for i in sorted(list(pos_patch.keys())):
-                pos_in.insert(i, args_patch.get(pos_patch.get(i)))
-
-        #500. Keywords
-        #[ASSUMPTION]
-        #[1] No matter whether <*pos> is patched, it is safe to add <args_share> into the keyword input, as we will patch all inputs
-        #     in one batch later, by allowing (and deduplicating) multiple inputs for the same arguments
-        #[2] We must use the explicit input of <args_share> to replace the possible keyword in <kw> to ensure the correct syntax
-        kw_in = kw_src | args_patch
-
-        #900. Reshape the input parameters
-        return(nameArgsByFormals(kfCore_ts_agg, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True))
 
     #300. Retrieve the necessary inputs
     #310. Reshape the raw input
@@ -191,11 +148,11 @@ def kfFunc_ts_roll(
     pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
 
     #330. Retrieve the environment from the reshaped input
-    fDebug = h_getInput('fDebug', pos_in, kw_in)
-    kw_d = h_getInput('kw_d', pos_in, kw_in)
-    kw_cal = h_getInput('kw_cal', pos_in, kw_in)
-    calcInd = h_getInput('calcInd', pos_in, kw_in)
-    genPHMul = h_getInput('genPHMul', pos_in, kw_in)
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
+    calcInd = eSig.getParam('calcInd', pos_in, kw_in)
+    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in)
 
     #350. Ending date
     dateEnd_d = asDates(inDate, **kw_d)
@@ -432,7 +389,9 @@ if __name__=='__main__':
 
     #490. Assertion
     rst_kpi1.eq(man_kpi1).all(axis = None)
+    # True
     rst_kpi2.eq(man_kpi2).all(axis = None)
+    # True
 
     #600. Calculate Rolling 15-day ANR for the next workday
     #[ASSUMPTION]
@@ -505,7 +464,9 @@ if __name__=='__main__':
 
     #790. Assertion
     rst_kpi1_2.eq(man_kpi1_2).all(axis = None)
+    # True
     rst_kpi2_2.eq(man_kpi2_2).all(axis = None)
+    # True
 
     #900. Purge
     if os.path.isfile(file_kpi1): os.remove(file_kpi1)

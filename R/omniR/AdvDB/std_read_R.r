@@ -11,16 +11,29 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
-#   |key         :   The name of the data.frame stored in the RData to read into RAM                                                    #
-#   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
-#   |                 [<see def.>  ] <Default> Do not apply further process upon the data                                               #
-#   |                 [callable    ]           Callable that takes only one positional argument with data.frame type                    #
-#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
+#   |infile        :   The name (as character string) of the file or data frame to read into RAM                                        #
+#   |key           :   The name of the data.frame stored in the RData to read into RAM                                                  #
+#   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
+#   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
+#   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
+#   |usecols       :   <chr     > Character vector naming the columns to be kept during loading, actually it is done after loading the  #
+#   |                   entire file                                                                                                     #
+#   |                   [<see def.>  ] <Default> Keep all columns of <key>                                                              #
+#   |                   [chr         ]           Character vector as column names to keep                                               #
+#   |file          :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as indicated in <infile>                                            #
+#   |...           :   Various named parameters for the encapsulated function call if applicable                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]        :   The data frame to be read into RAM from the source                                                                 #
+#   |[df]          :   The data frame to be read into RAM from the source                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -42,6 +55,12 @@
 #   |      |[4] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and <k> rows      #
 #   |      |[5] Superfluous arguments are now eliminated without triggering exception                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] Since the function signature is now expanded, it may no longer ignore unkown parameters in terms of the ancestor        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -55,6 +74,8 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -74,10 +95,14 @@ library(magrittr)
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-std_read_R <- function(
+std_read_R <- local({
+deco <- ExpandSignature$new(load, instance = 'eSig')
+myfunc <- deco$wrap(function(
 	infile
 	,key
 	,funcConv = function(x) x
+	,usecols = NULL
+	,file = NULL
 	,...
 ){
 	#001. Handle parameters
@@ -88,46 +113,29 @@ std_read_R <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 	if (missing(key)) stop(glue::glue('[{LfuncName}][key] is not provided!'))
 
-	#013. Define the local environment.
-	kw <- rlang::list2(...)
+	#020. Local environment.
+	dots <- rlang::list2(...)
 	myenv <- new.env()
 
 	#100. Determine the <usecols>
-	usecols <- kw[['usecols']] %>% unlist() %>% {.[!is.na(.)]}
+	usecols %<>% unlist() %>% {.[!is.na(.)]}
 	has_usecols <- !is.null(usecols)
 
-	#500. Overwrite the keyword arguments
-	params_load <- formals(load)
-
-	#510. Obtain all defaults of keyword arguments of the function
-	kw_raw <- params_load[!names(params_load) %in% c('file','envir', '...')]
-
-	#550. In case the raw API takes any variant keywords, we also identify them
-	if ('...' %in% names(params_load)) {
-		kw_varkw <- kw[!names(kw) %in% c(names(kw_raw),'file','envir','usecols')]
-	} else {
-		kw_varkw <- list()
-	}
-
-	#590. Create the final keyword arguments for calling the function
-	kw_final <- c(
-		kw[(names(kw) %in% names(kw_raw)) & !(names(kw) %in% c('file','envir','usecols'))]
-		,kw_varkw
+	#300. Identify the shared arguments between this function and its ancestor functions
+	args_share <- list(
+		'file' = infile
+		,'envir' = myenv
 	)
+	eSig$vfyConflict(args_share)
 
-	#700. Load the data directly
-	vec_files <- do.call(
-		load
-		,c(
-			list(
-				infile
-				,envir = myenv
-			)
-			,kw_final
-		)
-	)
+	#500. Insert the patched values into the input parameters
+	args_out <- eSig$updParams(args_share, dots)
 
-	#800. Filter the columns
+	#700. Load the data
+	#710. Read the input file
+	vec_files <- do.call(eSig$src, args_out)
+
+	#750. Filter the columns
 	rstOut <- myenv[[key]]
 	if (has_usecols) {
 		rstOut %<>% dplyr::select(tidyselect::any_of(usecols))
@@ -138,12 +146,17 @@ std_read_R <- function(
 
 	#999. Return the table
 	return(rstOut)
-}
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){
 	#Simple test
 	if (TRUE){
+		#010. Load user defined functions
+		source('D:\\R\\autoexec.r')
+
 		#100. Create data frame
 		testdf <- data.frame(
 			v1 = c(0,1)
@@ -155,12 +168,17 @@ if (FALSE){
 		save('testdf', file = testfile)
 
 		#200. Load the data, ignoring superfluous arguments
+		#[ASSUMPTION]
+		#[1] <20250214> Extra parameters are no longer ignored, given the signature is expanded by a function without <...>
+		#[2] However, if the ancestor starts to take <...> in the future, the wrapped function ignores extra parameters automatically
 		vfydf1 <- std_read_R(testfile, 'testdf', nonsense = 'abc')
-		lapply(vfydf1, class)
+		# 参数没有用(nonsense = "abc")
 
 		#300. Load the data with specific columns, ignoring those not existing in the source
 		vfydf2 <- std_read_R(testfile, 'testdf', usecols = c('v1','v3'))
 		lapply(vfydf2, class)
+		# $v1
+		# [1] "numeric"
 
 		#900. Load the data by requesting a column that does not exist
 		vfyempty <- std_read_R(testfile, 'testdf', usecols = c('v3'))

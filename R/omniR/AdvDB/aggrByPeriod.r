@@ -946,7 +946,7 @@ aggrByPeriod <- function(
 			#For unification purpose, some APIs would omit below arguments
 			,'key' = inDat_df
 		)
-		.opt_in <- modifyList(.opt_in, .opt_this)
+		.opt_in <- modifyList(.opt_in, .opt_this, keep.null = T)
 
 		#500. Call functions to import data from current path
 		#We have the create a symbol for [rlang] syntax of bang-bang operator
@@ -1060,7 +1060,7 @@ aggrByPeriod <- function(
 		)
 		.opt_thischk <- chkDat.opt[[chkDatType]]
 		if (is.null(.opt_thischk)) .opt_thischk <- list()
-		.opt_chk <- modifyList(.opt_chk, .opt_thischk)
+		.opt_chk <- modifyList(.opt_chk, .opt_thischk, keep.null = T)
 
 		#590. Load the data and conduct the requested transformation
 		#We have the create a symbol for [rlang] syntax of bang-bang operator

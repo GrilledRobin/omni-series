@@ -142,7 +142,7 @@ def std_read_HDFS(
             raise NotImplementedError(f'[{LfuncName}]Please use <usecols> instead as a standardized call!')
 
     #013. Define the local environment.
-    rst_col = []
+    rst_col = None
 
     #050. Identify the format of the source
     fmt_src = (

@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def calcWoE( inDAT , dependent , response , event = 1 ) -> 'Calculate the Weight of Evidence for [response] variable in the dataset':
-    #000.   Info.
+import pandas as pd
+import numpy as np
+import sys
+from omniPy.Stats import countEvent
+
+def calcWoE( inDAT , dependent , response , event = 1 ) -> pd.DataFrame:
+    #000. Info.
     """
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -31,6 +36,11 @@ def calcWoE( inDAT , dependent , response , event = 1 ) -> 'Calculate the Weight
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250216        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Slightly changed some statements without logic change                                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -43,62 +53,59 @@ def calcWoE( inDAT , dependent , response , event = 1 ) -> 'Calculate the Weight
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Stats                                                                                                                   #
+#   |   |Stats                                                                                                                          #
 #   |   |   |countEvent                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     """
 
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import numpy as np
-    import sys
-    from omniPy.Stats import countEvent
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( inDAT , pd.DataFrame ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame]! Provided [{type(inDAT)}]')
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #100.   Count the Event and Non-Event per requested [response].
+    #100. Count the Event and Non-Event per requested [response].
     k_Event , k_NonEvent = countEvent( inDAT[response] , event = event )
 
-    #190.   Raise error if either of the counts is zero, as WoE means nothing if [dependent] has no effect upon [response].
+    #190. Raise error if either of the counts is zero, as WoE means nothing if [dependent] has no effect upon [response].
     if k_Event == 0:
-        raise ValueError( '[' + LfuncName +  ']Count of [event:{0}] is zero! WoE means nothing to the response:[{1}] in terms of the dependent:[{2}]!'.format( event , response , dependent ) )
+        raise ValueError(
+            f'[{LfuncName}]Count of [event:{event}] is zero!'
+            + f'WoE means nothing to the response:[{response}] in terms of the dependent:[{dependent}]!'
+        )
     if k_NonEvent == 0:
-        raise ValueError( '[' + LfuncName +  ']Count of [non-event:(other than: {0})] is zero! WoE means nothing to the response:[{1}] in terms of the dependent:[{2}]!'.format( event , response , dependent ) )
+        raise ValueError(
+            f'[{LfuncName}]Count of [non-event:(other than: {event})] is zero!'
+            + f'WoE means nothing to the response:[{response}] in terms of the dependent:[{dependent}]!'
+        )
 
-    #200.   Create the cross tabulation with row as [dependent] and column as a binary mask to [response].
-    #210.   Create a binary mask to [responese].
+    #200. Create the cross tabulation with row as [dependent] and column as a binary mask to [response].
+    #210. Create a binary mask to [responese].
     mask : pd.Series = inDAT[response].apply( lambda x : x == event )
 
-    #250.   Cross-tabulation.
+    #250. Cross-tabulation.
     tabfreq : pd.DataFrame = pd.crosstab( inDAT[dependent] , mask ).rename( columns = { False:'NonEvent' , True:'Event' } )
 
-    #500.   Calculate the WoE at row level.
-    #510.   Add a bias to avoid zero shows up in the denominator.
-    eps : float64 = 0.0000001
+    #500. Calculate the WoE at row level.
+    #510. Add a bias to avoid zero shows up in the denominator.
+    eps : np.float64 = 0.0000001
 
-    #520.   Calculate the percentage that [Event] and [NonEvent] at current row take up in the entire sample. (Stats: 计算当前组中[Event]与[NonEvent]分别占全样本中对应值的比重)
-    #We do not have to initialize the NA values in [tabfreq] as it comes from a cross tabulation while no missing value can be create on both axes.
+    #520. Calculate the percentage that [Event] and [NonEvent] at current row take up in the entire sample.
+    #[ASSUMPTION]
+    #[1] Stats: 计算当前组中[Event]与[NonEvent]分别占全样本中对应值的比重
+    #[2] We do not have to initialize the NA values in [tabfreq] as it comes from a cross tabulation while no missing value can be
+    #     create on both axes.
     tabdens : pd.DataFrame = ( tabfreq / tabfreq.sum() ).rename( columns = { 'NonEvent':'p_NonEvent' , 'Event':'p_Event' } ) + eps
 
-    #590.   WoE.
+    #590. WoE.
     tabdens['WoE'] = np.log( tabdens['p_NonEvent'] / tabdens['p_Event'] )
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-    k_Event , k_NonEvent , mask , eps = None , None , None , None
-
-    #900.   Output.
+    #900. Output.
     return( tabfreq.merge( tabdens , on = dependent ) )
 #End calcWoE
 

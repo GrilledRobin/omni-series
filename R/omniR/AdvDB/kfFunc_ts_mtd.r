@@ -24,22 +24,42 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDate      :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                   #
-#   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
+#   |inDate        :   The date to which to calculate the MTD aggregation from the first calendar day in the same month                 #
+#   |                  [NULL            ] <Default> Function will raise error if it is NOT provided                                     #
+#   |dateBgn       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |dateEnd       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
+#   |chkBgn        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                  [<see def.>      ] <Default> Calculated out of <inDate>                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |...         :   Any other arguments that are required by <kfCore_ts_agg>                                                           #
+#   |...           :   Any other arguments to expand from its ancestor; see its official document                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Anno>      :   See the return result from <kfCore_ts_agg>                                                                         #
+#   |<Anno>        :   See the return result from the ancestor function                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20240310        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -54,6 +74,9 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |intnx                                                                                                                      #
@@ -74,8 +97,15 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-kfFunc_ts_mtd <- function(
+kfFunc_ts_mtd <- local({
+#[ASSUMPTION]
+#[1] By instantiation of below class, we resemble a <class decorator> in Python
+deco <- ExpandSignature$new(kfCore_ts_agg, instance = 'eSig')
+myfunc <- deco$wrap(function(
 	inDate = NULL
+	,dateBgn = NULL
+	,dateEnd = NULL
+	,chkBgn = NULL
 	,...
 ) {
 	#001. Handle parameters
@@ -86,52 +116,40 @@ kfFunc_ts_mtd <- function(
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
 
 	#100. Get the formals of the core function
-	kw <- rlang::list2(...)
-	params_core <- formals(kfCore_ts_agg)
-	fDebug <- kw[['fDebug']] %>% eval()
-	if (!is.logical(fDebug)) fDebug <- params_core[['fDebug']] %>% eval()
+	dots <- rlang::list2(...)
 
-	#200. Clean up the parameters
-	#210. Identify all valid arguments for the core function
-	kw_raw <- params_core[!names(params_core) %in% c('...')]
+	#300. Retrieve the necessary inputs
+	#310. Reshape the raw input
+	args_dummy <- list(
+		'dateBgn' = NULL
+		,'dateEnd' = NULL
+		,'chkBgn' = NULL
+	)
+	eSig$vfyConflict(args_dummy)
+	args_in <- eSig$updParams(args_dummy, dots)
 
-	#230. Since the core function takes variant keywords, we also identify them
-	if ('...' %in% names(params_core)) {
-		kw_varkw <- kw[!names(kw) %in% names(kw_raw)]
-	} else {
-		kw_varkw <- list()
-	}
+	#330. Retrieve the environment from the reshaped input
+	fDebug <- eSig$getParam('fDebug', args_in) %>% eval()
+	kw_d <- eSig$getParam('kw_d', args_in) %>% eval()
+	kw_cal <- eSig$getParam('kw_cal', args_in) %>% eval()
 
-	#250. Identify the arguments to be used
-	kw_oth <- kw[
-		(names(kw) %in% names(kw_raw))
-		& !(names(kw) %in% names(kw_varkw))
-		& !(names(kw) %in% c('dateBgn','dateEnd','chkBgn'))
-	]
-
-	#500. Tweak the parameters for function call
-	#550. Ending date
-	kw_d <- kw_oth[['kw_d']] %>% eval()
-	if (!is.list(kw_d)) kw_d <- params_core[['kw_d']] %>% eval()
-	kw_cal <- kw_oth[['kw_cal']] %>% eval()
-	if (!is.list(kw_cal)) kw_cal <- params_core[['kw_cal']] %>% eval()
+	#350. Ending date
 	dateEnd_d <- do.call(asDates, c(list(indate = inDate), kw_d))
 
-	#570. Beginning date
+	#370. Beginning date
 	#[ASSUMPTION]
 	#[1] MTD aggregation always starts from the first calendar day of a month
 	dtBgn <- intnx('month', dateEnd_d, 0, 'b', daytype = 'c', kw_cal = kw_cal)
 
-	#599. Finalize the parameters
-	kw_fnl <- c(
-		list(
-			'dateBgn' = dtBgn
-			,'dateEnd' = dateEnd_d
-			,'chkBgn' = dtBgn
-		)
-		,kw_oth
-		,kw_varkw
+	#400. Identify the shared arguments between this function and its ancestor functions
+	args_share <- list(
+		'dateBgn' = dtBgn
+		,'dateEnd' = dateEnd_d
+		,'chkBgn' = dtBgn
 	)
+
+	#900. Finalize the parameters
+	args_fnl <- eSig$updParams(args_share, dots)
 
 	#989. Debug mode
 	if (fDebug){
@@ -143,8 +161,10 @@ kfFunc_ts_mtd <- function(
 	}
 
 	#999. Call the core function
-	return(do.call(kfCore_ts_agg, kw_fnl))
-}
+	return(do.call(eSig$src, args_fnl))
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){

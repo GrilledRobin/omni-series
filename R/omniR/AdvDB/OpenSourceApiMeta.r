@@ -54,6 +54,15 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] R does not allow getting attribute dynamically, so when the function/API is looked up dynamically, its signature cannot #
+#   |      |     be updated to the wrapped function on the fly. If you need to check the updated signature, please <add> the API once   #
+#   |      |     again to register it with the updated signature. See examples for detailed usage                                       #
+#   |      |[3] No need to <add> the API again if the API has no change in its signature, but only in its body                          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -68,9 +77,8 @@
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
-#   |   |   |ls_frame                                                                                                                   #
-#   |   |   |gen_locals                                                                                                                 #
-#   |   |   |nameArgsByFormals                                                                                                          #
+#   |   |   |lookupMethod                                                                                                               #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
@@ -164,36 +172,6 @@ OpenSourceApiMeta <- function(
 	#     leverage the argument <env> for <substitute> to only search for the dedicated variables during substitution
 
 	#210. Define dynamic data reader based on pattern: <apiPfxPull + cls + apiSfxPull>
-	#[ASSUMPTION]
-	#[1] If we directly set <pull.> as the callable method, we can still instantiate the class with success. But the method is only
-	#     searched at instantiation and will not be searched every time, i.e. it becomes static
-	#[2] There is no descriptor (see Python descriptor) in R6, so such method lookup cannot be done automatically
-	#[3] To make this method able to refresh at each call, we have to wrap <lookupMethod> in a private function
-	.pull. <- eval(substitute(function(...) {
-		pull. <- lookupMethod(
-			apiCls = cls
-			,apiPkg = apiPkgPull
-			,apiPfx = apiPfxPull
-			,apiSfx = apiSfxPull
-			,lsOpt = modifyList(
-				lsPullOpt
-				,list(
-					frame_from = sys.frame()
-				)
-			)
-			,attr_handler = self$hdlPull
-			,attr_kwInit = private$..inputkw_pull..
-			,attr_assign = private$..pulled..
-			,attr_return = self$pulled
-			,coerce_ = FALSE
-			,envir = self$.__enclos_env__
-			,privateName = '..lm_pull.'
-		)
-
-		environment(pull.) <- self$.__enclos_env__
-		return(pull.(...))
-	}, env = newcls_env))
-
 	#211. Verify the lookup at instantiation
 	vfy_pull. <- lookupMethod(
 		apiCls = cls
@@ -208,33 +186,50 @@ OpenSourceApiMeta <- function(
 		)
 		,coerce_ = TRUE
 	)
+	newcls_env$vfy_pull. <- vfy_pull.
+
+	#215. Prepare the function
+	#[ASSUMPTION]
+	#[1] If we directly set <pull.> as the callable method, we can still instantiate the class with success. But the method is only
+	#     searched at instantiation and will not be searched every time, i.e. it becomes static
+	#[2] There is no descriptor (see Python descriptor) in R6, so such method lookup cannot be done automatically
+	#[3] To make this method able to refresh at each call, we have to wrap <lookupMethod> in a private function
+	#[4] To allow the caller program to check the signature of the wrapped function, we also need to expand its signature
+	#[5] Below statements are evaluated during the instance creation, hence the expanded signature can only be wrapped once; which
+	#     means you need to instantiate the class again if the dedicated function has changes in its signature
+	.pull. <- eval(substitute(local({
+		if (!is.function(vfy_pull.)) return(NULL)
+		func_struct <- vfy_pull.
+		thisenv <- environment()
+		deco <- ExpandSignature$new(func_struct, instance = 'eSig', srcEnv = thisenv)
+		func_ <- function(...) {
+			pull. <- lookupMethod(
+				apiCls = cls
+				,apiPkg = apiPkgPull
+				,apiPfx = apiPfxPull
+				,apiSfx = apiSfxPull
+				,lsOpt = modifyList(
+					lsPullOpt
+					,list(
+						frame_from = sys.frame()
+					)
+				)
+				,attr_handler = self$hdlPull
+				,attr_kwInit = private$..inputkw_pull..
+				,attr_assign = private$..pulled..
+				,attr_return = self$pulled
+				,coerce_ = FALSE
+				,envir = self$.__enclos_env__
+				,privateName = '..lm_pull.'
+			)
+
+			environment(pull.) <- self$.__enclos_env__
+			return(pull.(...))
+		}
+		return(deco$wrap(func_))
+	}), env = newcls_env))
 
 	#220. Define dynamic data writer based on pattern: <apiPfxPush + cls + apiSfxPush>
-	.push. <- eval(substitute(function(...) {
-		push. <- lookupMethod(
-			apiCls = cls
-			,apiPkg = apiPkgPush
-			,apiPfx = apiPfxPush
-			,apiSfx = apiSfxPush
-			,lsOpt = modifyList(
-				lsPushOpt
-				,list(
-					frame_from = sys.frame()
-				)
-			)
-			,attr_handler = self$hdlPush
-			,attr_kwInit = private$..inputkw_push..
-			,attr_assign = private$..pushed..
-			,attr_return = self$pushed
-			,coerce_ = FALSE
-			,envir = self$.__enclos_env__
-			,privateName = '..lm_push.'
-		)
-
-		environment(push.) <- self$.__enclos_env__
-		return(push.(...))
-	}, env = newcls_env))
-
 	#221. Verify the lookup at instantiation
 	vfy_push. <- lookupMethod(
 		apiCls = cls
@@ -249,6 +244,40 @@ OpenSourceApiMeta <- function(
 		)
 		,coerce_ = TRUE
 	)
+	newcls_env$vfy_push. <- vfy_push.
+
+	#215. Prepare the function
+	.push. <- eval(substitute(local({
+		if (!is.function(vfy_push.)) return(NULL)
+		func_struct <- vfy_push.
+		thisenv <- environment()
+		deco <- ExpandSignature$new(func_struct, instance = 'eSig', srcEnv = thisenv)
+		func_ <- function(...) {
+			push. <- lookupMethod(
+				apiCls = cls
+				,apiPkg = apiPkgPush
+				,apiPfx = apiPfxPush
+				,apiSfx = apiSfxPush
+				,lsOpt = modifyList(
+					lsPushOpt
+					,list(
+						frame_from = sys.frame()
+					)
+				)
+				,attr_handler = self$hdlPush
+				,attr_kwInit = private$..inputkw_push..
+				,attr_assign = private$..pushed..
+				,attr_return = self$pushed
+				,coerce_ = FALSE
+				,envir = self$.__enclos_env__
+				,privateName = '..lm_push.'
+			)
+
+			environment(push.) <- self$.__enclos_env__
+			return(push.(...))
+		}
+		return(deco$wrap(func_))
+	}), env = newcls_env))
 
 	#290. Assert if none of the methods can be loaded
 	if (!is.function(vfy_pull.) & !is.function(vfy_push.)) {
@@ -738,7 +767,12 @@ if (FALSE){
 		# [1] 3
 
 		#Change the API on the fly
-		api_fly <- function(arg_in = 5) {
+		#[ASSUMPTION]
+		#[1] Change the API with updated signature
+		#[2] Due to limitation of R attribute lookup, we should register the API again, otherwise the signature of the wrapped
+		#     function does not match the new one, which would lead to unexpected result
+		#[3] If the signature does not change, you can feel free NOT to <add> it again
+		api_fly <- function(arg_in = 5, b) {
 			self$cnt <- self$cnt + 1
 			return(list(
 				'name' = 'on-the-fly'
@@ -746,18 +780,20 @@ if (FALSE){
 				,'data' = list(
 					'rawdata' = c(5,6,7)
 					,'dataframe' = data.frame(a = arg_in)
+					,'b' = b
 				)
 				,'rc' = 0
 			))
 		}
+		addAPI$add('fly')
 
 		#[ASSUMPTION]
 		#[1] Now we can see that the data is retrieved from the updated API
 		#[2] This is NOT because of the lazy evaluation of R function, but because that we wrapped the dynamic method lookup in the
 		#     metaclass, so that each time the method is invoked, the internal callable will be searched and called
-		rst6 <- addAPI[['fly']]$pull(9)
-		print(addAPI[['fly']]$pulled[['data']][['rawdata']])
-		# [1] 5 6 7
+		rst6 <- addAPI[['fly']]$pull(9, 10)
+		print(addAPI[['fly']]$pulled[['data']][['b']])
+		# [1] 10
 
 		addAPI[['fly']]$cnt
 		# [1] 4

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, re
+import sys, re, os
 import datetime as dt
 import pandas as pd
 import pyreadstat as pyr
@@ -18,7 +18,8 @@ from omniPy.Dates import asDates, asDatetimes, asTimes
 
 @(eSig := ExpandSignature(pyr.read_sas7bdat))
 def loadSASdat(
-    *pos
+    inFile : str | os.PathLike = None
+    ,*pos
     ,dt_map : dict = {
         #[LHS] The original format in SAS loaded from [pyreadstat.read_sas7bdat] and stored in meta.original_variable_types
         #[RHS] The [function] to translate the corresponding values in the format of [LHS]
@@ -32,6 +33,7 @@ def loadSASdat(
         ,r'(dat|day|mon|qtr|year)+' : 'd'
         ,r'(jul)+' : 'd'
     }
+    ,filename_path : str | os.PathLike = None
     ,**kw
 ) -> tuple[pd.DataFrame, pyr.metadata_container]:
     #000. Info.
@@ -52,9 +54,20 @@ def loadSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |inFile        :   The name (as character string) of the file to read into RAM, superseding <filename_path>                         #
+#   |                   [<see def.>  ] <Default> None input will lead to exception                                                      #
 #   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
 #   |dt_map        :   Mapping table to convert the SAS datetime values into [datetime]                                                 #
-#   |                  [ <dict>     ]  <Default> Check the function definition for details                                              #
+#   |                   [ <dict>     ] <Default> Check the function definition for details                                              #
+#   |filename_path :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inFile> so it no  #
+#   |                   longer takes effect                                                                                             #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as <inFile>                                                         #
 #   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
@@ -95,6 +108,11 @@ def loadSASdat(
 #   |      |[3] Set the arguments with default values of this function as <KEYWORD_ONLY>, so that the keyword arguments of the ancestor #
 #   |      |     functions prepend them in the signature                                                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250211        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add backward compatibility for the old projects                                                                         #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -103,7 +121,7 @@ def loadSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pyreadstat, collections, functools, pandas                                                                                #
+#   |   |sys, re, os, pyreadstat, collections, functools, pandas                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -136,7 +154,7 @@ def loadSASdat(
         }
 
     #013. Define the local environment
-    args_share = {}
+    args_share = {'filename_path' : (inFile or filename_path)}
     eSig.vfyConflict(args_share)
     err_funcs = [ v for v in set(dt_map.values()) if v not in ['dt','t','d'] ]
     if err_funcs:

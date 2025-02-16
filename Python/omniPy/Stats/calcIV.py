@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def calcIV( inDAT , dependent , response , event = 1 ) -> 'Calculate the Information Value for [response] variable in the dataset':
-    #000.   Info.
+import pandas as pd
+import numpy as np
+import sys
+from omniPy.Stats import calcWoE
+
+def calcIV( inDAT , dependent , response , event = 1 ) -> tuple:
+    #000. Info.
     """
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -31,6 +36,11 @@ def calcIV( inDAT , dependent , response , event = 1 ) -> 'Calculate the Informa
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250216        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Slightly changed some statements without logic change                                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -39,47 +49,36 @@ def calcIV( inDAT , dependent , response , event = 1 ) -> 'Calculate the Informa
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas                                                                                                                    #
+#   |   |sys, pandas, numpy                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Stats                                                                                                                   #
+#   |   |Stats                                                                                                                          #
 #   |   |   |calcWoE                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     """
 
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import sys
-    from omniPy.Stats import calcWoE
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( inDAT , pd.DataFrame ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame]! Provided [{type(inDAT)}]')
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #100.   Calculate the WoE to [response] for [dependent].
+    #100. Calculate the WoE to [response] for [dependent].
     dataWoE = calcWoE( inDAT , dependent , response , event = event )
 
-    #500.   Calculate the IV to [response] for [dependent] at row level.
+    #500. Calculate the IV to [response] for [dependent] at row level.
     mask : pd.Series = dataWoE.apply( lambda x : ( x.p_NonEvent - x.p_Event ) * x.WoE , axis = 1 )
 
-    #600.   Calculate the IV to [response] for [dependent] in the entire dataframe.
-    outRST : float64 = sum(mask)
+    #600. Calculate the IV to [response] for [dependent] in the entire dataframe.
+    outRST : np.float64 = sum(mask)
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-    mask = None
-
-    #900.   Output.
+    #900. Output.
     return( outRST , dataWoE )
 #End calcIV
 

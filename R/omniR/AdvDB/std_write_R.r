@@ -11,16 +11,31 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indat       :   <list> with its <names> as the literal names (as character string) to be exported, while the <values> as the       #
-#   |                 corresponding objects.                                                                                            #
-#   |outfile     :   PathLike object indicating the full path of the exported data file                                                 #
-#   |funcConv    :   Function to mutate the input data frame before exporting it                                                        #
-#   |                [<see def.>  ] <Default> Do not apply further process upon the data                                                #
-#   |                [function    ]           Function that takes only one positional argument with data.frame type                     #
-#   |kw_save     :   Named parameters for <save>, excluding <...>, <list>, <file>, <envir> as they are already provided                 #
-#   |                 [IMPORTANT   ] To ensure the same behavior, when any API that is designed to push the data in {key:value} fashion #
-#   |                                 , please set the same argument to differ the process                                              #
-#   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
+#   |indat         :   <list> with its <names> as the literal names (as character string) to be exported, while the <values> as the     #
+#   |                   corresponding objects.                                                                                          #
+#   |outfile       :   PathLike object indicating the full path of the exported data file                                               #
+#   |funcConv      :   Function to mutate the input data frame before exporting it                                                      #
+#   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
+#   |                   [function    ]           Function that takes only one positional argument with data.frame type                  #
+#   |list          :   The same argument in the ancestor function, which is a placeholder in this one, omitted and overwritten as       #
+#   |                   <indat> is of different input type so it no longer takes effect                                                 #
+#   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
+#   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
+#   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
+#   |                   highest priority during the parameter input. We can solve this problem by defining a shared argument in this    #
+#   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
+#   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
+#   |                   [<see def.>  ] <Default> Use the same input as indicated in <indat>                                             #
+#   |file          :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <outfile> so it no #
+#   |                   longer takes effect                                                                                             #
+#   |                   [<see def.>  ] <Default> Use the same input as <outfile>                                                        #
+#   |envir         :   The same argument in the ancestor function, which is a placeholder in this one, input with the local one so it no#
+#   |                   longer takes effect                                                                                             #
+#   |                   [<see def.>  ] <Default> Suppress the input for this argument                                                   #
+#   |compression_level The same argument in the ancestor function, which is a placeholder in this one as it has no default value. We    #
+#   |                   follow its internal behavior by setting a <missing_arg> if no provision at runtime                              #
+#   |                   [<see def.>  ] <Default> Set a NULL default value to supersede its ancestor                                     #
+#   |...           :   Various named parameters for the encapsulated function call if applicable                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -31,6 +46,11 @@
 #   | Date |    20240215        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250214        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -45,8 +65,8 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
-#   |   |   |get_values                                                                                                                 #
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |   |   |gen_locals                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -65,11 +85,16 @@ options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 #We should use the big-bang operand [!!!] supported by below package
 library(rlang)
 
-std_write_R <- function(
+std_write_R <- local({
+deco <- ExpandSignature$new(save, instance = 'eSig')
+myfunc <- deco$wrap(function(
 	indat
 	,outfile
 	,funcConv = function(x) x
-	,kw_save = list()
+	,list = NULL
+	,file = NULL
+	,envir = NULL
+	,compression_level = NULL
 	,...
 ){
 	#010. Parameters
@@ -84,22 +109,12 @@ std_write_R <- function(
 		stop(glue::glue('[{LfuncName}]<indat> must be a named list, while <{toString(typeof(indat))}> is given!'))
 	}
 
-	#013. Define the local environment.
+	#020. Define the local environment.
 	rc <- 0
 	myenv <- new.env()
+	dots <- rlang::list2(...)
 
-	#500. Overwrite the keyword arguments for writing the data
-	params_save <- formals(save)
-
-	#510. Obtain all defaults of keyword arguments of the function
-	#[ASSUMPTION]
-	#[1] We do not retrieve the VAR_KEYWORD args of the function, as it is designed for other purpose
-	kw_raw_save <- params_save[!names(params_save) %in% c('list','file','envir','...')]
-
-	#590. Create the final keyword arguments for calling the function
-	kw_fnl_save <- kw_save[(names(kw_save) %in% names(kw_raw_save)) & !(names(kw_save) %in% c('list','file','envir'))]
-
-	#600. Convert the data as per requested and save them to temporary frame for later output
+	#100. Convert the data as per requested and save them to temporary frame for later output
 	rstOut <- sapply(
 		indat
 		,function(x) funcConv(x)
@@ -107,18 +122,36 @@ std_write_R <- function(
 		,USE.NAMES = T
 	)
 
-	#690. Create corresponding local variables in temporary frame
+	#190. Create corresponding local variables in temporary frame
 	do.call(gen_locals, c(rstOut, list(frame = myenv)))
 
+	#500. Identify the shared arguments between this function and its ancestor functions
+	args_share <- list(
+		'list' = names(rstOut)
+		,'file' = outfile
+		,'envir' = myenv
+	)
+	if (missing(compression_level)) {
+		args_share <- c(args_share, list('compression_level' = rlang::missing_arg()))
+	} else {
+		args_share <- c(args_share, list('compression_level' = compression_level))
+	}
+	eSig$vfyConflict(args_share)
+
+	#700. Insert the patched values into the input parameters
+	args_out <- eSig$updParams(args_share, dots)
+
 	#800. Write the data with API
-	do.call(save, c(list(list = names(rstOut), file = outfile, envir = myenv), kw_fnl_save))
+	do.call(eSig$src, args_out)
 
 	#900. Clear the temporary environment
 	rm(myenv)
 
 	#999. Return the result
 	return(rc)
-}
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){

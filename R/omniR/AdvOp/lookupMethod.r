@@ -183,40 +183,51 @@ lookupMethod <- function(
 		}
 	}
 
-	#550. In case the raw API takes any variant keywords, we also identify them
+	#600. Prepare a decorator to expand the signature of the function to be returned
+	thisenv <- environment()
+	deco <- ExpandSignature$new(..dfl_func., instance = 'eSig', srcEnv = thisenv)
+
+	#700. Define a method-like callable to wrap the original API
 	func_ <- eval(substitute(function(...) {
 		#020. Local environment.
-		kw <- rlang::list2(...)
+		dots <- rlang::list2(...)
+
+		#100. Verify input parameters
+		#101. Create a pseudo parameter when necessary
+		args_share <- list()
 
 		#100. Reshape the parameters as provided
+		args_in <- eSig$updParams(args_share, dots)
+
+		#300. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
+		#[ASSUMPTION]
+		#[1] We do not use <modifyList> to extend the parameter list, as it only modifies the sub-elements instead of replacing them,
+		#     if the same element exists in both inputs
+		#[2] Unlike the same function in Python branch, it is safe in R to patch the inputs with extra default values directly, as the
+		#     input is not mutated by <ExpandSignature>
+		if (!miss_kwInit) {
+			if (!is.list(attr_kwInit)) {
+				stop(glue::glue('[{clsname_}][attr_kwInit] evaluated by [{LfuncName}] is not a list!'))
+			}
+			kw_def <- c(attr_kwInit[!names(attr_kwInit) %in% names(args_in)], args_in)
+		} else {
+			kw_def <- args_in
+		}
+
+		#400. Eliminate the excessive parameters set inside the initial keyword parameter list
 		#[ASSUMPTION]
 		#[1] By doing this, we silently eliminate excessive parameters provided for the call
 		#[2] As this function is designed primarily for R6 Class, the API callable does not require <self> to be set as an
 		#     argument in its formals (internal variables such as <self> can still be referenced inside the function body)
 		#[3] During the call of below function, <kw> is evaluated anyway; while at the meantime the environment of <lookupMethod>
-		#     is NOT YET set as the caller instance of (probably R6) class. So the design of <lookupMethod> does not accept <self> as an
-		#     argument of the API formals, otherwise the process fails at this step
-		kw_ren <- nameArgsByFormals(func = ..dfl_func., args_ = kw, coerce_ = T)
-
-		#300. Overwrite the keyword arguments if they are not provided for each call of this method, but given at instantiation
-		if (!miss_kwInit) {
-			if (!is.list(attr_kwInit)) {
-				stop(glue::glue('[{clsname_}][attr_kwInit] evaluated by [{LfuncName}] is not a list!'))
-			}
-			kw_corr <- modifyList(attr_kwInit, kw_ren, keep.null = T)
-		} else {
-			kw_corr <- kw_ren
-		}
-
-		#400. Eliminate the excessive parameters set inside the initial keyword parameter list
-		#[1] Since the API is dynamically looked up, it may not accept the initial keyword parameters set at above step
-		#[2] We should conduct the standardization again to coerce any excessive ones
-		kw_final <- nameArgsByFormals(func = ..dfl_func., args_ = kw_corr, coerce_ = T)
+		#     is NOT YET set as the caller instance of (probably R6) class. So the design of <lookupMethod> does not accept <self> as
+		#     an argument of the API formals, otherwise the process fails at this step
+		args_fnl <- eSig$updParams(args_share, kw_def)
 
 		#500. Pull the data from the API
 		private[[privateName]] <- ..dfl_func.
 		environment(private[[privateName]]) <- envir
-		rstOut <- do.call(private[[privateName]], kw_final)
+		rstOut <- do.call(private[[privateName]], args_fnl)
 
 		#600. Handle the result if required
 		#[ASSUMPTION]
@@ -245,7 +256,7 @@ lookupMethod <- function(
 	#900. Return values
 	#[ASSUMPTION]
 	#[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
-	return(func_)
+	return(deco$wrap(func_))
 }
 
 #[Full Test Program;]

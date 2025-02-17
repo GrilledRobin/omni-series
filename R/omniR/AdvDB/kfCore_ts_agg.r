@@ -889,13 +889,23 @@ kfCore_ts_agg <- function(
 		if (u_ftype %in% hasKeys) {
 			opt_ex <- rstOut[['options']]
 			if (is.character(opt_ex)) {
-				opt_ex %<>% str2expression() %>% eval()
+				#[ASSUMPTION]
+				#[1] Till this step, <opt_ex> should only contain one element, but we ensure the completeness of logic
+				if (length(opt_ex) == 1) {
+					opt_ex %<>% str2expression() %>% eval()
+				} else {
+					opt_ex <- sapply(opt_ex, function(x){x %>% str2expression() %>% eval()}, USE.NAMES = F, simplify = F)
+				}
 			}
 			kw_patcher <- opt_ex
 		} else {
 			kw_patcher <- u_opt
 			if (is.character(kw_patcher)) {
-				kw_patcher %<>% str2expression() %>% eval()
+				if (length(kw_patcher) == 1) {
+					kw_patcher %<>% str2expression() %>% eval()
+				} else {
+					kw_patcher <- sapply(kw_patcher, function(x){x %>% str2expression() %>% eval()}, USE.NAMES = F, simplify = F)
+				}
 			}
 
 			#[ASSUMPTION]

@@ -59,7 +59,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, lubridate, tmcn, readr                                                                                               #
+#   |   |magrittr, lubridate, tmcn, readr, rlang, stringr                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -74,7 +74,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, lubridate, tmcn, readr
+	magrittr, lubridate, tmcn, readr, rlang, stringr
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
@@ -107,12 +107,39 @@ paths_omnimacro <- file.path(comb_autoexec[[1]], comb_autoexec[[2]], name_omnima
 # candidate_ClndrAdj <- file.path(paths_omnimacro, 'Dates', 'CalendarAdj.csv')
 
 #200. Import the user defined package
+#201. Helper function to ensure the correct sequence of the initialization
+sortByKeyword <- function(vec, kw){
+	seq_kw <- seq_along(kw)
+	rst <- rlang::rep_along(vec, NA)
+	for (i in seq_kw) {rst[stringr::str_detect(vec, kw[[i]])] <- seq_kw[[i]]}
+	rstOut <- order(rst)
+	return(vec[rstOut])
+}
+
 #210. Only retrieve the first valid path from the list of candidate paths
 path_omniR <- head(Filter(dir.exists, path_omniRs), 1)
 
+#250. Prepare necessary options at initialization
+#[ASSUMPTION]
+#[1] Some functions (i.e. wrapped by <local()>) are evaluated immediately during <source()>
+#[2] According to the design, these functions may require these options to take effect
+options(
+	path.omniR = path_omniR
+)
+
+#270. Define the priority of the folders to load
+#[ASSUMPTION]
+#[1] The involved names are always loaded before the rest
+#[2] Within the involved names, the ones come first will be loaded before others
+dir_seq <- c('AdvOp')
+
+#280. Folder to exclude from the initialization
+dir_excl <- c('__rcache__')
+
 #290. Import the functions from the package
-omniR_Files <- list.files( path_omniR , '^.+\\.r$' , full.names = T , ignore.case = T , recursive = T , include.dirs = T ) %>%
-	normalizePath()
+omniR_Files <- list.files(path_omniR, '^.+\\.r$', full.names = T, ignore.case = T, recursive = T, include.dirs = T) %>%
+	{.[!stringr::str_detect(., dir_excl)]} %>%
+	sortByKeyword(dir_seq)
 if (length(omniR_Files)>0){
 	o_enc <- sapply(omniR_Files, function(x){readr::guess_encoding(x)$encoding[1]})
 	for (i in 1:length(omniR_Files)){source(omniR_Files[i],encoding = o_enc[i])}
@@ -158,8 +185,7 @@ options(
 )
 
 options(
-	path.omniR = path_omniR
-	,args.Calendar = list(
+	args.Calendar = list(
 		countrycode = getOption('CountryCode')
 		,CalendarAdj = getOption('ClndrAdj')
 		,fmtDateIn = c('%Y%m%d', '%Y-%m-%d', '%Y/%m/%d')

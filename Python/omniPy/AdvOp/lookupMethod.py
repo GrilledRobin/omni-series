@@ -85,6 +85,11 @@ def lookupMethod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250225        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Simplify the logic since we are able to detect default values at runtime in <ExpandSignature>                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -166,19 +171,11 @@ def lookupMethod(
         and s.name == 'self'
     ] == [0]
 
-    #600. Prepare a decorator to expand the signature of the function to be returned
-    eSig = ExpandSignature(__dfl_func_)
-
     #700. Define a method-like callable to wrap the original API
     #[ASSUMPTION]
-    #[1] We do not expand the signature of below function, but set its attribute <__wrapped__> as the decorated one
-    #[2] This is because that when it is decorated, all parameters passed to call it will be mutated and thus we never
-    #     know which value is the input at runtime and which is retained from the default value, and thus the patching of
-    #     the default values within the bound instance also fails
-    #[3] For this reason, the returned callable is no longer suitable to be wrapped by <ExpandSignature> in a chain, but it
-    #     is OK as it is designed to be bound to an instance and not likely to be mutated or expanded
-    #[4] To avoid this block of comments being collected as docstring, we skip an empty line below
+    #[1] To avoid this block of comments being collected as docstring, we skip an empty line below
 
+    @(eSig := ExpandSignature(__dfl_func_))
     def func_(self, *pos, **kw):
         #010. Local environment
         clsname_ = apiCls or self.__class__.__name__
@@ -205,10 +202,15 @@ def lookupMethod(
         #         the one in <**kw> is ignored by validation in <eSig>
         #    [2] If the provision of any keyword argument is in <**kw>, we do not provide its patched default value, and just
         #         use the provision
-        kw_patch = kw | { k:v for k,v in kw_def.items() if k not in kw }
+        #[2] We use <kw_def> to overwrite all parameters that are flagged as <called with default values>
+        pos_int, kw_int = eSig.insParams(args_share, pos, kw)
+        kw_patch = {k:v for k,v in kw_def.items() if eSig.isDefault(k, 'src')}
 
         #350. Reshape the inputs
-        pos_fnl, kw_fnl = eSig.insParams(args_share, pos, kw_patch)
+        #[ASSUMPTION]
+        #[1] Below process ensures all arguments in <kw_patch> are flagged as <called with input at runtime>, which means that
+        #     their default values in definition are overwritten by the updated <default values> at runtime
+        pos_fnl, kw_fnl = eSig.updParams(kw_patch, pos_int, kw_int)
 
         #500. Call the API
         rstOut = eSig.src(*pos_fnl, **kw_fnl)
@@ -231,9 +233,6 @@ def lookupMethod(
             return(getattr(self, attr_return))
         else:
             return(rstOut)
-
-    func_.__wrapped__ = eSig(func_)
-    func_.__doc__ = f'Expanded from: {eSig.src.__name__}\n{eSig.src.__doc__}' if eSig.src.__doc__ else None
 
     #900. Export
     return(func_)

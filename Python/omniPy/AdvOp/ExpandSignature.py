@@ -3,6 +3,7 @@
 
 import types
 import inspect
+import datetime as dt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature, Parameter
 from functools import partial
@@ -187,6 +188,26 @@ class ExpandSignature:
 #   |   |   |None              :   This method is only used to raise exception if conflict is detected                                  #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[isDefault]                                                                                                                    #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to indicate whether the callable (primarily <src>) is called with the default value of an      #
+#   |   |   |   | argument instead of from the input                                                                                    #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |arg               :   <str     > The argument name to detect                                                               #
+#   |   |   |scope_            :   <str     > Within which signature of the callables to detect the flag                                #
+#   |   |   |                      [src                 ]<Default> Detect the flag in the signature of <src> for most of cases          #
+#   |   |   |                      [dst                 ]          Detect the flag in the signature of <dst> for certain cases          #
+#   |   |   |                      [<any other strings> ]          Detect the flag among all the arguments with default values          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<bool>            :   True if its parameter passed to the call is from its default value in the signature                  #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |400.   Private method                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -263,6 +284,12 @@ class ExpandSignature:
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250224        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Add detection of whether the parameter passed for an argument to the call is from its default value, instead of from the#
+#   |      |     input at runtime; the detection is not by values hence it can be flagged correctly even if they are identical          #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -272,7 +299,7 @@ class ExpandSignature:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |types, functools, inspect                                                                                                      #
+#   |   |types, functools, inspect, datetime                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -286,7 +313,8 @@ class ExpandSignature:
 
     #015. Protect the private environment
     __slots__ = (
-        'src','arg_kind'
+        '_isdefault','_isdefault_scope','_defaults'
+        ,'src','arg_kind'
         ,'sig_src','sig_src_bykind','sig_patch'
         ,'args_src','named_src','defaulted_src','po_src','pk_src_wo_def','pk_src_w_def','pos_src','ko_src','ko_src_w_def','kw_src'
         ,'doc_src','flags_src'
@@ -297,6 +325,8 @@ class ExpandSignature:
     #100. Initialize by extracting the signature of the ancestor
     def __init__(self, src : callable):
         #020. Local environment
+        self._isdefault = dict()
+        self._isdefault_scope = {'src' : dict(), 'dst' : dict()}
         self.src = src
         self.arg_kind = ['POSITIONAL_ONLY','POSITIONAL_OR_KEYWORD','VAR_POSITIONAL','KEYWORD_ONLY','VAR_KEYWORD']
 
@@ -334,7 +364,7 @@ class ExpandSignature:
         self.named_src = {s.name : s.default for s in self.sig_src if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
 
         #307. Arguments with default values
-        self.defaulted_src = {s.name : s.default for s in self.sig_src if s.default is not s.empty}
+        self._defaults = self.defaulted_src = {s.name : s.default for s in self.sig_src if s.default is not s.empty}
 
         #310. POSITIONAL_ONLY
         self.po_src = {s.name : s.default for s in self.sig_src_bykind['POSITIONAL_ONLY'].values()}
@@ -455,6 +485,10 @@ class ExpandSignature:
 
         #205. Named arguments
         self.named_dst = {s.name : s.default for s in sig_dst if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
+
+        #207. Arguments with default values
+        defaulted_dst = {s.name : s.default for s in sig_dst if s.default is not s.empty}
+        self._defaults = {k:v for k,v in self._defaults.items() if k not in defaulted_dst} | defaulted_dst
 
         #210. POSITIONAL_ONLY
         po_dst = {s.name : s.default for s in sig_dst_bykind['POSITIONAL_ONLY'].values()}
@@ -622,7 +656,12 @@ class ExpandSignature:
         #[3] That is why we skip an empty line to ensure this block of comments is not taken as the nil <__doc__>
 
         def deco(*pos, **kw):
-            #005. Patch the inputs where necessary
+            #050. Create a dummy class and make it (relatively) unique
+            def _init(self, key : str):
+                self.key = key
+            cls_dummy = type(f'tmpcls{dt.datetime.now().strftime("%Y%m%d%H%M%S%f")}', (object,), {'__init__' : _init})
+
+            #070. Patch the inputs where necessary
             pos_ = pos[:]
             #[ASSUMPTION]
             #[1] We pretend that the defaults for POSITIONAL_OR_KEYWORD-with-defaults and KEYWORD_ONLY-with-defaults are always
@@ -633,9 +672,15 @@ class ExpandSignature:
             #    [1] If the argument is provided in <pos>, it is programmatically taken prior to the same provision in <kw>
             #    [2] If it is provided in <kw>, we take it prior to any of its default values in either <src> or <dst>
             #    [3] If the same argument exists in both callables, we still take the default value in <dst> prior to <src>
-            kw_ = self.pk_src_w_def | pk_dst_w_def | self.ko_src_w_def | ko_dst_w_def | kw
+            kw_ = (
+                { k:cls_dummy(k) for k,v in self.pk_src_w_def.items() }
+                | { k:cls_dummy(k) for k,v in pk_dst_w_def.items() }
+                | { k:cls_dummy(k) for k,v in self.ko_src_w_def.items() }
+                | { k:cls_dummy(k) for k,v in ko_dst_w_def.items() }
+                | kw
+            )
 
-            #010. Translate the parameters in terms of the merged signature
+            #090. Translate the parameters in terms of the merged signature
             #[ASSUMPTION]
             #[1] In order to make a valid call, we do not accept insufficient parameters passed
             #[2] However, we allow excessive parameters, i.e. multiple inputs, for we allow the patching at above steps
@@ -679,10 +724,32 @@ class ExpandSignature:
             }
 
             #800. Prepare the parameters for the call
-            out_pos = in_po_dst + in_pk_wo_def_dst + adj_pk_wo_def_dst + in_pk_w_def_dst + adj_pk_w_def_dst
-            out_vp = in_po_src + in_pk_wo_def_src + adj_pk_wo_def_src + in_pk_w_def_src + adj_pk_w_def_src + in_vp_src
-            out_ko = in_ko_dst
-            out_vk = in_ko_src | in_vk_src
+            out_pos_pre = in_po_dst + in_pk_wo_def_dst + adj_pk_wo_def_dst + in_pk_w_def_dst + adj_pk_w_def_dst
+            out_vp_pre = in_po_src + in_pk_wo_def_src + adj_pk_wo_def_src + in_pk_w_def_src + adj_pk_w_def_src + in_vp_src
+            out_ko_pre = in_ko_dst
+            out_vk_pre = in_ko_src | in_vk_src
+
+            #830. Flag the parameters retained from default values instead of from inputs
+            self._isdefault = { k:False for k in self._defaults.keys() }
+            self._isdefault_scope = {
+                'src' : { k:False for k in self.defaulted_src.keys() }
+                ,'dst' : { k:False for k in defaulted_dst.keys() }
+            }
+            for v in (out_pos_pre + out_vp_pre + tuple(out_ko_pre.values()) + tuple(out_vk_pre.values())):
+                if isinstance(v, cls_dummy):
+                    self._isdefault[v.key] = True
+                    if v.key in self.defaulted_src:
+                        self._isdefault_scope['src'][v.key] = True
+                    if v.key in defaulted_dst:
+                        self._isdefault_scope['dst'][v.key] = True
+                        if v.key in self.defaulted_src:
+                            self._isdefault_scope['src'][v.key] = False
+
+            #890. Obtain the actual parameters for the placeholders
+            out_pos = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_pos_pre ]
+            out_vp = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_vp_pre ]
+            out_ko = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_ko_pre.items() }
+            out_vk = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_vk_pre.items() }
 
             #900. Call <dst>
             return(dst(*out_pos, *out_vp, **out_ko, **out_vk))
@@ -740,6 +807,13 @@ class ExpandSignature:
         #[1] We cannot standardize the input as <updParams> does, as the input has some holes as we know at the wrapping, while
         #     the function <nameArgsByFormals> would skip the holes in <pos_src> which causes mismatching of positional parameters
 
+        #005. Update the status for the inserted arguments
+        for arg in args_ins.keys():
+            if arg in self._isdefault:
+                self._isdefault[arg] = False
+            if arg in self._isdefault_scope['src']:
+                self._isdefault_scope['src'][arg] = False
+
         #100. Prepare the patch
         pos_patch = { i:s.name for i,s in self.sig_patch.items() if s.name in args_ins }
         pos_in = list(pos_src)
@@ -766,10 +840,20 @@ class ExpandSignature:
         #900. Reshape the input parameters
         #[ASSUMPTION]
         #[1] If the parameters are still insufficient, exceptions will be raised here
-        return(nameArgsByFormals(self.src, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True))
+        #[2] If any keyword parameter is from its default value in the signature, we remove it
+        pos_out, kw_out = nameArgsByFormals(self.src, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True)
+        kw_out = {k:v for k,v in kw_out.items() if not self.isDefault(k, 'src')}
+        return(pos_out, kw_out)
 
     #700. Function to update the dedicated input parameters in terms of the signature
     def updParams(self, args_upd : dict, pos_src : tuple, kw_src : dict):
+        #005. Update the status for the inserted arguments
+        for arg in args_upd.keys():
+            if arg in self._isdefault:
+                self._isdefault[arg] = False
+            if arg in self._isdefault_scope['src']:
+                self._isdefault_scope['src'][arg] = False
+
         #010. Ensure the input has the same structure as the signature
         #[ASSUMPTION]
         #[1] If there are holes in <pos_src>, we would never know which are the one to update, hence we will not allow missing
@@ -798,12 +882,22 @@ class ExpandSignature:
         #900. Reshape the input parameters
         #[ASSUMPTION]
         #[1] If the parameters are still insufficient, exceptions will be raised here
-        return(nameArgsByFormals(self.src, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True))
+        #[2] If any keyword parameter is from its default value in the signature, we remove it
+        pos_out, kw_out = nameArgsByFormals(self.src, pos_ = tuple(pos_in), kw_ = kw_in, coerce_ = True, strict_ = True)
+        kw_out = {k:v for k,v in kw_out.items() if not self.isDefault(k, 'src')}
+        return(pos_out, kw_out)
 
-    #800. Verify the conflict of argument names in both callables, except those declared as acceptable
+    #800. Miscellaneous functions
+    #810. Verify the conflict of argument names in both callables, except those declared as acceptable
     def vfyConflict(self, args_share : dict = {}):
         if (arg_conflict := [ k for k in self.named_dst.keys() if k in self.args_src and k not in args_share ]):
             raise NotImplementedError(f'[{self.dst.__name__}]Detected conflict arguments: {str(arg_conflict)}')
+
+    #820. Verify whether the parameter is from the default value of an argument, useful at runtime
+    def isDefault(self, arg : str, scope_ : str = 'src'):
+        if scope_ in self._isdefault_scope:
+            return(self._isdefault_scope.get(scope_).get(arg, False))
+        return(self._isdefault.get(arg, False))
 
     #900. Set the instance as a decorator
     def __call__(self, dst : callable):
@@ -853,6 +947,8 @@ if __name__=='__main__':
         print('From testf_dst:')
         printEnv()
 
+        print(f'Whether <arg8> is from default value: <{str(eSig.isDefault("arg8", "all"))}>')
+
         #[ASSUMPTION]
         #[1] Since <arg2> is in the signature of <dst>, we should insert it into the parameters for the call of <src>
         args_share = {'arg2' : arg2}
@@ -877,6 +973,7 @@ if __name__=='__main__':
     # [arg9]=[9]
     # [pos]=[(1, 3, 4)]
     # [kw]=[{'arg5': 5, 'arg6': 6}]
+    # Whether <arg8> is from default value: <True>
     # From testf_src:
     # [arg1]=[1]
     # [arg2]=[2]
@@ -896,6 +993,7 @@ if __name__=='__main__':
     # [arg9]=[9]
     # [pos]=[(1, 3, 40, 50)]
     # [kw]=[{'arg5': 5, 'arg6': 6}]
+    # Whether <arg8> is from default value: <False>
     # From testf_src:
     # [arg1]=[1]
     # [arg2]=[2]
@@ -916,6 +1014,7 @@ if __name__=='__main__':
     # [arg9]=[9]
     # [pos]=[(1, 3, 4)]
     # [kw]=[{'arg5': 5, 'arg6': 6}]
+    # Whether <arg8> is from default value: <True>
     # From testf_src:
     # [arg1]=[1]
     # [arg2]=[2]
@@ -965,6 +1064,9 @@ if __name__=='__main__':
     #[1] If you need to chain the expansion, make sure either of below designs is set
     #    [1] Each of the nodes is in a separate module
     #    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+    #[2] <arg9> is the shared argument in both expanded callables. Once the last node is called without <arg9> as input,
+    #     its default value is honored so its flag is <True> in <dst>. In its parent node(s), <arg9> will hence be provided
+    #     with the value as retained from the last node, therefore all inputs for it will be deemed <not from default>
     def src3(arg1, *, arg3 = 3, **kw):
         print('This is src3:')
         print(f'arg1 : {str(arg1)}')
@@ -972,23 +1074,31 @@ if __name__=='__main__':
         print(f'kw : {str(kw)}')
 
     @(eSig := ExpandSignature(src3))
-    def dst3(arg4, /, *pos, **kw):
+    def dst3(arg4, /, *pos, arg8 = 8, arg9 = 9, **kw):
         src3(*pos, **kw)
         print('This is dst3:')
         print(f'arg4 : {str(arg4)}')
         print(f'arg3 : {str(eSig.getParam("arg3", pos, kw))}')
+        print(f'Whether <arg8> is from default value: <{str(eSig.isDefault("arg8", "dst"))}>')
+        print(f'Whether <arg9> is from default value of <dst>: <{str(eSig.isDefault("arg9", "dst"))}>')
 
     @(eSig2 := ExpandSignature(dst3))
-    def dst4(self, /, *pos, arg5, **kw):
-        dst3(*pos, **kw)
+    def dst4(self, /, *pos, arg5, arg9 = 90, **kw):
+        pos_out, kw_out = eSig2.insParams({'arg9' : arg9}, pos, kw)
+        dst3(*pos_out, **kw_out)
         print('This is dst4:')
         print(f'arg5 : {str(arg5)}')
         print(f'arg3 : {str(eSig2.getParam("arg3", pos, kw))}')
+        print(f'Whether <arg8> is from default value of <src>: <{str(eSig2.isDefault("arg8", "src"))}>')
+        print(f'Whether <arg9> is from default value of <dst>: <{str(eSig2.isDefault("arg9", "dst"))}>')
+        print(f'Whether <arg9> is from default value of <src>: <{str(eSig2.isDefault("arg9", "src"))}>')
 
     help(dst4)
     # Help on function dst4 in module __main__:
     # dst4(self, arg4, /, arg1, *, arg5, arg3=3, **kw)
 
+    #[ASSUMPTION]
+    #[1] The parameter passed to <arg8> is correctly detected
     dst4(1, 4, 1, arg5 = 5, arg7 = 7)
     # This is src3:
     # arg1 : 1
@@ -997,9 +1107,14 @@ if __name__=='__main__':
     # This is dst3:
     # arg4 : 4
     # arg3 : 3
+    # Whether <arg8> is from default value: <True>
+    # Whether <arg9> is from default value of <dst>: <False>
     # This is dst4:
     # arg5 : 5
     # arg3 : 3
+    # Whether <arg8> is from default value of <src>: <True>
+    # Whether <arg9> is from default value of <dst>: <True>
+    # Whether <arg9> is from default value of <src>: <False>
 
     #450. Interaction with <functools.wraps>
     from functools import wraps

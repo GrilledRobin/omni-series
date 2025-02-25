@@ -191,6 +191,11 @@ def pandasPivot(
 #   | Log  |[1] Added support of input as <pd.Grouper> for <index> and <columns>, now literally support all inputs for <index> and      #
 #   |      |     <columns> that are accepted by the ancestor function                                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250224        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug that causes different behaviors, such as when <margins> is not provided or provided as <False>              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -241,12 +246,18 @@ def pandasPivot(
     pos_fnl, kw_fnl = pos_in, kw_in = eSig.insParams(args_ins, pos, kw)
 
     #Ensure the same behavior as [pd.pivot_table]
-    if mgn_flag := eSig.getParam('margins', pos_in, kw_in):
+    #[ASSUMPTION]
+    #[1] Below arguments are NOT shared between the callables, hence it is a good practice to restrict the lookup inside the
+    #     scope of <src>
+    if not eSig.isDefault('margins', 'src'):
+        mgn_flag = eSig.getParam('margins', pos_in, kw_in)
         fRowTot = fRowSubt = fColTot = fColSubt = mgn_flag
         pos_fnl, kw_fnl = eSig.updParams({'margins' : False}, pos_fnl, kw_fnl)
-    if (mgn_name := eSig.getParam('margins_name', pos_in, kw_in)) is not eSig.args_src.get('margins_name'):
+    if not eSig.isDefault('margins_name', 'src'):
+        mgn_name = eSig.getParam('margins_name', pos_in, kw_in)
         rowTot = colTot = mgn_name
-    if sort_flag := eSig.getParam('sort', pos_in, kw_in):
+    if not eSig.isDefault('sort', 'src'):
+        sort_flag = eSig.getParam('sort', pos_in, kw_in)
         rowSortAsc = colSortAsc = sort_flag
         pos_fnl, kw_fnl = eSig.updParams({'sort' : False}, pos_fnl, kw_fnl)
 

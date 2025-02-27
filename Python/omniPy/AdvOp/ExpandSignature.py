@@ -1095,7 +1095,7 @@ if __name__=='__main__':
 
     help(dst4)
     # Help on function dst4 in module __main__:
-    # dst4(self, arg4, /, arg1, *, arg5, arg3=3, **kw)
+    # dst4(self, arg4, /, arg1, *, arg5, arg9=90, arg8=8, arg3=3, **kw)
 
     #[ASSUMPTION]
     #[1] The parameter passed to <arg8> is correctly detected
@@ -1134,7 +1134,7 @@ if __name__=='__main__':
     #[2] <dst5.__wrapped__.__code__.co_flags> is <31>, also including both <*pos> and <**kw>, as it directly retrieves
     #     the value from <dst4.__code__.co_flags>
     #[3] However in our design for an expanded callable
-    #    [1] <dst4.__code__.co_flags> is <31>, coming from the wrapper in <expandSignature> that takes both <*pos> and
+    #    [1] <dst4.__code__.co_flags> is <31>, coming from the wrapper in <ExpandSignature> that takes both <*pos> and
     #         <**kw>. This cannot be updated by any means
     #    [2] <dst4.__wrapped__.__code__.co_flags> is (as what we do imperatively) <11>, which exactly matches its
     #         signature, and is what we need to pass for a nested expansion
@@ -1157,11 +1157,11 @@ if __name__=='__main__':
     # ValueError: code: co_varnames is too small
 
     #[CONCLUSION]
-    #[1] For Python <= 3.11, <expandSignature> cannot wrap any function that is already wrapped by <functools.wraps>
+    #[1] For Python <= 3.11, <ExpandSignature> cannot wrap any function that is already wrapped by <functools.wraps>
     #[2] One can replace most cases of decoration with <functools.wraps>, with some exceptions
     #    [1] <AdvOp.simplifyDeco> is defined to wrap a decorator, instead of expand its signature
     #    [2] <AdvOp.withDefaults> is defined to mask the signature
-    #[3] If one needs to chain the expansion, every intermediate expansion must be done by <expandSignature>
+    #[3] If one needs to chain the expansion, every intermediate expansion must be done by <ExpandSignature>
 
 #-Notes- -End-
 '''

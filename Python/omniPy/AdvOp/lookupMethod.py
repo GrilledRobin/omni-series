@@ -89,8 +89,8 @@ def lookupMethod(
 #   | Date |    20250225        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Simplify the logic since we are able to detect default values at runtime in <ExpandSignature>                           #
-#   |      |[2] Since there is manipulation of parameters with <insParams> or <updParams>, all arguments of the wrapped function now can#
-#   |      |     be provided in the fashion of positional or keyword, regardless of their <kind>s in the expanded signature             #
+#   |      |[2] Since there is manipulation of parameters with <ExpandSignature>, all arguments of the wrapped function now can be      #
+#   |      |     provided in the fashion of positional or keyword, regardless of their <kind>s in the expanded signature                #
 #   |      |[3] Make <self> as the first POSITIONAL_ONLY argument, to ensure the wrapped function is correctly bound to an instance     #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -110,7 +110,6 @@ def lookupMethod(
 #   |   |   |importByStr                                                                                                                #
 #   |   |   |modifyDict                                                                                                                 #
 #   |   |   |ls_frame                                                                                                                   #
-#   |   |   |withDefaults                                                                                                               #
 #   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''

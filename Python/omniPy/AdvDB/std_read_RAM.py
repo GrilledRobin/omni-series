@@ -3,13 +3,14 @@
 
 import sys
 import pandas as pd
-from inspect import signature
+from inspect import signature, isframe
 from omniPy.AdvOp import get_values, ls_frame
 
 def std_read_RAM(
     infile : str
     ,funcConv : callable = lambda x: x
     ,frame = None
+    ,frame_from = None
     ,**kw
 ) -> pd.DataFrame:
     #000. Info.
@@ -34,6 +35,9 @@ def std_read_RAM(
 #   |frame       :   <frame> object in which to search for objects                                                                      #
 #   |                [None        ] <Default> Search in all frames along the call stack                                                 #
 #   |                [frame       ]           Dedicated <frame> in which to search the objects                                          #
+#   |frame_from  :   <frame> object along the stacks from which to search for objects, omitted if <frame> is provided                   #
+#   |                [None        ] <Default> Search in all frames along the call stack from current one                                #
+#   |                [frame       ]           <frame> along the stack from which to search the objects                                  #
 #   |kw          :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -60,6 +64,11 @@ def std_read_RAM(
 #   | Date |    20240129        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the unnecessary restrictions on data type, and leave them to the caller process                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250308        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <frame_from> in terms of the update of <ls_frame>                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -90,7 +99,7 @@ def std_read_RAM(
     has_usecols = ('usecols' in kw) and (usecols is not None)
 
     #500. Load the data
-    if frame is None:
+    if (not isframe(frame)) and (not isframe(frame_from)):
         #100. Retrieve the keyword arguments
         #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
         sig_raw = signature(get_values).parameters.values()
@@ -140,6 +149,7 @@ def std_read_RAM(
         rstPre = (
             ls_frame(
                 frame = frame
+                ,frame_from = frame_from
                 ,pattern = f'^{infile}$'
                 ,verbose = True
                 ,**kw_final

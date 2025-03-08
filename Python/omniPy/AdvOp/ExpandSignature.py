@@ -22,6 +22,10 @@ class ExpandSignature:
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] One can extend the arguments of <src> with certain high order function, and merge the signature of <src> into the wrapper, also#
 #   |     for the caller to inspect the new signature wrapped by that high order function                                               #
+#   |[2] Since <nameArgsByFormals> is in use, most functions wrapped by this decorator can be called in the fashion <fn(**kw)>, i.e. the#
+#   |     caller is able to provide all parameters in keyword pattern, regardless of whether there is POSITIONAL_ONLY argument in the   #
+#   |     signature of the wrapped function. This convention enables parametric function calls at most of times, except when there is   #
+#   |     VAR_POSITIONAL in <src> and meanwhile it should be provided with parameter(s) at the function call.                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |RATIONALE                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#

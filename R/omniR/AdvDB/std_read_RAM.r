@@ -18,6 +18,9 @@
 #   |frame       :   Environment in which to search for objects                                                                         #
 #   |                [None        ] <Default> Search in all frames along the call stack                                                 #
 #   |                [environment ]           Dedicated environment in which to search the objects                                      #
+#   |frame_from  :   <frame> object along the stacks from which to search for objects, omitted if <frame> is provided                   #
+#   |                [None        ] <Default> Search in all frames along the call stack from current one                                #
+#   |                [environment ]           <frame> along the stack from which to search the objects                                  #
 #   |...         :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -48,6 +51,11 @@
 #   |      |     the source can be ignored, rather than triggering exception                                                            #
 #   |      |[4] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and <k> rows      #
 #   |      |[5] Superfluous arguments are now eliminated without triggering exception                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250308        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <frame_from> in terms of the update of <ls_frame>                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -88,6 +96,7 @@ std_read_RAM <- function(
 	infile
 	,funcConv = function(x) x
 	,frame = NULL
+	,frame_from = NULL
 	,...
 ){
 	#001. Handle parameters
@@ -105,7 +114,7 @@ std_read_RAM <- function(
 	has_usecols <- !is.null(usecols)
 
 	#500. Load the data
-	if (!is.environment(frame)) {
+	if (!is.environment(frame) && !is.environment(frame_from)) {
 		#100. Retrieve the keyword arguments
 		params_raw <- formals(get_values)
 
@@ -154,6 +163,7 @@ std_read_RAM <- function(
 		rstPre <- do.call(ls_frame, c(
 			list(
 				'frame' = frame
+				,'frame_from' = frame_from
 				,'pattern' = paste0('^',gsub('\\.','\\\\.',infile),'$')
 				,'verbose' = T
 			)

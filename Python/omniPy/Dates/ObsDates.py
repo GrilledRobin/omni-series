@@ -255,6 +255,11 @@ class ObsDates( CoreUserCalendar ):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Updated the usage of <asQuarters> to improve the efficiency                                                             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250323        | Version | 2.50        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the usage of <inplace> in terms of the FutureWarning of <pandas>                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -494,7 +499,7 @@ class ObsDates( CoreUserCalendar ):
         df_out.loc[mask_indate, 'D_DATE'] = df_out.loc[mask_indate, 'D_ShiftedDay']
 
         #790. Set the invalid dates as [pd.NaT]
-        df_out['D_DATE'].fillna(pd.NaT, inplace = True)
+        df_out['D_DATE'] = df_out['D_DATE'].fillna(pd.NaT)
 
         #800. Convert the result into list for output
         #810. Create a mask on the output data which indicates the records to be formatted or not
@@ -594,7 +599,7 @@ class ObsDates( CoreUserCalendar ):
         df_out.loc[:, '_flag_'] = df_out.index.isin(prd_bound.index)
 
         #800. Prepare the result as a list
-        df_out['_flag_'].fillna(False, inplace = True)
+        df_out['_flag_'] = df_out['_flag_'].fillna(False)
 
         #999. Return the result
         return(self._rst(df_out, '_flag_'))
@@ -632,7 +637,7 @@ class ObsDates( CoreUserCalendar ):
             .set_axis(df_out.index, axis = 0)
             ['F_WORKDAY']
         )
-        df_out['F_WORKDAY'].fillna(False, inplace = True)
+        df_out['F_WORKDAY'] = df_out['F_WORKDAY'].fillna(False)
         return(self._rst(df_out, 'F_WORKDAY'))
 
     #511. Whether the observing dates are bounds of certain periods
@@ -680,7 +685,7 @@ class ObsDates( CoreUserCalendar ):
             .set_axis(df_out.index, axis = 0)
             ['F_TradeDay']
         )
-        df_out['F_TradeDay'].fillna(False, inplace = True)
+        df_out['F_TradeDay'] = df_out['F_TradeDay'].fillna(False)
         return(self._rst(df_out, 'F_TradeDay'))
 
     #521. Whether the observing dates are bounds of certain periods

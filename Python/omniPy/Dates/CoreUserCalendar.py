@@ -277,6 +277,16 @@ class CoreUserCalendar:
 #   |      |     use indexing of data frames and the time expense reduced by 90%.                                                       #
 #   |      |[2] Introduce a separate function [getCalendarAdj] to search for the calendar adjustment in current environment             #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20211228        | Version | 2.01        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Refine the verification of arguments of [__init__]                                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250323        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Remove the usage of <inplace> in terms of the FutureWarning of <pandas>                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -316,14 +326,12 @@ class CoreUserCalendar:
         ,DateOutAsStr : bool = False
     ):
         #001. Handle parameters
-        if not clnBgn: clnBgn = dt.date.today() - dt.timedelta(days=1826)
-        if not clnEnd: clnEnd = dt.date.today() + dt.timedelta(days=30)
-        if not countrycode: countrycode = 'CN'
-        if not fmtDateIn: fmtDateIn = ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
-        if not fmtDateOut: fmtDateOut = '%Y%m%d'
-        if not DateOutAsStr: DateOutAsStr = False
-        if not isinstance( DateOutAsStr , bool ):
-            raise TypeError('[' + self.LClassName + '][DateOutAsStr]:[{0}] should be [bool]!'.format( type(DateOutAsStr) ))
+        if clnBgn is None: clnBgn = dt.date.today() - dt.timedelta(days=1826)
+        if clnEnd is None: clnEnd = dt.date.today() + dt.timedelta(days=30)
+        if countrycode is None: countrycode = 'CN'
+        if not isinstance(fmtDateIn, Iterable): fmtDateIn = ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
+        if not isinstance(fmtDateOut, str): fmtDateOut = '%Y%m%d'
+        if not isinstance(DateOutAsStr, bool): DateOutAsStr = False
 
         #100. Assign values to private environment
         #110. There is no method to assign values to below private variables for safety concern
@@ -523,7 +531,7 @@ class CoreUserCalendar:
         #390. Correct the count on holidays
         #Quote: https://kanoki.org/2019/07/17/pandas-how-to-replace-values-based-on-conditions/
         #Quote: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.where.html?highlight=where#pandas.DataFrame.where
-        usrclndr['K_WorkWeek'].where( usrclndr['F_WORKDAY'], 0, inplace = True )
+        usrclndr['K_WorkWeek'] = usrclndr['K_WorkWeek'].where(usrclndr['F_WORKDAY'], 0)
 
         #400. Define the Tradeweeks
         #410. If current date is more than 1 Day later than its previous Trade Day, we consider it the first one in current block
@@ -537,7 +545,7 @@ class CoreUserCalendar:
         usrclndr = usrclndr.assign( K_TradeWeek = usrclndr['FirstDay'].cumsum() ).drop(columns=['FirstDay'])
 
         #490. Correct the count on holidays
-        usrclndr['K_TradeWeek'].where( usrclndr['F_TradeDay'], 0, inplace = True )
+        usrclndr['K_TradeWeek'] = usrclndr['K_TradeWeek'].where(usrclndr['F_TradeDay'], 0)
 
         #800. Purge the memory usage.
 

@@ -983,32 +983,33 @@ if __name__=='__main__':
     #[1] Below date indicates the beginning of one KPI among those in the config table
     G_d_rpt = '20160526'
     cfg_kpi_file = os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
-    cfg_kpi = (
-        pd.read_excel(
-            cfg_kpi_file
-            ,sheet_name = 'KPIConfig'
-            ,dtype = 'object'
-        )
-        .assign(**{
-            'C_LIB_NAME' : lambda x: x['C_LIB_NAME'].fillna('')
-        })
-        .merge(
+    with pd.option_context('future.no_silent_downcasting', True):
+        cfg_kpi = (
             pd.read_excel(
                 cfg_kpi_file
-                ,sheet_name = 'LibConfig'
+                ,sheet_name = 'KPIConfig'
                 ,dtype = 'object'
             )
-            ,on = 'C_LIB_NAME'
-            ,how = 'left'
+            .assign(**{
+                'C_LIB_NAME' : lambda x: x['C_LIB_NAME'].fillna('')
+            })
+            .merge(
+                pd.read_excel(
+                    cfg_kpi_file
+                    ,sheet_name = 'LibConfig'
+                    ,dtype = 'object'
+                )
+                ,on = 'C_LIB_NAME'
+                ,how = 'left'
+            )
+            .assign(**{
+                'D_BGN' : lambda x: asDates(x['D_BGN'])
+                ,'D_END' : lambda x: asDates(x['D_END'])
+                ,'F_KPI_INUSE' : lambda x: x['F_KPI_INUSE'].astype(int)
+                ,'N_LIB_PATH_SEQ' : lambda x: x['N_LIB_PATH_SEQ'].fillna(0).infer_objects(copy=False).astype(int)
+                ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('')
+            })
         )
-        .assign(**{
-            'D_BGN' : lambda x: asDates(x['D_BGN'])
-            ,'D_END' : lambda x: asDates(x['D_END'])
-            ,'F_KPI_INUSE' : lambda x: x['F_KPI_INUSE'].astype(int)
-            ,'N_LIB_PATH_SEQ' : lambda x: x['N_LIB_PATH_SEQ'].fillna(0).astype(int)
-            ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('')
-        })
-    )
 
     #150. Mapper to indicate the aggregation
     map_dict = {

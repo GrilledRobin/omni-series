@@ -88,6 +88,11 @@ def userBasedCF(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce the [rankdata] (scipy >= v1.5.1) to save 33% of system calculation effort, compared to [.argsort().argsort()] #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250323        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Change <loc> to <iloc> as the slicing is conducted upon a numpy array                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -215,7 +220,7 @@ def userBasedCF(
     m_user_score_iarr = np.where( m_user_score_fnl != 0 )
 
     #890. Form a data frame out of the matrices by indexing, which is faster than data.frame operations
-    df_user_score = pd.DataFrame( dat[keyvar].loc[m_user_score_iarr[0]] , columns = [keyvar] )
+    df_user_score = pd.DataFrame( dat[keyvar].iloc[m_user_score_iarr[0]] , columns = [keyvar] )
     df_user_score['ItemName'] = colnames[m_user_score_iarr[1]]
     #df_user_score['ItemRank'] = m_user_score_rnk[m_user_score_iarr].T + 1
     #Introduction of the function [rankdata] indicates that the [ranks] start from 1, hence we remove the operation [+1]

@@ -316,6 +316,11 @@ class DataIO():
 #   | Log  |[1] Enable the tweak of handlers for both <pull> and <push> when calling the method <add> to register new API               #
 #   |      |[2] Make the search of APIs in current session more flexible, e.g. enable searching in provided frame                       #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250329        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Added full test case of inheritance from this class                                                                     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -621,15 +626,16 @@ class DataIO():
 if __name__=='__main__':
     #100.   Create envionment.
     import os
-    import pandas as pd
     import sys
+    import pandas as pd
+    import datetime as dt
     from functools import partial
     from collections.abc import Iterable
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvDB import DataIO
-    from omniPy.AdvDB import loadSASdat, inferContents
+    from omniPy.AdvDB import loadSASdat, inferContents, parseHDFStoreInfo
     from omniPy.AdvOp import get_values
 
     cwd = os.getcwd()
@@ -789,6 +795,249 @@ if __name__=='__main__':
     testIO()
     # {'SAS', 'HDFS'}
     # local
+
+    #900. Demo of how to inherit from the class
+    if True:
+        #050. Define a class only with data loaders, i.e. API only with <pull> method
+        class LoaderOnly(DataIO):
+            #002. Constructor
+            def __init__(
+                self
+                ,apiPkgPull : str = None
+                ,apiPfxPull : str = 'loader_'
+                ,argsPull : dict = {}
+                ,lsPullOpt : dict = {}
+            ):
+                #200. Initialize the parent class
+                #[ASSUMPTION]
+                #[1] We disable search of <push> methods for API by setting an relatively impossible prefix
+                super().__init__(
+                    apiPkgPull = apiPkgPull
+                    ,apiPfxPull = apiPfxPull
+                    ,apiSfxPull = ''
+                    ,apiPkgPush = None
+                    ,apiPfxPush = 'lo_{}_'.format(dt.datetime.now().strftime('%Y%m%d%H%M%S'))
+                    ,apiSfxPush = ''
+                    ,argsPull = argsPull
+                    ,lsPullOpt = lsPullOpt
+                )
+
+                #800. Prepare I/O tools
+                self.dataIO = DataIO()
+
+            #300. Public methods
+            #310. Save the result to harddisk
+            def save(self, addr : str | os.PathLike, *pos, **kw):
+                rst = {
+                    'result' : self.result
+                } | {
+                    f'{k}.series' : v
+                    for k,v in self.loaded.items()
+                } | {
+                    f'{k}.rawdata' : v
+                    for k,v in self.rawdata.items()
+                }
+
+                self.dataIO.add('HDFS')
+                rc = self.dataIO['HDFS'].push(rst, addr, *pos, **kw)
+                self.dataIO.remove('HDFS')
+                return(rc)
+
+            #350. Load data from all active APIs
+            def loadactive(self, argsPull : dict = {}):
+                for a in self.active:
+                    kw_pull = argsPull.get(a, {})
+                    self[a].pull(**(self.argsPull | kw_pull))
+
+            #500. Read-only properties
+            @property
+            def loaded(self):
+                return({
+                    a : srs
+                    for a in self.active
+                    if len(srs := self[a].pulled['data']['series']) > 0
+                })
+
+            @property
+            def apinames(self):
+                self._chkactive_()
+                return({
+                    a : self[a].pulled['name']
+                    for a in self.active
+                })
+
+            @property
+            def addresses(self):
+                self._chkactive_()
+                return({
+                    a : self[a].pulled['address']
+                    for a in self.active
+                })
+
+            @property
+            def rawdata(self):
+                self._chkactive_()
+                return({
+                    a : self[a].pulled['data']['rawdata']
+                    for a in self.active
+                })
+
+            @property
+            def result(self):
+                self._chkactive_()
+                srs = (
+                    pd.concat(list(self.loaded.values()), ignore_index = True)
+                    .drop_duplicates()
+                )
+                return(srs)
+        #End LoaderOnly
+
+        #070. Define APIs
+        def loader_api1(fname = 'API1'):
+            df = pd.DataFrame({
+                'a' : [1,3,5]
+                ,'key' : ['a','b','d']
+            })
+            return({
+                'name' : 'test API1'
+                ,'address' : fname
+                ,'data' : {
+                    'rawdata' : df
+                    ,'series' : df['key']
+                }
+            })
+
+        def loader_api2(fname = 'API2'):
+            df = pd.DataFrame({
+                'a' : [2,4,6]
+                ,'key' : ['b','e','f']
+            })
+            return({
+                'name' : 'test API2'
+                ,'address' : fname
+                ,'data' : {
+                    'rawdata' : df
+                    ,'series' : df['key']
+                }
+            })
+
+        #100. Instantiate the class with default arguments
+        loaderOnly = LoaderOnly()
+
+        #110. List all available APIs at present
+        print(loaderOnly.full)
+        # {'api2', 'api1'}
+
+        #130. Register all APIs with default arguments, while not loading the data
+        loaderOnly.addfull()
+
+        #190. Purge all active APIs and remove their instances
+        loaderOnly.removefull()
+
+        #199. Try to list all names of the APIs in vain as they have been purged at above step
+        print(loaderOnly.apinames)
+        # ValueError: [LoaderOnly][apinames] is empty as there is no active API!
+
+        #200. Add API to read data
+        loaderOnly.add('api1')
+
+        #210. Check the address of current API
+        a1_data = loaderOnly.api1.pull()
+        print(a1_data['address'])
+        # API1
+
+        #230. Refresh data from the API with default arguments
+        _ = loaderOnly.api1.pull()
+
+        #300. Override the default arguments to register a specific API
+        diff_args = {
+            'api1' : {
+                'fname' : 'adj. API1'
+            }
+            ,'api2' : {
+                'fname' : 'adj. API2'
+            }
+        }
+
+        #310. Register all available APIs with the modified arguments
+        loaderOnly.addfull(argsPull = diff_args)
+
+        #320. Load data from all APIs
+        loaderOnly.loadactive()
+
+        #330. Check the added data at current step
+        ttt = loaderOnly.loaded
+        print(ttt)
+        # {'api2': 0    b
+        # 1    e
+        # 2    f
+        # Name: key, dtype: object, 'api1': 0    a
+        # 1    b
+        # 2    d
+        # Name: key, dtype: object}
+
+        #340. Remove an API from the namespace, together with its retrieved data
+        loaderOnly.remove('api2')
+
+        #350. Register API with modified arguments
+        args_a2 = diff_args['api2']
+        loaderOnly.add('api2', argsPull = args_a2)
+        _ = loaderOnly['api2'].pull()
+        print(_['address'])
+        # adj. API2
+
+        #400. Check properties at current stage
+        #410. List the mappings of API names
+        print(loaderOnly.apinames)
+        # {'api2': 'test API2', 'api1': 'test API1'}
+
+        #430. Check the status of registered APIs
+        print(loaderOnly.status)
+        # {'api2': True, 'api1': True}
+
+        #450. Retrieve the final combined result as a vector
+        srs = loaderOnly.result
+        print(srs)
+        # 0    b
+        # 1    e
+        # 2    f
+        # 3    a
+        # 5    d
+        # Name: key, dtype: object
+
+        #470. Retrieve the rawdata for a specific API
+        ccc = loaderOnly.rawdata['api2']
+        print(ccc)
+        #    a key
+        # 0  2   b
+        # 1  4   e
+        # 2  6   f
+
+        #500. Save the results to harddrive
+        f_rst = r'D:\Temp\testLoader.hdf'
+        rc = loaderOnly.save(f_rst)
+
+        #600. Check the saved data
+        rst_info = parseHDFStoreInfo(f_rst)
+        print(rst_info['key'])
+        # 0    api1.rawdata
+        # 1     api1.series
+        # 2    api2.rawdata
+        # 3     api2.series
+        # 4          result
+        # Name: key, dtype: object
+
+        dataIO = DataIO()
+        dataIO.add('HDFS')
+        vv1 = dataIO['HDFS'].pull(f_rst, 'api1.rawdata')
+        print(vv1)
+        #    a key
+        # 0  1   a
+        # 1  3   b
+        # 2  5   d
+
+        #690. Remove the temporary file
+        if os.path.isfile(f_rst): os.remove(f_rst)
 
 #-Notes- -End-
 '''

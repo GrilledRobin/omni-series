@@ -98,6 +98,11 @@ def xwGroupForDf(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now respect the usage of <slice> during the preparation of <merge> on indexes                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250329        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug during outlining                                                                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -340,25 +345,25 @@ def xwGroupForDf(
         for r in xlmerge_idx + xlmerge_idx_totals:
             xwRangeAsGroup(rng.__getitem__(r), **row_asGroup)
 
-        #900. Display the outline level 2 as Business convention if applicable
-        if len(xlmerge_idx) > 0:
-            #Quote: https://github.com/xlwings/xlwings/issues/2115
-            #Quote: https://github.com/xlwings/xlwings/blob/main/DEVELOPER_GUIDE.md#macos
-            #[ASSUMPTION]
-            #[1] Below method seems only to work for MacOS
-            # rng_Sheet.api.outline_object.show_levels( row_levels = len(xlmerge_idx_totals) + 1 )
-            #[2] It is tested for [xlwings <= 0.29.1], below statement takes no effect without errors
-            rng_Sheet.api.Outline.ShowLevels( RowLevels = len(xlmerge_idx_totals) + 1 )
-
     #750. Axis-1
     if colGroup:
         #100. Add group and outline
         for r in xlmerge_hdr + xlmerge_hdr_totals:
             xwRangeAsGroup(rng.__getitem__(r), **col_asGroup)
 
-        #900. Display the outline level 2 as Business convention if applicable
-        if len(xlmerge_hdr) > 0:
-            rng_Sheet.api.Outline.ShowLevels(ColumnLevels = len(xlmerge_idx_totals) + 1)
+    #770. Show the levels based on basic business scenario
+    #Quote: https://github.com/xlwings/xlwings/issues/2115
+    #Quote: https://github.com/xlwings/xlwings/blob/main/DEVELOPER_GUIDE.md#macos
+    #[ASSUMPTION]
+    #[1] Below method seems only to work for MacOS
+    # rng_Sheet.api.outline_object.show_levels( row_levels = len(xlmerge_idx_totals) + 1 )
+    #[2] It is tested for [xlwings <= 0.29.1], we have to set both options in one batch, otherwise it issues errors
+    #[3] It is tested for [xlwings <= 0.29.1], below statement takes no effect without errors
+    args_showlvl = {
+        'RowLevels' : (len(xlmerge_idx_totals) + 1) if len(xlmerge_idx) > 0 else 0
+        ,'ColumnLevels' : (len(xlmerge_hdr_totals) + 1) if len(xlmerge_hdr) > 0 else 0
+    }
+    rng_Sheet.api.Outline.ShowLevels(**args_showlvl)
 
     #999. Export the data to the entire range
     if (not asformatter) and (not formatOnly):

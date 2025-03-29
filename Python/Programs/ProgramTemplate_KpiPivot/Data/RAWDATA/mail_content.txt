@@ -1,0 +1,7 @@
+Hi, all:
+
+Attached please find the report: {rpt_name}
+
+Thank you!
+
+Regards,

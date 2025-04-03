@@ -41,12 +41,19 @@ L_srcflnm10 = os.path.join(dir_data_raw, 'mail_content.txt')
 if not isinstance(get_values('attrs_rpt', inplace = False), pd.DataFrame):
     attrs_rpt = dataIO['HDFS'].pull(L_srcflnm1, 'attrs_rpt')
 
+attrs_att = (
+    attrs_rpt
+    .loc[lambda x: x['rc_export'].eq(0)]
+    ['RPT_FILE']
+    .drop_duplicates()
+)
+
 print('100. Load mail template')
 with open(L_srcflnm10, 'r', encoding = 'utf-8') as f:
     mail_tpl = f.readlines()
 
 cnt_local = {
-    'rpt_name' : ';'.join([os.path.splitext(os.path.basename(f))[0] for f in attrs_rpt['RPT_FILE']])
+    'rpt_name' : ';'.join([os.path.splitext(os.path.basename(f))[0] for f in attrs_att])
 }
 
 print('200. Dispatch the application')
@@ -71,7 +78,7 @@ msg.SentOnBehalfOfName = 'onbehalfofname@domain.com'
 msg.Importance = 2
 
 print('500. Prepare the attachments')
-for att in attrs_rpt.loc[lambda x: x['rc_export'].eq(0)]['RPT_FILE'].drop_duplicates():
+for att in attrs_att:
     msg.Attachments.Add(att)
 
 print('700. Prepare the mail body')

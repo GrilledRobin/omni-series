@@ -201,6 +201,7 @@ def h_tpl(
     tpl : Optional[str]
     ,cfg : pd.DataFrame
     ,xlwb_to : xw.Book
+    ,single_tpl : bool
 ) -> pd.DataFrame:
     #100. Identify the specific attributes for exporting data
     has_tpl = tpl != ''
@@ -212,41 +213,47 @@ def h_tpl(
         .drop_duplicates()
     )
 
-    #200. Identify the template
-    if has_tpl:
-        xlwb = xlwb_to.app.books.open(tpl)
-    else:
-        xlwb = xlwb_to.app.books.add()
-        xlsh_del = xlwb.sheets[0]
-        #We set a relatively unique name
-        xlsh_del.name = '..todel...'
-
-    #300. Helper function to process one record at one batch
-    def h_sheets(row : pd.Series) -> pd.Series:
+    #200. Helper function to process one record at one batch
+    def h_sheets(row : pd.Series, wb : xw.Book) -> pd.DataFrame:
         #100. Prepare the sheet
         if has_tpl:
-            xlsh = xlwb.sheets[row['RPT_SHEET']]
+            xlsh = wb.sheets[row['RPT_SHEET']]
         else:
-            xlsh = xlwb.sheets.add(row['RPT_SHEET'])
+            xlsh = wb.sheets.add(row['RPT_SHEET'])
 
         #500. Write the data to the sheet
         rc = h_sheet(cfg, row['RPT_TPL'], xlwb_to.fullname, xlsh)
 
         #700. Copy the sheet with data to the destination
-        xlsh.copy(after = xlwb_to.sheets['..todel...'])
+        if not single_tpl:
+            xlsh.copy(after = xlwb_to.sheets['..todel...'])
 
         return(rc)
+
+    #200. Identify the template
+    if single_tpl:
+        xlwb = xlwb_to
+    else:
+        if has_tpl:
+            xlwb = xlwb_to.app.books.open(tpl)
+        else:
+            xlwb = xlwb_to.app.books.add()
+            xlsh_del = xlwb.sheets[0]
+            #We set a relatively unique name
+            xlsh_del.name = '..todel...'
 
     #500. Write the data into the sheets
     #[ASSUMPTION]
     #[1] Result from applying <h_sheets> is a DataFrame with only one column
     rc = pd.concat(
-        df_tpl.apply(h_sheets, axis = 1).to_list()
+        df_tpl.apply(h_sheets, wb = xlwb, axis = 1).to_list()
         ,ignore_index = False
     )
 
     #999. Purge
-    xlwb.close()
+    if not single_tpl:
+        xlwb.close()
+
     return(rc)
 
 #280. Function to process multiple EXCEL Worksheets for one <RPT_FILE>
@@ -261,20 +268,42 @@ def h_book(
         .loc[lambda x: x['RPT_FILE'].eq(bookpath)]
         [['RPT_FILE','RPT_TPL']]
         .drop_duplicates()
+        .reset_index(drop = True)
     )
+
+    #200. Identify whether there is only one <RPT_TPL> for the <RPT_FILE>
+    #[ASSUMPTION]
+    #[1] In such case we directly save <RPT_TPL> as <RPT_FILE>, to retain all sheets and formulae if any
+    #[2] If <RPT_TPL> refers to the same file path as <RPT_FILE>, we overwrite <RPT_TPL> silently
+    #[3] If there are multiple <RPT_TPL> for the same <RPT_FILE>, there is no reason to keep all sheets
+    #     from all templates as there may be conflicts. Therefore, any formulae that refer to cross-sheet
+    #     cells would possibly fail
+    f_single_tpl = (len(df_book) == 1) & (len(df_book.loc[lambda x: x['RPT_TPL'].ne('')]) == 1)
 
     #300. Create a new workbook and save it as the destination immediately
     #[ASSUMPTION]
     #[1] This step ensures that the <fullname> of the newly created book is the required one
-    if os.path.isfile(bookpath): os.remove(bookpath)
-    xlwb = xlapp.books.add()
-    xlsh_del = xlwb.sheets[0]
-    xlsh_del.name = '..todel...'
+    if f_single_tpl:
+        if df_book['RPT_FILE'].str.strip().str.upper().ne(df_book['RPT_TPL'].str.strip().str.upper()).all():
+            if os.path.isfile(bookpath): os.remove(bookpath)
+        xlwb = xlapp.books.open(df_book.at[0,'RPT_TPL'])
+        xlsh_del = xlwb.sheets.add('..todel...')
+    else:
+        if df_book['RPT_FILE'].str.strip().str.upper().eq(df_book['RPT_TPL'].str.strip().str.upper()).any():
+            raise RuntimeError(
+                'It is not accepted that multiple <RPT_TPL> (even when any of them is <None>) for the same <RPT_FILE>'
+                + ' while one of them refers to the same path as <RPT_FILE>!'
+            )
+        if os.path.isfile(bookpath): os.remove(bookpath)
+        xlwb = xlapp.books.add()
+        xlsh_del = xlwb.sheets[0]
+        xlsh_del.name = '..todel...'
+
     xlwb.save(bookpath)
 
     #500. Handle multiple templates for it
     rc = pd.concat(
-        df_book['RPT_TPL'].apply(h_tpl, cfg = cfg, xlwb_to = xlwb).to_list()
+        df_book['RPT_TPL'].apply(h_tpl, cfg = cfg, xlwb_to = xlwb, single_tpl = f_single_tpl).to_list()
         ,ignore_index = False
     )
 

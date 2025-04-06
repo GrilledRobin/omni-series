@@ -769,7 +769,26 @@ if __name__=='__main__':
     bgn_kpi2 = intnx('day', G_d_rpt, -1, daytype = 'w')
     G_d_out = intnx('month', G_d_rpt, 0, 'e', daytype = 'c').strftime('%Y%m%d')
     cfg_kpi_file = os.path.join(dir_omniPy, 'omniPy', 'AdvDB', 'CFG_KPI_Example.xlsx')
-    with pd.option_context('future.no_silent_downcasting', True):
+
+    #110. Prepare sufficient context for execution
+    #[ASSUMPTION]
+    #[1] We have to provide sufficient context for <pd.option_context()>
+    #[2] For pandas<=2.1 and pandas>=3.0, there is no option <future.no_silent_downcasting>
+    #[3] That is why we have to prepare some option that MUST exist in all versions of <pandas>
+    #[4] <compute.use_numexpr> is set <True> by default
+    #    Quote: https://pandas.pydata.org/docs/reference/api/pandas.set_option.html
+    opt_context = {
+        'compute.use_numexpr' : True
+    }
+    try:
+        opt_context |= {'future.no_silent_downcasting' : True} if pd.get_option('future.no_silent_downcasting') else {}
+    except:
+        pass
+
+    #130. Load the data
+    #[ASSUMPTION]
+    #[2] For pandas<=2.1 and pandas>=3.0, <fillna()> issues a warning for inference of dtype, we should bypass it
+    with pd.option_context(*[s for v in [(k,v) for k,v in opt_context.items()] for s in v]):
         cfg_kpi = (
             pd.read_excel(
                 cfg_kpi_file

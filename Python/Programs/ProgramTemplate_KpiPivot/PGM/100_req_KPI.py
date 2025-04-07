@@ -15,11 +15,20 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250407        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now use <xlwings> to read EXCEL data since <pandas> will imperatively change the input dtype of numeric-like strings,   #
+#   |      |     regardless of the options <dtype=> and <converters=>                                                                   #
+#   |      |[2] Demo of update log 2                                                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 print('Load the requested KPI for reporting')
 import os
 import pandas as pd
+import xlwings as xw
+from collections.abc import Iterable
 from importlib import import_module
 from omniPy.Dates import asDates
 
@@ -35,7 +44,7 @@ print('100. Define helper functions')
 #[ASSUMPTION]
 #[1] We set the prefix of all helper functions as <h_>
 #[2] This is to distinguish the objects from those imported from other modules or packages
-#130. Function to join the paths out of pd.Series
+#110. Function to join the paths out of pd.Series
 def h_joinPath(srs : pd.Series):
     vfy_srs = srs.apply(pd.isnull)
     if vfy_srs.all():
@@ -43,13 +52,59 @@ def h_joinPath(srs : pd.Series):
     else:
         return(os.path.join(*srs))
 
+#130. Function to read the data from <xw.Range>
+def h_readRange(xlwb : xw.Book, sheetname : str) -> pd.DataFrame:
+    #200. Prepare the specific arguments for current table
+    args_axis = {
+        'index' : False
+        ,'header' : True
+    }
+
+    #300. Define the Sheet object
+    xlsh = xlwb.sheets[sheetname]
+
+    #400. Define the range
+    xlrng = (
+        xlsh.range((1,1)).expand()
+        #[ASSUMPTION]
+        #[1] It is tested that chains of [options()] only validate the last one [xlwings <= 0.28.5]
+        .options(pd.DataFrame, **args_axis)
+        # .options(formatter = fmt_bold)
+    )
+
+    #900. Load the data
+    return(xlrng.value)
+
+#150. Function to load EXCEL via <xlwings>
+#[ASSUMPTION]
+#[1] <pandas.read_excel()> always tries to convert number-like characters to numeric, which cannot be switched off
+#[2] Such behavior leads to weird result: when a cell contains numbers with leading zeros and stores as TEXT, its value
+#     will miss out all the leading zeros, even if <dtype='O'> or <converters = str> are specified
+#[3] Quote: https://github.com/pandas-dev/pandas/issues/20828
+#[4] <xlwings> will not convert number-like characters to numeric imperatively
+def h_readEXCEL(infile : str | os.PathLike, sheets = Iterable[str]) -> dict[str, pd.DataFrame]:
+    if isinstance(sheets, str):
+        sheets = [sheets]
+
+    with xw.App( visible = False, add_book = False ) as xlapp:
+        #010. Set options
+        xlapp.display_alerts = False
+        xlapp.screen_updating = False
+
+        #100. Open the book
+        xlwb = xlapp.books.open(infile)
+
+        #500. Execution
+        rstOut = { sh : h_readRange(xlwb, sh) for sh in sheets }
+
+        #999. Purge
+        xlapp.screen_updating = True
+
+    return(rstOut)
+
 print('300. Import the KPI requirements')
 rpt_kpi = (
-    pd.read_excel(
-        L_srcflnm10
-        ,sheet_name = 'KPI_Req'
-        ,dtype = 'object'
-    )
+    h_readEXCEL(L_srcflnm10, 'KPI_Req')['KPI_Req']
     .loc[lambda x: x['C_KPI_ID'].notnull()]
     .assign(**{
         'N_UNIT' : lambda x: x['N_UNIT'].astype(float)
@@ -72,25 +127,20 @@ try:
 except:
     pass
 
+#530. Preload the EXCEL data
+cfg_kpi_pre = h_readEXCEL(L_srcflnm1, ['KPIConfig','LibConfig'])
+
 #550. Load the data
 #[ASSUMPTION]
 #[2] For pandas<=2.1 and pandas>=3.0, <fillna()> issues a warning for inference of dtype, we should bypass it
 with pd.option_context(*[s for v in [(k,v) for k,v in opt_context.items()] for s in v]):
     cfg_kpi = (
-        pd.read_excel(
-            L_srcflnm1
-            ,sheet_name = 'KPIConfig'
-            ,dtype = 'object'
-        )
+        cfg_kpi_pre['KPIConfig']
         .assign(**{
             'C_LIB_NAME' : lambda x: x['C_LIB_NAME'].fillna('')
         })
         .merge(
-            pd.read_excel(
-                L_srcflnm1
-                ,sheet_name = 'LibConfig'
-                ,dtype = 'object'
-            )
+            cfg_kpi_pre['LibConfig']
             ,on = 'C_LIB_NAME'
             ,how = 'left'
         )
@@ -107,8 +157,8 @@ with pd.option_context(*[s for v in [(k,v) for k,v in opt_context.items()] for s
         .loc[lambda x: x['C_KPI_ID'].isin(rpt_kpi['C_KPI_ID'])]
         #800. Create fields that further facilitate the process in <omniPy.AdvDB.DBuse_GetTimeSeriesForKpi>
         .assign(**{
-            'C_KPI_FILE_NAME' : lambda x: x['C_KPI_FILE_NAME'].str.strip().str.upper()
-            ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('').str.strip().str.upper()
+            'C_KPI_FILE_NAME' : lambda x: x['C_KPI_FILE_NAME'].str.strip()
+            ,'C_LIB_PATH' : lambda x: x['C_LIB_PATH'].fillna('').str.strip()
             ,'C_KPI_FILE_TYPE' : lambda x: x['C_KPI_FILE_TYPE'].str.strip()
             ,'DF_NAME' : lambda x: x['DF_NAME'].fillna('dummy').str.strip()
             ,'options' : lambda x: x['options'].fillna('{}').str.strip()

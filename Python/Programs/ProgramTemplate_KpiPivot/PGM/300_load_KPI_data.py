@@ -76,12 +76,23 @@ args_cln_rpt = modifyDict(
 )
 cln_rpt = UserCalendar(**args_cln_rpt)
 
+print('400. Modify configuration table')
+cfg_this = (
+    cfg_kpi
+    .drop(columns = ['C_KPI_SHORTNAME'])
+    .merge(
+        rpt_kpi[['C_KPI_ID','C_KPI_SHORTNAME']]
+        ,how = 'inner'
+        ,on = 'C_KPI_ID'
+    )
+)
+
 print('500. Load the sources')
 #510. Prepare the modification upon the default arguments with current business requirements
 args_kpi = modifyDict(
     getOption['args.def.GTSFK']
     ,{
-        'inKPICfg' : cfg_kpi
+        'inKPICfg' : cfg_this
         ,'InfDatCfg' : {
             'InfDat' : os.path.basename(L_srcflnm1)
             ,'_paths' : os.path.dirname(L_srcflnm1)
@@ -94,6 +105,8 @@ args_kpi = modifyDict(
         ,'fImp_opt' : 'options'
         ,'SingleInf' : True
         ,'dnDates' : cln_rpt.d_AllWD
+        #[ASSUMPTION]
+        #[1] Change <MergeProc> to <MERGE> will reflect the change in <C_KPI_SHORTNAME>
         ,'MergeProc' : 'SET'
         ,'keyvar' : ['nc_cifno']
         ,'SetAsBase' : 'k'
@@ -105,11 +118,14 @@ args_kpi = modifyDict(
 )
 
 #530. Load data
+#[ASSUMPTION]
+#[1] <C_KPI_ID> will be deduplicated in this function
 kpi_src = DBuse_GetTimeSeriesForKpi(**args_kpi)
 
 #570. Save the debug data
 if isinstance((df_miss := kpi_src.get('G_miss_files')), pd.DataFrame):
     if os.path.isfile(L_stpflnm2): os.remove(L_stpflnm2)
+    print(f'List of missing source files are exported to key <G_miss_files> in below file:\n{L_stpflnm2}')
     rc_debug = dataIO['HDFS'].push(
         {
             'G_miss_files' : df_miss

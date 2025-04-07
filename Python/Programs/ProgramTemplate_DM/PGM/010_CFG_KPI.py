@@ -21,6 +21,7 @@ print('Load the KPI core configuration')
 import os
 import pandas as pd
 import xlwings as xw
+from collections.abc import Iterable
 from omniPy.Dates import asDates
 
 #010. Local environment
@@ -30,11 +31,10 @@ L_stpflnm1 = os.path.join(dir_data_src, 'CFG_KPI.hdf')
 dataIO.add('HDFS')
 
 print('100. Define helper functions')
-#110. Function to join several columns into one valid file path in a DataFrame
 #[ASSUMPTION]
 #[1] We set the prefix of all helper functions as <h_>
 #[2] This is to distinguish the objects from those imported from other modules or packages
-#130. Function to join the paths out of pd.Series
+#110. Function to join the paths out of pd.Series
 def h_joinPath(srs : pd.Series):
     vfy_srs = srs.apply(pd.isnull)
     if vfy_srs.all():
@@ -67,14 +67,14 @@ def h_readRange(xlwb : xw.Book, sheetname : str) -> pd.DataFrame:
 
 #150. Function to load EXCEL via <xlwings>
 #[ASSUMPTION]
-#[1] <pandas.read_excel()> always tries to convert number-like characterss to numeric, which cannot be switched off
+#[1] <pandas.read_excel()> always tries to convert number-like characters to numeric, which cannot be switched off
 #[2] Such behavior leads to weird result: when a cell contains numbers with leading zeros and stores as TEXT, its value
 #     will miss out all the leading zeros, even if <dtype='O'> or <converters = str> are specified
 #[3] Quote: https://github.com/pandas-dev/pandas/issues/20828
 #[4] <xlwings> will not convert number-like characters to numeric imperatively
-def h_readEXCEL(infile : str | os.PathLike, sheets = list[str]) -> dict[str, pd.DataFrame]:
+def h_readEXCEL(infile : str | os.PathLike, sheets = Iterable[str]) -> dict[str, pd.DataFrame]:
     if isinstance(sheets, str):
-        sheets = []
+        sheets = [sheets]
 
     with xw.App( visible = False, add_book = False ) as xlapp:
         #010. Set options

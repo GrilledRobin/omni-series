@@ -24,7 +24,11 @@
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |                |Column Name     |Nullable?  |Description                                                                          #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |D_BGN           |No         | Beginning date of the KPI data file existence                                       #
+#   |                |D_END           |No         | Ending date of the KPI data file existence                                          #
 #   |                |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                             #
+#   |                |F_KPI_INUSE     |No         | Column of type <int> indicating whether the KPI is in use for current database, as  #
+#   |                |                |           |  filter condition in the process                                                    #
 #   |                |C_KPI_SHORTNAME |No         | It will be translated into [colnames] in the output data frame                      #
 #   |                |                |           | [IMPORTANT] Required when <MergeProc==MERGE>                                        #
 #   |                |C_KPI_BIZNAME   |Yes        | If it is present, the program will translate its values to the attribute [label] on #
@@ -225,6 +229,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |      |[2] Accept <fImp.opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250412        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <D_BGN>, <D_END> and <F_KPI_INUSE> to validate the KPI in use                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -687,7 +696,10 @@ DBuse_GetTimeSeriesForKpi <- function(
 			,opt_ram
 			,fTrans.opt
 		)
-	)
+	) %>%
+		dplyr::filter(!!rlang::sym('D_BGN') <= !!rlang::sym('dates')) %>%
+		dplyr::filter(!!rlang::sym('D_END') >= !!rlang::sym('dates')) %>%
+		dplyr::filter(!!rlang::sym('F_KPI_INUSE') == 1)
 
 	#520. Set the useful columns to their parsed values for further data retrieval
 	parse_kpiDat[trans_var] <- parse_kpiDat[paste0(trans_var, '.Parsed')]
@@ -698,7 +710,7 @@ DBuse_GetTimeSeriesForKpi <- function(
 	kpiDat_exist <- parse_kpiDat %>%
 		dplyr::filter_at('C_KPI_FULL_PATH.chkExist', ~.) %>%
 		dplyr::group_by_at(c('C_KPI_ID', 'dates')) %>%
-		dplyr::slice_min(N_LIB_PATH_SEQ) %>%
+		dplyr::slice_min('N_LIB_PATH_SEQ') %>%
 		dplyr::ungroup()
 
 	#559. Abort the process if there is no data file found anywhere

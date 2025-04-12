@@ -20,6 +20,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250412        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Ensure <N_LIB_PATH_SEQ> is the minimum among all <N_LIB_PATH_SEQ> of the same <C_LIB_NAME>, rather than globally        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 print('Create daily KPI')
@@ -109,15 +114,20 @@ print('700. Create KPI data')
 cfg_this = (
     cfg_kpi
     .loc[lambda x: x['C_KPI_ID'].isin(kpi_this)]
-    .loc[lambda x: x['D_BGN'].le(asDates(L_curdate))]
-    .loc[lambda x: x['D_END'].ge(asDates(L_curdate))]
+    .loc[lambda x: x['D_BGN'].le(d_date)]
+    .loc[lambda x: x['D_END'].ge(d_date)]
     .loc[lambda x: x['F_KPI_INUSE'].eq(1)]
-    .loc[lambda x: x['N_LIB_PATH_SEQ'].eq(x['N_LIB_PATH_SEQ'].min())]
+    .loc[lambda x: x['N_LIB_PATH_SEQ'].eq(
+        x.groupby(['C_KPI_ID','C_LIB_NAME'])
+        ['N_LIB_PATH_SEQ'].min()
+        .reindex(x.set_index(['C_KPI_ID','C_LIB_NAME']).index)
+        .set_axis(x.index)
+    )]
 )
 
 #719. Raise if the output files of these KPIs are NOT the same one
 if len(cfg_this['FilePath'].str.upper().drop_duplicates()) > 1:
-    raise ValueError(f'Captioned KPIs: {kpi_this} are in different output file and cannot be created in one batch!')
+    raise ValueError(f'Captioned KPIs: {kpi_this} are in different output files and cannot be created in one batch!')
 
 #750. Execution
 rst_this = (

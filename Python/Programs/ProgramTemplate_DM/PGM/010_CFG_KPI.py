@@ -162,6 +162,9 @@ def h_vfy_cfg():
         )
 
     print('999. Save the result to harddrive')
+    if not os.path.isdir(rst_dir := os.path.dirname(L_stpflnm1)):
+        os.makedirs(rst_dir)
+
     if os.path.isfile(L_stpflnm1): os.remove(L_stpflnm1)
     rc = dataIO['HDFS'].push(
         {

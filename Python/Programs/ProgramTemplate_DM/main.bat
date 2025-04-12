@@ -1,5 +1,5 @@
 @echo off
-@set PGM_TITLE=Example of KPI Pivoting and Distribution
+@set PGM_TITLE=Example of Data Mart Maintenance
 @title %PGM_TITLE%
 REM #######################################################################
 set /p PROC_END=Please input period ending(YYYYMMDD):

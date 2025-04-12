@@ -94,7 +94,11 @@ def DBuse_GetTimeSeriesForKpi(
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |                |Column Name     |Nullable?  |Description                                                                          #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
+#   |                |D_BGN           |No         | Beginning date of the KPI data file existence                                       #
+#   |                |D_END           |No         | Ending date of the KPI data file existence                                          #
 #   |                |C_KPI_ID        |No         | KPI ID used as part of keys for mapping and aggregation                             #
+#   |                |F_KPI_INUSE     |No         | Column of type <int> indicating whether the KPI is in use for current database, as  #
+#   |                |                |           |  filter condition in the process                                                    #
 #   |                |C_KPI_FILE_TYPE |No         | File type to determine the API for data I/O process, see <DataIO>                   #
 #   |                |N_LIB_PATH_SEQ  |No         | Priority to determine the candidate paths when loading and writing data files, the  #
 #   |                |                |           |  lesser the higher. E.g. 1 represents the primary path, 2 indicates the backup      #
@@ -303,6 +307,11 @@ def DBuse_GetTimeSeriesForKpi(
 #   | Date |    20240209        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce function <validateDMCol> to unify the validation of related columns                                           #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250412        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <D_BGN>, <D_END> and <F_KPI_INUSE> to validate the KPI in use                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -697,6 +706,9 @@ def DBuse_GetTimeSeriesForKpi(
             ,**opt_ram
             ,**fTrans_opt
         )
+        .loc[lambda x: x['D_BGN'].le(x['dates'])]
+        .loc[lambda x: x['D_END'].ge(x['dates'])]
+        .loc[lambda x: x['F_KPI_INUSE'].eq(1)]
     )
 
     #520. Set the useful columns to their parsed values for further data retrieval

@@ -76,15 +76,12 @@ def h_md_from_cfg(cfg : pd.DataFrame, select : Iterable) -> pd.DataFrame:
     rstOut = (
         cfg
         .loc[lambda x: x['C_KPI_ID'].isin(select)]
-        .assign(**{
-            'libseq_min_' : lambda x: (
-                x.groupby('C_LIB_NAME')
-                ['N_LIB_PATH_SEQ'].min()
-                .reindex(x['C_LIB_NAME'])
-                .set_axis(x.index)
-            )
-        })
-        .loc[lambda x: x['N_LIB_PATH_SEQ'].eq(x['libseq_min_'])]
+        .loc[lambda x: x['N_LIB_PATH_SEQ'].eq(
+            x.groupby('C_LIB_NAME')
+            ['N_LIB_PATH_SEQ'].min()
+            .reindex(x['C_LIB_NAME'])
+            .set_axis(x.index)
+        )]
         .assign(**{
             'FilePath.Parsed' : lambda x: (
                 parseDatName(
@@ -151,10 +148,13 @@ args_ts_roll = {
     ,'fDebug' : False
 }
 
-print('400. Conduct roling calculation')
+print('400. Conduct rolling calculation')
 rc_R15 = kfFunc_ts_roll(**args_ts_roll)
 
 print('999. Save the result to harddrive')
+if not os.path.isdir(rst_dir := os.path.dirname(L_stpflnm1)):
+    os.makedirs(rst_dir)
+
 if os.path.isfile(L_stpflnm1): os.remove(L_stpflnm1)
 rc = dataIO['HDFS'].push(
     {

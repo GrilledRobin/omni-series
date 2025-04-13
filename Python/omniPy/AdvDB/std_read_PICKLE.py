@@ -4,19 +4,17 @@
 import os
 import pandas as pd
 from omniPy.AdvOp import ExpandSignature
-from omniPy.AdvDB import loadSASdat
 
 #[ASSUMPTION]
 #[1] If you need to chain the expansion, make sure either of below designs is set
 #    [1] Each of the nodes is in a separate module
 #    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
 
-@(eSig := ExpandSignature(loadSASdat))
-def std_read_SAS(
-    infile : str | os.PathLike = None
+@(eSig := ExpandSignature(pd.read_pickle))
+def std_read_PICKLE(
+    infile : str | os.PathLike | pd._typing.ReadPickleBuffer = None
     ,funcConv : callable = lambda x: x
-    ,inFile : str | os.PathLike = None
-    ,filename_path : str | os.PathLike = None
+    ,filepath_or_buffer = None
     ,*pos
     ,**kw
 ) -> pd.DataFrame:
@@ -44,8 +42,8 @@ def std_read_SAS(
 #   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
 #   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
 #   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
-#   |inFile        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
-#   |                   longer takes effect                                                                                             #
+#   |filepath_or_buffer        :   The same argument in the ancestor function, which is a placeholder in this one, superseded by        #
+#   |                   <infile> so it no longer takes effect                                                                           #
 #   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
 #   |                   supersede it by another argument. This is because we do not know the <kind> of it in the ancestor and that it   #
 #   |                   may be POSITIONAL_ONLY and prepend all other arguments in the expanded signature, in which case it takes the    #
@@ -53,9 +51,6 @@ def std_read_SAS(
 #   |                   function with lower priority (i.e. to the right side of its superseding argument) and just do not use it in the #
 #   |                   function body; then inject the fabricated one to the parameters passed to the call of the ancestor.             #
 #   |                   [<see def.>  ] <Default> Use the same input as <infile>                                                         #
-#   |filename_path :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <infile> so it no  #
-#   |                   longer takes effect                                                                                             #
-#   |                  [<see def.>      ] <Default> Calculated out of <infile>                                                          #
 #   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
 #   |**kw          :   Various keyword arguments to expand from its ancestor; see its official document                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -65,34 +60,9 @@ def std_read_SAS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   | Date |    20210503        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
+#   | Date |    20250413        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20231209        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce argument <funcConv> to enable mutation of the loaded data and thus save RAM consumption                       #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20240102        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Eliminate the excessive kwargs from those acceptable in <pyreadstat.read_sas7bdat>                                      #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20240129        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the unnecessary restrictions on arguments, and leave them to the caller process                                  #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20250201        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
-#   |______|____________________________________________________________________________________________________________________________#
-#   |___________________________________________________________________________________________________________________________________#
-#   | Date |    20250211        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
-#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add backward compatibility for the old projects                                                                         #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -109,9 +79,6 @@ def std_read_SAS(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
 #   |   |   |ExpandSignature                                                                                                            #
-#   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |AdvDB                                                                                                                          #
-#   |   |   |loadSASdat                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -119,8 +86,7 @@ def std_read_SAS(
 
     #100. Identify the shared arguments between this function and its ancestor functions
     args_share = {
-        'inFile' : (infile or inFile or filename_path)
-        ,'filename_path' : (infile or inFile or filename_path)
+        'filepath_or_buffer' : (infile or filepath_or_buffer)
     }
     eSig.vfyConflict(args_share)
 
@@ -128,11 +94,11 @@ def std_read_SAS(
     pos_out, kw_out = eSig.insParams(args_share, pos, kw)
 
     #800. Import the data
-    df , meta = eSig.src( *pos_out, **kw_out )
+    df = eSig.src( *pos_out, **kw_out )
 
     #999. Return the result
     return( funcConv(df) )
-#End std_read_SAS
+#End std_read_PICKLE
 
 '''
 #-Notes- -Begin-
@@ -140,32 +106,50 @@ def std_read_SAS(
 if __name__=='__main__':
     #010. Create environment.
     import sys
+    import os
+    import pandas as pd
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
-    from omniPy.AdvOp import withDefaults
-    from omniPy.AdvDB import std_read_SAS
+    from omniPy.AdvDB import std_read_PICKLE
+    from omniPy.Dates import asDates, asDatetimes, asTimes
 
-    #100. Load the SAS dataset with Chinese Characters
-    tt = std_read_SAS( dir_omniPy + r'omniPy\AdvDB\test_loadsasdat.sas7bdat' , encoding = 'GB2312' )
-    tt.head()
-    tt.dtypes
+    #200. Create data frame with various dtypes
+    aaa = (
+        pd.DataFrame(
+            {
+                'var_str' : 'abcde'
+                ,'var_int' : 5
+                ,'var_float' : 14.678
+                ,'var_date' : '2023-12-25'
+                ,'var_dt' : '2023-12-25 12:34:56.789012'
+                ,'var_time' : '12:34:56.789012'
+                ,'var_ts' : asDatetimes('2023-12-25 12:34:56.789012', fmt = '%Y-%m-%d %H:%M:%S.%f')
+            }
+            ,index = [0]
+        )
+        #Prevent pandas from inferring dtypes of these fields
+        .assign(**{
+            'var_date' : lambda x: asDates(x['var_date'])
+            #<%f> is only valid at input (strptime) rather than output (strftime)
+            ,'var_dt' : lambda x: asDatetimes(x['var_dt'], fmt = '%Y-%m-%d %H:%M:%S.%f')
+            ,'var_time' : lambda x: asTimes(x['var_time'], fmt = '%H:%M:%S.%f')
+        })
+    )
 
-    #200. Standardize the call with keyword input pattern
-    #[ASSUMPTION]
-    #[1] <withDefaults> only enables keyword provision of parameters, while any positional or keyword-only arguments without
-    #     default values should still be provided as input in accordance with the signature
-    std_param = {
-        'infile' : dir_omniPy + r'omniPy\AdvDB\test_emptysasdat.sas7bdat'
-        ,'encoding' : 'GB2312'
-    }
+    #300. Convert the data to pickle file
+    outf = os.path.join(os.getcwd(), 'vfypickle.pkl')
+    rc = pd.to_pickle(aaa, outf)
 
-    #210. Wrap the function to enable provision of keyword parameters
-    readsas = withDefaults(std_read_SAS)
-    help(readsas)
+    #400. Load the file
+    aa1 = std_read_PICKLE(outf)
 
-    #250. Load data
-    tt2 = readsas(**std_param)
+    #450. Verify whether the pickled data can be converted back
+    print(aaa.eq(aa1).all(axis = None))
+    # True
+
+    #900. Purge
+    if os.path.isfile(outf): os.remove(outf)
 
 #-Notes- -End-
 '''

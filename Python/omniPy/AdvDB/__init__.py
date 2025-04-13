@@ -8,6 +8,8 @@
 #100.   Import the local modules.
 #[IMPORTANT] The sequence of below statements should align the dependency tree,
 #             i.e. the definition of the latter function depends on the former one
+from .std_read_PICKLE import std_read_PICKLE
+from .std_write_PICKLE import std_write_PICKLE
 from .wrapAsGroupedFunc import wrapAsGroupedFunc
 from .validateDMCol import validateDMCol
 from .parseHDFStoreInfo import parseHDFStoreInfo
@@ -38,6 +40,7 @@ from .kfFunc_ts_fullmonth import kfFunc_ts_fullmonth
 __all__ = [
     'DBuse_MrgKPItoInf', 'DBuse_SetKPItoInf', 'DBuse_GetTimeSeriesForKpi'
     , 'parseHDFStoreInfo', 'validateDMCol'
+    , 'std_read_PICKLE', 'std_write_PICKLE'
     , 'loadSASdat', 'std_read_HDFS', 'std_read_RAM', 'std_read_SAS'
     , 'aggrByPeriod'
     , 'parseDatName'

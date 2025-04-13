@@ -33,7 +33,8 @@ def std_write_SAS(
 #   |[1] Retain the signatures of all ancestor functions for easy program design                                                        #
 #   |[2] Add aliases of necessary arguments to enable standardized call                                                                 #
 #   |[3] In most cases when this function is called in a standardized way, the first argument is provided in positional pattern         #
-#   |[4] In order to call the function with standardized keywords, one must also wrap it with <AdvOp.withDefaults>, see examples        #
+#   |[4] Since it is wrapped by <ExpandSignature>, all arguments can be passed with positional or keyword fashion, regardless of its    #
+#   |     wrapped signature, although it is strongly recommended to pass the parameters in their suggested <kind>                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#

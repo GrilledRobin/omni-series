@@ -47,14 +47,19 @@ dir_curr <- dirname(scr_name)
 log_name <- file.path(dir_curr, gsub('\\.\\w+$', '.log', basename(scr_name)))
 if (file.exists(log_name)) file.remove(log_name)
 p_logfile <- log4r::file_appender(log_name, append = T, layout = log_layout_Python())
+#[ASSUMPTION]
+#[1] Messages cannot be captured in the console if we omit <p_console>
+#[2] Messages will be captured twice in the console if we add <p_console> as appender, with difference in the
+#     header of the texts
+#[3] This not so perfect but since it only affects the display in the console while keeping a good fashion in
+#     the log file, we do not plan to fix this
 my_logger <- log4r::logger(threshold = 'INFO', appenders = list(p_console, p_logfile))
 
 #045. Define the messaging functions
 logger.debug <- function(...){log4r::debug(my_logger, trimws(paste0(..., collapse = '')))}
 logger.info <- function(...){
-	msg <- paste0(..., collapse = '')
-	msg <- gsub('^simpleMessage in\\s+[\\.[:alpha:]]\\w*\\(.*?\\):\\s+', '', msg)
-	log4r::info(my_logger, trimws(msg))
+	dots <- rlang::list2(...)
+	log4r::info(my_logger, dots[[1]]$message)
 }
 logger.warning <- function(...){
 	msg <- paste0(..., collapse = '')
@@ -63,6 +68,20 @@ logger.warning <- function(...){
 }
 logger.error <- function(...){log4r::error(my_logger, trimws(paste0(..., collapse = '')))}
 logger.critical <- function(...){log4r::fatal(my_logger, trimws(paste0(..., collapse = '')))}
+
+#049. Set the handlers global
+#[ASSUMPTION]
+#[1] By doing so, all messages below can be captured by the handlers defined above
+#[2] <str()> can be captured hence there is no need to add it in the capturing syntax
+#[3] As special cases, <print()> and <cat()> cannot be captured anyway, so try not use these when you need logs
+#Quote: https://www.r-bloggers.com/2012/10/error-handling-in-r/
+globalCallingHandlers(
+	message = function(m){logger.info(m)}
+	,print = function(m){logger.info(m)}
+	,warning = function(w){logger.warning(w)}
+	,error = function(e){logger.error(e)}
+	,abort = function(e){logger.critical(e)}
+)
 
 #050. Define local environment
 #051. Period of dates for current script
@@ -156,11 +175,7 @@ scr_mail_curr <- list.files(
 if (f_sendmail) {
 	#100. Issue warning if there is no script to send email
 	if ((length(scr_mail_ctrl) == 0) & (length(scr_mail_curr) == 0)) {
-		#Quote: https://www.r-bloggers.com/2012/10/error-handling-in-r/
-		withCallingHandlers(
-			warning('No script found for emailing!')
-			,warning = function(w){logger.warning(w)}
-		)
+		warning('No script found for emailing!')
 	}
 
 	#500. Move the scripts from <dir_ctrl> to <dir_curr>
@@ -234,28 +249,28 @@ mlen_prms <- max(nchar(names(key_tolog)))
 #710. Print parameters
 #[ASSUMPTION]
 #[1] Triangles [<>] are not accepted in naming folders, hence they are safe to be used for enclosing the value of variables
-logger.info(strrep('-', 80))
-logger.info('Process Parameters:')
+message(strrep('-', 80))
+message('Process Parameters:')
 for (i in seq_along(key_tolog)) {
-	logger.info('<',tmcn::strpad(names(key_tolog)[[i]], width = mlen_prms, side = 'right'),'>: <',key_tolog[[i]],'>')
+	message('<',tmcn::strpad(names(key_tolog)[[i]], width = mlen_prms, side = 'right'),'>: <',key_tolog[[i]],'>')
 }
 
 #720. Print existence of key directories
-logger.info(strrep('-', 80))
-logger.info('Existence of above key locations:')
+message(strrep('-', 80))
+message('Existence of above key locations:')
 for (i in seq_along(key_dirs)) {
-	logger.info('<',tmcn::strpad(names(key_dirs)[[i]], width = mlen_prms, side = 'right'),'>: <',dir.exists(key_dirs[[i]]),'>')
+	message('<',tmcn::strpad(names(key_dirs)[[i]], width = mlen_prms, side = 'right'),'>: <',dir.exists(key_dirs[[i]]),'>')
 }
 if (!all(dir.exists(key_dirs))) {
-	stop(logger.error('Some among the key locations DO NOT exist! Program terminated!'))
+	stop('Some among the key locations DO NOT exist! Program terminated!')
 }
 
 #770. Subordinate scripts
-logger.info(strrep('-', 80))
-logger.info('Subordinate scripts to be located at:')
-logger.info(dir_curr)
+message(strrep('-', 80))
+message('Subordinate scripts to be located at:')
+message(dir_curr)
 if (i_len == 0) {
-	stop(logger.error('No available subordinate script is found! Program terminated!'))
+	stop('No available subordinate script is found! Program terminated!')
 }
 
 #780. Verify the process control file to minimize the system calculation effort
@@ -290,22 +305,22 @@ if (length(pgm_executed) > 0) {
 	pgm_executed_dedup <- sort(unique(pgm_executed))
 
 	#100. Prepare the log
-	logger.info(strrep('-', 80))
-	logger.info('Below scripts have been executed today, thus are excluded.')
+	message(strrep('-', 80))
+	message('Below scripts have been executed today, thus are excluded.')
 	for (f in pgm_executed_dedup) {
-		logger.info('<',f,'>')
+		message('<',f,'>')
 	}
 
 	#900. Exclusion
 	pgms_curr <- pgms_curr[!(basename(pgms_curr) %in% pgm_executed_dedup)]
 	i_len <- length(pgms_curr)
 	if (i_len == 0) {
-		logger.info('All scripts have been executed previously. Program completed.')
+		message('All scripts have been executed previously. Program completed.')
 		q()
 	}
 }
 
-logger.info('Subordinate scripts to be called in below order:')
+message('Subordinate scripts to be called in below order:')
 i_nums <- nchar(as.character(i_len))
 mlen_pgms <- max(nchar(basename(pgms_curr)))
 for (i in seq_len(i_len)) {
@@ -313,36 +328,28 @@ for (i in seq_len(i_len)) {
 	i_char <- tmcn::strpad(as.character(i), width = i_nums, side = 'left', pad = '0')
 
 	#999. Print the message
-	logger.info('<',i_char,'>: <',tmcn::strpad(basename(pgms_curr[[i]]), width = mlen_pgms, side = 'right'),'>')
+	message('<',i_char,'>: <',tmcn::strpad(basename(pgms_curr[[i]]), width = mlen_pgms, side = 'right'),'>')
 }
 
 #800. Call the subordinate scripts that are previously found
-logger.info(strrep('-', 80))
-logger.info('Calling subordinate scripts...')
+message(strrep('-', 80))
+message('Calling subordinate scripts...')
 for (pgm in pgms_curr) {
 	#001. Get the file name of the script
 	fname_scr <- basename(pgm)
 
 	#100. Declare which script is called at this step
-	logger.info(strrep('-', 40))
-	logger.info('<',fname_scr,'> Beginning...')
+	message(strrep('-', 40))
+	message('<',fname_scr,'> Beginning...')
 
 	#500. Call the dedicated program
-	#Quote: https://www.r-bloggers.com/2012/10/error-handling-in-r/
-	withCallingHandlers(
-		source(pgm, encoding = head(readr::guess_encoding(pgm), 1))
-		,message = function(m){logger.info(m)}
-		,print = function(m){logger.info(m)}
-		,warning = function(w){logger.warning(w)}
-		,error = function(e){logger.error(e)}
-		,abort = function(e){logger.critical(e)}
-	)
+	source(pgm, encoding = head(readr::guess_encoding(pgm), 1))
 
 	#700. Write current script to the process control file for another call of the same process
 	write(fname_scr, proc_ctrl, append = T)
 
 	#999. Mark completion of current step
-	logger.info('<',fname_scr,'> Complete!')
+	message('<',fname_scr,'> Complete!')
 }
-logger.info(strrep('-', 80))
-logger.info('Process Complete!')
+message(strrep('-', 80))
+message('Process Complete!')

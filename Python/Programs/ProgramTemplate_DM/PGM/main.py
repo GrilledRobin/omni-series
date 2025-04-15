@@ -230,24 +230,24 @@ mlen_prms = max([ wcswidth(k) for k in key_tolog.keys() ])
 #710. Print parameters
 #[ASSUMPTION]
 #[1] Triangles [<>] are not accepted in naming folders, hence they are safe to be used for enclosing the value of variables
-logger.info('-' * 80)
-logger.info('Process Parameters:')
+print('-' * 80)
+print('Process Parameters:')
 for k,v in key_tolog.items():
-    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + v + '>')
+    print('<' + alignWidth(k, width = mlen_prms) + '>: <' + v + '>')
 
 #720. Print existence of key directories
-logger.info('-' * 80)
-logger.info('Existence of above key locations:')
+print('-' * 80)
+print('Existence of above key locations:')
 for k,v in key_dirs.items():
-    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + str(os.path.isdir(v)) + '>')
+    print('<' + alignWidth(k, width = mlen_prms) + '>: <' + str(os.path.isdir(v)) + '>')
 
 if not all([ os.path.isdir(v) for v in key_dirs.values() ]):
     raise RuntimeError('Some among the key locations DO NOT exist! Program terminated!')
 
 #770. Subordinate scripts
-logger.info('-' * 80)
-logger.info('Subordinate scripts to be located at:')
-logger.info(dir_curr)
+print('-' * 80)
+print('Subordinate scripts to be located at:')
+print(dir_curr)
 if i_len == 0:
     raise RuntimeError('No available subordinate script is found! Program terminated!')
 
@@ -283,20 +283,20 @@ if pgm_executed:
     pgm_executed_dedup = sorted(list(set(pgm_executed)))
 
     #100. Prepare the log
-    logger.info('-' * 80)
-    logger.info('Below scripts have been executed today, thus are excluded.')
+    print('-' * 80)
+    print('Below scripts have been executed today, thus are excluded.')
     for f in pgm_executed_dedup:
-        logger.info('<' + f + '>')
+        print('<' + f + '>')
 
     #900. Exclusion
     pgms_curr = [ o for o in pgms_curr if os.path.basename(o[0]) not in pgm_executed_dedup ]
     i_len = len(pgms_curr)
     if i_len == 0:
-        logger.info('All scripts have been executed previously. Program completed.')
+        print('All scripts have been executed previously. Program completed.')
         sys.exit()
 
-logger.info('-' * 80)
-logger.info('Subordinate scripts to be called in below order:')
+print('-' * 80)
+print('Subordinate scripts to be called in below order:')
 i_nums = len(str(i_len))
 #[ASSUMPTION]
 #Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
@@ -317,18 +317,18 @@ for i in range(i_len):
     scr_pad = alignWidth(fname_scr, width = mlen_pgms)
 
     #999. Print the message
-    logger.info(f'<{i_char}>: <{scr_pad}>')
+    print(f'<{i_char}>: <{scr_pad}>')
 
 #800. Call the subordinate scripts that are previously found
-logger.info('-' * 80)
-logger.info('Calling subordinate scripts...')
+print('-' * 80)
+print('Calling subordinate scripts...')
 for pgm in pgms_curr:
     #001. Get the file name of the script
     fname_scr = os.path.basename(pgm[0])
 
     #100. Declare which script is called at this step
-    logger.info('-' * 40)
-    logger.info('<' + fname_scr + '> Beginning...')
+    print('-' * 40)
+    print('<' + fname_scr + '> Beginning...')
 
     #500. Call the dedicated program
     exec_file(pgm[0])
@@ -338,7 +338,7 @@ for pgm in pgms_curr:
         f.writelines(fname_scr + '\n')
 
     #999. Mark completion of current step
-    logger.info('<' + fname_scr + '> Complete!')
+    print('<' + fname_scr + '> Complete!')
 
-logger.info('-' * 80)
-logger.info('Process Complete!')
+print('-' * 80)
+print('Process Complete!')

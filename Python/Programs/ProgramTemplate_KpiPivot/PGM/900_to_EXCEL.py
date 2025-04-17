@@ -24,6 +24,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now only export the tables in the Ranges of one Sheet in one workbook at one batch                                      #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250417        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Since <xw.Book.fullname> follows the symbolic link of a file, we also expand the provided paths to their <realpath>     #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 print('Export to EXCEL')
@@ -83,7 +88,13 @@ attrs_rpt = (
     #[1] We must set the empty <RPT_TPL> as an empty string, for <pandas> has inconsistent behaviors as below
     #    [1] When use <pd.Series.apply()>, the cell value of NULL is extracted as <None>
     #    [2] When use <pd.Series.eq(None)>, the result is False as tthe cell value of NULL is regarded as <NaN>
+    #[2] <xw.Book.fullname> refers to the absolute path, esp. for path created by symbolic link, of the the workbook,
+    #     so we have to resolve the <realpath> of any input to ensure the identical behaviors of all paths
     .fillna(value = {'RPT_TPL' : ''})
+    .assign(**{
+        'RPT_TPL' : lambda x: x['RPT_TPL'].apply(lambda row: '' if row == '' else os.path.realpath(row))
+        ,'RPT_FILE' : lambda x: x['RPT_FILE'].apply(lambda row: '' if row == '' else os.path.realpath(row))
+    })
 )
 
 print('200. Helper functions')

@@ -95,7 +95,7 @@ parse_PM = getMemberByStrPattern(
     ,chkType = 1
     ,FSubDir = False
 )
-all_PM = [ m[0] for m in parse_PM if re.search(ptn_PM, m[0]).group(1) < L_curdate ]
+all_PM = [ m['path'] for m in parse_PM if re.search(ptn_PM, m['path']).group(1) < L_curdate ]
 
 #370. Set the period beginning as the next working day to above data if it exists
 if len(all_PM) == 0:

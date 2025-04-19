@@ -13,8 +13,8 @@ def getMemberByStrPattern(
     ,exclRegExp : str = r'^$'
     ,chkType : int = 1
     ,FSubDir : bool = False
-):
-    #000.   Info.
+) -> list[dict]:
+    #000. Info.
     """
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -41,12 +41,12 @@ def getMemberByStrPattern(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Out_Rst    :   Output list storing all the members found: [ [ Elements<1> ] , [ Elements<2> ] , ... ]                              #
 #   |               <Elements for each member>                                                                                          #
-#   |               FullPath<n> :   Absolute Path Name of the member (including the member full name)                                   #
-#   |               MemType<n>  :   Type of member, 1 - File, 2 - Directory                                                             #
-#   |               Name<n>     :   Name of member, including the extension if it is a File                                             #
-#   |               cTime<n>    :   Create Time of the member                                                                           #
-#   |               mTime<n>    :   Last Modified Time of the member                                                                    #
-#   |               PathSize<n> :   The size in bytes of the member                                                                     #
+#   |               path<n>     :   Absolute Path Name of the member (including the member full name)                                   #
+#   |               type<n>     :   Type of member, 1 - File, 2 - Directory                                                             #
+#   |               name<n>     :   Name of member, including the extension if it is a File                                             #
+#   |               ctime<n>    :   Create Time of the member                                                                           #
+#   |               mtime<n>    :   Last Modified Time of the member                                                                    #
+#   |               size<n>     :   The size in bytes of the member                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -58,7 +58,7 @@ def getMemberByStrPattern(
 #   | Date |    20200517        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Replace the function [os.walk] with the user-defined function itself as recursion as mentioned by below article, to     #
-#   |      | increasethe overall efficiency.                                                                                            #
+#   |      | increase the overall efficiency.                                                                                           #
 #   |      | Quote: https://stackoverflow.com/questions/18394147/recursive-sub-folder-search-and-return-files-in-a-list-python          #
 #   |      | See the #5th answer of above article for speed comparison                                                                  #
 #   |      |[2] Remove the [AbsPath<n>] and [RelPath<n>] from the output list as they are obselete during usage                         #
@@ -78,6 +78,11 @@ def getMemberByStrPattern(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <thisFunction> to actually find the current callable being called instead of its name                         #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250419        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Change the return value into <dict> to enable semantic correctness for usage                                            #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -90,19 +95,19 @@ def getMemberByStrPattern(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     """
 
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
     recall = thisFunction()
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if len(inDIR.strip()) == 0:
         raise ValueError( f'[{LfuncName}]No Folder is given for search of files! Program is interrupted!' )
     if len(inRegExp.strip()) == 0:
@@ -116,40 +121,40 @@ def getMemberByStrPattern(
     if not isinstance( FSubDir , bool ):
         raise TypeError( f'[{LfuncName}][FSubDir] should be of the type [bool]! Type of input value is [{type(FSubDir)}]' )
 
-    #013.   Define the local environment.
+    #013. Local environment.
     #Since the list is to be extended within the Generator, we use [deque] to improve the performance of [append()].
     Out_Rst = clt.deque([])
     Mem_Type : int
     reIN = re.compile( inRegExp.strip() , re.I | re.M | re.S | re.X )
     reEX = re.compile( exclRegExp.strip() , re.I | re.M | re.S | re.X )
 
-    #200.   Prepare the elements of the output list by going through the directory tree.
+    #200. Prepare the elements of the output list by going through the directory tree.
     for f in os.scandir(inDIR.strip()):
-        #100.   Determine the type of the member.
+        #100. Determine the type of the member.
         Mem_Type = 1 if f.is_file() else 2 if f.is_dir() else 0
 
-        #300.   Append the dedicated members to the element in the output list.
+        #300. Append the dedicated members to the element in the output list.
         if chkType == 0 or Mem_Type == chkType:
             if not reEX.search( f.name ):
                 if reIN.search( f.name ):
-                    #900.   Append the member.
+                    #900. Append the member.
                     Out_Rst.append(
-                        [
-                            f.path
-                            , Mem_Type
-                            , f.name
-                            , os.path.getctime( f.path )
-                            , os.path.getmtime( f.path )
-                            , os.path.getsize( f.path )
-                        ]
+                        {
+                            'path' : f.path
+                            ,'type' : Mem_Type
+                            ,'name' : f.name
+                            ,'ctime' : os.path.getctime( f.path )
+                            ,'mtime' : os.path.getmtime( f.path )
+                            ,'size' : os.path.getsize( f.path )
+                        }
                     )
                 #End If
             #End If
         #End If
 
-        #900.   Continue the generation if the behavior as implied by [FSubDir] is set to True while current member is a directory.
+        #900. Continue the generation if the behavior as implied by [FSubDir] is set to True while current member is a directory.
         if FSubDir and Mem_Type == 2:
-            #100.   Call itself as recursion to its sub-folders.
+            #100. Call itself as recursion to its sub-folders.
             subs = recall(
                 f.path
                 ,inRegExp
@@ -158,14 +163,14 @@ def getMemberByStrPattern(
                 ,FSubDir
             )
 
-            #900.   Extend the output result if anything is found in its sub-folders.
+            #900. Extend the output result if anything is found in its sub-folders.
             Out_Rst.extend(subs)
     #End For
 
-    #800.   Purge the memory usage.
+    #800. Purge the memory usage.
     re.purge()
 
-    #900.   Output.
+    #900. Output.
     return( list(Out_Rst) )
 #End getMemberByStrPattern
 

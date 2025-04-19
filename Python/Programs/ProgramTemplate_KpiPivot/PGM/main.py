@@ -170,13 +170,13 @@ if f_sendmail:
 
     #500. Move the scripts from <dir_ctrl> to <dir_curr>
     for obj in scr_mail_ctrl:
-        su.copy2(obj[0], dir_curr)
-        os.remove(obj[0])
+        su.copy2(obj['path'], dir_curr)
+        os.remove(obj['path'])
 else:
     #500. Move the scripts from <dir_curr> to <dir_ctrl>
     for obj in scr_mail_curr:
-        su.copy2(obj[0], dir_ctrl)
-        os.remove(obj[0])
+        su.copy2(obj['path'], dir_ctrl)
+        os.remove(obj['path'])
 
 #080. Locate binaries of other languages for interaction
 #081. Prepare R parameters, in case one has to call RScript.exe for interaction
@@ -211,7 +211,6 @@ SAS_omnimacro = [ d for d in paths_omnimacro if os.path.isdir(d) ][0]
 
 #100. Find all subordinate scripts that are to be called within current session
 pgms_curr = getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
-i_len = len(pgms_curr)
 
 #700. Print configurations into the log for debug
 #701. Prepare lists of parameters
@@ -250,7 +249,7 @@ if not all([ os.path.isdir(v) for v in key_dirs.values() ]):
 print('-' * 80)
 print('Subordinate scripts to be located at:')
 print(dir_curr)
-if i_len == 0:
+if not pgms_curr:
     raise RuntimeError('No available subordinate script is found! Program terminated!')
 
 #780. Verify the process control file to minimize the system calculation effort
@@ -265,9 +264,8 @@ cln_ctrls = getMemberByStrPattern(
     ,chkType = 1
     ,FSubDir = False
 )
-if len(cln_ctrls):
-    for f in cln_ctrls:
-        os.remove(f[0])
+for f in cln_ctrls:
+    os.remove(f['path'])
 
 #785. Read the content of the process control file, which represents the previously executed scripts
 pgm_executed = []
@@ -291,15 +289,14 @@ if pgm_executed:
         print('<' + f + '>')
 
     #900. Exclusion
-    pgms_curr = [ o for o in pgms_curr if os.path.basename(o[0]) not in pgm_executed_dedup ]
-    i_len = len(pgms_curr)
-    if i_len == 0:
+    pgms_curr = [ o for o in pgms_curr if os.path.basename(o['path']) not in pgm_executed_dedup ]
+    if not pgms_curr:
         print('All scripts have been executed previously. Program completed.')
         sys.exit()
 
 print('-' * 80)
 print('Subordinate scripts to be called in below order:')
-i_nums = len(str(i_len))
+i_nums = len(str(len(pgms_curr)))
 #[ASSUMPTION]
 #Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
 # mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
@@ -307,13 +304,13 @@ i_nums = len(str(i_len))
 #[2] We leverage <wcwidth> for such process
 #[3] By doing this, the messages shown in Command Console will be aligned with the same length
 #[4] However, in the text editors using mono space fonts such as <Courier New> will have weird spacing
-mlen_pgms = max([ wcswidth(os.path.basename(p[0])) for p in pgms_curr ])
-for i in range(i_len):
+mlen_pgms = max([ wcswidth(os.path.basename(p['path'])) for p in pgms_curr ])
+for i,pgm in enumerate(pgms_curr):
     #100. Pad the sequence numbers by leading zeros, to make the log audience-friendly
     i_char = str(i+1).zfill(i_nums)
 
     #300. Obtain the script file name
-    fname_scr = os.path.basename(pgms_curr[i][0])
+    fname_scr = os.path.basename(pgm['path'])
 
     #500. Determine the padding
     scr_pad = alignWidth(fname_scr, width = mlen_pgms)
@@ -324,23 +321,23 @@ for i in range(i_len):
 #800. Call the subordinate scripts that are previously found
 print('-' * 80)
 print('Calling subordinate scripts...')
-for pgm in pgms_curr:
+for i,pgm in enumerate(pgms_curr):
     #001. Get the file name of the script
-    fname_scr = os.path.basename(pgm[0])
+    fname_scr = os.path.basename(pgm['path'])
 
     #100. Declare which script is called at this step
     print('-' * 40)
-    print('<' + fname_scr + '> Beginning...')
+    print(f'<{fname_scr}> Beginning...')
 
     #500. Call the dedicated program
-    exec_file(pgm[0])
+    exec_file(pgm['path'])
 
     #700. Write current script to the process control file for another call of the same process
     with open(proc_ctrl, 'a') as f:
         f.writelines(fname_scr + '\n')
 
     #999. Mark completion of current step
-    print('<' + fname_scr + '> Complete!')
+    print(f'<{fname_scr}> Complete!')
 
 print('-' * 80)
 print('Process Complete!')

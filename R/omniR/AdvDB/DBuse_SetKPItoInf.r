@@ -421,17 +421,6 @@ DBuse_SetKPItoInf <- function(
 		dplyr::ungroup() %>%
 		suppressMessages()
 
-	#557. Add the <options> column back when necessary
-	if (opt_is_col) {
-		files_prep %<>%
-			dplyr::inner_join(
-				files_exist %>%
-					dplyr::select(tidyselect::all_of(c('C_KPI_FULL_PATH','DF_NAME',fImp.opt))) %>%
-					dplyr::distinct_all()
-				,by = c('C_KPI_FULL_PATH','DF_NAME')
-			)
-	}
-
 	#559. Determine the loop
 	n_files <- nrow(files_prep)
 

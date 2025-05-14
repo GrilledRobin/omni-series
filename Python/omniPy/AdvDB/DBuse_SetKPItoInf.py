@@ -401,6 +401,46 @@ def DBuse_SetKPItoInf(
             warn(f'[{LfuncName}]Check the data frame [{miss_files}] in the output result for missing files!')
             return(outDict)
 
+    #540. Define helper functions to convert dict into hashable and then convert it back
+    #[ASSUMPTION]
+    #[1] There could be <dict> stored inside the column <options> for I/O tool to import the data file
+    #[2] We cannot directly sort or deduplicate such column due to TypeError: unhashable type
+    #[3] Hence we define the helper functions to convert SIMPLE <dict> into hashable object for sort and dedup
+    #    Quote: Baidu/DeepSeek <python如何将dict转换为hashable> and <根据以上解决方案，如何将结果再转换回dict>
+    #[4] Above solution is based on SIMPLE <dict>, i.e. there is no unhashable objects stored in the values of that <dict>
+    #[5] It should be guarenteed that <options> column only contains SIMPLE <dict> where applicable
+    #[6] As a safe solution, we only drop duplicates by necessary columns and only keep the first value of column <options>,
+    #     assuming that all the options for different KPIs in the same data file are the same (which it should be); hence below
+    #     helper functions are no longer in use
+    #[7] These helper functions are still useful in necessary scenarios so we keep them in this source code
+    def make_hashable(obj):
+        """转换时添加类型标记（字典、列表、集合）"""
+        if isinstance(obj, dict):
+            return ('__dict__', tuple(sorted((k, make_hashable(v)) for k, v in obj.items())))
+        elif isinstance(obj, list):
+            return ('__list__', tuple(make_hashable(e) for e in obj))
+        elif isinstance(obj, set):
+            return ('__set__', frozenset(make_hashable(e) for e in obj))
+        else:
+            return obj
+
+    def reverse_hashable(obj):
+        """根据类型标记恢复原始数据结构"""
+        if isinstance(obj, tuple) and len(obj) > 0:
+            type_tag, content = obj[0], obj[1]
+            if type_tag == '__dict__':
+                return {k: reverse_hashable(v) for k, v in content}
+            elif type_tag == '__list__':
+                return [reverse_hashable(e) for e in content]
+            elif type_tag == '__set__':
+                return {reverse_hashable(e) for e in content}
+            else:
+                return [reverse_hashable(e) for e in obj]
+        elif isinstance(obj, frozenset):
+            return {reverse_hashable(e) for e in obj}
+        else:
+            return obj
+
     #550. Prepare the import statement given there could be multiple KPIs stored in the same data file
     #551. Search for all columns EXCEPT [C_KPI_ID] for grouping
     #[ASSUMPTION]
@@ -429,7 +469,13 @@ def DBuse_SetKPItoInf(
         files_prep.loc[:, fImp_opt_col[0]] = (
             files_exist
             [['C_KPI_FULL_PATH','DF_NAME',fImp_opt_col[0]]]
-            .drop_duplicates()
+            # .assign(**{
+            #     fImp_opt_col[0] : lambda x: x[fImp_opt_col[0]].apply(make_hashable)
+            # })
+            .drop_duplicates(['C_KPI_FULL_PATH','DF_NAME'])
+            # .assign(**{
+            #     fImp_opt_col[0] : lambda x: x[fImp_opt_col[0]].apply(reverse_hashable)
+            # })
             .set_index(['C_KPI_FULL_PATH','DF_NAME'])
             .reindex(files_prep.set_index(['C_KPI_FULL_PATH','DF_NAME']).index)
             .set_index(files_prep.index)

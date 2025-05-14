@@ -148,6 +148,11 @@
 #   | Log  |[1] Replace the low level APIs of data retrieval with <DataIO> to unify the processes                                       #
 #   |      |[2] Accept <fImp.opt> to be a column name in <inKPICfg>, to differ the args by source files                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250514        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug when multiple KPIs are stored in one data file                                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -252,12 +257,14 @@ DBuse_SetKPItoInf <- function(
 	# calc_var <- c('C_KPI_ID', 'A_KPI_VAL', 'D_TABLE')
 	trans_var <- c('C_KPI_FULL_PATH', 'C_KPI_FILE_NAME')
 	params_funcs <- c('DF_NAME')
+	opt_is_col <- F
 	if (is.list(fImp.opt)) {
 		opt_ram <- fImp.opt[['RAM']]
 		if (!is.null(opt_ram)) {
 			opt_ram <- list(exist.Opt = rep_len(list(opt_ram), nrow(inKPICfg)))
 		}
 	} else if (fImp.opt %in% colnames(inKPICfg)) {
+		opt_is_col <- T
 		params_funcs %<>% c(fImp.opt)
 		opt_ram <- list(exist.Opt = inKPICfg[[fImp.opt]])
 	} else {
@@ -413,6 +420,19 @@ DBuse_SetKPItoInf <- function(
 		dplyr::summarize( kpis = paste0(C_KPI_ID, collapse = '|'), .groups = 'keep' ) %>%
 		dplyr::ungroup() %>%
 		suppressMessages()
+
+	#557. Add the <options> column back when necessary
+	if (opt_is_col) {
+		files_prep %<>%
+			dplyr::inner_join(
+				files_exist %>%
+					dplyr::select(tidyselect::all_of(c('C_KPI_FULL_PATH','DF_NAME',fImp.opt))) %>%
+					dplyr::distinct_all()
+				,by = c('C_KPI_FULL_PATH','DF_NAME')
+			)
+	}
+
+	#559. Determine the loop
 	n_files <- nrow(files_prep)
 
 	#570. Define the function to be called in parallel

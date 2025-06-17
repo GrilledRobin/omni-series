@@ -53,6 +53,7 @@ class OpsWebsite:
         self.lsPullOpt = lsPullOpt
         self._rst = {}
 
+        self.indexpage = re.sub(r'/\s*$', '', self.website) + '/index.html'
         self.loginpage = re.sub(r'/\s*$', '', self.website) + '/login.jsp'
         self.curr_win_ver = platform.release()
         self.curr_win_lang = getWinUILanguage()
@@ -100,6 +101,7 @@ class OpsWebsite:
 
     def disconnect(self):
         self.removefull()
+        self.logout()
         self.driver.quit()
         self.termScraper()
 
@@ -264,6 +266,34 @@ class OpsWebsite:
         #950. Switch the control to the newly borne window
         self.driver.switch_to.window(self.driver.window_handles[-1])
 
+    def logout(self):
+        #100. Open the index page in which there is a button for logging out
+        self.driver.get(self.indexpage)
+
+        #300. Get the header frame which contains the button we need
+        #[ASSUMPTION]
+        #[1] Since the anchor is inside a <frame> under some <frameset>, we need to switch to the <frame> in the first place
+        #    https://stackoverflow.com/questions/60715673/locate-element-in-frame-set-and-frame-and-div-tags-using-selenium
+        #[2] After the <frame> is processed and when you need to navigate to another <frame>, you need to switch the driver back
+        #     to the default content, as indicated in below link
+        #    https://stackoverflow.com/questions/15464808/how-to-navigate-a-subframe-inside-a-frameset-using-selenium-webdriver
+        WebDriverWait(self.driver, 5).until(EC.frame_to_be_available_and_switch_to_it((By.NAME, 'header')))
+
+        #500. Locate the button for logging out
+        anchor_logout = (
+            WebDriverWait(self.driver, 5)
+            .until(EC.visibility_of_element_located((By.XPATH, '//a[contains(text(), "Logout")]')))
+        )
+
+        #900. Click the button
+        anchor_logout.send_keys(Keys.RETURN)
+        time.sleep(1)
+        try:
+            alert = self.driver.switch_to.alert
+            alert.accept()
+        except:
+            pass
+
     #[ASSUMPTION]
     #[1] If we need to download data from any <iframe> embedded in current website, there could be stale elements
     #     that we cannot get via the driver every time
@@ -397,40 +427,34 @@ class OpsWebsite:
         return(self._rst)
 #End class
 
-#300. Instantiate the class
-#[ASSUMPTION]
-#[1] Ensure to search for APIs in current session, instead of from physical modules
-opsWebsite = OpsWebsite(apiPkgPull = None, user = 'XXXXX', pwd = 'YYYYY')
-
-#310. Connect the server
-opsWebsite.connect()
-
-#350. One can also provide different credentials at runtime
-# opsWebsite.connect(user = 'XXXXX', pwd = 'YYYYY')
-
 #500. Add API at runtime
 #501. Import specific modules for this API
-import os, time
+import os, re, time
+import pywintypes
+import win32con, win32gui
+import datetime as dt
+from typing import Optional
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from omniPy.AdvOp import tryProc
+from omniPy.FileSystem import getMemberByStrPattern
+from omniPy.RPA import getDesktopWindows
 
 #[ASSUMPTION]
 #[1] Try as many times for the same session
 #[2] Raise if all attempts fail
-@tryProc(times = 5, interval = 300.0)
-def webDownload_RPTTESTER01(self, cfg : dict = {}, date : dt.date = None):
+@tryProc(times = 2, interval = 10.0)
+def webDownload_RPTTESTER01(self, cfg : dict = {}, date : Optional[dt.date] = None, prod_name : str = None):
     #010. Local parameters
     rptpath = 'AAA'
     rptid = 'RPTTESTER01'
     rptname = 'Test 01'
-    txt_day = date.strftime('%d')
-    txt_month = date.strftime('%m')
-    txt_year = date.strftime('%Y')
-    files_all = [date.strftime('%Y%m%d') + '.zip']
+    ptn_download = r'^sysdown_.+\.zip$'
+    file_sfx = ('_' + date.strftime('%Y%m%d')) if isinstance(date, dt.date) else ''
+    files_all = [f'download{file_sfx}.zip']
     chkflnm = [os.path.join(self.dir_Downloads, f + '.partial') for f in files_all]
     stpflnm = [os.path.join(self.dir_Downloads, f) for f in files_all]
 
@@ -445,79 +469,209 @@ def webDownload_RPTTESTER01(self, cfg : dict = {}, date : dt.date = None):
     self.getpath(rptpath)
 
     #300. Search for the dedicated data to download
-    srch_input = WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable((By.NAME, 'SEARCH_TEXT')))
+    srch_input = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.NAME, 'SEARCH_TEXT')))
     srch_input.send_keys(rptname)
     btn_search = self.driver.find_element(By.XPATH, ".//a[contains(text(), 'search')][1]")
     btn_search.click()
 
     #350. Click on the search result to open the download page
-    link = WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH, f'//a[contains(@href, "{rptid}")]')))
+    link = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, f'//a[contains(@href, "{rptid}")]')))
     link.send_keys(Keys.RETURN)
 
     #500. Input the date variables
-    d_in_day = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.NAME, 'SEARCH_DATE_D')))
-    d_in_month = self.driver.find_element(By.NAME, 'SEARCH_DATE_M')
-    d_in_year = self.driver.find_element(By.NAME, 'SEARCH_DATE_Y')
+    if isinstance(date, dt.date):
+        txt_day = date.strftime('%d')
+        txt_month = date.strftime('%m')
+        txt_year = date.strftime('%Y')
+        d_in_day = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.NAME, 'SEARCH_DATE_D')))
+        d_in_month = self.driver.find_element(By.NAME, 'SEARCH_DATE_M')
+        d_in_year = self.driver.find_element(By.NAME, 'SEARCH_DATE_Y')
 
-    actions = (
-        ActionChains(self.driver)
-        .click(d_in_day)
-        #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
-        .send_keys(*tuple(Keys.LEFT for i in range(10)))
-        .send_keys(*tuple(Keys.DELETE for i in range(10)))
-        .send_keys(txt_day)
-    )
-    actions.perform()
+        actions = (
+            ActionChains(self.driver)
+            .click(d_in_day)
+            #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
+            .send_keys(*tuple(Keys.LEFT for i in range(10)))
+            .send_keys(*tuple(Keys.DELETE for i in range(10)))
+            .send_keys(txt_day)
+        )
+        actions.perform()
 
-    actions = (
-        ActionChains(self.driver)
-        .click(d_in_month)
-        #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
-        .send_keys(*tuple(Keys.LEFT for i in range(10)))
-        .send_keys(*tuple(Keys.DELETE for i in range(10)))
-        .send_keys(txt_month)
-    )
-    actions.perform()
+        actions = (
+            ActionChains(self.driver)
+            .click(d_in_month)
+            #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
+            .send_keys(*tuple(Keys.LEFT for i in range(10)))
+            .send_keys(*tuple(Keys.DELETE for i in range(10)))
+            .send_keys(txt_month)
+        )
+        actions.perform()
 
-    actions = (
-        ActionChains(self.driver)
-        .click(d_in_year)
-        #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
-        .send_keys(*tuple(Keys.LEFT for i in range(10)))
-        .send_keys(*tuple(Keys.DELETE for i in range(10)))
-        .send_keys(txt_year)
-    )
-    actions.perform()
+        actions = (
+            ActionChains(self.driver)
+            .click(d_in_year)
+            #10 times is enough as the date format is <YYYY-MM-DD> which only contains 10 characters
+            .send_keys(*tuple(Keys.LEFT for i in range(10)))
+            .send_keys(*tuple(Keys.DELETE for i in range(10)))
+            .send_keys(txt_year)
+        )
+        actions.perform()
+
+    #600. Input the product name for specific search
+    if isinstance(prod_name, str):
+        sel_search_prod_name = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.NAME, 'SEARCH_PROD_CODE')))
+        actions = (
+            ActionChains(self.driver)
+            .click(sel_search_prod_name)
+            #20 times is enough as the product code contains less than 20 characters
+            .send_keys(*tuple(Keys.LEFT for i in range(20)))
+            .send_keys(*tuple(Keys.DELETE for i in range(20)))
+            .send_keys(prod_name)
+        )
+        actions.perform()
 
     #700. Click on the <Confirm> button
+    #710. Identify all existing browser windows in the first place, for we will close extra popup windows later if any
+    hwnd_desktop = getDesktopWindows()
+    chk_existing = [
+        k
+        for k,v in hwnd_desktop.items()
+        if re.search(r'.*' + self.browser_win + '$', v['title'])
+    ]
+
+    #790. Click the button
     time.sleep(2)
     btn_download = self.driver.find_element(By.XPATH, '//a[contains(@onclick, "submit")]')
     btn_download.click()
 
     #900. Verify the download
-    for _ in range(12):
-        time.sleep(10)
-        if all([os.path.isfile(f) for f in stpflnm]):
-            return(stpflnm)
+    #[ASSUMPTION]
+    #[1] The target may not exist due to NIL business events
+    #[2] The popup message of NIL report may be in another window
+    try:
+        for _ in range(12):
+            time.sleep(5)
+            chkfile = getMemberByStrPattern(self.dir_Downloads, ptn_download)
+            if len(chkfile) == 1:
+                os.rename(chkfile[0][0], stpflnm[0])
+                return(stpflnm)
+    finally:
+        hwnd_desktop = getDesktopWindows()
+        chk_new = [
+            k
+            for k,v in hwnd_desktop.items()
+            if re.search(r'.*' + self.browser_win + '$', v['title'])
+        ]
 
-    #999. Raise exception if not all of the files are downloaded
-    raise RuntimeError(f'Failed to download <{rptid}>')
+        win_to_close = [k for k in chk_new if k not in chk_existing]
+        for win in win_to_close:
+            print(f'Closing popup window... <{win}>')
+            win32gui.PostMessage(win, win32con.WM_CLOSE, 0, 0)
+
+    #950. Return empty result if there is no report to download
+    msg_empty_date = f' on date <{date.strftime("%Y%m%d")}>' if isinstance(date, dt.date) else ''
+    msg_empty_prod = f' for product <{prod_name}>' if isinstance(prod_name, str) else ''
+    print(f'No data to download for <{rptid}>{msg_empty_prod}{msg_empty_date}')
+    return([])
 
 #600. Download data via the API just created above
+#601. Specific environment for the download process
+import os
+import inspect
+from shutil import copy2
+from collections.abc import Iterable
+import omniPy
+from omniPy.Dates import asDates, intnx
+from omniPy.AdvOp import tryProc, modifyDict
+
+#610. Local parameters
+txt_user = 'userid'
+file_pwd = os.path.join(os.path.dirname(inspect.getsourcefile(omniPy)), r'Credentials', f'sys01_{txt_user}.txt')
+with open(file_pwd) as file:
+    txt_pwd = file.readlines()[0]
+
 mapper = {
     'RPTTESTER01' : {
         'dates' : ['20240416','20240417']
+        ,'outfile__' : os.path.join(dir_DM_raw, 'RPTTESTER01_{rptdate}.xlsx')
+        ,'move__' : True
     }
 }
-opsWebsite.download(mapper)
 
-#690. View the downloaded file names
-rst = opsWebsite.result
+#630. Define helper function to validate the download parameters
+def h_validateProc(dates : Iterable[str], filePtn : str) -> list[str]:
+    if isinstance(dates, str): dates = [dates]
+    dates = dates[:]
+    dt_std = [ d.strftime('%Y%m%d') for d in asDates(dates) ]
+    rstOut = list(filter(lambda d: not os.path.isfile(filePtn.format(rptdate = d)), dt_std))
+    return(rstOut)
 
-#900. Purge
-opsWebsite.disconnect()
+#650. Define helper function execute the download process
+@tryProc(times = 2, interval = 10.0)
+def execDownload():
+    print('100. Connect to the server')
+    #[ASSUMPTION]
+    #[1] Ensure to search for APIs in current session, instead of from physical modules
+    opsWebsite = OpsWebsite(apiPkgPull = None, user = txt_user, pwd = txt_pwd, scraper = 'Chrome')
+    opsWebsite.connect()
 
-for v in rst.values():
-    for rstfiles in v.values():
-        for f in rstfiles:
-            if os.path.isfile(f): os.remove(f)
+    #150. One can also provide different credentials at runtime
+    # opsWebsite.connect(user = 'XXXXX', pwd = 'YYYYY')
+
+    print('300. Only identify those which do not exist after each previous try')
+    mapper_this = {
+        rptid : {
+            k : v
+            for k,v in modifyDict(params, {'dates' : procDates}).items()
+        }
+        for rptid,params in mapper.items()
+        if len(procDates := h_validateProc(params['dates'], params['outfile__'])) > 0
+    }
+
+    print('500. Download the dedicated reports')
+    try:
+        opsWebsite.download({
+            rptid : {
+                k : v
+                for k,v in params.items()
+                if k not in ['outfile__','move__']
+            }
+            for rptid,params in mapper_this.items()
+        })
+    finally:
+        print('700. Disconnect')
+        opsWebsite.disconnect()
+
+    print('900. Save the files to the output folder')
+    for rptid,params in mapper_this.items():
+        if not params['move__']:
+            continue
+
+        dtlist = params['dates']
+        if isinstance(dtlist, str):
+            dtlist = [dtlist]
+        for d in dtlist:
+            srcfiles = opsWebsite.result.get(rptid, {}).get(asDates(d), [])
+            for srcfile in srcfiles:
+                dstfile = params['outfile__'].format(rptdate = asDates(d).strftime('%Y%m%d'))
+                if not os.path.isfile(dstfile):
+                    if os.path.isfile(srcfile):
+                        copy2(srcfile, dstfile)
+                        os.remove(srcfile)
+
+#670. Filter in terms of the non-existing destination file paths
+mapper_involved = {
+    rptid : {
+        k : v
+        for k,v in modifyDict(params, {'dates' : procDates}).items()
+        if k not in ['outfile__','move__']
+    }
+    for rptid,params in mapper.items()
+    if len(procDates := h_validateProc(params['dates'], params['outfile__'])) > 0
+}
+
+#690. Execution by skipping those which already exist
+if not mapper_involved:
+    print('All requested files have been downloaded. Program skipped.')
+else:
+    execDownload()

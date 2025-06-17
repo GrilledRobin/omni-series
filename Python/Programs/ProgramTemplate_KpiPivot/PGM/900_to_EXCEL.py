@@ -29,6 +29,11 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Since <xw.Book.fullname> follows the symbolic link of a file, we also expand the provided paths to their <realpath>     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250617        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now assign all returncode as -1 when none of the data can be exported                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 print('Export to EXCEL')
@@ -401,37 +406,44 @@ rc_empty = (
 mask_empty = attrs_rpt['RPT_FILE'].isin(rc_empty.index)
 
 #950. Pour the data into the files
-with xw.App( visible = False, add_book = False ) as xlapp:
-    #010. Set options
-    xlapp.display_alerts = False
-    xlapp.screen_updating = False
+if len(exp_fnl := attrs_rpt.loc[lambda x: ~mask_empty]) == 0:
+    attrs_rpt['rc_export'] = (
+        rc_empty
+        .reindex(attrs_rpt['RPT_FILE'])
+        .set_index(attrs_rpt.index)
+        ['rc']
+    )
+else:
+    with xw.App( visible = False, add_book = False ) as xlapp:
+        #010. Set options
+        xlapp.display_alerts = False
+        xlapp.screen_updating = False
 
-    #500. Execution
-    rc_proc = pd.concat(
-        (
-            attrs_rpt
-            .loc[lambda x: ~mask_empty]
-            ['RPT_FILE']
-            .drop_duplicates()
-            .apply(h_book, xlapp = xlapp, cfg = attrs_rpt)
-            .to_list()
+        #500. Execution
+        rc_proc = pd.concat(
+            (
+                exp_fnl
+                ['RPT_FILE']
+                .drop_duplicates()
+                .apply(h_book, xlapp = xlapp, cfg = attrs_rpt)
+                .to_list()
+            )
+            ,ignore_index = False
         )
-        ,ignore_index = False
-    )
 
-    #999. Purge
-    xlapp.screen_updating = True
+        #999. Purge
+        xlapp.screen_updating = True
 
-#970. Collect the returncode
-attrs_rpt['rc_export'] = (
-    rc_proc
-    .reindex(attrs_rpt.index)
-    .where(
-        ~mask_empty
-        ,rc_empty.reindex(attrs_rpt['RPT_FILE']).set_index(attrs_rpt.index)
+    #970. Collect the returncode
+    attrs_rpt['rc_export'] = (
+        rc_proc
+        .reindex(attrs_rpt.index)
+        .where(
+            ~mask_empty
+            ,rc_empty.reindex(attrs_rpt['RPT_FILE']).set_index(attrs_rpt.index)
+        )
+        ['rc']
     )
-    ['rc']
-)
 
 print('999. Save the result to harddrive')
 if os.path.isfile(L_stpflnm1): os.remove(L_stpflnm1)

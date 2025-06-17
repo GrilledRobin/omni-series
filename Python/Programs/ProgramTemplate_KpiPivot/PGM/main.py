@@ -89,32 +89,38 @@ args_in.pop(0)
 #This program may take up to 2 arguments in below order:
 #[1] [dateRpt         ] [character       ] [yyyymmdd        ]
 #[2] [sendEmail       ] [character       ] [0, 1 or <empty> ]
-if len(args_in):
-    #300. Modify the default arguments to create calendars
+if len(args_in) == 0:
     #[ASSUMPTION]
-    #[1] <getOption> is defined in <autoexec>
+    #[1] By default, we execute the process for the Previous Workday of today
+    argEnd = intnx('day', G_obsDates.values[0], -1, daytype = 'W').strftime('%Y%m%d')
+else:
     argEnd = args_in[0]
-    args_cln_mod = modifyDict(
-        getOption['args.Calendar']
-        ,{
-            'clnBgn' : intnx('day', argEnd, -30, daytype = 'C')
-            ,'clnEnd' : intnx('day', argEnd, 30, daytype = 'C')
-        }
-    )
 
-    #500. Create a fresh new calendar
-    G_clndr = UserCalendar(**args_cln_mod)
+#[ASSUMPTION]
+#[1] <getOption> is defined in <autoexec>
+#[2] This report is generated on monthly basis
+#[3] There are 2 necessary dates for this process
+#    [1] <L_execdate> i.e. Execution Date, indicating when is this process executed, useful for determination of the condition to
+#         execute the process on any specific date
+#    [2] <L_curdate> i.e. Data Date, indicating that the data is as of the Last Workday of a month
+L_execdate = G_obsDates.values[0].strftime('%Y%m%d')
 
-    #700. Create a fresh new date observer
-    G_obsDates = ObsDates(obsDate = intnx('day', argEnd, 1, daytype = 'W'), **args_cln_mod)
-
+args_cln_mod = modifyDict(
+    getOption['args.Calendar']
+    ,{
+        'clnBgn' : intnx('day', argEnd, -30, daytype = 'C')
+        ,'clnEnd' : intnx('day', argEnd, 30, daytype = 'C')
+    }
+)
 #[ASSUMPTION]
 #[1] As a business case, we often call the process on the previous workday of current run date
 #[2] We align the system behavior when the Business Date is provided or not
 #    [a] When NOT providing a date, the Business Date is the previous workday of the run date
 #    [b] When a date is provided, it is presumed to be the Business Date to run the process
 #[3] As the date is always referred to as a character string marking files or connections, we set it as a string representation
-L_curdate = intnx('day', G_obsDates.values[0], -1, daytype = 'W').strftime('%Y%m%d')
+#[4] By doing the date shift, we align the behaviors regardless of whether <argEnd> is provided on daily basis
+L_obsDates = ObsDates(obsDate = intnx('day', argEnd, 1, daytype = 'W'), **args_cln_mod)
+L_curdate = intnx('day', L_obsDates.values[0], -1, daytype = 'W').strftime('%Y%m%d')
 
 cmpn_bgn = '20160516'
 cmpn_end = '20160601'
@@ -170,13 +176,13 @@ if f_sendmail:
 
     #500. Move the scripts from <dir_ctrl> to <dir_curr>
     for obj in scr_mail_ctrl:
-        su.copy2(obj['path'], dir_curr)
-        os.remove(obj['path'])
+        su.copy2(obj[0], dir_curr)
+        os.remove(obj[0])
 else:
     #500. Move the scripts from <dir_curr> to <dir_ctrl>
     for obj in scr_mail_curr:
-        su.copy2(obj['path'], dir_ctrl)
-        os.remove(obj['path'])
+        su.copy2(obj[0], dir_ctrl)
+        os.remove(obj[0])
 
 #080. Locate binaries of other languages for interaction
 #081. Prepare R parameters, in case one has to call RScript.exe for interaction
@@ -211,6 +217,7 @@ SAS_omnimacro = [ d for d in paths_omnimacro if os.path.isdir(d) ][0]
 
 #100. Find all subordinate scripts that are to be called within current session
 pgms_curr = getMemberByStrPattern(dir_curr, r'^\d{3}_.+\.py$', chkType = 1, FSubDir = False)
+i_len = len(pgms_curr)
 
 #700. Print configurations into the log for debug
 #701. Prepare lists of parameters
@@ -231,25 +238,25 @@ mlen_prms = max([ wcswidth(k) for k in key_tolog.keys() ])
 #710. Print parameters
 #[ASSUMPTION]
 #[1] Triangles [<>] are not accepted in naming folders, hence they are safe to be used for enclosing the value of variables
-print('-' * 80)
-print('Process Parameters:')
+logger.info('-' * 80)
+logger.info('Process Parameters:')
 for k,v in key_tolog.items():
-    print('<' + alignWidth(k, width = mlen_prms) + '>: <' + v + '>')
+    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + v + '>')
 
 #720. Print existence of key directories
-print('-' * 80)
-print('Existence of above key locations:')
+logger.info('-' * 80)
+logger.info('Existence of above key locations:')
 for k,v in key_dirs.items():
-    print('<' + alignWidth(k, width = mlen_prms) + '>: <' + str(os.path.isdir(v)) + '>')
+    logger.info('<' + alignWidth(k, width = mlen_prms) + '>: <' + str(os.path.isdir(v)) + '>')
 
 if not all([ os.path.isdir(v) for v in key_dirs.values() ]):
     raise RuntimeError('Some among the key locations DO NOT exist! Program terminated!')
 
 #770. Subordinate scripts
-print('-' * 80)
-print('Subordinate scripts to be located at:')
-print(dir_curr)
-if not pgms_curr:
+logger.info('-' * 80)
+logger.info('Subordinate scripts to be located at:')
+logger.info(dir_curr)
+if i_len == 0:
     raise RuntimeError('No available subordinate script is found! Program terminated!')
 
 #780. Verify the process control file to minimize the system calculation effort
@@ -264,8 +271,9 @@ cln_ctrls = getMemberByStrPattern(
     ,chkType = 1
     ,FSubDir = False
 )
-for f in cln_ctrls:
-    os.remove(f['path'])
+if len(cln_ctrls):
+    for f in cln_ctrls:
+        os.remove(f[0])
 
 #785. Read the content of the process control file, which represents the previously executed scripts
 pgm_executed = []
@@ -283,20 +291,21 @@ if pgm_executed:
     pgm_executed_dedup = sorted(list(set(pgm_executed)))
 
     #100. Prepare the log
-    print('-' * 80)
-    print('Below scripts have been executed today, thus are excluded.')
+    logger.info('-' * 80)
+    logger.info('Below scripts have been executed today, thus are excluded.')
     for f in pgm_executed_dedup:
-        print('<' + f + '>')
+        logger.info('<' + f + '>')
 
     #900. Exclusion
-    pgms_curr = [ o for o in pgms_curr if os.path.basename(o['path']) not in pgm_executed_dedup ]
-    if not pgms_curr:
-        print('All scripts have been executed previously. Program completed.')
+    pgms_curr = [ o for o in pgms_curr if os.path.basename(o[0]) not in pgm_executed_dedup ]
+    i_len = len(pgms_curr)
+    if i_len == 0:
+        logger.info('All scripts have been executed previously. Program completed.')
         sys.exit()
 
-print('-' * 80)
-print('Subordinate scripts to be called in below order:')
-i_nums = len(str(len(pgms_curr)))
+logger.info('-' * 80)
+logger.info('Subordinate scripts to be called in below order:')
+i_nums = len(str(i_len))
 #[ASSUMPTION]
 #Quote[#26]: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
 # mlen_pgms = max([ len(os.path.basename(p[0]).encode('utf-16-le')) for p in pgms_curr ])
@@ -304,40 +313,40 @@ i_nums = len(str(len(pgms_curr)))
 #[2] We leverage <wcwidth> for such process
 #[3] By doing this, the messages shown in Command Console will be aligned with the same length
 #[4] However, in the text editors using mono space fonts such as <Courier New> will have weird spacing
-mlen_pgms = max([ wcswidth(os.path.basename(p['path'])) for p in pgms_curr ])
-for i,pgm in enumerate(pgms_curr):
+mlen_pgms = max([ wcswidth(os.path.basename(p[0])) for p in pgms_curr ])
+for i in range(i_len):
     #100. Pad the sequence numbers by leading zeros, to make the log audience-friendly
     i_char = str(i+1).zfill(i_nums)
 
     #300. Obtain the script file name
-    fname_scr = os.path.basename(pgm['path'])
+    fname_scr = os.path.basename(pgms_curr[i][0])
 
     #500. Determine the padding
     scr_pad = alignWidth(fname_scr, width = mlen_pgms)
 
     #999. Print the message
-    print(f'<{i_char}>: <{scr_pad}>')
+    logger.info(f'<{i_char}>: <{scr_pad}>')
 
 #800. Call the subordinate scripts that are previously found
-print('-' * 80)
-print('Calling subordinate scripts...')
-for i,pgm in enumerate(pgms_curr):
+logger.info('-' * 80)
+logger.info('Calling subordinate scripts...')
+for pgm in pgms_curr:
     #001. Get the file name of the script
-    fname_scr = os.path.basename(pgm['path'])
+    fname_scr = os.path.basename(pgm[0])
 
     #100. Declare which script is called at this step
-    print('-' * 40)
-    print(f'<{fname_scr}> Beginning...')
+    logger.info('-' * 40)
+    logger.info('<' + fname_scr + '> Beginning...')
 
     #500. Call the dedicated program
-    exec_file(pgm['path'])
+    exec_file(pgm[0])
 
     #700. Write current script to the process control file for another call of the same process
     with open(proc_ctrl, 'a') as f:
         f.writelines(fname_scr + '\n')
 
     #999. Mark completion of current step
-    print(f'<{fname_scr}> Complete!')
+    logger.info('<' + fname_scr + '> Complete!')
 
-print('-' * 80)
-print('Process Complete!')
+logger.info('-' * 80)
+logger.info('Process Complete!')

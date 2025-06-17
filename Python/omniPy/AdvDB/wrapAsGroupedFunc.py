@@ -202,6 +202,7 @@ def wrapAsGroupedFunc(
 if __name__=='__main__':
     #010. Create envionment.
     import sys
+    import numpy as np
     import pandas as pd
     from functools import partial
     dir_omniPy : str = r'D:\Python\ '.strip()
@@ -351,5 +352,42 @@ if __name__=='__main__':
     #     two  13
     # foo one   2
     #     two   3
+
+    #800. Conduct rolling period comparison
+    #[ASSUMPTION]
+    #[1] Facilitate rolling period comparison, including YoY, MoM, etc.
+    #[2] Mark the data of different periods in below convention
+    #[3] Return a scalar and leave the stratified aggregation method to be wrapped later
+    def pctRollPeriod(df : pd.DataFrame, col_val : str = 'A_KPI_VAL', col_prd : str = 'rpt_prd'):
+        val_prev = round(df.loc[lambda x: x[col_prd].eq('prev')][col_val].sum(), 2)
+        val_curr = round(df.loc[lambda x: x[col_prd].eq('curr')][col_val].sum(), 2)
+        rstOut = np.sign(val_curr) if val_prev == 0.0 else ((val_curr - val_prev) / abs(val_prev))
+        return(rstOut)
+
+    df_roll = (
+        pd.DataFrame(
+            {
+                'rpt_prd': ['prev', 'prev', 'prev', 'prev', 'curr','curr', 'curr', 'curr', 'curr'],
+                'cat': ['one', 'one', 'two', 'two', 'one','one', 'one', 'two', 'two'],
+                'class': ['A', 'A', 'A', 'B', 'A','A', 'A', 'A', 'B'],
+                'A_KPI_VAL': [1, 2, 3, 4, -5, -6, -7, 8, 9]
+            }
+        )
+        .astype({'A_KPI_VAL' : float})
+    )
+
+    pvt_roll = pd.pivot_table(
+        df_roll
+        ,values = ['A_KPI_VAL']
+        ,index = ['cat']
+        ,columns = ['class']
+        ,aggfunc = wrapAsGroupedFunc(pctRollPeriod, df = df_roll)
+        ,fill_value = 0
+    )
+    #       A_KPI_VAL
+    # class         A     B
+    # cat
+    # one   -7.000000  0.00
+    # two    1.666667  1.25
 #-Notes- -End-
 '''

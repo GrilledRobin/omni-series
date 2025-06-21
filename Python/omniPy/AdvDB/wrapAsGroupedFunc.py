@@ -204,6 +204,7 @@ if __name__=='__main__':
     import sys
     import numpy as np
     import pandas as pd
+    from collections.abc import Iterable
     from functools import partial
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
@@ -389,5 +390,83 @@ if __name__=='__main__':
     # cat
     # one   -7.000000  0.00
     # two    1.666667  1.25
+
+    #900. Calculate the Percentage of the Parent Subtotal at column level of the pivot table, i.e. ColPctSum
+    #[ASSUMPTION]
+    #[1] This aggregation should be based on the provided level, as the program never knows the aggregation strategy
+    def colPctSum(
+        df : pd.DataFrame
+        ,df_base : pd.DataFrame
+        ,col_val : str = 'A_KPI_VAL'
+        ,agg_lvl : str = 'rpt_lvl1'
+        ,to_lvl : Iterable = 'rpt_lvl2'
+        ,all_lvls : Iterable = [f'rpt_lvl{i}' for i in range(3, 0, -1)]
+    ):
+        #005. Local environment
+        if isinstance(to_lvl, str):
+            to_lvl = [to_lvl]
+        else:
+            to_lvl = to_lvl[:]
+
+        #100. Direct aggregation of current level
+        val_curr = df[col_val].sum()
+
+        #300. Identify the parent levels (in the <columns> specification of the pivot table)
+        lvls_parent = [v for v in all_lvls[:all_lvls.index(agg_lvl)] if v not in to_lvl]
+        if not lvls_parent:
+            return(1.0 if val_curr != 0.0 else 0.0)
+
+        #500. Aggregate the values in the parent level (i.e. groupby all parent levels)
+        df_parent = (
+            df_base
+            .loc[lambda x: pd.MultiIndex.from_frame(x[lvls_parent]).isin(pd.MultiIndex.from_frame(df[lvls_parent]))]
+            .loc[lambda x: x[agg_lvl].isin(df[agg_lvl])]
+        )
+        val_base = df_parent[col_val].sum()
+
+        #700. Calculate percentage
+        rstOut = 0.0 if val_base == 0.0 else (val_curr / val_base)
+
+        return(rstOut)
+
+    df_pctsum = (
+        pd.DataFrame(
+            {
+                'rpt_lvl3': ['A', 'A', 'A', 'A', 'A','B', 'B', 'B', 'B'],
+                'rpt_lvl2': ['one', 'one', 'two', 'two', 'three','one', 'two', 'three', 'three'],
+                'rpt_lvl1': ['a', 'b', 'a', 'b', 'a','a', 'b', 'a', 'b'],
+                'A_KPI_VAL': [1, 2, 3, 4, 5, 6, 7, 8, 9]
+            }
+        )
+        .astype({'A_KPI_VAL' : float})
+    )
+
+    #[ASSUMPTION]
+    #[1] 以<rpt_lvl3>分组，在每个<rpt_lvl2>值向下，计算各个<rpt_lvl1>对于当前<rpt_lvl2>值下总数的占比
+    pvt_pctsum = pd.pivot_table(
+        df_pctsum
+        ,values = ['A_KPI_VAL']
+        ,index = [f'rpt_lvl{i}' for i in range(3, 0, -1)]
+        ,aggfunc = wrapAsGroupedFunc(
+            colPctSum
+            ,df = df_pctsum
+            ,df_base = df_pctsum
+            ,agg_lvl = 'rpt_lvl2'
+            ,to_lvl = ['rpt_lvl1']
+        )
+        ,fill_value = 0
+    )
+    #                             A_KPI_VAL
+    # rpt_lvl3 rpt_lvl2 rpt_lvl1
+    # A        one      a          0.333333
+    #                   b          0.666667
+    #          three    a          1.000000
+    #          two      a          0.428571
+    #                   b          0.571429
+    # B        one      a          1.000000
+    #          three    a          0.470588
+    #                   b          0.529412
+    #          two      b          1.000000
+
 #-Notes- -End-
 '''

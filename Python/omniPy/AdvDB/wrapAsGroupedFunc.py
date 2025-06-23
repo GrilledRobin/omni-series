@@ -3,9 +3,8 @@
 
 import types
 import pandas as pd
-#Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
-from inspect import signature
 from functools import partial
+from omniPy.AdvOp import ExpandSignature, modifyDict
 
 def wrapAsGroupedFunc(
     fn : callable
@@ -78,6 +77,11 @@ def wrapAsGroupedFunc(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20250623        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Rewrite the entire process to simplify the wrapping logic                                                               #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -86,10 +90,13 @@ def wrapAsGroupedFunc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |types, pandas, inspect, functools                                                                                              #
+#   |   |types, pandas, functools                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
+#   |   |   |modifyDict                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -100,95 +107,60 @@ def wrapAsGroupedFunc(
     #100. Define the basic wrapper to mutate <df>
     #[ASSUMPTION]
     #[1] We cannot add the internal argument as positional one, for it confuses the wrapper during the call
-    #[2] We will later correct his position
-    def wrapper(*pos_inner, _wagf_obj_ : pd.Series | pd.DataFrame | pd.Index = None, **kw_inner):
+    #[2] We will later correct its position
+    @(eSig := ExpandSignature(fn))
+    def wrapper_(*pos, _wagf_obj_ : pd.Series | pd.DataFrame | pd.Index = None, **kw):
         #010. Local environment
-        pos_trans = list(pos_inner)
         if isinstance(_wagf_obj_, pd.Index):
             idx = _wagf_obj_
         else:
             idx = _wagf_obj_.index
 
-        #050. Obtain the signature of the function
-        #Quote: https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind
-        sig_raw = signature(fn).parameters.values()
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        if len(sig_vp := eSig.sig_src_bykind['VAR_POSITIONAL']) > 0:
+            pos_vp = list(sig_vp.keys())[0]
 
-        #100. Obtain the names of all keyword arguments
-        kw_raw = [
-            s.name
-            for s in sig_raw
-            if s.kind in ( s.KEYWORD_ONLY, s.POSITIONAL_OR_KEYWORD )
-        ]
+        #100. Reshape input parameters
+        pos_in, kw_in = eSig.insParams(args_share, pos, kw)
 
-        #130. Obtain the names of all positional-only arguments
-        pos_raw = [
-            s.name
-            for s in sig_raw
-            if s.kind in ( s.POSITIONAL_ONLY, )
-        ]
-
-        #150. Verify the existence of variant positional argument
-        var_pos = [
-            s.name
-            for s in sig_raw
-            if s.kind in ( s.VAR_POSITIONAL, )
-        ]
-
-        #170. Verify the existence of variant keyword argument
-        var_kw = [
-            s.name
-            for s in sig_raw
-            if s.kind in ( s.VAR_KEYWORD, )
-        ]
-
-        #190. Abort if there is no argument named as the required one
-        if _wagf_df_ not in (kw_raw + pos_raw):
-            if (len(var_pos) == 0) and (len(var_kw) == 0):
-                raise RuntimeError(f'[{fn.__name__}]No argument <{_wagf_df_}> is defined!')
-
-        #500. Differentiate the process
+        #300. Identify the <pandas> object for slicing
         #[ASSUMPTION]
-        #[1] If the name of <df> is passed during the call, we mutate the dataframe without considering whether it is among <kw_raw>
-        #     or <var_kw>
-        if _wagf_df_ in kw_inner:
-            kw_inner[_wagf_df_] = kw_inner[_wagf_df_].reindex(idx).copy(deep = True)
+        #[1] Lookup in the signature of the input function and locate it by standard method
+        #[2] If otherwise it is located in <**kw>, it must be among <VAR_KEYWORD>
+        #[3] If otherwise it is located in <*pos>, it must be among <VAR_POSITIONAL>, and thus <pos_in> must contain all the
+        #     positional arguments in terms of Python syntax; so we only obtain the first input among <VAR_POSITIONAL>
+        #[4] If it still cannot be located, an exception will be raised
+        if _wagf_df_ in eSig.args_src:
+            _wagf_df_in_ = eSig.getParam(_wagf_df_, pos_in, kw_in)
+        elif _wagf_df_ in kw:
+            _wagf_df_in_ = kw.get(_wagf_df_)
+        elif len(sig_vp) > 0:
+            _wagf_df_in_ = pos_in[pos_vp]
         else:
-            #010. Abort if no <df> can be determined
-            if len(pos_inner) == 0:
-                raise RuntimeError(f'[{fn.__name__}]Invalid call without parameter <{_wagf_df_}> provided!')
+            raise ValueError(f'[{fn.__name__}]No argument <{_wagf_df_}> is defined!')
 
-            #100. Get the positional arguments of <fn>
-            pos_any = [
-                s.name
-                for s in sig_raw
-                if s.kind in ( s.POSITIONAL_ONLY, s.POSITIONAL_OR_KEYWORD )
-            ]
+        #500. Main process to muttate the input <pandas> object
+        _wagf_df_out_ = _wagf_df_in_.reindex(idx)
 
-            #300. Get the position of <df> in the argument list
-            pos_arg = [i for i,v in enumerate(pos_any) if v == _wagf_df_]
+        #700. Insert the mutated object into the correct position of input parameters
+        #[ASSUMPTION]
+        #[1] Directly update it into the parameters if <_wagf_df_> is in the signature of the wrapped function
+        #[2] If otherwise it is located in <**kw>, we only translate the <**kw> part of the input parameters
+        #[3] If otherwise it is located in <*pos>, we translate <pos_in> and leave <kw_in> untouched
+        #[4] An exception has been raised in earlier step if otherwise, hence there is no need for further handling
+        if _wagf_df_ in eSig.args_src:
+            pos_fnl, kw_fnl = eSig.updParams({_wagf_df_ : _wagf_df_out_}, pos_in, kw_in)
+        elif _wagf_df_ in kw:
+            pos_fnl, kw_fnl = eSig.insParams(args_share, pos, modifyDict(kw, {_wagf_df_ : _wagf_df_out_}))
+        elif len(sig_vp) > 0:
+            pos_fnl, kw_fnl = eSig.insParams(args_share, pos_in[:pos_vp] + (_wagf_df_out_,) + pos_in[(pos_vp + 1):], kw_in)
 
-            #800. Differentiate the process when the implied <df> is provided at different positions
-            #[ASSUMPTION]
-            #[1] If there is a specific name of <df> in the positional arguments, we search for its position
-            #[2] The we mutate the object on that position
-            #[3] Otherwise, we can only presume that <df> object is provided at the first position in variant positional args
-            if len(pos_arg) == 1:
-                pos_trans[pos_arg[0]] = pos_trans[pos_arg[0]].reindex(idx).copy(deep = True)
-            else:
-                #010. Abort if no <df> can be determined
-                if len(pos_trans) <= len(pos_any):
-                    raise RuntimeError(
-                        f'[{fn.__name__}]No variant positional args are provided!'
-                        + ' <{_wagf_df_}> cannot be determined!'
-                    )
-
-                pos_trans[len(pos_any)] = pos_trans[len(pos_any)].reindex(idx).copy(deep = True)
-
-        #900. Execute the dedicated function with the mutated <df>
-        return(fn(*pos_trans, **kw_inner))
+        #900. Call the input function with mutated <pandas> object
+        return(eSig.src(*pos_fnl, **kw_fnl))
 
     #500. Change the position of the newly introduced argument to the very first one (and the only one under many circumstances)
-    tmpfunc = partial(wrapper, *pos, **kw)
+    tmpfunc = partial(wrapper_, *pos, **kw)
     def rstFunc(_wagf_obj_ : pd.Series | pd.DataFrame | pd.Index, *pos, **kw):
         return(tmpfunc(*pos, _wagf_obj_ = _wagf_obj_, **kw))
 

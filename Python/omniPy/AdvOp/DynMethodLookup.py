@@ -128,6 +128,7 @@ class DynMethodLookup:
         ,apiSfx : str = ''
         ,lsOpt : dict = {}
         ,attr_handler : Optional[str] = None
+        ,attr_hdl_yield : Optional[str] = None
         ,attr_kwInit : Optional[str] = None
         ,attr_assign : Optional[str] = None
         ,attr_return : Optional[str] = None
@@ -140,6 +141,7 @@ class DynMethodLookup:
         self.apiSfx = apiSfx
         self.lsOpt = lsOpt
         self.attr_handler = attr_handler
+        self.attr_hdl_yield = attr_hdl_yield
         self.attr_kwInit = attr_kwInit
         self.attr_assign = attr_assign
         self.attr_return = attr_return
@@ -160,6 +162,7 @@ class DynMethodLookup:
             ,apiSfx = self.apiSfx
             ,lsOpt = self.lsOpt
             ,attr_handler = self.attr_handler
+            ,attr_hdl_yield = self.attr_hdl_yield
             ,attr_kwInit = self.attr_kwInit
             ,attr_assign = self.attr_assign
             ,attr_return = self.attr_return
@@ -215,6 +218,7 @@ if __name__=='__main__':
             ,apiSfx = ''
             ,lsOpt = {}
             ,attr_handler = None
+            ,attr_hdl_yield = None
             ,attr_kwInit = None
             ,attr_assign = None
             ,attr_return = None

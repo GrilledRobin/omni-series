@@ -49,6 +49,9 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPullHdl        :   <callable> Function with only one argument as handler to process the data pulled at once             #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the pulled data                                  #
+#   |   |   |apiPullYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <pull>      #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
 #   |   |   |lsPullOpt         :   <dict    > Options to list the <pull> callables given <apiPkgPull == None>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
 #   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
@@ -64,6 +67,9 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPushHdl        :   <callable> Function with only one argument as handler to process the data pushed at once             #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the pushed data                                  #
+#   |   |   |apiPushYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <push>      #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
 #   |   |   |lsPushOpt         :   <dict    > Options to list the <push> callables given <apiPkgPush == None>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
 #   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
@@ -216,6 +222,13 @@ class OpenSourceApiMeta(type):
 #   | Log  |[1] Introduce the descriptor <DynMethodLookup> to unify the function to search for methods                                  #
 #   |      |[2] Modify the internal attribute names to avoid conflict with the system attributes                                        #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251102        | Version | 5.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce arguments <apiPullYldHdl> and <apiPushYldHdl> to enable handling of yielded values during <pull> and <push>   #
+#   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
+#   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -251,11 +264,13 @@ class OpenSourceApiMeta(type):
         ,apiPfxPull : str = ''
         ,apiSfxPull : str = ''
         ,apiPullHdl : Optional[callable] = lambda x: x
+        ,apiPullYldHdl : Optional[callable] = lambda x: x
         ,lsPullOpt : dict = {}
         ,apiPkgPush : Optional[str] = None
         ,apiPfxPush : str = ''
         ,apiSfxPush : str = ''
         ,apiPushHdl : Optional[callable] = lambda x: x
+        ,apiPushYldHdl : Optional[callable] = lambda x: x
         ,lsPushOpt : dict = {}
     ):
         #001. Handle parameters
@@ -264,7 +279,9 @@ class OpenSourceApiMeta(type):
         if not isinstance(apiPfxPush, str): apiPfxPush = ''
         if not isinstance(apiSfxPush, str): apiSfxPush = ''
         if not callable(apiPullHdl) : apiPullHdl = lambda x: x
+        if not callable(apiPullYldHdl) : apiPullYldHdl = lambda x: x
         if not callable(apiPushHdl) : apiPushHdl = lambda x: x
+        if not callable(apiPushYldHdl) : apiPushYldHdl = lambda x: x
 
         #100. Assign values to local variables
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
@@ -278,6 +295,7 @@ class OpenSourceApiMeta(type):
         #430. Slots to protect the privacy
         slots = (
             '__pulled___','__pushed___','__hdlpull___','__hdlpush___','__inputkw_pull___','__inputkw_push___','__inputkw___'
+            ,'__hdlpullyld___','__hdlpushyld___'
         )
         if '__slots__' in attrs:
             attrs['__slots__'] += slots
@@ -303,7 +321,9 @@ class OpenSourceApiMeta(type):
 
         #465. Mutable properties
         attrs['hdlPull'] = property(mcs.getHdlPull, mcs.setHdlPull)
+        attrs['hdlPullYld'] = property(mcs.getHdlPullYld, mcs.setHdlPullYld)
         attrs['hdlPush'] = property(mcs.getHdlPush, mcs.setHdlPush)
+        attrs['hdlPushYld'] = property(mcs.getHdlPushYld, mcs.setHdlPushYld)
 
         #500. Create the new class on the fly
         newcls = super().__new__(mcs, cls, bases, attrs)
@@ -315,7 +335,7 @@ class OpenSourceApiMeta(type):
         #[3] When we need to call a staticmethod, we should prepend it with the newly created class <newcls>
         #[4] We pass the newly created class-object to the argument <clsobj> for possible reference of its private environment
         #     created while NOT instantiated
-        setattr(newcls, '__init__', newcls.init(newcls, apiPullHdl, apiPushHdl))
+        setattr(newcls, '__init__', newcls.init(newcls, apiPullHdl, apiPullYldHdl, apiPushHdl, apiPushYldHdl))
 
         #700. Assign additional methods
         #710. Create the <pull> and <push> methods
@@ -342,6 +362,7 @@ class OpenSourceApiMeta(type):
             ,'apiSfx' : apiSfxPull
             ,'lsOpt' : lsPullOpt
             ,'attr_handler' : 'hdlPull'
+            ,'attr_hdl_yield' : 'hdlPullYld'
             ,'attr_kwInit' : '__inputkw_pull___'
             ,'attr_assign' : '__pulled___'
             ,'attr_return' : 'pulled'
@@ -353,6 +374,7 @@ class OpenSourceApiMeta(type):
             ,'apiSfx' : apiSfxPush
             ,'lsOpt' : lsPushOpt
             ,'attr_handler' : 'hdlPush'
+            ,'attr_hdl_yield' : 'hdlPushYld'
             ,'attr_kwInit' : '__inputkw_push___'
             ,'attr_assign' : '__pushed___'
             ,'attr_return' : 'pushed'
@@ -388,11 +410,13 @@ class OpenSourceApiMeta(type):
     #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
     #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
-    def init(clsobj, hdlPull : callable, hdlPush : callable):
+    def init(clsobj, hdlPull : callable, hdlPullYld : callable, hdlPush : callable, hdlPushYld : callable):
         def __init__(self, *pos, argsPull = {}, argsPush = {}, **kw):
             #005. Set the default handlers BEFORE initialization, to allow the user to customize them at initialization
             self.hdlPull = hdlPull
+            self.hdlPullYld = hdlPullYld
             self.hdlPush = hdlPush
+            self.hdlPushYld = hdlPushYld
 
             #010. Hijack the original <__init__> and conduct its process ahead of the processes defined in the metaclass
             self.__init_org___(*pos, **kw)
@@ -428,6 +452,18 @@ class OpenSourceApiMeta(type):
 
     def setHdlPush(self, func : callable):
         self.__hdlpush___ = func
+
+    def getHdlPullYld(self):
+        return(self.__hdlpullyld___)
+
+    def setHdlPullYld(self, func : callable):
+        self.__hdlpullyld___ = func
+
+    def getHdlPushYld(self):
+        return(self.__hdlpushyld___)
+
+    def setHdlPushYld(self, func : callable):
+        self.__hdlpushyld___ = func
 
 #End OpenSourceApiMeta
 

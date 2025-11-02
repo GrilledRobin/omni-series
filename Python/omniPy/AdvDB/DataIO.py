@@ -41,6 +41,10 @@ class DataIO():
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
+#   |   |   |apiPullYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the yielded data during <pull>                                                              #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <pull> for each API      #
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
 #   |   |   |                      [omniPy.AdvDB        ]<Default> Obtain the API from the dedicated package                            #
 #   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
@@ -54,6 +58,10 @@ class DataIO():
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
+#   |   |   |apiPushYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the yielded data during <push>                                                              #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <push> for each API      #
 #   |   |   |argsPull          :   <dict    > Collection of keyword arguments set as default for <pull> methods when instantiating the  #
 #   |   |   |                       class; <key> is the available API name, <value> is the kwargs for its <pull> method                 #
 #   |   |   |                      [<see def.>          ]<Default> Pull SAS datasets with encoding <GB18030> as maximum compatibility   #
@@ -321,6 +329,13 @@ class DataIO():
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Added full test case of inheritance from this class                                                                     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251102        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce arguments <apiPullYldHdl> and <apiPushYldHdl> to enable handling of yielded values during <pull> and <push>   #
+#   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
+#   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -354,10 +369,12 @@ class DataIO():
         ,apiPfxPull : str = 'std_read_'
         ,apiSfxPull : str = ''
         ,apiPullHdl : dict[str, callable] = {}
+        ,apiPullYldHdl : dict[str, callable] = {}
         ,apiPkgPush : str = 'omniPy.AdvDB'
         ,apiPfxPush : str = 'std_write_'
         ,apiSfxPush : str = ''
         ,apiPushHdl : dict[str, callable] = {}
+        ,apiPushYldHdl : dict[str, callable] = {}
         ,argsPull : dict = {
             'SAS' : {
                 'encoding' : 'GB18030'
@@ -406,16 +423,33 @@ class DataIO():
         #[ASSUMPTION]
         #[1] Avoid closure
         def nohandle(x): return(x)
+        def _vfycallable(in_dict : dict, attr_ : str):
+            f_ = in_dict.get(attr_, None)
+            if callable(f_):
+                return(f_)
+            else:
+                return(nohandle)
         hdl_pull = {
-            a : (f if callable(f := apiPullHdl.get(a, None)) else nohandle)
+            a : _vfycallable(apiPullHdl, a)
             for a in this_full
         }
         hdl_push = {
-            a : (f if callable(f := apiPushHdl.get(a, None)) else nohandle)
+            a : _vfycallable(apiPushHdl, a)
             for a in this_full
         }
         self.apiPullHdl = hdl_pull
         self.apiPushHdl = hdl_push
+
+        hdl_pullyld = {
+            a : _vfycallable(apiPullYldHdl, a)
+            for a in this_full
+        }
+        hdl_pushyld = {
+            a : _vfycallable(apiPushYldHdl, a)
+            for a in this_full
+        }
+        self.apiPullYldHdl = hdl_pullyld
+        self.apiPushYldHdl = hdl_pushyld
 
     #200. Private methods
     #210. Method to get attributes that are pre-defined at class instantiation
@@ -438,7 +472,9 @@ class DataIO():
         self
         ,attr : str
         ,apiPullHdl : Optional[callable] = None
+        ,apiPullYldHdl : Optional[callable] = None
         ,apiPushHdl : Optional[callable] = None
+        ,apiPushYldHdl : Optional[callable] = None
         ,argsPull : dict = {}
         ,argsPush : dict = {}
         ,**kw
@@ -449,7 +485,9 @@ class DataIO():
 
         #100. Tweak the handlers if provided
         hdl_pull = apiPullHdl if callable(apiPullHdl) else self.apiPullHdl.get(attr)
+        hdl_pullyld = apiPullYldHdl if callable(apiPullYldHdl) else self.apiPullYldHdl.get(attr)
         hdl_push = apiPushHdl if callable(apiPushHdl) else self.apiPushHdl.get(attr)
+        hdl_pushyld = apiPushYldHdl if callable(apiPushYldHdl) else self.apiPushYldHdl.get(attr)
 
         #200. Create API class on the fly
         #How to pass arguments to metaclass in class definition: (#2)
@@ -460,11 +498,13 @@ class DataIO():
             ,apiPfxPull = self.apiPfxPull
             ,apiSfxPull = self.apiSfxPull
             ,apiPullHdl = hdl_pull
+            ,apiPullYldHdl = hdl_pullyld
             ,lsPullOpt = self.lsPullOpt
             ,apiPkgPush = self.apiPkgPush
             ,apiPfxPush = self.apiPfxPush
             ,apiSfxPush = self.apiSfxPush
             ,apiPushHdl = hdl_push
+            ,apiPushYldHdl = hdl_pushyld
             ,lsPushOpt = self.lsPushOpt
         )
 
@@ -491,7 +531,9 @@ class DataIO():
     def addfull(
         self
         ,apiPullHdl : dict[str, callable] = {}
+        ,apiPullYldHdl : dict[str, callable] = {}
         ,apiPushHdl : dict[str, callable] = {}
+        ,apiPushYldHdl : dict[str, callable] = {}
         ,argsPull : dict = {}
         ,argsPush : dict = {}
         ,**kw
@@ -500,7 +542,9 @@ class DataIO():
             self.add(
                 a
                 ,apiPullHdl = apiPullHdl.get(a, None)
+                ,apiPullYldHdl = apiPullYldHdl.get(a, None)
                 ,apiPushHdl = apiPushHdl.get(a, None)
+                ,apiPushYldHdl = apiPushYldHdl.get(a, None)
                 ,argsPull = argsPull.get(a, {})
                 ,argsPush = argsPush.get(a, {})
                 ,**kw
@@ -629,6 +673,7 @@ if __name__=='__main__':
     import sys
     import pandas as pd
     import datetime as dt
+    import types, asyncio, queue, threading
     from functools import partial
     from collections.abc import Iterable
     dir_omniPy : str = r'D:\Python\ '.strip()
@@ -805,6 +850,8 @@ if __name__=='__main__':
                 self
                 ,apiPkgPull : str = None
                 ,apiPfxPull : str = 'loader_'
+                ,apiPullHdl : dict[str, callable] = {}
+                ,apiPullYldHdl : dict[str, callable] = {}
                 ,argsPull : dict = {}
                 ,lsPullOpt : dict = {}
             ):
@@ -815,6 +862,8 @@ if __name__=='__main__':
                     apiPkgPull = apiPkgPull
                     ,apiPfxPull = apiPfxPull
                     ,apiSfxPull = ''
+                    ,apiPullHdl = apiPullHdl
+                    ,apiPullYldHdl = apiPullYldHdl
                     ,apiPkgPush = None
                     ,apiPfxPush = 'lo_{}_'.format(dt.datetime.now().strftime('%Y%m%d%H%M%S'))
                     ,apiSfxPush = ''
@@ -1038,6 +1087,189 @@ if __name__=='__main__':
 
         #690. Remove the temporary file
         if os.path.isfile(f_rst): os.remove(f_rst)
+
+        # https://stackoverflow.com/questions/34073370/best-way-to-receive-the-return-value-from-a-python-generator
+        class GenReturnAccessor:
+            def __init__(self, gen):
+                self.gen = gen
+
+            def __iter__(self):
+                self.value = yield from self.gen
+                return self.value
+
+        # 一个兼容运行器，在无事件循环时用`asyncio.run`；若当前线程已有`loop`，则在新线程中运行
+        #[ASSUMPTION]
+        #[1] 来自ChatGPT-5.0
+        def runAsyncCompat(coro):
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                # 当前线程没有运行中的`loop`
+                return(asyncio.run(coro))
+
+            # 已有运行中的`loop`（如Jupyter）
+            q = queue.Queue()
+            def worker():
+                try:
+                    # 在新线程里独立运行一个事件循环
+                    res = asyncio.run(coro)
+                    q.put((True, res))
+                except Exception as e:
+                    q.put((False, e))
+            t = threading.Thread(target = worker, daemon = True)
+            t.start()
+            ok, payload = q.get()
+            if ok:
+                return(payload)
+            raise payload
+
+        # Helper function to run the iterable coroutine
+        #[ASSUMPTION]
+        #[1] 来自ChatGPT-5.0
+        def runIterCoro(func, *pos, **kw):
+            """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
+            g = func(*pos, **kw)
+            # 预激活（忽略`yield`的值）
+            _ = next(g)
+            try:
+                # 推进到`return`
+                g.send(None)
+            except StopIteration as e:
+                return e.value
+
+        #700. Test generator and iterable coroutine (as they are called in the same way)
+        #710. Prepare a generator
+        def loader_genInt(n : int = 5, cap : int = 4) -> int:
+            for i in range(n):
+                if i < cap:
+                    yield i
+            return(-1)
+
+        #720. Prepare an iterable coroutine
+        @types.coroutine
+        def loader_icoro(n : int) -> int:
+            # 第一次调度（prime）时产生一个值，这里用0
+            yield 0
+            # 随后（例如`send(None)`或`await`驱动的继续执行）返回最终结果
+            return n * 2
+
+        def _triple(x):
+            return(x * 3)
+        def _pow2(x):
+            return(x ** 2)
+        LoaderOnly2 = LoaderOnly(
+            apiPullYldHdl = {
+                'genInt' : _triple
+                ,'ag' : _pow2
+            }
+        )
+
+        #[ASSUMPTION]
+        #[1] `yield` values are multiplied via <_triple>
+        #[2] `return` values are not affected
+        LoaderOnly2.add('genInt')
+        g_prep = LoaderOnly2['genInt'].pull(6,3)
+        r_gen = GenReturnAccessor(g_prep)
+        for f in r_gen:
+            print(f)
+        print(f'{r_gen.value=}')
+        # 0
+        # 3
+        # 6
+        # r_gen.value=-1
+
+        LoaderOnly2.add('icoro')
+        print('LoaderOnly2.icoro.pull(3) -> ', runIterCoro(LoaderOnly2.icoro.pull, 3))
+        # LoaderOnly2.icoro.pull(3) ->  6
+
+        #800. Test async generator
+        async def loader_ag(start : int, stop : int, delay : float = 0.0) -> int:
+            for i in range(start, stop):
+                if delay:
+                    await asyncio.sleep(delay)
+                yield i
+
+        LoaderOnly2.add('ag')
+
+        # A helper coroutine to collect all items from an async generator into a list
+        async def collect(gen):
+            out = []
+            async for x in gen:
+                out.append(x)
+            return(out)
+
+        #[ASSUMPTION]
+        #[1] `yield` values are mutated via <_pow2>
+        ag_rst1 = runAsyncCompat(collect(LoaderOnly2['ag'].pull(3,7,0.0)))
+        print(ag_rst1)
+        # [9, 16, 25, 36]
+
+        #900. Test exceptional case as a BAD Iterable Coroutine
+        async def count(n):
+            i = 0
+            while True:
+                if i < n:
+                    yield i
+                else:
+                    break
+                i += 1
+
+        async def print_numbers(n):
+            generator = count(n)
+            while True:
+                try:
+                    rst = await generator.__anext__()
+                    print(rst)
+                except StopAsyncIteration:
+                    print('End of async iteration')
+                    # break
+                    return(rst)
+
+        #[ASSUMPTION]
+        #[1] <bad_icoro> is wrapped by <types.coroutine>, yet it is NOT an iterable coroutine
+        bad_icoro = types.coroutine(print_numbers)
+
+        bad_icoro.__code__.co_flags & inspect.CO_COROUTINE == inspect.CO_COROUTINE
+        # True
+
+        bad_icoro.__code__.co_flags & inspect.CO_ITERABLE_COROUTINE == inspect.CO_ITERABLE_COROUTINE
+        # False
+
+        #[ASSUMPTION]
+        #[1] We cannot call it via <runIterCoro>
+        #[2] According to its <co_flags>, we should choose <runAsyncCompat> to call it
+        runAsyncCompat(bad_icoro(5))
+        # 0
+        # 1
+        # 2
+        # 3
+        # 4
+        # End of async iteration
+        # Out[29]: 4
+
+        loaderOnly3 = LoaderOnly(
+            apiPkgPull = None
+            ,apiPfxPull = 'bad_'
+            ,apiPullHdl = {
+                'icoro' : lambda x: (x * 3) if isinstance(x, int) else None
+            }
+            ,apiPullYldHdl = {
+                'icoro' : lambda x: x * 2
+            }
+        )
+
+        loaderOnly3.add('icoro')
+
+        #[ASSUMPTION]
+        #[1] <LoaderOnly> recognizes its <CO_COROUTINE> flag hence will use coroutine method to call it
+        #[2] Since <print_numbers> does not `yield` values, only the handler <apiPullHdl> is applied
+        print('loaderOnly3.icoro.pull(4) ->', runAsyncCompat(loaderOnly3['icoro'].pull(4)))
+        # 0
+        # 1
+        # 2
+        # 3
+        # End of async iteration
+        # loaderOnly3.icoro.pull(4) -> 9
 
 #-Notes- -End-
 '''

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import types
-import inspect
+import ast, types, inspect
 import datetime as dt
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature, Parameter
-from functools import partial
 from omniPy.AdvOp import nameArgsByFormals
 
 class ExpandSignature:
@@ -242,25 +240,44 @@ class ExpandSignature:
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |flags             :   <co_flags> extracted from any Code Object, to determine which type of callable to create             #
+#   |   |   |args              :   <ast.arguments> instance for fabrication of the new callable                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |<callable>        :   The callable determined by <flags>                                                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[_getType]                                                                                                                     #
+#   |   |[_getSig]                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to identify the container for object instantiation                                             #
+#   |   |   |   |This method is intended to parse the Signature of the provided callable and extract the attributes for internal process#
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |flags             :   <co_flags> extracted from any Code Object, to determine which type of callable to create             #
+#   |   |   |func              :   <callable> for which to extract the Signature details                                                #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<callable>        :   The callable determined by <flags>                                                                   #
+#   |   |   |<dict>            :   Variable attributes extracted from the Signature                                                     #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[_reshapeParams]                                                                                                               #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |001.   Introduction.                                                                                                       #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |This method is intended to reshape the parameters at runtime to facilitate the call to <dst> and <src> in a proper     #
+#   |   |   |   | sequence                                                                                                              #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |100.   Parameters.                                                                                                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |*pos              :   <tuple> of all positional parameters passed for the call to the wrapped callable                     #
+#   |   |   |**kw              :   <dict> of all keyword parameters passed for the call to the wrapped callable                         #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |900.   Return Values by position.                                                                                          #
+#   |   |   |---------------------------------------------------------------------------------------------------------------------------#
+#   |   |   |<tuple>           :   <tuple[tuple,dict]> as the reshaped parameters to facilitate the call to <dst>, and thus to the call #
+#   |   |   |                       to <src> subsequently from inside the body of <dst>                                                 #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[_wrapper]                                                                                                                     #
@@ -294,6 +311,13 @@ class ExpandSignature:
 #   | Log  |[1] Add detection of whether the parameter passed for an argument to the call is from its default value, instead of from the#
 #   |      |     input at runtime; the detection is not by values hence it can be flagged correctly even if they are identical          #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251101        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce abstract syntax tree <ast> to fabricate the null function                                                     #
+#   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
+#   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -303,7 +327,7 @@ class ExpandSignature:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |types, functools, inspect, datetime                                                                                            #
+#   |   |types, ast, inspect, datetime                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -318,34 +342,22 @@ class ExpandSignature:
     #015. Protect the private environment
     __slots__ = (
         '_isdefault','_isdefault_scope','_defaults'
-        ,'src','arg_kind'
-        ,'sig_src','sig_src_bykind','sig_patch'
-        ,'args_src','named_src','defaulted_src','po_src','pk_src_wo_def','pk_src_w_def','pos_src','ko_src','ko_src_w_def','kw_src'
-        ,'doc_src','flags_src'
-        ,'dst'
-        ,'args_dst','named_dst'
+        ,'src','sig_src','dst','sig_dst'
+        ,'arg_kind','sig_patch','passer'
+        ,'len_po','len_pk_wo_def','len_pk_w_def'
+        ,'ko_fr_src','ko','pk_wo_def_fr_src','pk_w_def_fr_src'
     )
 
     #100. Initialize by extracting the signature of the ancestor
     def __init__(self, src : callable):
         #020. Local environment
-        self._isdefault = dict()
-        self._isdefault_scope = {'src' : dict(), 'dst' : dict()}
+        self._isdefault = {}
+        self._isdefault_scope = {'src' : {}, 'dst' : {}}
         self.src = src
         self.arg_kind = ['POSITIONAL_ONLY','POSITIONAL_OR_KEYWORD','VAR_POSITIONAL','KEYWORD_ONLY','VAR_KEYWORD']
 
         #200. Retrieve the signature of the callable
-        #[ASSUMPTION]
-        #[1] Python evaluates the parameters passed for the call of a function in the priority as listed in <arg_kind>
-        self.sig_src = signature(src).parameters.values()
-        self.sig_src_bykind = {
-            n : {
-                i : s
-                for i,s in enumerate(self.sig_src)
-                if s.kind == s.__getattribute__(n)
-            }
-            for n in self.arg_kind
-        }
+        self.sig_src = self._getSig(src)
 
         #210. Define the signature to patch when the positional arguments passed to the wrapped call are insufficient
         #[ASSUMPTION]
@@ -354,76 +366,13 @@ class ExpandSignature:
         #[2] We need all the locations of the positional arguments in <src> to determine which holes to fill
         self.sig_patch = {
             i : s
-            for i,s in enumerate(self.sig_src)
+            for i,s in enumerate(self.sig_src['sig'])
             if s.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
         }
 
         #300. Identify specific arguments
-        #301. All arguments
-        #[1] We do all below processes assuming that <dict> in Python >= 3.7 is ordered
-        #    https://www.geeksforgeeks.org/are-python-dictionaries-ordered/
-        self.args_src = {s.name : s.default for s in self.sig_src}
-
-        #305. Named arguments
-        self.named_src = {s.name : s.default for s in self.sig_src if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
-
         #307. Arguments with default values
-        self._defaults = self.defaulted_src = {s.name : s.default for s in self.sig_src if s.default is not s.empty}
-
-        #310. POSITIONAL_ONLY
-        self.po_src = {s.name : s.default for s in self.sig_src_bykind['POSITIONAL_ONLY'].values()}
-
-        #330. POSITIONAL_OR_KEYWORD
-        self.pk_src_wo_def = {
-            s.name : s.default
-            for s in self.sig_src_bykind['POSITIONAL_OR_KEYWORD'].values()
-            if s.default is s.empty
-        }
-        self.pk_src_w_def = {
-            s.name : s.default
-            for s in self.sig_src_bykind['POSITIONAL_OR_KEYWORD'].values()
-            if s.default is not s.empty
-        }
-
-        #360. All positional arguments
-        self.pos_src = (
-            self.sig_src_bykind['POSITIONAL_ONLY']
-            | self.sig_src_bykind['POSITIONAL_OR_KEYWORD']
-            | self.sig_src_bykind['VAR_POSITIONAL']
-        )
-
-        #370. KEYWORD_ONLY
-        self.ko_src = {s.name : s.default for s in self.sig_src_bykind['KEYWORD_ONLY'].values()}
-        self.ko_src_w_def = {
-            s.name : s.default
-            for s in self.sig_src_bykind['KEYWORD_ONLY'].values()
-            if s.default is not s.empty
-        }
-
-        #395. All keyword arguments
-        self.kw_src = self.sig_src_bykind['KEYWORD_ONLY'] | self.sig_src_bykind['VAR_KEYWORD']
-
-        #500. Identify specific attributes
-        #510. Docstring
-        self.doc_src = src.__doc__ or ''
-
-        #520. Code Object Flags
-        #[ASSUMPTION]
-        #[1] It is tested that <co_varnames> is also matched against the indication in <co_flags>
-        #[2] Failure on the matching will lead to below exception
-        #    ValueError: code: co_varnames is too small
-        #[3] <co_flags> cannot be updated using <.replace()> method, so if the wrapper has <*pos>, CO_VARARGS is set to the
-        #     wrapped result anyway, same as CO_VARKEYWORDS
-        #[4] Hence, when we need to chain the expansion of signatures with many functions, direct search in
-        #     <src.__code__.co_flags> fails to indicate the correct flags of <*pos> and <**kw> when <src> is already expanded
-        #     with signatures of other functions
-        #[5] As a workaround, as as what <functools.wraps> does, we always prioritize the search for the flags in the newly
-        #     created attribute <__wrapped__> and do not provide alternatives like <follow_wrapped = False>, because it never
-        #     works for a nested expansion
-        if hasattr(src, '__wrapped__'):
-            self.flags_src = src.__wrapped__.__code__.co_flags
-        else:
-            self.flags_src = src.__code__.co_flags
+        self._defaults = {**self.sig_src['defaulted']}
 
     #200. Helper functions
     #110. Function to detect whether a Code Object Bit Flag is included in <co_flags>
@@ -439,109 +388,309 @@ class ExpandSignature:
         return((flags & flag) == flag)
 
     #130. Null function to take over the merged signature
-    def _nullfn(self, flags : int) -> callable:
-        if self._hasFlag(flags, inspect.CO_GENERATOR):
-            def rst():
-                yield 1
-        elif self._hasFlag(flags, inspect.CO_COROUTINE) or self._hasFlag(flags, inspect.CO_ITERABLE_COROUTINE):
-            async def rst(): pass
-        elif self._hasFlag(flags, inspect.CO_ASYNC_GENERATOR):
-            async def rst():
-                yield
+    def _nullfn(self, flags : int, args : ast.arguments) -> callable:
+        #010. Local environment
+        Name = lambda s, ctx = ast.Load(): ast.Name(id = s, ctx = ctx)
+        Const = lambda v: ast.Constant(value = v)
+        Attr = lambda base, attr: ast.Attribute(value = base, attr = attr, ctx = ast.Load())
+        if f_async := (self._hasFlag(flags, inspect.CO_COROUTINE) or self._hasFlag(flags, inspect.CO_ASYNC_GENERATOR)):
+            class_def = ast.AsyncFunctionDef
         else:
-            def rst(): pass
+            class_def = ast.FunctionDef
 
-        return(rst)
-
-    #150. Function to identify the container for object instantiation
-    def _getType(self, flags: int):
-        if self._hasFlag(flags, inspect.CO_GENERATOR):
-            rst = types.GeneratorType
-        elif self._hasFlag(flags, inspect.CO_COROUTINE) or self._hasFlag(flags, inspect.CO_ITERABLE_COROUTINE):
-            rst = types.CoroutineType
-        elif self._hasFlag(flags, inspect.CO_ASYNC_GENERATOR):
-            rst = types.AsyncGeneratorType
+        #300. Prepare simple body statements
+        #310. Await statement
+        # await asyncio.sleep(0)
+        if f_async:
+            stmt_await = [ast.Expr(
+                value = ast.Await(
+                    value = ast.Call(
+                        func = Attr(Name('asyncio'), 'sleep')
+                        ,args = [Const(0)]
+                        ,keywords = []
+                    )
+                )
+            )]
         else:
-            rst = partial(types.FunctionType, globals = globals())
+            stmt_await = []
 
-        return(rst)
+        #330. Yield statement
+        # yield 0
+        if f_generator := (
+            self._hasFlag(flags, inspect.CO_GENERATOR)
+            or self._hasFlag(flags, inspect.CO_ASYNC_GENERATOR)
+            or self._hasFlag(flags, inspect.CO_ITERABLE_COROUTINE)
+        ):
+            stmt_yield = [ast.Expr(value = ast.Yield(value = Const(0)))]
+        else:
+            stmt_yield = []
 
-    #300. Create the decorator
-    def _wrapper(self, dst : callable) -> callable:
+        #350. Pass statement
+        # pass
+        if not (f_async | f_generator):
+            stmt_pass = [ast.Pass()]
+        else:
+            stmt_pass = []
+
+        #350. Decorator statement
+        # @types.coroutine
+        if self._hasFlag(flags, inspect.CO_ITERABLE_COROUTINE):
+            deco_list = [Attr(Name('types'), 'coroutine')]
+            ns_types = {'types' : types}
+        else:
+            deco_list = []
+            ns_types = {}
+
+        #500. Assemble the function definition
+        func_def = class_def(
+            name = self.dst.__name__
+            ,args = args
+            ,body = stmt_await + stmt_yield + stmt_pass
+            ,decorator_list = deco_list
+            ,returns = None
+            ,type_comment = None
+        )
+
+        #700. Compile the module
+        #[ASSUMPTION]
+        #[1] In case of possible extension, we introduce a universal namespace `ns`
+        ns = {**ns_types}
+        module = ast.Module(body = [func_def], type_ignores = [])
+        ast.fix_missing_locations(module)
+        exec(compile(module, '<ast-expand-sig>', 'exec'), ns)
+
+        return(ns[self.dst.__name__])
+
+    #160. Function to extract the signature as well as useful attributes of the callable
+    def _getSig(self, func : callable) -> dict:
+        #010. Local environment
+        rstOut = {}
+
         #100. Retrieve the signature of the callable
-        self.dst = dst
-        sig_dst = signature(dst).parameters.values()
-        sig_dst_bykind = {
+        #[ASSUMPTION]
+        #[1] Python evaluates the parameters passed for the call of a function in the priority as listed in <arg_kind>
+        rstOut['sig'] = signature(func).parameters.values()
+        rstOut['bykind'] = {
             n : {
                 i : s
-                for i,s in enumerate(sig_dst)
+                for i,s in enumerate(rstOut['sig'])
                 if s.kind == s.__getattribute__(n)
             }
             for n in self.arg_kind
         }
-        has_vp_dst = len(sig_dst_bykind['VAR_POSITIONAL']) == 1
-        has_vk_dst = len(sig_dst_bykind['VAR_KEYWORD']) == 1
-        rest_src = {**self.named_src}
+        rstOut['has_vp'] = len(rstOut['bykind']['VAR_POSITIONAL']) == 1
+        rstOut['has_vk'] = len(rstOut['bykind']['VAR_KEYWORD']) == 1
+
+        #300. Identify specific arguments
+        #301. All arguments
+        #[1] We do all below processes assuming that <dict> in Python >= 3.7 is ordered
+        #    https://www.geeksforgeeks.org/are-python-dictionaries-ordered/
+        rstOut['args'] = {s.name : s.default for s in rstOut['sig']}
+
+        #305. Named arguments
+        rstOut['named'] = {s.name : s.default for s in rstOut['sig'] if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
+
+        #307. Arguments with default values
+        rstOut['defaulted'] = {s.name : s.default for s in rstOut['sig'] if s.default is not s.empty}
+
+        #310. POSITIONAL_ONLY
+        rstOut['po'] = {s.name : s.default for s in rstOut['bykind']['POSITIONAL_ONLY'].values()}
+        rstOut['len_po'] = len(rstOut['po'])
+
+        #330. POSITIONAL_OR_KEYWORD
+        rstOut['pk_wo_def'] = {
+            s.name : s.default
+            for s in rstOut['bykind']['POSITIONAL_OR_KEYWORD'].values()
+            if s.default is s.empty
+        }
+        rstOut['pk_w_def'] = {
+            s.name : s.default
+            for s in rstOut['bykind']['POSITIONAL_OR_KEYWORD'].values()
+            if s.default is not s.empty
+        }
+        rstOut['len_pk_wo_def'] = len(rstOut['pk_wo_def'])
+        rstOut['len_pk_w_def'] = len(rstOut['pk_w_def'])
+
+        #360. All positional arguments
+        rstOut['pos'] = (
+            rstOut['bykind']['POSITIONAL_ONLY']
+            | rstOut['bykind']['POSITIONAL_OR_KEYWORD']
+            | rstOut['bykind']['VAR_POSITIONAL']
+        )
+
+        #370. KEYWORD_ONLY
+        rstOut['ko'] = {s.name : s.default for s in rstOut['bykind']['KEYWORD_ONLY'].values()}
+        rstOut['ko_w_def'] = {
+            s.name : s.default
+            for s in rstOut['bykind']['KEYWORD_ONLY'].values()
+            if s.default is not s.empty
+        }
+
+        #395. All keyword arguments
+        rstOut['kw'] = rstOut['bykind']['KEYWORD_ONLY'] | rstOut['bykind']['VAR_KEYWORD']
+
+        #500. Identify specific attributes
+        #510. Docstring
+        rstOut['doc'] = func.__doc__ or ''
+
+        #520. Code Object Flags
+        #[ASSUMPTION]
+        #[1] It is tested that <co_varnames> is also matched against the indication in <co_flags>
+        #[2] Failure on the matching will lead to below exception
+        #    ValueError: code: co_varnames is too small
+        #[3] <co_flags> cannot be updated using <.replace()> method, so if the wrapper has <*pos>, CO_VARARGS is set to the
+        #     wrapped result anyway, same as CO_VARKEYWORDS
+        #[4] Hence, when we need to chain the expansion of signatures with many functions, direct search in
+        #     <func.__code__.co_flags> fails to indicate the correct flags of <*pos> and <**kw> when <func> is already expanded
+        #     with signatures of other functions
+        #[5] As a workaround, as as what <functools.wraps> does, we always prioritize the search for the flags in the newly
+        #     created attribute <__wrapped__> and do not provide alternatives like <follow_wrapped = False>, because it never
+        #     works for a nested expansion
+        #[6] Although it is NOT recommended (see `inspect` in official documents) to use <co_flags> for function type
+        #     determination, there is no precise solution to recognize a `function wrapped by types.coroutine()` except from
+        #     <co_flags> until Python==3.14, given that we cannot execute such function to verify its runtime behavior at all
+        #     times. Therefore, we can neither abandon the usage of <co_flags> at present
+        if hasattr(func, '__wrapped__'):
+            rstOut['flags'] = func.__wrapped__.__code__.co_flags
+        else:
+            rstOut['flags'] = func.__code__.co_flags
+
+        return(rstOut)
+
+    #170. Function to reshape the parameters at runtime
+    def _reshapeParams(self, *pos, **kw) -> tuple[tuple, dict]:
+        #100. Create a dummy class and make it (relatively) unique
+        def _init(self, key : str):
+            self.key = key
+        cls_dummy = type(f'tmpcls{dt.datetime.now().strftime("%Y%m%d%H%M%S%f")}', (object,), {'__init__' : _init})
+
+        #070. Patch the inputs where necessary
+        pos_ = pos[:]
+        #[ASSUMPTION]
+        #[1] We pretend that the defaults for POSITIONAL_OR_KEYWORD-with-defaults and KEYWORD_ONLY-with-defaults are always
+        #     set in <kw>, in case there are no explicit inputs for them
+        #[2] Only by doing so, can we set the additional provision during the expansion of <dst>, for it to fill the
+        #     respective holes in <src>
+        #[3] Input value recognition priority is as below
+        #    [1] If the argument is provided in <pos>, it is programmatically taken prior to the same provision in <kw>
+        #    [2] If it is provided in <kw>, we take it prior to any of its default values in either <src> or <dst>
+        #    [3] If the same argument exists in both callables, we still take the default value in <dst> prior to <src>
+        kw_ = (
+            { k:cls_dummy(k) for k,v in self.sig_src['pk_w_def'].items() }
+            | { k:cls_dummy(k) for k,v in self.sig_dst['pk_w_def'].items() }
+            | { k:cls_dummy(k) for k,v in self.sig_src['ko_w_def'].items() }
+            | { k:cls_dummy(k) for k,v in self.sig_dst['ko_w_def'].items() }
+            | kw
+        )
+
+        #090. Translate the parameters in terms of the merged signature
+        #[ASSUMPTION]
+        #[1] In order to make a valid call, we do not accept insufficient parameters passed
+        #[2] However, we allow excessive parameters, i.e. multiple inputs, for we allow the patching at above steps
+        in_pos, in_kw = nameArgsByFormals(self.passer, pos_ = pos_, kw_ = kw_, coerce_ = True, strict_ = True)
+
+        #100. Split positional parameters
+        #[ASSUMPTION]
+        #[1] To fulfill the arguments for <src> and <dst> separately, we need to split the parameters according to their
+        #     respective signatures
+        #[2] That is, we identify the parameters specifically for <dst> and put the rest into <*pos> of the signature of <dst>
+        #[3] Since <*pos> is after POSITIONAL_ONLY and POSITIONAL_OR_KEYWORD, we handle these <kind>s together
+        #[4] We do the same for the rest <kind> of parameters as well
+        in_po_dst = in_pos[:self.sig_dst['len_po']]
+        in_po_src = in_pos[self.sig_dst['len_po']:self.len_po]
+        in_pk_wo_def_dst = in_pos[self.len_po:(bgn_pk_wo_def_src := self.len_po + self.sig_dst['len_pk_wo_def'])]
+        in_pk_wo_def_src = in_pos[bgn_pk_wo_def_src:(bgn_pk_w_def_dst := self.len_po + self.len_pk_wo_def)]
+        in_pk_w_def_dst = in_pos[bgn_pk_w_def_dst:(bgn_pk_w_def_src := self.len_po + self.len_pk_wo_def + self.sig_dst['len_pk_w_def'])]
+        in_pk_w_def_src = in_pos[bgn_pk_w_def_src:(bgn_vp_src := self.len_po + self.len_pk_wo_def + self.len_pk_w_def)]
+        in_vp_src = in_pos[bgn_vp_src:]
+
+        #300. Split keyword parameters
+        in_ko_dst = {k:v for k,v in in_kw.items() if k in self.sig_dst['ko']}
+        in_ko_src = {k:v for k,v in in_kw.items() if k in self.ko_fr_src}
+        in_kw_rest = {k:v for k,v in in_kw.items() if k not in self.ko}
+
+        #500. Prepare the adjustment on those POSITIONAL_OR_KEYWORD which are translated into keyword input
+        kw_wo_def_dst = {k:v for k,v in in_kw_rest.items() if k in self.sig_dst['pk_wo_def']}
+        kw_wo_def_src = {k:v for k,v in in_kw_rest.items() if k in self.pk_wo_def_fr_src}
+        kw_w_def_dst = {k:v for k,v in in_kw_rest.items() if k in self.sig_dst['pk_w_def']}
+        kw_w_def_src = {k:v for k,v in in_kw_rest.items() if k in self.pk_w_def_fr_src}
+        adj_pk_wo_def_dst = tuple(kw_wo_def_dst.values())
+        adj_pk_wo_def_src = tuple(kw_wo_def_src.values())
+        adj_pk_w_def_dst = tuple(kw_w_def_dst.values())
+        adj_pk_w_def_src = tuple(kw_w_def_src.values())
+
+        #600. Identify VAR_KEYWORD
+        in_vk_src = {
+            k:v
+            for k,v in in_kw_rest.items()
+            if k not in (kw_wo_def_dst | kw_wo_def_src | kw_w_def_dst | kw_w_def_src)
+        }
+
+        #800. Prepare the parameters for the call
+        out_pos_pre = in_po_dst + in_pk_wo_def_dst + adj_pk_wo_def_dst + in_pk_w_def_dst + adj_pk_w_def_dst
+        out_vp_pre = in_po_src + in_pk_wo_def_src + adj_pk_wo_def_src + in_pk_w_def_src + adj_pk_w_def_src + in_vp_src
+        out_ko_pre = in_ko_dst
+        out_vk_pre = in_ko_src | in_vk_src
+
+        #830. Flag the parameters retained from default values instead of from inputs
+        #[ASSUMPTION]
+        #[1] This step should be done at runtime
+        self._isdefault = { k:False for k in self._defaults.keys() }
+        self._isdefault_scope = {
+            'src' : { k:False for k in self.sig_src['defaulted'].keys() }
+            ,'dst' : { k:False for k in self.sig_dst['defaulted'].keys() }
+        }
+        for v in (out_pos_pre + out_vp_pre + tuple(out_ko_pre.values()) + tuple(out_vk_pre.values())):
+            if isinstance(v, cls_dummy):
+                self._isdefault[v.key] = True
+                if v.key in self.sig_src['defaulted']:
+                    self._isdefault_scope['src'][v.key] = True
+                if v.key in self.sig_dst['defaulted']:
+                    self._isdefault_scope['dst'][v.key] = True
+                    if v.key in self.sig_src['defaulted']:
+                        self._isdefault_scope['src'][v.key] = False
+
+        #890. Obtain the actual parameters for the placeholders
+        out_pos = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_pos_pre ]
+        out_vp = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_vp_pre ]
+        out_ko = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_ko_pre.items() }
+        out_vk = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_vk_pre.items() }
+
+        return(out_pos + out_vp, out_ko | out_vk)
+
+    #300. Create the decorator
+    def _wrapper(self, dst : callable) -> callable:
+        #010. Local environment
+        rest_src = {**self.sig_src['named']}
 
         #200. Identify specific arguments
-        #201. All arguments
-        self.args_dst = args_dst = {s.name : s.default for s in sig_dst}
-
-        #205. Named arguments
-        self.named_dst = {s.name : s.default for s in sig_dst if s.kind not in [s.VAR_POSITIONAL,s.VAR_KEYWORD]}
-
-        #207. Arguments with default values
-        defaulted_dst = {s.name : s.default for s in sig_dst if s.default is not s.empty}
-        self._defaults = {k:v for k,v in self._defaults.items() if k not in defaulted_dst} | defaulted_dst
-
-        #210. POSITIONAL_ONLY
-        po_dst = {s.name : s.default for s in sig_dst_bykind['POSITIONAL_ONLY'].values()}
-        len_po_dst = len(po_dst)
-
-        #230. POSITIONAL_OR_KEYWORD
-        pk_dst_wo_def = {s.name : s.default for s in sig_dst_bykind['POSITIONAL_OR_KEYWORD'].values() if s.default is s.empty}
-        pk_dst_w_def = {s.name : s.default for s in sig_dst_bykind['POSITIONAL_OR_KEYWORD'].values() if s.default is not s.empty}
-        len_pk_dst_wo_def = len(pk_dst_wo_def)
-        len_pk_dst_w_def = len(pk_dst_w_def)
-
-        #250. VAR_POSITIONAL
-
-        #270. KEYWORD_ONLY
-        ko_dst = {s.name : s.default for s in sig_dst_bykind['KEYWORD_ONLY'].values()}
-        ko_dst_w_def = {s.name : s.default for s in sig_dst_bykind['KEYWORD_ONLY'].values() if s.default is not s.empty}
-
         #290. VAR_KEYWORD
-
-        if (not has_vp_dst) and (not has_vk_dst):
+        if (not self.sig_dst['has_vp']) and (not self.sig_dst['has_vk']):
             raise TypeError(
                 f'[{dst.__name__}]No expansion of VAR_POSITIONAL or VAR_KEYWORD can be conducted for <{self.src.__name__}>!'
             )
 
-        if self.args_src:
-            if not has_vp_dst:
-                if self.pos_src:
+        if self.sig_src['args']:
+            if not self.sig_dst['has_vp']:
+                if self.sig_src['pos']:
                     raise TypeError(f'[{dst.__name__}]Missing VAR_POSITIONAL to expand for <{self.src.__name__}>!')
 
-            if not has_vk_dst:
-                if self.kw_src:
+            if not self.sig_dst['has_vk']:
+                if self.sig_src['kw']:
                     raise TypeError(f'[{dst.__name__}]Missing VAR_KEYWORD to expand for <{self.src.__name__}>!')
 
         #300. Identify specific attributes
-        #310. Docstring
-        doc_dst = dst.__doc__ or ''
-
         #320. Code Object Flags
-        flags_dst = dst.__code__.co_flags
-        flags_upd = flags_dst
+        flags_upd = dst.__code__.co_flags
 
         #400. Merge arguments
         #410. POSITIONAL_ONLY
         #[ASSUMPTION]
         #[1] At this step, there may be arguments of other <kind> in <src> changed into this <kind> in <dst>
         #[2] We should honor this change by prioritize the <kind> in <dst>, similar for all the rest process
-        po_fr_src = {k:v for k,v in self.po_src.items() if k in rest_src and k not in args_dst}
-        po = po_dst | po_fr_src
-        len_po = len(po)
+        po_fr_src = {k:v for k,v in self.sig_src['po'].items() if k in rest_src and k not in self.sig_dst['args']}
+        po = self.sig_dst['po'] | po_fr_src
+        self.len_po = len(po)
         rest_src = {k:v for k,v in rest_src.items() if k not in po}
 
         #430. POSITIONAL_OR_KEYWORD
@@ -550,29 +699,30 @@ class ExpandSignature:
         #[2] There are two scenarios given <src> has <arg1, arg2 = 2>
         #    [1] If <dst> has <arg3 = 3>, we should put <arg3> between <arg1> and <arg2>, i.e. before the first one with default value
         #    [2] If <dst> has <arg3> (i.e. without default), we should put <arg3> before <arg1>
-        pk_wo_def_fr_src = {k:v for k,v in self.pk_src_wo_def.items() if k in rest_src and k not in args_dst}
-        pk_wo_def = pk_dst_wo_def | pk_wo_def_fr_src
-        len_pk_wo_def = len(pk_wo_def)
+        self.pk_wo_def_fr_src = {k:v for k,v in self.sig_src['pk_wo_def'].items() if k in rest_src and k not in self.sig_dst['args']}
+        pk_wo_def = self.sig_dst['pk_wo_def'] | self.pk_wo_def_fr_src
+        self.len_pk_wo_def = len(pk_wo_def)
         rest_src = {k:v for k,v in rest_src.items() if k not in pk_wo_def}
 
-        pk_w_def_fr_src = {k:v for k,v in self.pk_src_w_def.items() if k in rest_src and k not in args_dst}
-        pk_w_def = pk_dst_w_def | pk_w_def_fr_src
-        len_pk_w_def = len(pk_w_def)
+        self.pk_w_def_fr_src = {k:v for k,v in self.sig_src['pk_w_def'].items() if k in rest_src and k not in self.sig_dst['args']}
+        pk_w_def = self.sig_dst['pk_w_def'] | self.pk_w_def_fr_src
+        self.len_pk_w_def = len(pk_w_def)
         rest_src = {k:v for k,v in rest_src.items() if k not in pk_w_def}
 
         #450. VAR_POSITIONAL
-        vp = {s.name : s.default for s in self.sig_src_bykind['VAR_POSITIONAL'].values()}
+        vp = {s.name : s.default for s in self.sig_src['bykind']['VAR_POSITIONAL'].values()}
 
         #470. KEYWORD_ONLY
         #[ASSUMPTION]
         #[1] Sequence (even with or without defaults) does not matter for this <kind> of arguments
         #[2] After this step, <rest_src> must have been empty, so there is no need for verification
-        ko_fr_src = {k:v for k,v in self.ko_src.items() if k in rest_src and k not in args_dst}
-        ko = ko_dst | ko_fr_src
+        self.ko_fr_src = {k:v for k,v in self.sig_src['ko'].items() if k in rest_src and k not in self.sig_dst['args']}
+        ko = self.sig_dst['ko'] | self.ko_fr_src
         rest_src = {k:v for k,v in rest_src.items() if k not in ko}
+        self.ko = ko
 
         #490. VAR_KEYWORD
-        vk = {s.name : s.default for s in self.sig_src_bykind['VAR_KEYWORD'].values()}
+        vk = {s.name : s.default for s in self.sig_src['bykind']['VAR_KEYWORD'].values()}
 
         #500. Prepare final attributes for Code Object
         #510. Full arguments
@@ -583,15 +733,12 @@ class ExpandSignature:
         co_base = {k:getattr(dst.__code__, k) for k in dir(dst.__code__) if k.startswith('co_')}
 
         #530. Prepare merged flags
-        if self._hasFlag(flags_dst, inspect.CO_VARARGS):
+        if self._hasFlag(flags_upd, inspect.CO_VARARGS):
             flags_upd -= inspect.CO_VARARGS
-        if self._hasFlag(flags_dst, inspect.CO_VARKEYWORDS):
+        if self._hasFlag(flags_upd, inspect.CO_VARKEYWORDS):
             flags_upd -= inspect.CO_VARKEYWORDS
 
-        flags = self.flags_src | flags_upd
-
-        #540. Prepare the null callable
-        nullfn = self._nullfn(flags)
+        flags = self.sig_src['flags'] | flags_upd
 
         #550. Prepare the local variable names
         # var_local = tuple(set(co_base['co_varnames']) - set(args_dst.keys()))
@@ -606,8 +753,8 @@ class ExpandSignature:
         co = (
             co_base
             | {
-                'co_argcount' : len_po + len(pk_wo_def) + len(pk_w_def)
-                ,'co_posonlyargcount' : len_po
+                'co_argcount' : self.len_po + len(pk_wo_def) + len(pk_w_def)
+                ,'co_posonlyargcount' : self.len_po
                 ,'co_kwonlyargcount' : len(ko)
                 # ,'co_nlocals' : co_base['co_nlocals'] - len(sig_dst) + len_args + 1
                 ,'co_nlocals' : len_args
@@ -621,12 +768,6 @@ class ExpandSignature:
         #[2] <co_freevars> would fail to be tuple if this decorator is called inside a nested closure (function inside a function),
         #     hence we prevent it from updated. The related exception is as below
         #     TypeError: arg 5 (closure) must be tuple
-        co_wrap = {
-            k:v
-            for k,v in co.items()
-            if k not in ['co_lines','co_lnotab','co_positions','co_freevars']
-        }
-
         co_deco = {
             k:v
             for k,v in co.items()
@@ -638,7 +779,26 @@ class ExpandSignature:
         }
 
         #700. Prepare the null function
-        passer = self._getType(flags)(nullfn.__code__.replace(**co_wrap))
+        #710. Setup arguments
+        #[ASSUMPTION]
+        #[1] `kw_defaults` should have the same length as `kwonlyargs`
+        #[2] We would provide the default values at later steps, hence here we should nullify them here
+        vararg_ = None if len(vp) == 0 else [ast.arg(arg = n) for n in vp.keys()][0]
+        kwarg_ = None if len(vk) == 0 else [ast.arg(arg = n) for n in vk.keys()][0]
+        func_args = ast.arguments(
+            posonlyargs = [ast.arg(arg = n) for n in po.keys()]
+            ,args = [ast.arg(arg = n) for n in (pk_wo_def | pk_w_def).keys()]
+            ,vararg = vararg_
+            ,kwonlyargs = [ast.arg(arg = n) for n in ko.keys()]
+            ,kw_defaults = [None for n in ko.keys()]
+            ,kwarg = kwarg_
+            ,defaults = []
+        )
+
+        #730. Create the passer
+        passer = self._nullfn(flags, func_args)
+
+        #770. Correct its attributes
         passer.__name__ = dst.__name__
         passer.__qualname__ = dst.__qualname__
         passer.__module__ = dst.__module__
@@ -646,11 +806,15 @@ class ExpandSignature:
         passer.__kwdefaults__ = {k:v for k,v in ko.items() if v is not inspect._empty}
         passer.__annotations__ = self.src.__annotations__ | dst.__annotations__
         passer.__doc__ = (
-            (f'{doc_dst}\n\n' if doc_dst else '')
-            + (f'Expanded from: {self.src.__name__}\n{self.doc_src}' if self.doc_src else '')
+            (self.sig_dst['doc'] if self.sig_dst['doc'] else '')
+             + ('\n\n' if (self.sig_dst['doc'] and self.sig_src['doc']) else '')
+            + ((f'Expanded from: {self.src.__name__}\n' + self.sig_src['doc']) if self.sig_src['doc'] else '')
         )
         if not passer.__doc__:
             setattr(passer, '__doc__', None)
+
+        #790. Broadcast it for other internal usage
+        self.passer = passer
 
         #800. Reshape the call
         #[ASSUMPTION]
@@ -660,103 +824,11 @@ class ExpandSignature:
         #[3] That is why we skip an empty line to ensure this block of comments is not taken as the nil <__doc__>
 
         def deco(*pos, **kw):
-            #050. Create a dummy class and make it (relatively) unique
-            def _init(self, key : str):
-                self.key = key
-            cls_dummy = type(f'tmpcls{dt.datetime.now().strftime("%Y%m%d%H%M%S%f")}', (object,), {'__init__' : _init})
+            #100. Reshape the parameters at runtime
+            out_pos, out_kw = self._reshapeParams(*pos, **kw)
 
-            #070. Patch the inputs where necessary
-            pos_ = pos[:]
-            #[ASSUMPTION]
-            #[1] We pretend that the defaults for POSITIONAL_OR_KEYWORD-with-defaults and KEYWORD_ONLY-with-defaults are always
-            #     set in <kw>, in case there are no explicit inputs for them
-            #[2] Only by doing so, can we set the additional provision during the expansion of <dst>, for it to fill the
-            #     respective holes in <src>
-            #[3] Input value recognition priority is as below
-            #    [1] If the argument is provided in <pos>, it is programmatically taken prior to the same provision in <kw>
-            #    [2] If it is provided in <kw>, we take it prior to any of its default values in either <src> or <dst>
-            #    [3] If the same argument exists in both callables, we still take the default value in <dst> prior to <src>
-            kw_ = (
-                { k:cls_dummy(k) for k,v in self.pk_src_w_def.items() }
-                | { k:cls_dummy(k) for k,v in pk_dst_w_def.items() }
-                | { k:cls_dummy(k) for k,v in self.ko_src_w_def.items() }
-                | { k:cls_dummy(k) for k,v in ko_dst_w_def.items() }
-                | kw
-            )
-
-            #090. Translate the parameters in terms of the merged signature
-            #[ASSUMPTION]
-            #[1] In order to make a valid call, we do not accept insufficient parameters passed
-            #[2] However, we allow excessive parameters, i.e. multiple inputs, for we allow the patching at above steps
-            in_pos, in_kw = nameArgsByFormals(passer, pos_ = pos_, kw_ = kw_, coerce_ = True, strict_ = True)
-
-            #100. Split positional parameters
-            #[ASSUMPTION]
-            #[1] To fulfill the arguments for <src> and <dst> separately, we need to split the parameters according to their
-            #     respective signatures
-            #[2] That is, we identify the parameters specifically for <dst> and put the rest into <*pos> of the signature of <dst>
-            #[3] Since <*pos> is after POSITIONAL_ONLY and POSITIONAL_OR_KEYWORD, we handle these <kind>s together
-            #[4] We do the same for the rest <kind> of parameters as well
-            in_po_dst = in_pos[:len_po_dst]
-            in_po_src = in_pos[len_po_dst:len_po]
-            in_pk_wo_def_dst = in_pos[len_po:(len_po + len_pk_dst_wo_def)]
-            in_pk_wo_def_src = in_pos[(len_po + len_pk_dst_wo_def):(len_po + len_pk_wo_def)]
-            in_pk_w_def_dst = in_pos[(len_po + len_pk_wo_def):(len_po + len_pk_wo_def + len_pk_dst_w_def)]
-            in_pk_w_def_src = in_pos[(len_po + len_pk_wo_def + len_pk_dst_w_def):(len_po + len_pk_wo_def + len_pk_w_def)]
-            in_vp_src = in_pos[(len_po + len_pk_wo_def + len_pk_w_def):]
-
-            #300. Split keyword parameters
-            in_ko_dst = {k:v for k,v in in_kw.items() if k in ko_dst}
-            in_ko_src = {k:v for k,v in in_kw.items() if k in ko_fr_src}
-            in_kw_rest = {k:v for k,v in in_kw.items() if k not in ko}
-
-            #500. Prepare the adjustment on those POSITIONAL_OR_KEYWORD which are translated into keyword input
-            kw_wo_def_dst = {k:v for k,v in in_kw_rest.items() if k in pk_dst_wo_def}
-            kw_wo_def_src = {k:v for k,v in in_kw_rest.items() if k in pk_wo_def_fr_src}
-            kw_w_def_dst = {k:v for k,v in in_kw_rest.items() if k in pk_dst_w_def}
-            kw_w_def_src = {k:v for k,v in in_kw_rest.items() if k in pk_w_def_fr_src}
-            adj_pk_wo_def_dst = tuple(kw_wo_def_dst.values())
-            adj_pk_wo_def_src = tuple(kw_wo_def_src.values())
-            adj_pk_w_def_dst = tuple(kw_w_def_dst.values())
-            adj_pk_w_def_src = tuple(kw_w_def_src.values())
-
-            #600. Identify VAR_KEYWORD
-            in_vk_src = {
-                k:v
-                for k,v in in_kw_rest.items()
-                if k not in (kw_wo_def_dst | kw_wo_def_src | kw_w_def_dst | kw_w_def_src)
-            }
-
-            #800. Prepare the parameters for the call
-            out_pos_pre = in_po_dst + in_pk_wo_def_dst + adj_pk_wo_def_dst + in_pk_w_def_dst + adj_pk_w_def_dst
-            out_vp_pre = in_po_src + in_pk_wo_def_src + adj_pk_wo_def_src + in_pk_w_def_src + adj_pk_w_def_src + in_vp_src
-            out_ko_pre = in_ko_dst
-            out_vk_pre = in_ko_src | in_vk_src
-
-            #830. Flag the parameters retained from default values instead of from inputs
-            self._isdefault = { k:False for k in self._defaults.keys() }
-            self._isdefault_scope = {
-                'src' : { k:False for k in self.defaulted_src.keys() }
-                ,'dst' : { k:False for k in defaulted_dst.keys() }
-            }
-            for v in (out_pos_pre + out_vp_pre + tuple(out_ko_pre.values()) + tuple(out_vk_pre.values())):
-                if isinstance(v, cls_dummy):
-                    self._isdefault[v.key] = True
-                    if v.key in self.defaulted_src:
-                        self._isdefault_scope['src'][v.key] = True
-                    if v.key in defaulted_dst:
-                        self._isdefault_scope['dst'][v.key] = True
-                        if v.key in self.defaulted_src:
-                            self._isdefault_scope['src'][v.key] = False
-
-            #890. Obtain the actual parameters for the placeholders
-            out_pos = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_pos_pre ]
-            out_vp = [ v if not isinstance(v, cls_dummy) else self._defaults.get(v.key) for v in out_vp_pre ]
-            out_ko = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_ko_pre.items() }
-            out_vk = { k:(v if not isinstance(v, cls_dummy) else self._defaults.get(v.key)) for k,v in out_vk_pre.items() }
-
-            #900. Call <dst>
-            return(dst(*out_pos, *out_vp, **out_ko, **out_vk))
+            #500. Call <dst>
+            return(dst(*out_pos, **out_kw))
 
         #900. Prepare the output
         _ = deco.__code__.replace(**co_deco)
@@ -773,7 +845,7 @@ class ExpandSignature:
         #100. Determine the approach
         if inc_default:
             args_getdef = {
-                'kw_' : (kw_src | { k:v for k,v in self.defaulted_src.items() if k not in kw_src })
+                'kw_' : (kw_src | { k:v for k,v in self.sig_src['defaulted'].items() if k not in kw_src })
                 ,'strict_' : True
             }
         else:
@@ -800,13 +872,13 @@ class ExpandSignature:
         )
 
         #900. Prioritize the retrieval
-        if len(pos_in) > (arg_loc := [ i for i,s in enumerate(self.sig_src) if s.name == arg ][0]):
+        if len(pos_in) > (arg_loc := [ i for i,s in enumerate(self.sig_src['sig']) if s.name == arg ][0]):
             return(pos_in[arg_loc])
         else:
             return(kw_in.get(arg))
 
     #600. Function to insert the dedicated input parameters in terms of the signature
-    def insParams(self, args_ins : dict, pos_src : tuple, kw_src : dict):
+    def insParams(self, args_ins : dict, pos_src : tuple, kw_src : dict) -> tuple[tuple, dict]:
         #[ASSUMPTION]
         #[1] We cannot standardize the input as <updParams> does, as the input has some holes as we know at the wrapping, while
         #     the function <nameArgsByFormals> would skip the holes in <pos_src> which causes mismatching of positional parameters
@@ -850,7 +922,7 @@ class ExpandSignature:
         return(pos_out, kw_out)
 
     #700. Function to update the dedicated input parameters in terms of the signature
-    def updParams(self, args_upd : dict, pos_src : tuple, kw_src : dict):
+    def updParams(self, args_upd : dict, pos_src : tuple, kw_src : dict) -> tuple[tuple, dict]:
         #005. Update the status for the inserted arguments
         for arg in args_upd.keys():
             if arg in self._isdefault:
@@ -894,17 +966,25 @@ class ExpandSignature:
     #800. Miscellaneous functions
     #810. Verify the conflict of argument names in both callables, except those declared as acceptable
     def vfyConflict(self, args_share : dict = {}):
-        if (arg_conflict := [ k for k in self.named_dst.keys() if k in self.args_src and k not in args_share ]):
+        if (arg_conflict := [ k for k in self.sig_dst['named'].keys() if k in self.sig_src['args'] and k not in args_share ]):
             raise NotImplementedError(f'[{self.dst.__name__}]Detected conflict arguments: {str(arg_conflict)}')
 
     #820. Verify whether the parameter is from the default value of an argument, useful at runtime
-    def isDefault(self, arg : str, scope_ : str = 'src'):
+    def isDefault(self, arg : str, scope_ : str = 'src') -> bool:
         if scope_ in self._isdefault_scope:
             return(self._isdefault_scope.get(scope_).get(arg, False))
         return(self._isdefault.get(arg, False))
 
     #900. Set the instance as a decorator
-    def __call__(self, dst : callable):
+    def __call__(self, dst : callable) -> callable:
+        #010. Local environment
+        self.dst = dst
+        self.sig_dst = self._getSig(dst)
+        #[ASSUMPTION]
+        #[1] Overwrite the default values of those in <src>, with those in <dst>
+        self._defaults = self.sig_src['defaulted'] | self.sig_dst['defaulted']
+
+        #990. Return the wrapped result
         return(self._wrapper(dst))
 #End ExpandSignature
 
@@ -914,12 +994,49 @@ class ExpandSignature:
 if __name__=='__main__':
     #010. Create environment.
     import sys
+    import asyncio, queue, threading, types, inspect
     from typing import Any
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.AdvOp import withDefaults
     from omniPy.AdvOp import ExpandSignature
+
+    #030. Class to receive both the yield values and the return values from a generator
+    # https://stackoverflow.com/questions/34073370/best-way-to-receive-the-return-value-from-a-python-generator
+    class GenReturnAccessor:
+        def __init__(self, gen):
+            self.gen = gen
+
+        def __iter__(self):
+            self.value = yield from self.gen
+            return self.value
+
+    #040. 一个兼容运行器，在无事件循环时用`asyncio.run`；若当前线程已有`loop`，则在新线程中运行
+    #[ASSUMPTION]
+    #[1] 来自ChatGPT-5.0
+    def runAsyncCompat(coro):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # 当前线程没有运行中的`loop`
+            return(asyncio.run(coro))
+
+        # 已有运行中的`loop`（如Jupyter）
+        q = queue.Queue()
+        def worker():
+            try:
+                # 在新线程里独立运行一个事件循环
+                res = asyncio.run(coro)
+                q.put((True, res))
+            except Exception as e:
+                q.put((False, e))
+        t = threading.Thread(target = worker, daemon = True)
+        t.start()
+        ok, payload = q.get()
+        if ok:
+            return(payload)
+        raise payload
 
     #050. Define a universal function to print the private environment
     def printEnv():
@@ -1120,7 +1237,274 @@ if __name__=='__main__':
     # Whether <arg9> is from default value of <dst>: <True>
     # Whether <arg9> is from default value of <src>: <False>
 
-    #450. Interaction with <functools.wraps>
+    #500. Generator
+    def gen_print(txt : str, n : int = 5, cap : int = 4) -> str:
+        print('gen_print begin')
+        for i in range(n):
+            if i < cap:
+                yield f'print [{txt}] [{i}] out of [{n}]'
+        print('gen_print end')
+        return('gen_print done')
+
+    # Verify the code flag
+    gen_print.__code__.co_flags & inspect.CO_GENERATOR == inspect.CO_GENERATOR
+    # True
+
+    #510. Change the behavior
+    #[ASSUMPTION]
+    #[1] In such case, the wrapper cannot handle the `yield` values one by one
+    @(eSig := ExpandSignature(gen_print))
+    def gen_print2(usr : str, *pos, **kw):
+        print('gen_print2 begin')
+        # Local environment
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+
+        rst = yield from eSig.src(*pos_out, **kw_out)
+
+        print('gen_print2 end')
+        return(rst)
+
+    help(gen_print2)
+    # Help on function gen_print2 in module __main__:
+    # gen_print2(usr: str, txt: str, n: int = 5, cap: int = 4) -> str
+
+    # Verify the code flag
+    gen_print2.__wrapped__.__code__.co_flags & inspect.CO_GENERATOR == inspect.CO_GENERATOR
+    # True
+
+    g_prep = gen_print2('User', 'paper')
+    r_gen = GenReturnAccessor(g_prep)
+    for f in r_gen:
+        print(f)
+    print(f'{r_gen.value=}')
+    # gen_print2 begin
+    # gen_print begin
+    # print [paper] [0] out of [5]
+    # print [paper] [1] out of [5]
+    # print [paper] [2] out of [5]
+    # print [paper] [3] out of [5]
+    # gen_print end
+    # gen_print2 end
+    # r_gen.value='gen_print done'
+
+    #550. Resemble the behavior of the source generator
+    #[ASSUMPTION]
+    #[1] In such case, the wrapper is able to handle the `yield` values one by one
+    @(eSig := ExpandSignature(gen_print))
+    def gen_print3(usr : str, *pos, **kw):
+        print('gen_print3 begin')
+        # Local environment
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+        # 创建内层生成器实例
+        inner_gen = eSig.src(*pos_out, **kw_out)
+
+        try:
+            while True:
+                # 获取内层yield结果
+                inner_yield = next(inner_gen)
+
+                # 将内层yield结果乘以2（因无类型限制，若为字符串则重复两次）
+                doubled_result = inner_yield * 2
+
+                # 将处理后的结果yield
+                yield doubled_result
+
+        except StopIteration as e:
+            # 获取内层最终return值
+            final_return_value = e.value
+            print('gen_print3 end')
+            # 将内层的return值作为外层的return值
+            return(f'[{usr}] {final_return_value}')
+
+    help(gen_print3)
+    # Help on function gen_print2 in module __main__:
+    # gen_print3(usr: str, txt: str, n: int = 5, cap: int = 4) -> str
+
+    g_prep3 = gen_print3('User', 'word')
+    r_gen3 = GenReturnAccessor(g_prep3)
+    for f in r_gen3:
+        print(f)
+    print(f'{r_gen3.value=}')
+    # gen_print3 begin
+    # gen_print begin
+    # print [word] [0] out of [5]print [word] [0] out of [5]
+    # print [word] [1] out of [5]print [word] [1] out of [5]
+    # print [word] [2] out of [5]print [word] [2] out of [5]
+    # print [word] [3] out of [5]print [word] [3] out of [5]
+    # gen_print end
+    # gen_print3 end
+    # r_gen3.value='[User] gen_print done'
+
+    #600. Coroutine
+    async def aio_add(x : int, y : int) -> int:
+        await asyncio.sleep(0)
+        return(x + y)
+
+    # Verify the code flag
+    aio_add.__code__.co_flags & inspect.CO_COROUTINE == inspect.CO_COROUTINE
+    # True
+
+    @(eSig := ExpandSignature(aio_add))
+    async def aio_add2(usr : str, *pos, **kw):
+        """
+        外层协程：调用内层协程并返回结果的平方
+        """
+        # Local environment
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+
+        # 调用内层协程获取结果
+        inner_result = await eSig.src(*pos_out, **kw_out)
+
+        # 内层结果出来后继续等待0秒
+        print(f'{usr}: wait once more')
+        await asyncio.sleep(0)
+
+        # 返回内层结果的平方
+        return inner_result ** 2
+
+    # Verify the code flag
+    aio_add2.__wrapped__.__code__.co_flags & inspect.CO_COROUTINE == inspect.CO_COROUTINE
+    # True
+
+    #[ASSUMPTION]
+    #[1] Apparently the wrapped callable is NOT a coroutine function
+    #[2] If one needs to inspect the wrapped callable in below way, add `.__wrapped__` where necessary
+    inspect.iscoroutinefunction(aio_add2.__wrapped__)
+    # True
+
+    help(aio_add2)
+    # Help on function aio_add2 in module __main__:
+    # aio_add2(usr: str, x: int, y: int) -> int
+    #     外层协程：调用内层协程并返回结果的平方
+
+    print(runAsyncCompat(aio_add2('User', 2, 3)))
+    # User: wait once more
+    # 25
+
+    #700. Asynchronous generator
+    #[ASSUMPTION]
+    #[1] Yield integers from start to stop by 1, awaiting delay between items
+    #[2] `async` callables are not allowed to `return` values
+    async def ag_ticker(start : int, stop : int, delay : float = 0.0) -> int:
+        for i in range(start, stop):
+            if delay:
+                await asyncio.sleep(delay)
+            yield i
+
+    # A helper coroutine to collect all items from an async generator into a list
+    async def collect(gen):
+        out = []
+        async for x in gen:
+            out.append(x)
+        return(out)
+
+    #707. Check the finctionality
+    ag_rst1 = runAsyncCompat(collect(ag_ticker(3,7,0.0)))
+    print(ag_rst1)
+    # [3, 4, 5, 6]
+
+    # Verify the code flag
+    ag_ticker.__code__.co_flags & inspect.CO_ASYNC_GENERATOR == inspect.CO_ASYNC_GENERATOR
+    # True
+
+    @(eSig := ExpandSignature(ag_ticker))
+    async def ag_ticker2(usr : str, /, *pos, **kw):
+        """
+        外层异步生成器：嵌套调用内层生成器，将结果乘以2
+        """
+        print('ag_ticker2 begin')
+        # Local environment
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+
+        # 使用异步for循环遍历内层生成器的结果
+        async for value in eSig.src(*pos_out, **kw_out):
+            # 将内层yield结果乘以2，再将其yield
+            doubled_value = value * 2
+            yield doubled_value
+
+        print('ag_ticker2 end')
+        print(f'{usr=}')
+
+    # Verify the code flag
+    ag_ticker2.__wrapped__.__code__.co_flags & inspect.CO_ASYNC_GENERATOR == inspect.CO_ASYNC_GENERATOR
+    # True
+
+    help(ag_ticker2)
+    # Help on function ag_ticker2 in module __main__:
+    # ag_ticker2(usr: str, /, start: int, stop: int, delay: float = 0.0) -> int
+    #     外层异步生成器：嵌套调用内层生成器，将结果乘以2
+
+    ag_rst2 = runAsyncCompat(collect(ag_ticker2('User',5,8,0.0)))
+    print(ag_rst2)
+    # ag_ticker2 begin
+    # ag_ticker2 end
+    # usr='User'
+    # [10, 12, 14]
+
+    #800. Iterable coroutine
+    @types.coroutine
+    def icoro1(n : int) -> int:
+        # 第一次调度（prime）时产生一个值，这里用0
+        yield 0
+        # 随后（例如`send(None)`或`await`驱动的继续执行）返回最终结果
+        return n * 2
+
+    # Verify the code flag
+    icoro1.__code__.co_flags & inspect.CO_ITERABLE_COROUTINE == inspect.CO_ITERABLE_COROUTINE
+    # True
+
+    # Helper function to run the iterable coroutine
+    #[ASSUMPTION]
+    #[1] 来自ChatGPT-5.0
+    def runIterCoro(func, *pos, **kw):
+        """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
+        g = func(*pos, **kw)
+        # 预激活（忽略`yield`的值）
+        _ = next(g)
+        try:
+            # 推进到`return`
+            g.send(None)
+        except StopIteration as e:
+            return e.value
+
+    @(eSig := ExpandSignature(icoro1))
+    @types.coroutine
+    def icoro2(usr : str, /, *pos, **kw):
+        print('icoro2 begin')
+        # Local environment
+        args_share = {}
+        eSig.vfyConflict(args_share)
+        pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+
+        val = yield from eSig.src(*pos_out, **kw_out)
+
+        print('icoro2 end')
+        print(f'{usr=}')
+        return(val)
+
+    # Verify the code flag
+    icoro2.__wrapped__.__code__.co_flags & inspect.CO_ITERABLE_COROUTINE == inspect.CO_ITERABLE_COROUTINE
+    # True
+
+    help(icoro2)
+    # Help on function icoro2 in module __main__:
+    # icoro2(usr: str, /, n: int) -> int
+
+    print('icoro2(3) -> ', runIterCoro(icoro2, 'User', 3))
+    # icoro2 begin
+    # icoro2 end
+    # usr='User'
+    # icoro2(3) ->  6
+
+    #900. Interaction with <functools.wraps>
     from functools import wraps
     @wraps(dst4)
     def dst5(*pos, **kw):

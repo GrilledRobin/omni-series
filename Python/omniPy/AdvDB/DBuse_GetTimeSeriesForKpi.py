@@ -994,6 +994,10 @@ if __name__=='__main__':
             ,'C_KPI_FILE_NAME' : lambda x: x['C_KPI_DAT_NAME'].add('.sas7bdat')
             # Content of below column must be a literal string as required
             ,'options' : lambda x: [str({'encoding' : 'GB18030'}) for i in range(len(x))]
+            ,'DF_NAME' : np.nan
+        })
+        .assign(**{
+            'DF_NAME' : lambda x: x['DF_NAME'].astype('O')
         })
     )
 

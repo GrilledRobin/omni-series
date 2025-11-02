@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, re
+import sys, re, ast, inspect
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
 from inspect import signature
 from typing import Optional
@@ -14,6 +14,7 @@ def lookupMethod(
     ,apiSfx : str = ''
     ,lsOpt : dict = {}
     ,attr_handler : Optional[str] = None
+    ,attr_hdl_yield : Optional[str] = None
     ,attr_kwInit : Optional[str] = None
     ,attr_assign : Optional[str] = None
     ,attr_return : Optional[str] = None
@@ -55,6 +56,9 @@ def lookupMethod(
 #   |attr_handler      :   <str     > Attribute name to get from the bound instance, to mutate the result returned from the method call #
 #   |                      [None                ]<Default> No need to mutate the result from the newly bound method                     #
 #   |                      [str                 ]          Existing attribute to handle the result from the newly bound method          #
+#   |attr_hdl_yield    :   <str     > Attribute name to get from the bound instance, to mutate the result yielded from the method call  #
+#   |                      [None                ]<Default> No need to mutate the result from the newly bound method                     #
+#   |                      [str                 ]          Existing attribute to handle the result from the newly bound method          #
 #   |attr_kwInit       :   <str     > Attribute name to get from the bound instance, to initialize the keyword arguments of the newly   #
 #   |                       bound method at the binding stage                                                                           #
 #   |                      [None                ]<Default> No need to adjust the default keyword arguments of the newly bound method    #
@@ -93,6 +97,14 @@ def lookupMethod(
 #   |      |     provided in the fashion of positional or keyword, regardless of their <kind>s in the expanded signature                #
 #   |      |[3] Make <self> as the first POSITIONAL_ONLY argument, to ensure the wrapped function is correctly bound to an instance     #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251102        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce abstract syntax tree (AST) to create the wrapper dynamically                                                  #
+#   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
+#   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
+#   |      |[3] Introduce new argument <attr_hdl_yield> to handle the <yield> values in addition, where applicable                      #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -102,7 +114,7 @@ def lookupMethod(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, inspect, typing                                                                                                       #
+#   |   |sys, re, ast, inspect, typing                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -173,71 +185,541 @@ def lookupMethod(
         and s.name == 'self'
     ] == [0]
 
+    #600. Helper functions
+    #610. Function to detect whether a Code Object Bit Flag is included in <co_flags>
+    #[ASSUMPTION]
+    #[1] <co_flags> are bitmaps so they are unique as binaries
+    #[2] We exclude the tested flag from the <flags> using subtraction (see binary operation)
+    #[3] If the rest flags do not match the tested flag and any binary position, the tested flag must have been included in <flags>
+    #[4] If otherwise, the tested flag is not in <flags>
+    #[5] Same as <(flags - flag) & flag == 0>
+    #[6] Simple method is as below
+    #Quote: https://docs.python.org/3/library/inspect.html#inspect-module-co-flags
+    def _hasFlag(flags : int, flag : int) -> bool:
+        return((flags & flag) == flag)
+
     #700. Define a method-like callable to wrap the original API
     #[ASSUMPTION]
     #[1] To avoid this block of comments being collected as docstring, we skip an empty line below
 
-    @(eSig := ExpandSignature(__dfl_func_))
-    def func_(self, /, *pos, **kw):
-        #010. Local environment
-        clsname_ = apiCls or self.__class__.__name__
+    eSig = ExpandSignature(__dfl_func_)
 
-        #100. Verify input parameters
-        #101. Create a pseudo parameter when necessary
-        if has_self:
-            args_share = {'self' : self}
-        else:
-            args_share = {}
+    #[ASSUMPTION]
+    #[1] <body> has strict sequence, hence we should append items one by one
+    Name = lambda s, ctx = ast.Load(): ast.Name(id = s, ctx = ctx)
+    Const = lambda v: ast.Constant(value = v)
+    Attr = lambda base, attr: ast.Attribute(value = base, attr = attr, ctx = ast.Load())
+    flags = eSig.sig_src['flags']
+    f_await = _hasFlag(flags, inspect.CO_COROUTINE)
+    f_yieldfrom = _hasFlag(flags, inspect.CO_GENERATOR) or _hasFlag(flags, inspect.CO_ITERABLE_COROUTINE)
+    f_asyncyield = _hasFlag(flags, inspect.CO_ASYNC_GENERATOR)
+    f_return = not _hasFlag(flags, inspect.CO_ASYNC_GENERATOR)
+    if _hasFlag(flags, inspect.CO_COROUTINE) or _hasFlag(flags, inspect.CO_ASYNC_GENERATOR):
+        class_def = ast.AsyncFunctionDef
+    else:
+        class_def = ast.FunctionDef
+    body = []
 
-        #300. Identify whether there are default values for API call, as provided at instantiation
-        if attr_kwInit:
-            if not hasattr(self, attr_kwInit):
-                raise AttributeError(f'[{clsname_}] has no attribute as [{attr_kwInit}]')
-            kw_def = getattr(self, attr_kwInit, {})
-        else:
-            kw_def = {}
+    #701. Prepare arguments
+    # def func_(self, /, *pos, **kw)
+    args = ast.arguments(
+        posonlyargs=[ast.arg(arg='self', annotation=None)],
+        args=[],
+        vararg=ast.arg(arg='pos', annotation=None),
+        kwonlyargs=[],
+        kw_defaults=[],
+        kwarg=ast.arg(arg='kw', annotation=None),
+        defaults=[]
+    )
 
-        #330. Patch the input by the required default values (instead of the default values in the signature)
+    #710. Local environment
+    # clsname_ = apiCls or self.__class__.__name__
+    body.append(
+        ast.Assign(
+            targets = [Name('clsname_', ctx=ast.Store())]
+            ,value = ast.BoolOp(
+                op = ast.Or()
+                ,values = [
+                    Const(apiCls)
+                    ,Attr(Attr(Name('self'), '__class__'), '__name__')
+                ]
+            )
+        )
+    )
+
+    #711. Verify input parameters
+    # Create a pseudo parameter when necessary
+    # if has_self:
+    #     args_share = {'self' : self}
+    # else:
+    #     args_share = {}
+    vfy_in_if = [
+        ast.Assign(
+            targets = [Name('args_share', ctx=ast.Store())]
+            ,value = ast.Dict(
+                keys = [Const('self')]
+                ,values = [Name('self')]
+            )
+        )
+    ]
+
+    vfy_in_else = [
+        ast.Assign(
+            targets = [Name('args_share', ctx=ast.Store())]
+            ,value = ast.Dict(keys=[], values=[])
+        )
+    ]
+
+    body.append(
+        ast.If(
+            test = Name('has_self')
+            ,body = vfy_in_if
+            ,orelse = vfy_in_else
+        )
+    )
+
+    #730. Identify whether there are default values for API call, as provided at instantiation
+    # if attr_kwInit:
+    #     if not hasattr(self, attr_kwInit):
+    #         raise AttributeError(f'[{clsname_}] has no attribute as [{attr_kwInit}]')
+    #     kw_def = getattr(self, attr_kwInit, {})
+    # else:
+    #     kw_def = {}
+    if_attr_kwinit = [
+        ast.If(
+            test = ast.UnaryOp(
+                op = ast.Not()
+                ,operand = ast.Call(
+                    func = Name('hasattr')
+                    ,args = [
+                        Name('self')
+                        ,Name('attr_kwInit')
+                    ]
+                    ,keywords = []
+                )
+            )
+            ,body = [
+                ast.Raise(
+                    exc = ast.Call(
+                        func = Name('AttributeError')
+                        ,args = [
+                            ast.JoinedStr(
+                                values = [
+                                    Const('[')
+                                    ,ast.FormattedValue(
+                                        value = Name('clsname_')
+                                        ,conversion = -1
+                                    )
+                                    ,Const('] has no attribute as [')
+                                    ,ast.FormattedValue(
+                                        value = Name('attr_kwInit')
+                                        ,conversion = -1
+                                    )
+                                    ,Const(']')
+                                ]
+                            )
+                        ]
+                        ,keywords = []
+                    )
+                    ,cause = None
+                )
+            ]
+            ,orelse = []
+        )
+        ,ast.Assign(
+            targets = [Name('kw_def', ctx=ast.Store())]
+            ,value = ast.Call(
+                func = Name('getattr')
+                ,args = [
+                    Name('self')
+                    ,Name('attr_kwInit')
+                    ,ast.Dict(keys=[], values=[])
+                ]
+                ,keywords = []
+            )
+        )
+    ]
+
+    else_attr_kwinit = [
+        ast.Assign(
+            targets = [Name('kw_def', ctx=ast.Store())]
+            ,value = ast.Dict(keys=[], values=[])
+        )
+    ]
+
+    body.append(
+        ast.If(
+            test = Name('attr_kwInit')
+            ,body = if_attr_kwinit
+            ,orelse = else_attr_kwinit
+        )
+    )
+
+    #733. Patch the input by the required default values (instead of the default values in the signature)
+    #[ASSUMPTION]
+    #[1] It is safe if we only patch <**kw>, and the reasons are as below
+    #    [1] If the provision of any positional argument is in <*pos>, and we add its patched default value in <**kw>; then
+    #         the one in <**kw> is ignored by validation in <eSig>
+    #    [2] If the provision of any keyword argument is in <**kw>, we do not provide its patched default value, and just
+    #         use the provision
+    #[2] We use <kw_def> to overwrite all parameters that are flagged as <called with default values>
+    # pos_int, kw_int = eSig.insParams(args_share, pos, kw)
+    # kw_patch = {k:v for k,v in kw_def.items() if eSig.isDefault(k, 'src')}
+    body.append(
+        ast.Assign(
+            targets = [ast.Tuple(
+                elts = [
+                    Name('pos_int', ctx=ast.Store())
+                    ,Name('kw_int', ctx=ast.Store())
+                ]
+                ,ctx = ast.Store()
+            )]
+            ,value = ast.Call(
+                func = Attr(Name('eSig'), 'insParams')
+                ,args = [
+                    Name('args_share')
+                    ,Name('pos')
+                    ,Name('kw')
+                ]
+                ,keywords = []
+            )
+        )
+    )
+
+    body.append(
+        ast.Assign(
+            targets = [Name('kw_patch', ctx=ast.Store())]
+            ,value = ast.DictComp(
+                key = Name('k')
+                ,value = Name('v')
+                ,generators = [
+                    ast.comprehension(
+                        target = ast.Tuple(
+                            elts = [
+                                Name('k', ctx=ast.Store())
+                                ,Name('v', ctx=ast.Store())
+                            ]
+                            ,ctx = ast.Store()
+                        )
+                        ,iter = ast.Call(
+                            func = Attr(Name('kw_def'), 'items')
+                            ,args = []
+                            ,keywords = []
+                        )
+                        ,ifs = [
+                            ast.Call(
+                                func = Attr(Name('eSig'), 'isDefault')
+                                ,args = [
+                                    Name('k')
+                                    ,Const('src')
+                                ]
+                                ,keywords = []
+                            )
+                        ]
+                        ,is_async = False
+                    )
+                ]
+            )
+        )
+    )
+
+    #735. Reshape the inputs
+    #[ASSUMPTION]
+    #[1] Below process ensures all arguments in <kw_patch> are flagged as <called with input at runtime>, which means that
+    #     their default values in definition are overwritten by the updated <default values> at runtime
+    # pos_fnl, kw_fnl = eSig.updParams(kw_patch, pos_int, kw_int)
+    body.append(
+        ast.Assign(
+            targets = [ast.Tuple(
+                elts = [
+                    Name('pos_fnl', ctx=ast.Store())
+                    ,Name('kw_fnl', ctx=ast.Store())
+                ]
+                ,ctx = ast.Store()
+            )]
+            ,value = ast.Call(
+                func = Attr(Name('eSig'), 'updParams')
+                ,args = [
+                    Name('kw_patch')
+                    ,Name('pos_int')
+                    ,Name('kw_int')
+                ]
+                ,keywords = []
+            )
+        )
+    )
+
+    #750. Call the API
+    #[ASSUMPTION]
+    #[1] This is where we should differ the process upon different types of input callables
+    call_src = ast.Call(
+        func = Attr(Name('eSig'), 'src')
+        ,args = [
+            ast.Starred(value = Name('pos_fnl'), ctx = ast.Load())
+        ]
+        ,keywords = [ast.keyword(arg = None, value = Name('kw_fnl'))]
+    )
+
+    #751. Cases of different call methods
+    # rstOut = await eSig.src(*pos_fnl, **kw_fnl)
+    # rstOut = yield from eSig.src(*pos_fnl, **kw_fnl)
+    # rstOut = eSig.src(*pos_fnl, **kw_fnl)
+    if f_await:
+        rstOut_val = ast.Await(value = call_src)
+    # elif f_yieldfrom:
+    #     rstOut_val = ast.YieldFrom(value = call_src)
         #[ASSUMPTION]
-        #[1] It is safe if we only patch <**kw>, and the reasons are as below
-        #    [1] If the provision of any positional argument is in <*pos>, and we add its patched default value in <**kw>; then
-        #         the one in <**kw> is ignored by validation in <eSig>
-        #    [2] If the provision of any keyword argument is in <**kw>, we do not provide its patched default value, and just
-        #         use the provision
-        #[2] We use <kw_def> to overwrite all parameters that are flagged as <called with default values>
-        pos_int, kw_int = eSig.insParams(args_share, pos, kw)
-        kw_patch = {k:v for k,v in kw_def.items() if eSig.isDefault(k, 'src')}
+        #[1] Previously it was simple as above, <yield from> was in use
+        #[2] Now, since we add a handler functionality, to mutate the yielded result, we need to create a complex statement
+    else:
+        rstOut_val = call_src
 
-        #350. Reshape the inputs
-        #[ASSUMPTION]
-        #[1] Below process ensures all arguments in <kw_patch> are flagged as <called with input at runtime>, which means that
-        #     their default values in definition are overwritten by the updated <default values> at runtime
-        pos_fnl, kw_fnl = eSig.updParams(kw_patch, pos_int, kw_int)
+    body.append(
+        ast.Assign(
+            targets = [Name('rstOut', ctx=ast.Store())]
+            ,value = rstOut_val
+        )
+    )
 
-        #500. Call the API
-        rstOut = eSig.src(*pos_fnl, **kw_fnl)
+    #753. Prepare statements to handle the yielded value
+    # val_mutate = getattr(self, attr_hdl_yield)(val_inner)
+    if attr_hdl_yield:
+        stmt_mutate = [
+            ast.Assign(
+                targets = [Name('val_mutate', ctx=ast.Store())]
+                ,value = ast.Call(
+                    func = ast.Call(
+                        func = Name('getattr')
+                        ,args = [
+                            Name('self')
+                            ,Name('attr_hdl_yield')
+                        ]
+                        ,keywords = []
+                    )
+                    ,args = [Name('val_inner')]
+                    ,keywords = []
+                )
+            )
+        ]
+    else:
+        stmt_mutate = [
+            ast.Assign(
+                targets = [Name('val_mutate', ctx=ast.Store())]
+                ,value = Name('val_inner')
+            )
+        ]
 
-        #600. Handle the result if required
-        #[ASSUMPTION]
-        #[1] Currently it only takes one positional argument
-        if attr_handler:
-            rstOut = getattr(self, attr_handler)(rstOut)
+    # yield val_mutate
+    stmt_yield = [
+        ast.Expr(value = ast.Yield(value = Name('val_mutate')))
+    ]
 
-        #700. Assign the result to another attribute if required
-        if attr_assign:
-            setattr(self, attr_assign, rstOut)
+    #755. yield if <src> is async generator
+    #[ASSUMPTION]
+    #[1] async generator does not have <return> value
+    # async for val_inner in rstOut:
+    #     val_mutate = getattr(self, attr_hdl_yield)(val_inner)
+    #     yield val_mutate
+    if f_asyncyield:
+        body.append(
+            ast.AsyncFor(
+                target = Name('val_inner', ctx=ast.Store())
+                ,iter = Name('rstOut')
+                ,body = stmt_mutate + stmt_yield
+                ,orelse = []
+            )
+        )
 
-        #900. Return values
-        #[ASSUMPTION]
-        #[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
-        # return(self)
-        if attr_return:
-            return(getattr(self, attr_return))
-        else:
-            return(rstOut)
+    #757. Yield if <src> is generator or iterable coroutine
+    # try:
+    #     while True:
+    #         val_inner = next(rstOut)
+    #         val_mutate = getattr(self, attr_hdl_yield)(val_inner)
+    #         yield val_mutate
+    # except StopIteration as e:
+    #     rstOut = e.value
+    if f_yieldfrom:
+        body.append(
+            ast.Try(
+                body = [
+                    ast.While(
+                        test = Const(True)
+                        ,body = [
+                            ast.Assign(
+                                targets = [Name('val_inner', ctx=ast.Store())]
+                                ,value = ast.Call(
+                                    func = Name('next')
+                                    ,args = [Name('rstOut')]
+                                    ,keywords = []
+                                )
+                            )
+                        ] + stmt_mutate + stmt_yield
+                        ,orelse = []
+                    )
+                ]
+                ,handlers = [
+                    ast.ExceptHandler(
+                        type = Name('StopIteration')
+                        ,name = 'e'
+                        ,body = [
+                            ast.Assign(
+                                targets = [Name('rstOut', ctx=ast.Store())]
+                                ,value = Attr(Name('e'), 'value')
+                            )
+                            ,ast.Pass()
+                        ]
+                    )
+                ]
+                ,orelse = []
+                ,finalbody = []
+            )
+        )
 
-    #900. Export
-    return(func_)
+    #760. Handle the result if required
+    #[ASSUMPTION]
+    #[1] Currently it only takes one positional argument
+    # if f_return:
+    #     if attr_handler:
+    #         rstOut = getattr(self, attr_handler)(rstOut)
+    if_handler_body = [
+        ast.Assign(
+            targets = [Name('rstOut', ctx=ast.Store())]
+            ,value = ast.Call(
+                func = ast.Call(
+                    func = Name('getattr')
+                    ,args = [
+                        Name('self')
+                        ,Name('attr_handler')
+                    ]
+                    ,keywords = []
+                )
+                ,args = [Name('rstOut')]
+                ,keywords = []
+            )
+        )
+    ]
+
+    body.append(
+        ast.If(
+            test = Name('f_return')
+            ,body = [
+                ast.If(
+                    test = Name('attr_handler')
+                    ,body = if_handler_body
+                    ,orelse = []
+                )
+            ]
+            ,orelse = []
+        )
+    )
+
+    #770. Assign the result to another attribute if required
+    # if f_return:
+    #     if attr_assign:
+    #         setattr(self, attr_assign, rstOut)
+    if_assign_body = [
+        ast.Expr(
+            value = ast.Call(
+                func = Name('setattr')
+                ,args = [
+                    Name('self')
+                    ,Name('attr_assign')
+                    ,Name('rstOut')
+                ]
+                ,keywords = []
+            )
+        )
+    ]
+
+    body.append(
+        ast.If(
+            test = Name('f_return')
+            ,body = [
+                ast.If(
+                    test = Name('attr_assign')
+                    ,body = if_assign_body
+                    ,orelse = []
+                )
+            ]
+            ,orelse = []
+        )
+    )
+
+    #780. Return values
+    #[ASSUMPTION]
+    #[1] We MUST NOT return self as it will lead to massive recursion when called in the instance
+    #[2] This is also where we differ the process upon different types of input callables
+    #[3] There are cases where there should not be `return` statements (e.g. async generator)
+    # return(self)
+    # if f_return:
+    #     if attr_return:
+    #         return(getattr(self, attr_return))
+    #     else:
+    #         return(rstOut)
+    if_return_body = [
+        ast.Return(
+            value = ast.Call(
+                func = Name('getattr')
+                ,args = [
+                    Name('self')
+                    ,Name('attr_return')
+                ]
+                ,keywords = []
+            )
+        )
+    ]
+
+    else_return_body = [
+        ast.Return(value = Name('rstOut'))
+    ]
+
+    if f_return:
+        body.append(
+            ast.If(
+                test = Name('f_return')
+                ,body = [
+                    ast.If(
+                        test = Name('attr_return')
+                        ,body = if_return_body
+                        ,orelse = else_return_body
+                    )
+                ]
+                ,orelse = []
+            )
+        )
+
+    #790. Compile the function
+    # 创建函数定义
+    func_def = class_def(
+        name = 'func_'
+        ,args = args
+        ,body = body
+        ,decorator_list = []
+        ,returns = None
+    )
+
+    # 创建模块
+    module = ast.Module(body = [func_def], type_ignores = [])
+    ast.fix_missing_locations(module)
+
+    # 编译AST
+    code = compile(module, '<ast-lookup-method>', 'exec')
+
+    # 执行编译后的代码
+    namespace = {
+        'eSig' : eSig
+        ,'has_self' : has_self
+        ,'attr_kwInit' : attr_kwInit
+        ,'attr_handler' : attr_handler
+        ,'attr_hdl_yield' : attr_hdl_yield
+        ,'attr_assign' : attr_assign
+        ,'attr_return' : attr_return
+        ,'f_return' : f_return
+    }
+    exec(code, namespace)
+
+    #990. Wrap the callable
+    return(eSig(namespace['func_']))
 #End lookupMethod
 
 '''
@@ -246,7 +728,7 @@ def lookupMethod(
 if __name__=='__main__':
     #010. Create envionment.
     import sys
-    import types
+    import types, asyncio, queue, threading
     from typing import Optional
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
@@ -256,6 +738,55 @@ if __name__=='__main__':
     #100. Define the API which can be bound as a method of some instance
     def loader_api001(self, b):
         return(self.aaa + b)
+
+    # https://stackoverflow.com/questions/34073370/best-way-to-receive-the-return-value-from-a-python-generator
+    class GenReturnAccessor:
+        def __init__(self, gen):
+            self.gen = gen
+
+        def __iter__(self):
+            self.value = yield from self.gen
+            return self.value
+
+    # 一个兼容运行器，在无事件循环时用`asyncio.run`；若当前线程已有`loop`，则在新线程中运行
+    #[ASSUMPTION]
+    #[1] 来自ChatGPT-5.0
+    def runAsyncCompat(coro):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # 当前线程没有运行中的`loop`
+            return(asyncio.run(coro))
+
+        # 已有运行中的`loop`（如Jupyter）
+        q = queue.Queue()
+        def worker():
+            try:
+                # 在新线程里独立运行一个事件循环
+                res = asyncio.run(coro)
+                q.put((True, res))
+            except Exception as e:
+                q.put((False, e))
+        t = threading.Thread(target = worker, daemon = True)
+        t.start()
+        ok, payload = q.get()
+        if ok:
+            return(payload)
+        raise payload
+
+    # Helper function to run the iterable coroutine
+    #[ASSUMPTION]
+    #[1] 来自ChatGPT-5.0
+    def runIterCoro(func, *pos, **kw):
+        """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
+        g = func(*pos, **kw)
+        # 预激活（忽略`yield`的值）
+        _ = next(g)
+        try:
+            # 推进到`return`
+            g.send(None)
+        except StopIteration as e:
+            return e.value
 
     #200. Directly call the function to bind the API to an instance
     #[ASSUMPTION]
@@ -415,6 +946,7 @@ if __name__=='__main__':
             ,apiSfx : str = ''
             ,lsOpt : dict = {}
             ,attr_handler : Optional[str] = None
+            ,attr_hdl_yield : Optional[str] = None
             ,attr_kwInit : Optional[str] = None
             ,attr_assign : Optional[str] = None
             ,attr_return : Optional[str] = None
@@ -427,6 +959,7 @@ if __name__=='__main__':
             self.apiSfx = apiSfx
             self.lsOpt = lsOpt
             self.attr_handler = attr_handler
+            self.attr_hdl_yield = attr_hdl_yield
             self.attr_kwInit = attr_kwInit
             self.attr_assign = attr_assign
             self.attr_return = attr_return
@@ -447,6 +980,7 @@ if __name__=='__main__':
                 ,apiSfx = self.apiSfx
                 ,lsOpt = self.lsOpt
                 ,attr_handler = self.attr_handler
+                ,attr_hdl_yield = self.attr_hdl_yield
                 ,attr_kwInit = self.attr_kwInit
                 ,attr_assign = self.attr_assign
                 ,attr_return = self.attr_return
@@ -489,5 +1023,134 @@ if __name__=='__main__':
     #560. Try to assign the API with another object
     testadd5.api001 = 111
     # AttributeError: [MyClass5]Attribute [api001] is read-only!
+
+    help(testadd5.api001)
+
+    #600. Test coroutine
+    async def loader_aio(x : int, y : int) -> int:
+        await asyncio.sleep(0)
+        return(x + y)
+
+    class ClsCoro:
+        aio = MyDescriptor(
+            apiCls = None
+            ,apiPkg = None
+            ,apiPfx = 'loader_'
+            ,apiSfx = ''
+            ,lsOpt = {}
+            ,attr_handler = None
+            ,attr_kwInit = None
+            ,attr_assign = None
+            ,attr_return = None
+            ,coerce_ = False
+        )
+
+    clsCoro = ClsCoro()
+
+    print(runAsyncCompat(clsCoro.aio(2, 3)))
+    # 5
+
+    #700. Test generator and iterable coroutine (as they are called in the same way)
+    #710. Prepare a generator
+    def loader_genInt(n : int = 5, cap : int = 4) -> int:
+        for i in range(n):
+            if i < cap:
+                yield i
+        return(-1)
+
+    #720. Prepare an iterable coroutine
+    @types.coroutine
+    def loader_icoro(n : int) -> int:
+        # 第一次调度（prime）时产生一个值，这里用0
+        yield 0
+        # 随后（例如`send(None)`或`await`驱动的继续执行）返回最终结果
+        return n * 2
+
+    class ClsGen:
+        genInt = MyDescriptor(
+            apiCls = None
+            ,apiPkg = None
+            ,apiPfx = 'loader_'
+            ,apiSfx = ''
+            ,lsOpt = {}
+            ,attr_handler = None
+            ,attr_hdl_yield = 'pow2'
+            ,attr_kwInit = None
+            ,attr_assign = None
+            ,attr_return = None
+            ,coerce_ = False
+        )
+        icoro = MyDescriptor(
+            apiCls = None
+            ,apiPkg = None
+            ,apiPfx = 'loader_'
+            ,apiSfx = ''
+            ,lsOpt = {}
+            ,attr_handler = 'pow3'
+            ,attr_hdl_yield = 'pow2'
+            ,attr_kwInit = None
+            ,attr_assign = None
+            ,attr_return = None
+            ,coerce_ = False
+        )
+
+        def pow2(self, x):
+            return(x**2)
+
+        def pow3(self, x):
+            return(x**3)
+
+    clsGen = ClsGen()
+
+    g_prep = clsGen.genInt(6,3)
+    r_gen = GenReturnAccessor(g_prep)
+    for f in r_gen:
+        print(f)
+    print(f'{r_gen.value=}')
+    # 0
+    # 1
+    # 4
+    # r_gen.value=-1
+
+    print('clsGen.icoro(3) -> ', runIterCoro(clsGen.icoro, 3))
+    # clsGen.icoro(3) ->  216
+
+    #800. Test async generator
+    async def loader_ag(start : int, stop : int, delay : float = 0.0) -> int:
+        for i in range(start, stop):
+            if delay:
+                await asyncio.sleep(delay)
+            yield i
+
+    class ClsAG:
+        ag = MyDescriptor(
+            apiCls = None
+            ,apiPkg = None
+            ,apiPfx = 'loader_'
+            ,apiSfx = ''
+            ,lsOpt = {}
+            ,attr_handler = None
+            ,attr_hdl_yield = 'pow2'
+            ,attr_kwInit = None
+            ,attr_assign = None
+            ,attr_return = None
+            ,coerce_ = False
+        )
+
+        def pow2(self, x):
+            return(x**2)
+
+    clsAG = ClsAG()
+
+    # A helper coroutine to collect all items from an async generator into a list
+    async def collect(gen):
+        out = []
+        async for x in gen:
+            out.append(x)
+        return(out)
+
+    ag_rst1 = runAsyncCompat(collect(clsAG.ag(3,7,0.0)))
+    print(ag_rst1)
+    # [9, 16, 25, 36]
 #-Notes- -End-
 '''

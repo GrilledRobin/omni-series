@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+import sys, re
 #We have to import [pywintypes] to activate the DLL required by [pywin32]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
@@ -12,8 +12,9 @@ from . import isWindowCloaked
 
 def getDesktopWindows(
     classes : Iterable = None
-    ,titles = None
-) -> 'Get the handles of all windows on current desktop':
+    ,titles : Iterable = None
+    ,regex : bool = False
+) -> dict:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -52,6 +53,11 @@ def getDesktopWindows(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Add arguments [classes] and [titles] to filter the windows when required                                                #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251102        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce new argument <regex> to enable fuzzy search inside window titles                                              #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -80,14 +86,18 @@ def getDesktopWindows(
     #012. Handle the parameter buffer.
     if classes is not None:
         if not isinstance(classes, Iterable):
-            raise ValueError('[' + LfuncName + '][classes] must be iterable of character strings!')
+            raise ValueError(f'[{LfuncName}][classes] must be iterable of character strings!')
+        if isinstance(classes, str):
+            classes = [classes]
         if not all([ isinstance(s, str) for s in classes ]):
-            raise ValueError('[' + LfuncName + '][classes] must be iterable of character strings!')
+            raise ValueError(f'[{LfuncName}][classes] must be iterable of character strings!')
     if titles is not None:
         if not isinstance(titles, Iterable):
-            raise ValueError('[' + LfuncName + '][titles] must be iterable of character strings!')
+            raise ValueError(f'[{LfuncName}][titles] must be iterable of character strings!')
+        if isinstance(titles, str):
+            titles = [titles]
         if not all([ isinstance(s, str) for s in titles ]):
-            raise ValueError('[' + LfuncName + '][titles] must be iterable of character strings!')
+            raise ValueError(f'[{LfuncName}][titles] must be iterable of character strings!')
 
     #050. Local parameters
     rstOut = {}
@@ -109,8 +119,12 @@ def getDesktopWindows(
                 if h_class not in classes:
                     return(None)
             if titles:
-                if h_title not in titles:
-                    return(None)
+                if regex:
+                    if not any([re.search(pat, h_title) for pat in titles]):
+                        return(None)
+                else:
+                    if h_title not in titles:
+                        return(None)
 
             rst.update({
                 hwnd: {

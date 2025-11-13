@@ -52,6 +52,9 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPullYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <pull>      #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
+#   |   |   |apiPullSendHdl    :   <callable> Function with only one argument as handler to process the `send` data during <pull>       #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the `send` data where applicable                 #
 #   |   |   |lsPullOpt         :   <dict    > Options to list the <pull> callables given <apiPkgPull == None>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
 #   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
@@ -70,6 +73,9 @@ class OpenSourceApiMeta(type):
 #   |   |   |apiPushYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <push>      #
 #   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
 #   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
+#   |   |   |apiPushSendHdl    :   <callable> Function with only one argument as handler to process the `send` data during <push>       #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the `send` data where applicable                 #
 #   |   |   |lsPushOpt         :   <dict    > Options to list the <push> callables given <apiPkgPush == None>                           #
 #   |   |   |                      [<empty>             ]<Default> Use the default arguments during searching                           #
 #   |   |   |                      [<dict>              ]          See definition of <AdvOp.ls_frame>                                   #
@@ -229,6 +235,12 @@ class OpenSourceApiMeta(type):
 #   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
 #   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251113        | Version | 5.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce arguments <apiPullSendHdl> and <apiPushSendHdl> to enable modification upon `send()` messages where applicable#
+#   |      |[2] Now supports `send()` operations for generator, async generator and iterable coroutine                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -265,12 +277,14 @@ class OpenSourceApiMeta(type):
         ,apiSfxPull : str = ''
         ,apiPullHdl : Optional[callable] = lambda x: x
         ,apiPullYldHdl : Optional[callable] = lambda x: x
+        ,apiPullSendHdl : Optional[callable] = lambda x: x
         ,lsPullOpt : dict = {}
         ,apiPkgPush : Optional[str] = None
         ,apiPfxPush : str = ''
         ,apiSfxPush : str = ''
         ,apiPushHdl : Optional[callable] = lambda x: x
         ,apiPushYldHdl : Optional[callable] = lambda x: x
+        ,apiPushSendHdl : Optional[callable] = lambda x: x
         ,lsPushOpt : dict = {}
     ):
         #001. Handle parameters
@@ -280,8 +294,10 @@ class OpenSourceApiMeta(type):
         if not isinstance(apiSfxPush, str): apiSfxPush = ''
         if not callable(apiPullHdl) : apiPullHdl = lambda x: x
         if not callable(apiPullYldHdl) : apiPullYldHdl = lambda x: x
+        if not callable(apiPullSendHdl) : apiPullSendHdl = lambda x: x
         if not callable(apiPushHdl) : apiPushHdl = lambda x: x
         if not callable(apiPushYldHdl) : apiPushYldHdl = lambda x: x
+        if not callable(apiPushSendHdl) : apiPushSendHdl = lambda x: x
 
         #100. Assign values to local variables
         #Quote[#379]: https://stackoverflow.com/questions/582056/getting-list-of-parameter-names-inside-python-function
@@ -295,7 +311,7 @@ class OpenSourceApiMeta(type):
         #430. Slots to protect the privacy
         slots = (
             '__pulled___','__pushed___','__hdlpull___','__hdlpush___','__inputkw_pull___','__inputkw_push___','__inputkw___'
-            ,'__hdlpullyld___','__hdlpushyld___'
+            ,'__hdlpullyld___','__hdlpullsend___','__hdlpushyld___','__hdlpushsend___'
         )
         if '__slots__' in attrs:
             attrs['__slots__'] += slots
@@ -322,8 +338,10 @@ class OpenSourceApiMeta(type):
         #465. Mutable properties
         attrs['hdlPull'] = property(mcs.getHdlPull, mcs.setHdlPull)
         attrs['hdlPullYld'] = property(mcs.getHdlPullYld, mcs.setHdlPullYld)
+        attrs['hdlPullSend'] = property(mcs.getHdlPullSend, mcs.setHdlPullSend)
         attrs['hdlPush'] = property(mcs.getHdlPush, mcs.setHdlPush)
         attrs['hdlPushYld'] = property(mcs.getHdlPushYld, mcs.setHdlPushYld)
+        attrs['hdlPushSend'] = property(mcs.getHdlPushSend, mcs.setHdlPushSend)
 
         #500. Create the new class on the fly
         newcls = super().__new__(mcs, cls, bases, attrs)
@@ -335,7 +353,11 @@ class OpenSourceApiMeta(type):
         #[3] When we need to call a staticmethod, we should prepend it with the newly created class <newcls>
         #[4] We pass the newly created class-object to the argument <clsobj> for possible reference of its private environment
         #     created while NOT instantiated
-        setattr(newcls, '__init__', newcls.init(newcls, apiPullHdl, apiPullYldHdl, apiPushHdl, apiPushYldHdl))
+        setattr(
+            newcls
+            ,'__init__'
+            ,newcls.init(newcls, apiPullHdl, apiPullYldHdl, apiPullSendHdl, apiPushHdl, apiPushYldHdl, apiPushSendHdl)
+        )
 
         #700. Assign additional methods
         #710. Create the <pull> and <push> methods
@@ -363,6 +385,7 @@ class OpenSourceApiMeta(type):
             ,'lsOpt' : lsPullOpt
             ,'attr_handler' : 'hdlPull'
             ,'attr_hdl_yield' : 'hdlPullYld'
+            ,'attr_hdl_send' : 'hdlPullSend'
             ,'attr_kwInit' : '__inputkw_pull___'
             ,'attr_assign' : '__pulled___'
             ,'attr_return' : 'pulled'
@@ -375,6 +398,7 @@ class OpenSourceApiMeta(type):
             ,'lsOpt' : lsPushOpt
             ,'attr_handler' : 'hdlPush'
             ,'attr_hdl_yield' : 'hdlPushYld'
+            ,'attr_hdl_send' : 'hdlPushSend'
             ,'attr_kwInit' : '__inputkw_push___'
             ,'attr_assign' : '__pushed___'
             ,'attr_return' : 'pushed'
@@ -410,13 +434,23 @@ class OpenSourceApiMeta(type):
     #[4] This method will hijack the instantiation of the newly created class, hence any <__init__> defined in the
     #     newly created class is processed before the processes defined in the metaclass
     @staticmethod
-    def init(clsobj, hdlPull : callable, hdlPullYld : callable, hdlPush : callable, hdlPushYld : callable):
+    def init(
+        clsobj
+        ,hdlPull : callable
+        ,hdlPullYld : callable
+        ,hdlPullSend : callable
+        ,hdlPush : callable
+        ,hdlPushYld : callable
+        ,hdlPushSend : callable
+    ):
         def __init__(self, *pos, argsPull = {}, argsPush = {}, **kw):
             #005. Set the default handlers BEFORE initialization, to allow the user to customize them at initialization
             self.hdlPull = hdlPull
             self.hdlPullYld = hdlPullYld
+            self.hdlPullSend = hdlPullSend
             self.hdlPush = hdlPush
             self.hdlPushYld = hdlPushYld
+            self.hdlPushSend = hdlPushSend
 
             #010. Hijack the original <__init__> and conduct its process ahead of the processes defined in the metaclass
             self.__init_org___(*pos, **kw)
@@ -464,6 +498,18 @@ class OpenSourceApiMeta(type):
 
     def setHdlPushYld(self, func : callable):
         self.__hdlpushyld___ = func
+
+    def getHdlPullSend(self):
+        return(self.__hdlpullsend___)
+
+    def setHdlPullSend(self, func : callable):
+        self.__hdlpullsend___ = func
+
+    def getHdlPushSend(self):
+        return(self.__hdlpushsend___)
+
+    def setHdlPushSend(self, func : callable):
+        self.__hdlpushsend___ = func
 
 #End OpenSourceApiMeta
 

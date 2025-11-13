@@ -129,6 +129,7 @@ class DynMethodLookup:
         ,lsOpt : dict = {}
         ,attr_handler : Optional[str] = None
         ,attr_hdl_yield : Optional[str] = None
+        ,attr_hdl_send : Optional[str] = None
         ,attr_kwInit : Optional[str] = None
         ,attr_assign : Optional[str] = None
         ,attr_return : Optional[str] = None
@@ -142,6 +143,7 @@ class DynMethodLookup:
         self.lsOpt = lsOpt
         self.attr_handler = attr_handler
         self.attr_hdl_yield = attr_hdl_yield
+        self.attr_hdl_send = attr_hdl_send
         self.attr_kwInit = attr_kwInit
         self.attr_assign = attr_assign
         self.attr_return = attr_return
@@ -163,6 +165,7 @@ class DynMethodLookup:
             ,lsOpt = self.lsOpt
             ,attr_handler = self.attr_handler
             ,attr_hdl_yield = self.attr_hdl_yield
+            ,attr_hdl_send = self.attr_hdl_send
             ,attr_kwInit = self.attr_kwInit
             ,attr_assign = self.attr_assign
             ,attr_return = self.attr_return
@@ -219,6 +222,7 @@ if __name__=='__main__':
             ,lsOpt = {}
             ,attr_handler = None
             ,attr_hdl_yield = None
+            ,attr_hdl_send = None
             ,attr_kwInit = None
             ,attr_assign = None
             ,attr_return = None

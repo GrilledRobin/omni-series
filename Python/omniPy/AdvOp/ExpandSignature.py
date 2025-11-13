@@ -565,7 +565,6 @@ class ExpandSignature:
         cls_dummy = type(f'tmpcls{dt.datetime.now().strftime("%Y%m%d%H%M%S%f")}', (object,), {'__init__' : _init})
 
         #070. Patch the inputs where necessary
-        pos_ = pos[:]
         #[ASSUMPTION]
         #[1] We pretend that the defaults for POSITIONAL_OR_KEYWORD-with-defaults and KEYWORD_ONLY-with-defaults are always
         #     set in <kw>, in case there are no explicit inputs for them
@@ -587,7 +586,7 @@ class ExpandSignature:
         #[ASSUMPTION]
         #[1] In order to make a valid call, we do not accept insufficient parameters passed
         #[2] However, we allow excessive parameters, i.e. multiple inputs, for we allow the patching at above steps
-        in_pos, in_kw = nameArgsByFormals(self.passer, pos_ = pos_, kw_ = kw_, coerce_ = True, strict_ = True)
+        in_pos, in_kw = nameArgsByFormals(self.passer, pos_ = pos, kw_ = kw_, coerce_ = True, strict_ = True)
 
         #100. Split positional parameters
         #[ASSUMPTION]
@@ -1242,7 +1241,8 @@ if __name__=='__main__':
         print('gen_print begin')
         for i in range(n):
             if i < cap:
-                yield f'print [{txt}] [{i}] out of [{n}]'
+                msg = yield f'print [{txt}] [{i}] out of [{n}]'
+                print(f'gen_print {msg=}')
         print('gen_print end')
         return('gen_print done')
 
@@ -1452,8 +1452,9 @@ if __name__=='__main__':
     #800. Iterable coroutine
     @types.coroutine
     def icoro1(n : int) -> int:
-        # 第一次调度（prime）时产生一个值，这里用0
-        yield 0
+        for i in range(n):
+            msg = yield i
+            print(f'icoro1 {msg=}')
         # 随后（例如`send(None)`或`await`驱动的继续执行）返回最终结果
         return n * 2
 
@@ -1467,11 +1468,16 @@ if __name__=='__main__':
     def runIterCoro(func, *pos, **kw):
         """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
         g = func(*pos, **kw)
-        # 预激活（忽略`yield`的值）
-        _ = next(g)
+        # 预激活
+        val = next(g)
+        print(f'inner icoro yield={val}')
+        i = 0
         try:
-            # 推进到`return`
-            g.send(None)
+            while True:
+                # 推进到`return`
+                val = g.send(f'send {i=}')
+                print(f'inner icoro yield={val}')
+                i += 1
         except StopIteration as e:
             return e.value
 
@@ -1500,6 +1506,12 @@ if __name__=='__main__':
 
     print('icoro2(3) -> ', runIterCoro(icoro2, 'User', 3))
     # icoro2 begin
+    # inner icoro yield=0
+    # icoro1 msg='send i=0'
+    # inner icoro yield=1
+    # icoro1 msg='send i=1'
+    # inner icoro yield=2
+    # icoro1 msg='send i=2'
     # icoro2 end
     # usr='User'
     # icoro2(3) ->  6

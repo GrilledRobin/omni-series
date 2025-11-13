@@ -15,6 +15,7 @@ def lookupMethod(
     ,lsOpt : dict = {}
     ,attr_handler : Optional[str] = None
     ,attr_hdl_yield : Optional[str] = None
+    ,attr_hdl_send : Optional[str] = None
     ,attr_kwInit : Optional[str] = None
     ,attr_assign : Optional[str] = None
     ,attr_return : Optional[str] = None
@@ -57,6 +58,10 @@ def lookupMethod(
 #   |                      [None                ]<Default> No need to mutate the result from the newly bound method                     #
 #   |                      [str                 ]          Existing attribute to handle the result from the newly bound method          #
 #   |attr_hdl_yield    :   <str     > Attribute name to get from the bound instance, to mutate the result yielded from the method call  #
+#   |                      [None                ]<Default> No need to mutate the result from the newly bound method                     #
+#   |                      [str                 ]          Existing attribute to handle the result from the newly bound method          #
+#   |attr_hdl_send     :   <str     > Attribute name to get from the bound instance, to mutate the `send()` message before it reaches   #
+#   |                       the inner generator, a.k.a. <src>, if it is a generator in the first place                                  #
 #   |                      [None                ]<Default> No need to mutate the result from the newly bound method                     #
 #   |                      [str                 ]          Existing attribute to handle the result from the newly bound method          #
 #   |attr_kwInit       :   <str     > Attribute name to get from the bound instance, to initialize the keyword arguments of the newly   #
@@ -104,6 +109,12 @@ def lookupMethod(
 #   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
 #   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
 #   |      |[3] Introduce new argument <attr_hdl_yield> to handle the <yield> values in addition, where applicable                      #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251113        | Version | 4.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce argument <attr_hdl_send> to enable modification upon `send()` messages where applicable                       #
+#   |      |[2] Now supports `send()` operations for generator, async generator and iterable coroutine                                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -198,12 +209,17 @@ def lookupMethod(
     def _hasFlag(flags : int, flag : int) -> bool:
         return((flags & flag) == flag)
 
+    #620. Function to determine whether to `await` as per AST requires
+    def h_ast_await(stmt, is_await : bool = False):
+        return(ast.Await(value = stmt) if is_await else stmt)
+
     #700. Define a method-like callable to wrap the original API
     #[ASSUMPTION]
     #[1] To avoid this block of comments being collected as docstring, we skip an empty line below
 
     eSig = ExpandSignature(__dfl_func_)
 
+    name_exp = __dfl_func_.__name__ or 'func_'
     #[ASSUMPTION]
     #[1] <body> has strict sequence, hence we should append items one by one
     Name = lambda s, ctx = ast.Load(): ast.Name(id = s, ctx = ctx)
@@ -462,22 +478,11 @@ def lookupMethod(
 
     #751. Cases of different call methods
     # rstOut = await eSig.src(*pos_fnl, **kw_fnl)
-    # rstOut = yield from eSig.src(*pos_fnl, **kw_fnl)
     # rstOut = eSig.src(*pos_fnl, **kw_fnl)
-    if f_await:
-        rstOut_val = ast.Await(value = call_src)
-    # elif f_yieldfrom:
-    #     rstOut_val = ast.YieldFrom(value = call_src)
-        #[ASSUMPTION]
-        #[1] Previously it was simple as above, <yield from> was in use
-        #[2] Now, since we add a handler functionality, to mutate the yielded result, we need to create a complex statement
-    else:
-        rstOut_val = call_src
-
     body.append(
         ast.Assign(
             targets = [Name('rstOut', ctx=ast.Store())]
-            ,value = rstOut_val
+            ,value = h_ast_await(call_src, is_await = f_await)
         )
     )
 
@@ -509,71 +514,196 @@ def lookupMethod(
             )
         ]
 
-    # yield val_mutate
-    stmt_yield = [
-        ast.Expr(value = ast.Yield(value = Name('val_mutate')))
-    ]
-
-    #755. yield if <src> is async generator
-    #[ASSUMPTION]
-    #[1] async generator does not have <return> value
-    # async for val_inner in rstOut:
-    #     val_mutate = getattr(self, attr_hdl_yield)(val_inner)
-    #     yield val_mutate
-    if f_asyncyield:
-        body.append(
-            ast.AsyncFor(
-                target = Name('val_inner', ctx=ast.Store())
-                ,iter = Name('rstOut')
-                ,body = stmt_mutate + stmt_yield
-                ,orelse = []
-            )
-        )
-
-    #757. Yield if <src> is generator or iterable coroutine
-    # try:
-    #     while True:
-    #         val_inner = next(rstOut)
-    #         val_mutate = getattr(self, attr_hdl_yield)(val_inner)
-    #         yield val_mutate
-    # except StopIteration as e:
-    #     rstOut = e.value
-    if f_yieldfrom:
-        body.append(
-            ast.Try(
-                body = [
-                    ast.While(
-                        test = Const(True)
-                        ,body = [
-                            ast.Assign(
-                                targets = [Name('val_inner', ctx=ast.Store())]
-                                ,value = ast.Call(
-                                    func = Name('next')
-                                    ,args = [Name('rstOut')]
-                                    ,keywords = []
-                                )
-                            )
-                        ] + stmt_mutate + stmt_yield
-                        ,orelse = []
-                    )
-                ]
-                ,handlers = [
-                    ast.ExceptHandler(
-                        type = Name('StopIteration')
-                        ,name = 'e'
-                        ,body = [
-                            ast.Assign(
-                                targets = [Name('rstOut', ctx=ast.Store())]
-                                ,value = Attr(Name('e'), 'value')
-                            )
-                            ,ast.Pass()
+    #754. Prepare statements to handle the `send` value
+    # val_mut_send = getattr(self, attr_hdl_send)(received_msg)
+    if attr_hdl_send:
+        stmt_mut_send = [
+            ast.Assign(
+                targets = [Name('val_mut_send', ctx=ast.Store())]
+                ,value = ast.Call(
+                    func = ast.Call(
+                        func = Name('getattr')
+                        ,args = [
+                            Name('self')
+                            ,Name('attr_hdl_send')
                         ]
+                        ,keywords = []
+                    )
+                    ,args = [Name('received_msg')]
+                    ,keywords = []
+                )
+            )
+        ]
+    else:
+        stmt_mut_send = [
+            ast.Assign(
+                targets = [Name('val_mut_send', ctx=ast.Store())]
+                ,value = Name('received_msg')
+            )
+        ]
+
+    #756. Yield if <src> is generator, iterable coroutine or async generator
+    # Normal generator or iterable coroutine
+    # try:
+    #     inner_value = inner_gen.__next__()
+    #     while True:
+    #         try:
+    #             # yield当前值，并等待可能的send
+    #             received_msg = yield inner_value
+    #             if received_msg is not None:
+    #                 inner_value = inner_gen.send(received_msg)
+    #             else:
+    #                 inner_value = inner_gen.__next__()
+    #         except StopIteration as e:
+    #             print('outer_generator end')
+    #             return e.value
+    # except Exception as e:
+    #     inner_gen.close()
+    #     raise e
+
+    # Async generator
+    # try:
+    #     inner_value = await inner_gen.__anext__()
+    #     while True:
+    #         try:
+    #             received_msg = yield inner_value
+    #             if received_msg is not None:
+    #                 inner_value = await inner_gen.asend(received_msg)
+    #             else:
+    #                 inner_value = await inner_gen.__anext__()
+    #         except StopAsyncIteration as e:
+    #             return_value = e.value if hasattr(e, 'value') else None
+    #             return return_value
+    # except Exception as e:
+    #     await inner_gen.aclose()
+    #     raise e
+
+    stmt_gen = ast.Try(
+        body = [
+            # inner_value = inner_gen.__next__()
+            ast.Assign(
+                targets = [Name('val_inner', ctx=ast.Store())]
+                ,value = h_ast_await(
+                    ast.Call(
+                        func = Attr(Name('rstOut'), '__anext__' if f_asyncyield else '__next__')
+                        ,args = []
+                        ,keywords = []
+                    )
+                    ,is_await = f_asyncyield
+                )
+            )
+
+            # while True:
+            ,ast.While(
+                test = Const(True)
+                ,body = [
+                    # try:
+                    ast.Try(
+                        body = stmt_mutate + [
+                            # received_msg = yield inner_value
+                            ast.Assign(
+                                targets = [Name('received_msg', ctx=ast.Store())]
+                                ,value = ast.Yield(value = Name('val_mutate'))
+                            )
+
+                            # if received_msg is not None:
+                            ,ast.If(
+                                test = ast.Compare(
+                                    left = Name('received_msg')
+                                    ,ops = [ast.IsNot()]
+                                    ,comparators = [Const(None)]
+                                )
+                                ,body = stmt_mut_send + [
+                                    # inner_value = inner_gen.send(received_msg)
+                                    ast.Assign(
+                                        targets = [Name('val_inner', ctx=ast.Store())]
+                                        ,value = h_ast_await(
+                                            ast.Call(
+                                                func = Attr(Name('rstOut'), 'asend' if f_asyncyield else 'send')
+                                                ,args = [Name('val_mut_send')]
+                                                ,keywords = []
+                                            )
+                                            ,is_await = f_asyncyield
+                                        )
+                                    )
+                                ]
+                                ,orelse = [
+                                    # else: inner_value = inner_gen.__next__()
+                                    ast.Assign(
+                                        targets = [Name('val_inner', ctx=ast.Store())]
+                                        ,value = h_ast_await(
+                                            ast.Call(
+                                                func = Attr(Name('rstOut'), '__anext__' if f_asyncyield else '__next__')
+                                                ,args = []
+                                                ,keywords = []
+                                            )
+                                            ,is_await = f_asyncyield
+                                        )
+                                    )
+                                ]
+                            )
+                        ]
+                        ,handlers = [
+                            # except StopIteration as e:
+                            ast.ExceptHandler(
+                                type = Name('StopAsyncIteration' if f_asyncyield else 'StopIteration'),
+                                name = 'e',
+                                body = [
+                                    # return_value = e.value if hasattr(e, 'value') else None
+                                    ast.Assign(
+                                        targets = [Name('rstOut', ctx=ast.Store())]
+                                        ,value = ast.IfExp(
+                                            test = ast.Call(
+                                                func = Name('hasattr')
+                                                ,args = [
+                                                    Name('e')
+                                                    ,Const('value')
+                                                ]
+                                                ,keywords = []
+                                            )
+                                            ,body = Attr(Name('e'), 'value')
+                                            ,orelse = Const(None)
+                                        )
+                                    )
+                                    # break
+                                    ,ast.Break()
+                                ]
+                            )
+                        ]
+                        ,orelse = []
+                        ,finalbody = []
                     )
                 ]
-                ,orelse = []
-                ,finalbody = []
+                ,orelse=[]
             )
-        )
+        ]
+        ,handlers = [
+            # except Exception as e:
+            ast.ExceptHandler(
+                # 捕获所有异常
+                type = None
+                ,name = None
+                ,body = [
+                    # inner_gen.close()
+                    ast.Expr(value = h_ast_await(
+                        ast.Call(
+                            func = Attr(Name('rstOut'), 'aclose' if f_asyncyield else 'close')
+                            ,args=[]
+                            ,keywords=[]
+                        )
+                        ,is_await = f_asyncyield
+                    ))
+                    # 重新抛出当前异常
+                    ,ast.Raise(exc=None, cause=None)
+                ]
+            )
+        ]
+        ,orelse = []
+        ,finalbody = []
+    )
+
+    if f_yieldfrom or f_asyncyield:
+        body.append(stmt_gen)
 
     #760. Handle the result if required
     #[ASSUMPTION]
@@ -599,19 +729,14 @@ def lookupMethod(
         )
     ]
 
-    body.append(
-        ast.If(
-            test = Name('f_return')
-            ,body = [
-                ast.If(
-                    test = Name('attr_handler')
-                    ,body = if_handler_body
-                    ,orelse = []
-                )
-            ]
-            ,orelse = []
+    if f_return:
+        body.append(
+            ast.If(
+                test = Name('attr_handler')
+                ,body = if_handler_body
+                ,orelse = []
+            )
         )
-    )
 
     #770. Assign the result to another attribute if required
     # if f_return:
@@ -631,19 +756,14 @@ def lookupMethod(
         )
     ]
 
-    body.append(
-        ast.If(
-            test = Name('f_return')
-            ,body = [
-                ast.If(
-                    test = Name('attr_assign')
-                    ,body = if_assign_body
-                    ,orelse = []
-                )
-            ]
-            ,orelse = []
+    if f_return:
+        body.append(
+            ast.If(
+                test = Name('attr_assign')
+                ,body = if_assign_body
+                ,orelse = []
+            )
         )
-    )
 
     #780. Return values
     #[ASSUMPTION]
@@ -676,22 +796,16 @@ def lookupMethod(
     if f_return:
         body.append(
             ast.If(
-                test = Name('f_return')
-                ,body = [
-                    ast.If(
-                        test = Name('attr_return')
-                        ,body = if_return_body
-                        ,orelse = else_return_body
-                    )
-                ]
-                ,orelse = []
+                test = Name('attr_return')
+                ,body = if_return_body
+                ,orelse = else_return_body
             )
         )
 
     #790. Compile the function
     # 创建函数定义
     func_def = class_def(
-        name = 'func_'
+        name = name_exp
         ,args = args
         ,body = body
         ,decorator_list = []
@@ -712,14 +826,14 @@ def lookupMethod(
         ,'attr_kwInit' : attr_kwInit
         ,'attr_handler' : attr_handler
         ,'attr_hdl_yield' : attr_hdl_yield
+        ,'attr_hdl_send' : attr_hdl_send
         ,'attr_assign' : attr_assign
         ,'attr_return' : attr_return
-        ,'f_return' : f_return
     }
     exec(code, namespace)
 
     #990. Wrap the callable
-    return(eSig(namespace['func_']))
+    return(eSig(namespace[name_exp]))
 #End lookupMethod
 
 '''
@@ -780,11 +894,16 @@ if __name__=='__main__':
     def runIterCoro(func, *pos, **kw):
         """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
         g = func(*pos, **kw)
-        # 预激活（忽略`yield`的值）
-        _ = next(g)
+        # 预激活
+        val = next(g)
+        print(f'inner icoro yield={val}')
+        i = 0
         try:
-            # 推进到`return`
-            g.send(None)
+            while True:
+                # 推进到`return`
+                val = g.send(f'send {i=}')
+                print(f'inner icoro yield={val}')
+                i += 1
         except StopIteration as e:
             return e.value
 
@@ -947,6 +1066,7 @@ if __name__=='__main__':
             ,lsOpt : dict = {}
             ,attr_handler : Optional[str] = None
             ,attr_hdl_yield : Optional[str] = None
+            ,attr_hdl_send : Optional[str] = None
             ,attr_kwInit : Optional[str] = None
             ,attr_assign : Optional[str] = None
             ,attr_return : Optional[str] = None
@@ -960,6 +1080,7 @@ if __name__=='__main__':
             self.lsOpt = lsOpt
             self.attr_handler = attr_handler
             self.attr_hdl_yield = attr_hdl_yield
+            self.attr_hdl_send = attr_hdl_send
             self.attr_kwInit = attr_kwInit
             self.attr_assign = attr_assign
             self.attr_return = attr_return
@@ -981,6 +1102,7 @@ if __name__=='__main__':
                 ,lsOpt = self.lsOpt
                 ,attr_handler = self.attr_handler
                 ,attr_hdl_yield = self.attr_hdl_yield
+                ,attr_hdl_send = self.attr_hdl_send
                 ,attr_kwInit = self.attr_kwInit
                 ,attr_assign = self.attr_assign
                 ,attr_return = self.attr_return
@@ -1058,6 +1180,44 @@ if __name__=='__main__':
                 yield i
         return(-1)
 
+    #715. Concept of nesting of generators
+    # DeepSeek-3.2
+    def outer_generator(n : int = 5, cap : int = 4):
+        print('outer_generator begin')
+
+        # 创建内层生成器
+        inner_gen = loader_genInt(n, cap)
+
+        # 启动内层生成器
+        inner_value = None
+        try:
+            inner_value = next(inner_gen)
+        except StopIteration as e:
+            print('outer_generator end')
+            return e.value
+
+        try:
+            while True:
+                try:
+                    # yield当前的内层值
+                    received_msg = yield inner_value
+
+                    # 如果有send消息，则调用内层生成器的send方法
+                    if received_msg is not None:
+                        inner_value = inner_gen.send(received_msg)
+                    else:
+                        # 如果没有send消息，继续next内层生成器
+                        inner_value = next(inner_gen)
+
+                except StopIteration as e:
+                    # 内层生成器结束，返回其返回值
+                    print('outer_generator end')
+                    return e.value
+
+        except GeneratorExit:
+            # 处理生成器关闭
+            inner_gen.close()
+
     #720. Prepare an iterable coroutine
     @types.coroutine
     def loader_icoro(n : int) -> int:
@@ -1120,7 +1280,8 @@ if __name__=='__main__':
         for i in range(start, stop):
             if delay:
                 await asyncio.sleep(delay)
-            yield i
+            msg = yield i
+            print(f'[{i}]{msg=}')
 
     class ClsAG:
         ag = MyDescriptor(
@@ -1131,6 +1292,7 @@ if __name__=='__main__':
             ,lsOpt = {}
             ,attr_handler = None
             ,attr_hdl_yield = 'pow2'
+            ,attr_hdl_send = 'pr'
             ,attr_kwInit = None
             ,attr_assign = None
             ,attr_return = None
@@ -1139,6 +1301,9 @@ if __name__=='__main__':
 
         def pow2(self, x):
             return(x**2)
+
+        def pr(self, x):
+            return(f'added [{x}]')
 
     clsAG = ClsAG()
 
@@ -1149,8 +1314,38 @@ if __name__=='__main__':
             out.append(x)
         return(out)
 
+    async def collect2(gen):
+        out = []
+        # 启动
+        inner_value = await gen.__anext__()
+        out.append(inner_value)
+
+        send_cand = list('ABCDE')
+        for msg in send_cand:
+            try:
+                inner_value = await gen.asend(msg)
+                out.append(inner_value)
+            except StopAsyncIteration:
+                break
+        return(out)
+
     ag_rst1 = runAsyncCompat(collect(clsAG.ag(3,7,0.0)))
     print(ag_rst1)
+    # [3]msg=None
+    # [4]msg=None
+    # [5]msg=None
+    # [6]msg=None
+    # [9, 16, 25, 36]
+
+    #[ASSUMPTION]
+    #[1] Send messages to obtain yield values one by one
+    #[2] The `send` messages are processed by the method `obj.pr` as indicated, before it reaches the underlying function
+    ag_rst2 = runAsyncCompat(collect2(clsAG.ag(3,7,0.0)))
+    print(ag_rst2)
+    # [3]msg='added [A]'
+    # [4]msg='added [B]'
+    # [5]msg='added [C]'
+    # [6]msg='added [D]'
     # [9, 16, 25, 36]
 #-Notes- -End-
 '''

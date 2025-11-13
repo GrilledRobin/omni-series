@@ -45,6 +45,10 @@ class DataIO():
 #   |   |   |                       process the yielded data during <pull>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <pull> for each API      #
+#   |   |   |apiPullSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the `send()` data during <pull>                                                             #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <pull> for each API     #
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
 #   |   |   |                      [omniPy.AdvDB        ]<Default> Obtain the API from the dedicated package                            #
 #   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
@@ -62,6 +66,10 @@ class DataIO():
 #   |   |   |                       process the yielded data during <push>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <push> for each API      #
+#   |   |   |apiPushSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the `send()` data during <push>                                                             #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <push> for each API     #
 #   |   |   |argsPull          :   <dict    > Collection of keyword arguments set as default for <pull> methods when instantiating the  #
 #   |   |   |                       class; <key> is the available API name, <value> is the kwargs for its <pull> method                 #
 #   |   |   |                      [<see def.>          ]<Default> Pull SAS datasets with encoding <GB18030> as maximum compatibility   #
@@ -94,9 +102,21 @@ class DataIO():
 #   |   |   |apiPullHdl        :   <callable> Function with only one argument as handler to process the data pulled at once             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [<callable>          ]          Function to process the pulled data                                  #
+#   |   |   |apiPullYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <pull>      #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
+#   |   |   |apiPullSendHdl    :   <callable> Function with only one argument as handler to process the `send` data during <pull>       #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the `send` data where applicable                 #
 #   |   |   |apiPushHdl        :   <callable> Function with only one argument as handler to process the data pushed at once             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [<callable>          ]          Function to process the pushed data                                  #
+#   |   |   |apiPushYldHdl     :   <callable> Function with only one argument as handler to process the yielded data during <push>      #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the yielded data                                 #
+#   |   |   |apiPushSendHdl    :   <callable> Function with only one argument as handler to process the `send` data during <push>       #
+#   |   |   |                      [lambda x: x         ]<Default> No handler is required                                               #
+#   |   |   |                      [<callable>          ]          Function to process the `send` data where applicable                 #
 #   |   |   |argsPull          :   <dict    > kwargs for the <pull> method of the registered API as default arguments at initilization  #
 #   |   |   |argsPush          :   <dict    > kwargs for the <push> method of the registered API as default arguments at initilization  #
 #   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
@@ -118,10 +138,26 @@ class DataIO():
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
+#   |   |   |apiPullYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the yielded data during <pull>                                                              #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <pull> for each API      #
+#   |   |   |apiPullSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the `send()` data during <pull>                                                             #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <pull> for each API     #
 #   |   |   |apiPushHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
+#   |   |   |apiPushYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the yielded data during <push>                                                              #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <push> for each API      #
+#   |   |   |apiPushSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                       process the `send()` data during <push>                                                             #
+#   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
+#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <push> for each API     #
 #   |   |   |argsPull          :   <dict    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
 #   |   |   |argsPush          :   <dict    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
 #   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
@@ -336,6 +372,12 @@ class DataIO():
 #   |      |[2] Now supports all these types of callables: function, generator, async generator, coroutine, iterable coroutine. See     #
 #   |      |     official document of <co_flags> in <inspect> for the difference between them                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251113        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce arguments <apiPullSendHdl> and <apiPushSendHdl> to enable modification upon `send()` messages where applicable#
+#   |      |[2] Now supports `send()` operations for generator, async generator and iterable coroutine                                  #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -370,11 +412,13 @@ class DataIO():
         ,apiSfxPull : str = ''
         ,apiPullHdl : dict[str, callable] = {}
         ,apiPullYldHdl : dict[str, callable] = {}
+        ,apiPullSendHdl : dict[str, callable] = {}
         ,apiPkgPush : str = 'omniPy.AdvDB'
         ,apiPfxPush : str = 'std_write_'
         ,apiSfxPush : str = ''
         ,apiPushHdl : dict[str, callable] = {}
         ,apiPushYldHdl : dict[str, callable] = {}
+        ,apiPushSendHdl : dict[str, callable] = {}
         ,argsPull : dict = {
             'SAS' : {
                 'encoding' : 'GB18030'
@@ -451,6 +495,17 @@ class DataIO():
         self.apiPullYldHdl = hdl_pullyld
         self.apiPushYldHdl = hdl_pushyld
 
+        hdl_pullsend = {
+            a : _vfycallable(apiPullSendHdl, a)
+            for a in this_full
+        }
+        hdl_pushsend = {
+            a : _vfycallable(apiPushSendHdl, a)
+            for a in this_full
+        }
+        self.apiPullSendHdl = hdl_pullsend
+        self.apiPushSendHdl = hdl_pushsend
+
     #200. Private methods
     #210. Method to get attributes that are pre-defined at class instantiation
     def __getattr__(self, attr):
@@ -473,8 +528,10 @@ class DataIO():
         ,attr : str
         ,apiPullHdl : Optional[callable] = None
         ,apiPullYldHdl : Optional[callable] = None
+        ,apiPullSendHdl : Optional[callable] = None
         ,apiPushHdl : Optional[callable] = None
         ,apiPushYldHdl : Optional[callable] = None
+        ,apiPushSendHdl : Optional[callable] = None
         ,argsPull : dict = {}
         ,argsPush : dict = {}
         ,**kw
@@ -486,8 +543,10 @@ class DataIO():
         #100. Tweak the handlers if provided
         hdl_pull = apiPullHdl if callable(apiPullHdl) else self.apiPullHdl.get(attr)
         hdl_pullyld = apiPullYldHdl if callable(apiPullYldHdl) else self.apiPullYldHdl.get(attr)
+        hdl_pullsend = apiPullSendHdl if callable(apiPullSendHdl) else self.apiPullSendHdl.get(attr)
         hdl_push = apiPushHdl if callable(apiPushHdl) else self.apiPushHdl.get(attr)
         hdl_pushyld = apiPushYldHdl if callable(apiPushYldHdl) else self.apiPushYldHdl.get(attr)
+        hdl_pushsend = apiPushSendHdl if callable(apiPushSendHdl) else self.apiPushSendHdl.get(attr)
 
         #200. Create API class on the fly
         #How to pass arguments to metaclass in class definition: (#2)
@@ -499,12 +558,14 @@ class DataIO():
             ,apiSfxPull = self.apiSfxPull
             ,apiPullHdl = hdl_pull
             ,apiPullYldHdl = hdl_pullyld
+            ,apiPullSendHdl = hdl_pullsend
             ,lsPullOpt = self.lsPullOpt
             ,apiPkgPush = self.apiPkgPush
             ,apiPfxPush = self.apiPfxPush
             ,apiSfxPush = self.apiSfxPush
             ,apiPushHdl = hdl_push
             ,apiPushYldHdl = hdl_pushyld
+            ,apiPushSendHdl = hdl_pushsend
             ,lsPushOpt = self.lsPushOpt
         )
 
@@ -532,8 +593,10 @@ class DataIO():
         self
         ,apiPullHdl : dict[str, callable] = {}
         ,apiPullYldHdl : dict[str, callable] = {}
+        ,apiPullSendHdl : dict[str, callable] = {}
         ,apiPushHdl : dict[str, callable] = {}
         ,apiPushYldHdl : dict[str, callable] = {}
+        ,apiPushSendHdl : dict[str, callable] = {}
         ,argsPull : dict = {}
         ,argsPush : dict = {}
         ,**kw
@@ -543,8 +606,10 @@ class DataIO():
                 a
                 ,apiPullHdl = apiPullHdl.get(a, None)
                 ,apiPullYldHdl = apiPullYldHdl.get(a, None)
+                ,apiPullSendHdl = apiPullSendHdl.get(a, None)
                 ,apiPushHdl = apiPushHdl.get(a, None)
                 ,apiPushYldHdl = apiPushYldHdl.get(a, None)
+                ,apiPushSendHdl = apiPushSendHdl.get(a, None)
                 ,argsPull = argsPull.get(a, {})
                 ,argsPush = argsPush.get(a, {})
                 ,**kw
@@ -673,7 +738,7 @@ if __name__=='__main__':
     import sys
     import pandas as pd
     import datetime as dt
-    import types, asyncio, queue, threading
+    import types, asyncio, queue, threading, inspect
     from functools import partial
     from collections.abc import Iterable
     dir_omniPy : str = r'D:\Python\ '.strip()
@@ -852,6 +917,7 @@ if __name__=='__main__':
                 ,apiPfxPull : str = 'loader_'
                 ,apiPullHdl : dict[str, callable] = {}
                 ,apiPullYldHdl : dict[str, callable] = {}
+                ,apiPullSendHdl : dict[str, callable] = {}
                 ,argsPull : dict = {}
                 ,lsPullOpt : dict = {}
             ):
@@ -864,6 +930,7 @@ if __name__=='__main__':
                     ,apiSfxPull = ''
                     ,apiPullHdl = apiPullHdl
                     ,apiPullYldHdl = apiPullYldHdl
+                    ,apiPullSendHdl = apiPullSendHdl
                     ,apiPkgPush = None
                     ,apiPfxPush = 'lo_{}_'.format(dt.datetime.now().strftime('%Y%m%d%H%M%S'))
                     ,apiSfxPush = ''
@@ -1129,11 +1196,16 @@ if __name__=='__main__':
         def runIterCoro(func, *pos, **kw):
             """ 用生成器协议驱动`iterable coroutine`，取最终返回值 """
             g = func(*pos, **kw)
-            # 预激活（忽略`yield`的值）
-            _ = next(g)
+            # 预激活
+            val = next(g)
+            print(f'inner icoro yield={val}')
+            i = 0
             try:
-                # 推进到`return`
-                g.send(None)
+                while True:
+                    # 推进到`return`
+                    val = g.send(f'send {i=}')
+                    print(f'inner icoro yield={val}')
+                    i += 1
             except StopIteration as e:
                 return e.value
 
@@ -1148,8 +1220,9 @@ if __name__=='__main__':
         #720. Prepare an iterable coroutine
         @types.coroutine
         def loader_icoro(n : int) -> int:
-            # 第一次调度（prime）时产生一个值，这里用0
-            yield 0
+            for i in range(n):
+                msg = yield i
+                print(f'icoro {msg=}')
             # 随后（例如`send(None)`或`await`驱动的继续执行）返回最终结果
             return n * 2
 
@@ -1157,10 +1230,17 @@ if __name__=='__main__':
             return(x * 3)
         def _pow2(x):
             return(x ** 2)
+        def _pr(x):
+            return(f'added [{x}]')
         LoaderOnly2 = LoaderOnly(
             apiPullYldHdl = {
                 'genInt' : _triple
+                #[ASSUMPTION]
+                #[1] There is no API named as <ag> till now, hence such handler cannot be tagged to it
                 ,'ag' : _pow2
+            }
+            ,apiPullSendHdl = {
+                'icoro' : _pr
             }
         )
 
@@ -1180,6 +1260,12 @@ if __name__=='__main__':
 
         LoaderOnly2.add('icoro')
         print('LoaderOnly2.icoro.pull(3) -> ', runIterCoro(LoaderOnly2.icoro.pull, 3))
+        # inner icoro yield=0
+        # icoro msg='added [send i=0]'
+        # inner icoro yield=1
+        # icoro msg='added [send i=1]'
+        # inner icoro yield=2
+        # icoro msg='added [send i=2]'
         # LoaderOnly2.icoro.pull(3) ->  6
 
         #800. Test async generator
@@ -1189,7 +1275,10 @@ if __name__=='__main__':
                     await asyncio.sleep(delay)
                 yield i
 
-        LoaderOnly2.add('ag')
+        #[ASSUMPTION]
+        #[1] Since API <ag> is defined AFTER the instantiation of <LoaderOnly2>, we should tag the Yield Handler
+        #     to it in dynamic way
+        LoaderOnly2.add('ag', apiPullYldHdl = _pow2)
 
         # A helper coroutine to collect all items from an async generator into a list
         async def collect(gen):

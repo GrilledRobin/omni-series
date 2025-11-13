@@ -294,6 +294,18 @@ def lookupMethod(
         )
     )
 
+    #715. Force verification of argument conflict
+    #[ASSUMPTION]
+    #[1] This is useful when `self` is defined in <src>, but at other places than the first one
+    # eSig.vfyConflict(args_share)
+    body.append(
+        ast.Expr(value = ast.Call(
+            func = Attr(Name('eSig'), 'vfyConflict')
+            ,args = [Name('args_share')]
+            ,keywords = []
+        ))
+    )
+
     #730. Identify whether there are default values for API call, as provided at instantiation
     # if attr_kwInit:
     #     if not hasattr(self, attr_kwInit):

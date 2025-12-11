@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import sys, re
-from copy import deepcopy
 from warnings import warn
 from omniPy.AdvOp import strNestedParser
 
@@ -22,7 +21,7 @@ def strBalancedGroup(
 #   |This function is intended to extract the substrings surrounded by the provided boundaries, in terms of the concept of Balanced     #
 #   | Group in Regular Expression (while NOT using RegExp as it would fail in many cases)                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Extract the contents of balanced tags from an HTML tagset (it is highly recommended to use [BeautifulSoup] instead)            #
 #   |[2] Resolve the jinja-like expression such as: f<g<a>>, when [a] is a variable, [g<a>] is another, and so forth                    #
@@ -63,6 +62,12 @@ def strBalancedGroup(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Rewrite the function to uplift the efficiency by 450 times                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251211        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now exports the content in the same way as RegExp would, i.e. the output sequence of captured content as enclosed will  #
+#   |      |     be in the same sequence as when the Opening Token, a.k.a Left Bound, is encountered                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -72,16 +77,14 @@ def strBalancedGroup(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, copy, warnings                                                                                                        #
+#   |   |sys, re, warnings                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |strNestedParser                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.
@@ -95,12 +98,12 @@ def strBalancedGroup(
         return([])
     if not isinstance(lBound, str):
         raise TypeError(f'[{LfuncName}][txt]:[{type(lBound)}] must be provided a character string!')
-    lBound = deepcopy(lBound.strip())
+    lBound = lBound.strip()
     if len(lBound) == 0:
         raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] must be at least one non white space character!')
     if not isinstance(rBound, str):
         raise TypeError(f'[{LfuncName}][txt]:[{type(rBound)}] must be provided a character string!')
-    rBound = deepcopy(rBound.strip())
+    rBound = rBound.strip()
     if len(rBound) == 0:
         raise ValueError(f'[{LfuncName}][rBound]:[{rBound}] must be at least one non white space character!')
     if lBound == rBound:
@@ -149,12 +152,12 @@ def strBalancedGroup(
                 rstOut.extend(next_struct)
 
                 #900. Extend the string for the structure of current layer
-                str_struct += next_struct[-1]
+                str_struct += next_struct[0]
             else:
                 str_struct += m
 
         #800. Append the string of current structure to the final result
-        rstOut.append(str_struct)
+        rstOut.insert(0, str_struct)
 
         #999. Purge
         return(rstOut)
@@ -196,6 +199,8 @@ if __name__=='__main__':
         ,rx = False
         ,include = True
     )
+    print(bg_parens)
+    # ['(bb (cc (dd)))', '(cc (dd))', '(dd)', '(ee (ff))', '(ff)']
 
     bg_jinja = [
         m.strip()
@@ -207,6 +212,8 @@ if __name__=='__main__':
             ,include = False
         )
     ]
+    print(bg_jinja)
+    # ['bb  cc dd', 'cc dd', 'dd', 'ee  ff', 'ff']
 
     bg_html = [
         m.strip()
@@ -218,17 +225,21 @@ if __name__=='__main__':
             ,include = True
         )
     ]
+    print(bg_html)
+    # ['<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div>', '<div id="2"> ccc</div>', '<div id="3">eee</div>']
 
     #300. Special cases
     chkstr = '-- <div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div> ggg <div id="4"> hhh </div> ~~'
     chkrst = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
-    # ['<div id="2"> ccc</div>',
-    # '<div id="3">eee</div>',
-    # '<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div>',
-    # '<div id="4"> hhh </div>']
+    print(chkrst)
+    # ['<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div>',
+    #  '<div id="2"> ccc</div>',
+    #  '<div id="3">eee</div>',
+    #  '<div id="4"> hhh </div>']
 
     chkrst2 = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True, include = False)
-    # [' ccc', 'eee', 'bbb cccddd eeefff', ' hhh ']
+    print(chkrst2)
+    # ['bbb cccddd eeefff', ' ccc', 'eee', ' hhh ']
 
     print(strBalancedGroup(''))
     # []
@@ -246,10 +257,10 @@ if __name__=='__main__':
     # ['(a)']
 
     print(strBalancedGroup(r'(a ((b) c (d))) e (f (g))'))
-    # ['(b)', '(d)', '((b) c (d))', '(a ((b) c (d)))', '(g)', '(f (g))']
+    # ['(a ((b) c (d)))', '((b) c (d))', '(b)', '(d)', '(f (g))', '(g)']
 
     print(strBalancedGroup(r'(a ((b) c (d))) e (f (g))', include = False))
-    # ['b', 'd', 'b c d', 'a b c d', 'g', 'f g']
+    # ['a b c d', 'b c d', 'b', 'd', 'f g', 'g']
 
     # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
     # [RAM] 64GB 2400MHz

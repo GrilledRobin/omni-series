@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, re
-from copy import deepcopy
-from warnings import warn
 from typing import Any
-from omniPy.AdvOp import get_values, strNestedParser
+from omniPy.AdvOp import get_values, strNestedParser, ExpandSignature
 
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+
+@(eSig := ExpandSignature(strNestedParser))
 def strBalancedGroupEval(
-    txt : str
-    ,lBound : str = '('
-    ,rBound : str = ')'
-    ,rx : bool = False
-    ,flags : re.RegexFlag = re.NOFLAG
+    *pos
+    ,**kw
 ) -> Any:
     #000. Info.
     '''
@@ -20,8 +20,8 @@ def strBalancedGroupEval(
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to evaluate the substrings surrounded by the provided boundaries, in terms of the concept of Balanced    #
-#   | Group in Regular Expression (while NOT using RegExp as it would fail in many cases), and then replace their respective positions  #
-#   | with their parsed values in current environment, i.e. treat them as variables in current session                                  #
+#   | Group in Regular Expression (while NOT using that in RegExp as it would fail in many cases), and then replace their respective    #
+#   | positions with their parsed values in current environment, i.e. treat them as variables in current session                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -31,24 +31,18 @@ def strBalancedGroupEval(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |txt        :   Character string from which to extract the substrings                                                               #
-#   |lBound     :   Left bound of the substring, can be provided with a string, which will be stripped and then treated as a whole      #
-#   |               [(          ] <Default> A single left parenthesis                                                                   #
-#   |rBound     :   Right bound of the substring, can be provided with a string, which will be stripped and then treated as a whole     #
-#   |               [)          ] <Default> A single right parenthesis                                                                  #
-#   |rx         :   Whether to treat the [lBound] and [rBound] as Regular Expression                                                    #
-#   |               [False      ] <Default> Treat them as raw character strings                                                         #
-#   |               [True       ]           Treat them as regular expressions                                                           #
+#   |*pos              :   All positional arguments taken from the source function                                                      #
+#   |**kw              :   All keyword arguments taken from the source function                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<str>      :   The character string with possible replacement at the positions regarding Balanced Group Expressions                #
-#   |               [1] Expressions such as : f<g<a>>, will be evaluated in recursion                                                   #
-#   |               [2] Given that any expression, such as: <a>, is not a known variable in current session, it will be treated as      #
-#   |                    plain text with the bounds removed in the output result                                                        #
-#   |               [3] The whole concatenated substring between the boundaries (exclusive of them) is stripped for object lookup       #
-#   |               [Special Case] When the whole string is enclosed by the bounds and its evaluation is successful, the return value   #
-#   |                               will be the same as its referenced object, which may be of any type                                 #
+#   |<str>             :   The character string with possible replacement at the positions regarding Balanced Group Expressions         #
+#   |                      [1] Expressions such as : f<g<a>>, will be evaluated in recursion                                            #
+#   |                      [2] Given that any expression, such as: <a>, is not a known variable in current session, it will be treated  #
+#   |                           as plain text with the bounds removed in the output result                                              #
+#   |                      [3] The whole concatenated substring between the boundaries (exclusive of them) is stripped for object lookup#
+#   |                      [4] When the whole string is enclosed by the bounds and its evaluation is successful, the return value       #
+#   |                           will be the same as its referenced object, which may be of any type                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -76,6 +70,11 @@ def strBalancedGroupEval(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Rewrite the function to uplift the efficiency by 450 times                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251214        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now behave in the same way as the source function                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -85,58 +84,26 @@ def strBalancedGroupEval(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, copy, warnings, typing                                                                                                #
+#   |   |typing                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |strNestedParser                                                                                                            #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
-
     #012. Parameter buffer
-    if not isinstance(txt, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(txt)}] must be provided a character string!')
-    if not txt:
-        return('')
-    if not isinstance(lBound, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(lBound)}] must be provided a character string!')
-    lBound = deepcopy(lBound.strip())
-    if len(lBound) == 0:
-        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] must be at least one non white space character!')
-    if not isinstance(rBound, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(rBound)}] must be provided a character string!')
-    rBound = deepcopy(rBound.strip())
-    if len(rBound) == 0:
-        raise ValueError(f'[{LfuncName}][rBound]:[{rBound}] must be at least one non white space character!')
-    if lBound == rBound:
-        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] and [rBound]:[{rBound}] must be different strings!')
-    if not isinstance(rx, bool):
-        raise TypeError(f'[{LfuncName}][rx]:[{type(rx)}] must be provided a bool!')
-    if not rx:
-        lBound = re.escape(lBound)
-        rBound = re.escape(rBound)
 
     #050. Local parameters
+    args_share = {'include' : False}
+    eSig.vfyConflict(args_share)
+    pos_out, kw_out = eSig.insParams(args_share, pos, kw)
 
     #100. Parse the nested structure out of the input string
-    #[ASSUMPTION]
-    #[1] We always call the parser with RegExp, since the boundaries are already escaped when requested
-    #[2] Since the parser will raise exception when there is un-Balanced Group, we catch it and return empty list as designed
-    #[3] We exclude the boundaries as output
-    try:
-        nest_struct = strNestedParser(txt, lBound, rBound, rx = True, include = False, flags = flags)
-    except ValueError:
-        warn(f'[{LfuncName}]Input string `{txt}` has un-Balanced boundaries!')
-        nest_struct = []
+    nest_struct = eSig.src(*pos_out, **kw_out)
 
     #200. Define helper functions
     #210. Function to join the nested structures into strings respectively, then evaluate the strings into new ones, with recursion
@@ -204,21 +171,21 @@ if __name__=='__main__':
     #200. Evaluation
     eval_str = strBalancedGroupEval(
         teststr
-        ,lBound = '('
-        ,rBound = ')'
+        ,enclosers = {'(' : ')'}
         ,rx = False
     )
+    print(eval_str)
     # 'gg 5 aa ee ff'
 
     eval_jinja = strBalancedGroupEval(
         testjinja
-        ,lBound = '{{'
-        ,rBound = '}}'
+        ,enclosers = {'{{' : '}}'}
         ,rx = False
     )
+    print(eval_jinja)
     # 5
-    type(eval_jinja).__name__
-    # 'int'
+    print(type(eval_jinja).__name__)
+    # int
 
     #300. Special cases
     print(strBalancedGroupEval(''))
@@ -228,19 +195,19 @@ if __name__=='__main__':
     # ''
 
     print(strBalancedGroupEval(r'a'))
-    # 'a'
+    # a
 
     print(strBalancedGroupEval(r'(a fill_a)'))
-    # 'a fill_a'
+    # a fill_a
 
     print(strBalancedGroupEval(r'a (fill_a)'))
-    # 'a bb'
+    # a bb
 
     print(strBalancedGroupEval(r'(fill_bb) b'))
-    # '5 b'
+    # 5 b
 
     print(strBalancedGroupEval(r'(a) fill_bb'))
-    # 'a fill_bb'
+    # a fill_bb
 
     # [CPU] AMD Ryzen 5 5600 6-Core 3.70GHz
     # [RAM] 64GB 2400MHz
@@ -250,6 +217,6 @@ if __name__=='__main__':
     eval_large = strBalancedGroupEval(str_large)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.682479
+    # 0:00:00.945214
 #-Notes- -End-
 '''

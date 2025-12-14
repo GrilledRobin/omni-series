@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, re
-from warnings import warn
-from omniPy.AdvOp import strNestedParser
+from omniPy.AdvOp import strNestedParser, ExpandSignature
 
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+
+@(eSig := ExpandSignature(strNestedParser))
 def strBalancedGroup(
-    txt : str
-    ,lBound : str = '('
-    ,rBound : str = ')'
-    ,rx : bool = False
-    ,include : bool = True
-    ,flags : re.RegexFlag = re.NOFLAG
+    *pos
+    ,**kw
 ) -> list[str]:
     #000. Info.
     '''
@@ -19,7 +19,7 @@ def strBalancedGroup(
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to extract the substrings surrounded by the provided boundaries, in terms of the concept of Balanced     #
-#   | Group in Regular Expression (while NOT using RegExp as it would fail in many cases)                                               #
+#   | Group in Regular Expression (while NOT using that in RegExp as it would fail in many cases)                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -30,26 +30,13 @@ def strBalancedGroup(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |txt        :   Character string from which to extract the substrings                                                               #
-#   |lBound     :   Left bound of the substring, can be provided with a string, which will be stripped and then treated as a whole      #
-#   |               [(          ] <Default> A single left parenthesis                                                                   #
-#   |rBound     :   Right bound of the substring, can be provided with a string, which will be stripped and then treated as a whole     #
-#   |               [)          ] <Default> A single right parenthesis                                                                  #
-#   |rx         :   Whether to treat the [lBound] and [rBound] as Regular Expression                                                    #
-#   |               [False      ] <Default> Treat them as raw character strings                                                         #
-#   |               [True       ]           Treat them as regular expressions                                                           #
-#   |include    :   Whether to include the bounding characters in the output substrings                                                 #
-#   |               [True       ] <Default> Include the bounds as output                                                                #
-#   |               [False      ]           Exclude the bounds as output                                                                #
-#   |flags      :   Flags to modify the parsing of the RegExp upon <lBound> and <rBound>                                                #
-#   |               [re.NOFLAG  ] <Default> Parse the RegExp <lBound> and <rBound> using no modifier                                    #
-#   |               [RegexFlag  ]           Any (union of) <re.RegexFlag> to modify the parsing                                         #
+#   |*pos              :   All positional arguments taken from the source function                                                      #
+#   |**kw              :   All keyword arguments taken from the source function                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>     :   List of substrings out of each pair of boundaries as a Balanced Group                                               #
-#   |               [IMPORTANT]                                                                                                         #
-#   |               [1] If the bounds do not exist in pairs, an empty list is returned with a warning                                   #
+#   |<list>            :   List of substrings out of each pair of boundaries as a Balanced Group. Exceptions are raised in the same way #
+#   |                       as the dependent function                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -68,6 +55,11 @@ def strBalancedGroup(
 #   | Log  |[1] Now exports the content in the same way as RegExp would, i.e. the output sequence of captured content as enclosed will  #
 #   |      |     be in the same sequence as when the Opening Token, a.k.a Left Bound, is encountered                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251214        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now behave in the same way as the source function                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -77,54 +69,24 @@ def strBalancedGroup(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, warnings                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
 #   |   |   |strNestedParser                                                                                                            #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
-
     #012. Parameter buffer
-    if not isinstance(txt, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(txt)}] must be provided a character string!')
-    if not txt:
-        return([])
-    if not isinstance(lBound, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(lBound)}] must be provided a character string!')
-    lBound = lBound.strip()
-    if len(lBound) == 0:
-        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] must be at least one non white space character!')
-    if not isinstance(rBound, str):
-        raise TypeError(f'[{LfuncName}][txt]:[{type(rBound)}] must be provided a character string!')
-    rBound = rBound.strip()
-    if len(rBound) == 0:
-        raise ValueError(f'[{LfuncName}][rBound]:[{rBound}] must be at least one non white space character!')
-    if lBound == rBound:
-        raise ValueError(f'[{LfuncName}][lBound]:[{lBound}] and [rBound]:[{rBound}] must be different strings!')
-    if not isinstance(rx, bool):
-        raise TypeError(f'[{LfuncName}][rx]:[{type(rx)}] must be provided a bool!')
-    if not rx:
-        lBound = re.escape(lBound)
-        rBound = re.escape(rBound)
 
     #050. Local parameters
+    args_share = {}
+    eSig.vfyConflict(args_share)
+    pos_out, kw_out = eSig.insParams(args_share, pos, kw)
 
     #100. Parse the nested structure out of the input string
-    #[ASSUMPTION]
-    #[1] We always call the parser with RegExp, since the boundaries are already escaped when requested
-    #[2] Since the parser will raise exception when there is un-Balanced Group, we catch it and return empty list as designed
-    try:
-        nest_struct = strNestedParser(txt, lBound, rBound, rx = True, include = include, flags = flags)
-    except ValueError:
-        warn(f'[{LfuncName}]Input string `{txt}` has un-Balanced boundaries!')
-        nest_struct = []
+    nest_struct = eSig.src(*pos_out, **kw_out)
 
     #200. Define helper functions
     #210. Function to join the nested structures into strings respectively with recursion
@@ -194,8 +156,7 @@ if __name__=='__main__':
     #200. Extraction
     bg_parens = strBalancedGroup(
         teststr
-        ,lBound = '('
-        ,rBound = ')'
+        ,enclosers = {'(' : ')'}
         ,rx = False
         ,include = True
     )
@@ -206,8 +167,7 @@ if __name__=='__main__':
         m.strip()
         for m in strBalancedGroup(
             testjinja
-            ,lBound = '{{'
-            ,rBound = '}}'
+            ,enclosers = {'{{' : '}}'}
             ,rx = False
             ,include = False
         )
@@ -219,8 +179,7 @@ if __name__=='__main__':
         m.strip()
         for m in strBalancedGroup(
             testhtml
-            ,lBound = '<div.*?>'
-            ,rBound = '</div>'
+            ,enclosers = {r'<div.*?>' : r'</div>'}
             ,rx = True
             ,include = True
         )
@@ -230,14 +189,14 @@ if __name__=='__main__':
 
     #300. Special cases
     chkstr = '-- <div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div> ggg <div id="4"> hhh </div> ~~'
-    chkrst = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
+    chkrst = strBalancedGroup(chkstr, enclosers = {r'<div.*?>' : r'</div>'}, rx = True)
     print(chkrst)
     # ['<div a="1">bbb<div id="2"> ccc</div>ddd <div id="3">eee</div>fff</div>',
     #  '<div id="2"> ccc</div>',
     #  '<div id="3">eee</div>',
     #  '<div id="4"> hhh </div>']
 
-    chkrst2 = strBalancedGroup(chkstr, lBound = r'<div.*?>', rBound = r'</div>', rx = True, include = False)
+    chkrst2 = strBalancedGroup(chkstr, enclosers = {r'<div.*?>' : r'</div>'}, rx = True, include = False)
     print(chkrst2)
     # ['bbb cccddd eeefff', ' ccc', 'eee', ' hhh ']
 
@@ -267,9 +226,9 @@ if __name__=='__main__':
     #900. Test timing
     str_large = testhtml * 10000
     time_bgn = dt.datetime.now()
-    bg_large = strBalancedGroup(str_large, lBound = r'<div.*?>', rBound = r'</div>', rx = True)
+    bg_large = strBalancedGroup(str_large, enclosers = {r'<div.*?>' : r'</div>'}, rx = True)
     time_end = dt.datetime.now()
     print(time_end - time_bgn)
-    # 0:00:00.091090
+    # 0:00:00.123028
 #-Notes- -End-
 '''

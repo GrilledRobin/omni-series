@@ -89,12 +89,15 @@ library(magrittr)
 #Below package provides the support of date operands, such as [ %m+% ]
 library(lubridate)
 #Below function provides the support to recognition of MBCS characters in the source programs
-tmcn::setchs()
+# tmcn::setchs()
 
 #110. Define the hard coding inputs
-#[Quote: https://www.r-bloggers.com/doing-away-with-%e2%80%9cunknown-timezone%e2%80%9d-warnings/ ]
-#[Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]]
+# Quote: https://www.r-bloggers.com/doing-away-with-%e2%80%9cunknown-timezone%e2%80%9d-warnings/
+# Quote: Search for the TZ value in the file: [<R Installation>/share/zoneinfo/zone.tab]
 if (nchar(Sys.getenv('TZ')) == 0) Sys.setenv(TZ = 'Asia/Shanghai')
+# Correct the locale issue caused by either `setchs()` or `Sys.setenv()`
+# Quote: https://sqlpey.com/r/r-date-parsing-locale-issues-fix/
+Sys.setlocale('LC_TIME', 'C')
 
 drives_autoexec <- c('D:', 'C:')
 paths_autoexec <- c('R', 'Robin', 'RobinLu', 'SAS')
@@ -132,6 +135,7 @@ options(
 #[1] The involved names are always loaded before the rest
 #[2] Within the involved names, the ones come first will be loaded before others
 dir_seq <- c('AdvOp')
+script_seq <- c('nameArgsByFormals','ExpandSignature')
 
 #280. Folder to exclude from the initialization
 dir_excl <- c('__rcache__')
@@ -139,7 +143,8 @@ dir_excl <- c('__rcache__')
 #290. Import the functions from the package
 omniR_Files <- list.files(path_omniR, '^.+\\.r$', full.names = T, ignore.case = T, recursive = T, include.dirs = T) %>%
 	{.[!stringr::str_detect(., dir_excl)]} %>%
-	sortByKeyword(dir_seq)
+	sortByKeyword(dir_seq) %>%
+	sortByKeyword(script_seq)
 if (length(omniR_Files)>0){
 	o_enc <- sapply(omniR_Files, function(x){readr::guess_encoding(x)$encoding[1]})
 	for (i in 1:length(omniR_Files)){source(omniR_Files[i],encoding = o_enc[i])}

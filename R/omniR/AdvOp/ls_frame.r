@@ -1,10 +1,10 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to list the object names or the list[name=object] if verbose, in the provided frame or all frames along  #
+#   |This function is intended to list the object names or the <list[name=object]> if verbose, in the provided frame or all frames along#
 #   | the call stack, by matching a specific pattern to the names and the predicate upon the objects                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Search for certain pattern of functions within current session                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,14 +26,14 @@
 #   |                [str         ]           Valid Regex string representation                                                         #
 #   |verbose     :   Whether to return verbose results                                                                                  #
 #   |                [FALSE       ] <Default> Only return a list of names found by the conditions                                       #
-#   |                [TRUE        ]           Return a dict[name:object]                                                                #
+#   |                [TRUE        ]           Return a <list[name=object]>                                                              #
 #   |...         :   Options for <stringr::regex> to compile a valid Regex parser                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
-#   |                [1] If <verbose == FALSE>, return a [character vector] of names matching the conditions                            #
-#   |                [2] If <verbose == TRUE>, return a [named list] of names pairing the objects, which match the conditions           #
+#   |                [1] If <verbose == FALSE>, return a <character vector> of names matching the conditions                            #
+#   |                [2] If <verbose == TRUE>, return a <named list> of names pairing the objects, which match the conditions           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

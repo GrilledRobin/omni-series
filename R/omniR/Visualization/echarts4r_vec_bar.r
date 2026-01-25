@@ -1,33 +1,33 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create a character vector that represents a series of [echarts4r] widgets that can be rendered by     #
-#   | [shinyApp], via vectorized calculation process, which enables the vectorized charting by groups in a data.frame                   #
+#   |This function is intended to create a character vector that represents a series of <echarts4r> widgets that can be rendered by     #
+#   | <shinyApp>, via vectorized calculation process, which enables the vectorized charting by groups in a <data.frame>                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as [shQuote] is #
-#   | called to convert these strings into HTML or JS scripts for at least once                                                         #
+#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as <shQuote> is #
+#   | called to convert these strings into HTML or <JS> scripts for at least once                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://echarts.apache.org/zh/index.html                                                                                      #
 #   |[10] Different gradient colors of different bars: https://blog.csdn.net/kimbing/article/details/109769527                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] This can be useful if one needs to render charts within [DT::datatable]                                                        #
+#   |[1] This can be useful if one needs to render charts within <DT::datatable>                                                        #
 #   |[2] Draw charts for groups of keys distributed by several categories, such as customer number distribution by AUM category         #
-#   |[3] Draw charts within [echarts:tooltip] for another vectorized chart series                                                       #
+#   |[3] Draw charts within <echarts:tooltip> for another vectorized chart series                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |vec_value   :   Numeric vector to be used as [values] to draw the charts                                                           #
+#   |vec_value   :   Numeric vector to be used as <values> to draw the charts                                                           #
 #   |vec_cat     :   Vector by which to draw the bars                                                                                   #
 #   |                [IMPORTANT] Program will coerce this vector as character anyway, for the chart can only recognize the axis value   #
-#   |                             as well as the tooltip value when they are all character strings, it is weird on echarts ver.=5.3.2   #
+#   |                             as well as the tooltip value when they are all character strings, it is weird on <echarts==5.3.2>     #
 #   |y_min       :   Numeric as the minimum value of y-axis. It is useful to unify the y-axis of the charts                             #
 #   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
 #   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is useful for parallel comparison        #
@@ -35,93 +35,90 @@
 #   |                 [NULL        ] <Default> Charts will have different scales at y-axis                                              #
 #   |                 [NOT-NULL    ]           All charts have the same scale at y-axis, which is useful for parallel comparison        #
 #   |sortBy      :   Character vector to determine how to display the bars in specific order                                            #
-#   |                 [input       ] <Default> The order follows the input sequence of [vec_cat]                                        #
-#   |                 [category    ]           Function sorts the input data by [vec_cat] in ASCENDING order and then draw the chart    #
-#   |                 [value       ]           Function sorts the input data by [vec_value] in DESCENDING order and then draw the chart #
-#   |html_id     :   Character vector of the html [id]s of each chart widget respectively, for reactive programming purpose             #
-#   |                 [NULL        ] <Default> Chart ID will be generated randomly by [echarts4r]                                       #
+#   |                 [input       ] <Default> The order follows the input sequence of <vec_cat>                                        #
+#   |                 [category    ]           Function sorts the input data by <vec_cat> in ASCENDING order and then draw the chart    #
+#   |                 [value       ]           Function sorts the input data by <vec_value> in DESCENDING order and then draw the chart #
+#   |html_id     :   Character vector of the html <id>s of each chart widget respectively, for reactive programming purpose             #
+#   |                 [NULL        ] <Default> Chart ID will be generated randomly by <echarts4r>                                       #
 #   |height      :   Integer of the chart height                                                                                        #
-#   |                 [540         ] <Default>                                                                                          #
+#   |                 [int <540>   ] <Default> Use this size                                                                            #
 #   |width       :   Integer of the chart width                                                                                         #
-#   |                 [960         ] <Default>                                                                                          #
+#   |                 [int <960>   ] <Default> Use this size                                                                            #
 #   |direction   :   Character vector to determine the direction of the bar                                                             #
 #   |                 [column      ] <Default> Draw the column chart                                                                    #
-#   |                 [bar         ]           Draw the bar chart, in such case, the order of the bars as indicated by [sortBy] will be #
-#   |                                           changed into below result:                                                              #
+#   |                 [bar         ]           Draw the bar chart, in such case, the order of the bars as indicated by <sortBy> will be #
+#   |                                           changed into below result                                                               #
 #   |                                          [input       ] The first record is at the closest point to the category axis             #
 #   |                                          [category    ] The first among the sorted categories is at the top of the chart          #
 #   |                                          [value       ] The largest among the sorted values is at the top of the chart            #
 #   |barWidth    :   Value of the bar width, can be integer or percentage; only the first is taken if multiple values are provided      #
-#   |                Quote: https://echarts.apache.org/zh/option.html#series-bar.barWidth                                               #
 #   |                 [NULL        ] <Default> Adaptive to the chart                                                                    #
 #   |                 [<int>       ]           Absolute pixels as width                                                                 #
 #   |                 [<chr>       ]           Character string as percent, representing the proportion of automatic width              #
-#   |barColPos   :   Character as the CSS color of the bars with positive values in current chart                                       #
+#   |                  Quote: https://echarts.apache.org/zh/option.html#series-bar.barWidth                                             #
+#   |barColPos   :   Character as the <CSS> color of the bars with positive values in current chart                                     #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax for all the bars, or the tallest one if [gradient=all]     #
-#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
+#   |                 [rgba()      ]           Can be provided in <CSS> syntax for all the bars, or the tallest one if <gradient=all>   #
+#   |                 [<chr>       ]           Character vector in the same length as <vec_cat> representing color codes, to differ the #
 #   |                                           colors of bars one-by-one                                                               #
-#   |barColNeg   :   Character as the CSS color of the bars with negative values in current chart                                       #
+#   |barColNeg   :   Character as the <CSS> color of the bars with negative values in current chart                                     #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax for all the bars, or the tallest one if [gradient=all]     #
-#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
+#   |                 [rgba()      ]           Can be provided in <CSS> syntax for all the bars, or the tallest one if <gradient=all>   #
+#   |                 [<chr>       ]           Character vector in the same length as <vec_cat> representing color codes, to differ the #
 #   |                                           colors of bars one-by-one                                                               #
 #   |gradient    :   Whether to draw the bar with gradient color effect                                                                 #
-#   |                 [TRUE|all    ] <Default> Draw the bar with gradient color effect. In such case, [barColor] plays as the color on  #
+#   |                 [TRUE/all    ] <Default> Draw the bar with gradient color effect. In such case, <barColor> plays as the color on  #
 #   |                                           the top of the longest bar and fades gradually to the closest to bg-color               #
-#   |                 [FALSE|none  ]           Draw the bar with the provided color [barColor]                                          #
-#   |                 [respective  ]           Draw the bar with gradient color effect. In such case, [barColor] plays as the color on  #
+#   |                 [FALSE/NULL  ]           Draw the bar with the provided color <barColor>                                          #
+#   |                 [respective  ]           Draw the bar with gradient color effect. In such case, <barColor> plays as the color on  #
 #   |                                           the top of each bar and fades gradually to the closest to bg-color                      #
 #   |disp_name   :   Character as the name showing in the tooltip on the bar                                                            #
 #   |                 [Value       ] <Default> Value of current data point                                                              #
 #   |func_add    :   Function that takes <echarts4r> object as the first argument, as direct injection to the charting scripts. It can  #
 #   |                 enable charting for multiple series, such as histogram with density or pareto chart.                              #
-#   |                [IMPORTANT] Be cautious to use this as it can lead to unexpected result!                                           #
 #   |                 [<see def.>  ] <Default> No program injection                                                                     #
+#   |                  [IMPORTANT] Be cautious to use this as it can lead to unexpected result!                                         #
 #   |stack       :   Character as the name of stack when multiple series require stacking                                               #
 #   |                 [Bar         ] <Default> Use this as the name of current stack                                                    #
 #   |title       :   Character as the title of current chart, taking the first value if the vector contains multiple values             #
 #   |                 [Pie         ] <Default> Name all charts with this one                                                            #
 #   |titleSize   :   Integer of the font size of the chart title                                                                        #
-#   |                 [18          ] <Default> Common font size                                                                         #
-#   |theme       :   The pre-defined themes                                                                                             #
-#   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
+#   |                 [int <18>    ] <Default> Common font size                                                                         #
+#   |theme       :   <chr> The pre-defined themes                                                                                       #
+#   |                 [BlackGold   ] <Default> Modified <MS PBI Innovation> theme with specific <black> and <gold> colors               #
 #   |transparent :   Whether to set the background as transparent                                                                       #
 #   |                 [TRUE        ] <Default> Set the alpha of background color as 0                                                   #
 #   |                 [FALSE       ]           Use the theme color                                                                      #
-#   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
-#   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
-#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
-#   |                 [14          ] <Default> Common font size                                                                         #
-#   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
-#   |                 chart respectively                                                                                                #
-#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |fontFamily  :   Character vector of font family to be translated to <CSS> syntax                                                   #
+#   |                 [<see def.>  ] <Default> See function definition                                                                  #
+#   |fontSize    :   Any vector that can be translated by <htmltools::validateCssUnit>. It is highly recommended to provide integer or  #
+#   |                 float numbers, since <echarts::textStyle.fontSize> cannot properly resolve other inputs in nested charts          #
+#   |                 [int <14>    ] <Default> Common font size                                                                         #
+#   |jsFmtFloat  :   Character vector of the <JS> methods applied to <JS:Float> values (which means <vec_value> for this function) of   #
+#   |                 each chart respectively                                                                                           #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 2, separated by comma              #
-#   |fmtTTbar    :   Character as the formatter to tweak the [tooltip] for when mouse hovering on the bars of current chart             #
-#   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
-#   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
+#   |                  Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                 #
+#   |fmtTTbar    :   Character as the formatter to tweak the <tooltip> for when mouse hovering on the bars of current chart             #
+#   |                 [NULL        ] <Default> Use the default <formatter>, see function definition                                     #
+#   |as.tooltip  :   Whether to convert the chart into the <JS> function as formatter of the tooltip of a hosting chart, i.e. this chart#
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
-#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in <DT::datatable>            #
 #   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
 #   |                 nested HTML tags                                                                                                  #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
-#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                 [FALSE       ] <Default> Only create a vector of complete <JS> functions, to represent single object inside each  #
 #   |                                           <echarts:tooltip> respectively                                                          #
 #   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<various>   :   The result is determined by below arguments                                                                        #
-#   |                [1] [as.tooltip = FALSE]                                                                                           #
-#   |                    A vector of HTML widgets represented as character strings                                                      #
-#   |                [2] [as.tooltip = TRUE], the output further depends on the argument [as.parts]                                     #
-#   |                    [1] [as.parts = FALSE]                                                                                         #
-#   |                        A vector of JS functions to be invoked inside the <tooltip> of anther <echarts> object                     #
-#   |                    [2] [as.parts = TRUE]                                                                                          #
-#   |                        A data.frame with two columns [js_func] and [html_tags] for customization of HTML scripts                  #
+#   |                [<as.tooltip = FALSE>] A vector of HTML widgets represented as character strings                                   #
+#   |                [<as.tooltip = TRUE> ] The output further depends on the argument <as.parts>                                       #
+#   |                    [FALSE] A vector of <JS> functions to be invoked inside the <tooltip> of anther <echarts> object               #
+#   |                    [TRUE ] A <data.frame> with two columns <js_func> and <html_tags> for customization of HTML scripts            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -132,10 +129,10 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220416        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [func_add] to enable direct injection of programs to tweak the chart, such as adding series    #
+#   | Log  |[1] Introduce a new argument <func_add> to enable direct injection of programs to tweak the chart, such as adding series    #
 #   |      |     for the chart, or adding effects. Be cautious to use this as it can lead to unexpected result.                         #
-#   |      |[2] Introduce a new argument [stack] to enable stacking of series, effective when [func_add] is in use                      #
-#   |      |[3] 20220416 [echarts=5.3.0] It is tested that function is accepted for <bar.itemStyle.color>                               #
+#   |      |[2] Introduce a new argument <stack> to enable stacking of series, effective when <func_add> is in use                      #
+#   |      |[3] 20220416 <echarts=5.3.0> It is tested that function is accepted for <bar.itemStyle.color>                               #
 #   |      |     but NOT accepted for <bar.emphasis.itemStyle.color> (while it regards <func()> as valid, with no parameter given)      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -147,20 +144,25 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221117        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
-#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   | Log  |[1] It is tested that <echarts::textStyle.fontSize> cannot resolve text input, such as <'14px'>, within the nested charts,  #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text <fontSize> for any <CSS> codes to #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221211        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Leverage the default behavior of [match.arg] to simplify the function definition                                        #
+#   | Log  |[1] Leverage the default behavior of <match.arg> to simplify the function definition                                        #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221221        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
 #   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260124        | Version | 1.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rvest> to parse attributes, e.g. <id>, from any HTML texts                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -171,15 +173,15 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales, jsonlite                                                    #
+#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales, jsonlite, rvest                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Styles                                                                                                                   #
+#   |   |Styles                                                                                                                         #
 #   |   |   |themeColors                                                                                                                #
 #   |   |   |rgba2rgb                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Visualization                                                                                                            #
+#   |   |Visualization                                                                                                                  #
 #   |   |   |as.character.htmlwidget                                                                                                    #
 #   |   |   |echarts4r.as.tooltip                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -187,7 +189,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales, jsonlite
+	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, scales, jsonlite, rvest
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -727,21 +729,23 @@ echarts4r_vec_bar <- function(
 		#900. Convert to character vector
 		as.character.htmlwidget()
 
-	#583. Search for the HTML ID
-	vfy_html_id <- stringr::str_extract_all(ch_html, '(?<=<div\\sid=("|\'))(.+?)(?=\\1)')[[1]][[1]]
-
 	#589. Overwrite the original rect
-	ch_html %<>%
-		#920. Setup the shape of the canvas
-		{gsub(
-			paste0('(?<=<div\\sid=("|\')',vfy_html_id,'\\1\\sstyle=("|\'))width:(\\d+(%|px));\\s*height:(\\d+(%|px));')
-			,paste0(''
-				,'width:',width,'px !important;'
-				,'height:',height,'px !important;'
-			)
-			,.
-			,perl = T
-		)}
+	ch_div <- rvest::read_html(ch_html) |> rvest::html_element('div')
+	attrs_div <- ch_div |> rvest::html_attrs()
+	attrs_div[['style']] <- attrs_div[['style']] |>
+		stringr::str_replace_all(c(
+			'width:(\\d+(%|px));' = paste0('width:',width,'px !important;')
+			,'height:(\\d+(%|px));' = paste0('height:',height,'px !important;')
+		))
+	vfy_html_id <- attrs_div[['id']]
+
+	ch_div_upd <- paste0(
+		'<div '
+		,paste0(names(attrs_div), '=', sQuote(attrs_div, q = '\''), collapse = ' ')
+		,'>'
+	)
+
+	ch_html %<>% stringr::str_replace_all('^<div.+?>', ch_div_upd)
 
 	#590. Directly return if no need to convert it to tooltip
 	if (!as.tooltip) return(ch_html)
@@ -842,7 +846,7 @@ if (FALSE){
 		#200. Create a [DT::datatable]
 		cols <- c('opponent', 'score', 'score_text', 'ech_bar2')
 		dt_scoring <- DT::datatable(
-			ch_scoring %>% dplyr::select(tidyselect::all_of(cols))
+			ch_scoring %>% dplyr::select(dplyr::all_of(cols))
 			#Only determine the columns to be displayed, rather than the columns to extract from the input data
 			,colnames = cols
 			,width = '100%'

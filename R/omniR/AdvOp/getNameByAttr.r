@@ -2,26 +2,26 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to extract the names by provided attributes from any object that can be visited by methods of both       #
-#   | [names()] and [attr(el,req.attr)], while output them in the same sequence as the requested labels                                 #
-#   |This is useful for extration of column names by provided column labels respectvely.                                                #
+#   | <names()> and <attr(el,req.attr)>, while output them in the same sequence as the requested labels                                 #
+#   |This is useful for extraction of column names by provided column labels respectively.                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIO                                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 当一个data frame同时有[字段名]和它们对应的[属性]（如：label），可用此function通过提供[label]来获取对应的[name]                 #
+#   |[1] Obtain the <name> out of the additional <attr> of the columns in a <data.frame>, if <attr> is defined                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |obj        :   Any object that can be visited by both methods of [names()] and [attr(,req.attr)], such as a [data.frame]           #
-#   |req.attr   :   One specific attribute that will be used to access the object and extract respective [names]                        #
-#   |               [label           ] <Default> Try to access the attribute by [attr(,'label')]                                        #
-#   |               [<chr. string>   ]           Single string of characters as attribute of the element of [obj]                       #
-#   |req.val    :   Vector or list of requested values for the [req.attr]                                                               #
+#   |obj        :   Any object that can be visited by both methods of <names()> and <attr(,req.attr)>, such as a <data.frame>           #
+#   |req.attr   :   One specific attribute that will be used to access the object and extract respective <names>                        #
+#   |               [label           ] <Default> Try to access the attribute by <attr(,'label')>                                        #
+#   |               [<chr>           ]           Single string of characters as attribute of the element of <obj>                       #
+#   |req.val    :   Vector or list of requested values for the <req.attr>                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   Any of the [names] that are extracted from the [obj] by accessing its [attr]                                        #
+#   |<vector>   :   Any of the <names> that are extracted from the <obj> by accessing its <attr>                                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -112,4 +112,8 @@ if (FALSE){
 		getItem4 <- getNameByAttr(test_var, req.attr = 'method', req.val = c('lbl1'))
 
 	}
+
+	if (FALSE) {'
+		[1] 当一个data frame同时有[字段名]和它们对应的[属性]（如：label），可用此function通过提供[label]来获取对应的[name]
+	'}
 }

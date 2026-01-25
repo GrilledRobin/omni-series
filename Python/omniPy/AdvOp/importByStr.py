@@ -4,21 +4,37 @@
 import sys
 import numpy as np
 from importlib import import_module
+from typing import Any
+from omniPy.AdvOp import ExpandSignature
 
+#[ASSUMPTION]
+#[1] If you need to chain the expansion, make sure either of below designs is set
+#    [1] Each of the nodes is in a separate module
+#    [2] The named instances (e.g. <eSig> here) have unique names among all nodes, if they are in the same module
+
+@(eSig := ExpandSignature(import_module))
 def importByStr(
     *pos
     ,asModule : bool = False
     ,importAll : bool = False
     ,**kw
-) -> 'Import function/class by providing names as string':
-    #000.   Info.
+) -> Any:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to import a function/class dynamically when the name as character string is provided                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <import_module>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Dynamically import functions/classes from any module into global environment and rename them for programmatic usage            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,25 +42,30 @@ def importByStr(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |pos        :   Positional arguments for [importlib.import_module]                                                                  #
-#   |asModule   :   Whether to maintain the imported object as [module], same as [import aaa]                                           #
-#   |                [False       ] <Default> Try to get the object in the same name, i.e. func('bbb', package = 'aaa') is the same as  #
-#   |                                          [from aaa import bbb], also as is when func('aaa.bbb')                                   #
-#   |                [True        ]           Maintain the structure of the imported module, same as [import aaa]                       #
-#   |importAll  :   Whether to import [*] from the provided module, same as [from aaa import *]                                         #
+#   |pos        :   Positional arguments for <importlib.import_module>                                                                  #
+#   |asModule   :   Whether to maintain the imported object as <module>, same as <import aaa>                                           #
+#   |                [False       ] <Default> Try to get the object in the same name, i.e. <func('bbb', package = 'aaa')> is the same as#
+#   |                                          <from aaa import bbb>, also as is when <func('aaa.bbb')>                                 #
+#   |                [True        ]           Maintain the structure of the imported module, same as <import aaa>                       #
+#   |importAll  :   Whether to import <*> from the provided module, same as <from aaa import *>                                         #
 #   |                [False       ] <Default> Only import the named object                                                              #
-#   |                [True        ]           Import all objects from the named package [*pos] (or [**kw] if [pos] is not provided)     #
-#   |kw         :   Named arguments for [importlib.import_module]                                                                       #
+#   |                [True        ]           Import all objects from the named package <*pos> (or <**kw> if <pos> is not provided)     #
+#   |kw         :   Named arguments for <importlib.import_module>                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[object]   :   The imported object                                                                                                 #
+#   |<Any>      :   The imported object                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20230304        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251221        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to enable easy inspection upon the signature of the wrapped function                        #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -55,10 +76,12 @@ def importByStr(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, numpy, importlib                                                                                                          #
+#   |   |sys, numpy, importlib, typing                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |   |AdvOp                                                                                                                          #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
@@ -68,18 +91,21 @@ def importByStr(
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
     if not isinstance(asModule, (bool, np.bool_)):
         raise TypeError(f'[{LfuncName}][asModule]:[{type(asModule)}] must be boolean!')
     if not isinstance(importAll, (bool, np.bool_)):
         raise TypeError(f'[{LfuncName}][importAll]:[{type(importAll)}] must be boolean!')
+    args_share = {}
+    eSig.vfyConflict(args_share)
+    pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+    name = eSig.getParam('name', pos_out, kw_out, inc_default = True)
 
     #100. Directly import the module as requested
     #[ASSUMPTION]
     #[1] Result of below statement is a type of [types.ModuleType]
-    obj = import_module(*pos, **kw)
+    obj = eSig.src(*pos_out, **kw_out)
 
     #300. Output if it is requested to maintain its structure
     if asModule:
@@ -89,14 +115,13 @@ def importByStr(
     if not importAll:
         #100. Output a parsed object if it is NOT requested to import all objects from this module
         #Quote: https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
-        return(getattr(obj, pos[0].split('.')[-1]))
+        return(getattr(obj, name.split('.')[-1]))
     else:
         #100. Update the globals with all the objects imported from the requested package
         #Quote: https://stackoverflow.com/questions/44492803/dynamic-import-how-to-import-from-module-name-from-variable
         globals().update(
             {n: getattr(obj, n) for n in obj.__all__} if hasattr(obj, '__all__')
-            else
-            {k: v for (k, v) in obj.__dict__.items() if not k.startswith('_')
+            else {k: v for (k, v) in obj.__dict__.items() if not k.startswith('_')
         })
 #End importByStr
 

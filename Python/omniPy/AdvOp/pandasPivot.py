@@ -48,79 +48,83 @@ def pandasPivot(
 #   |This function is intended to calculate pivot table for the provided dimensions, while providing freedom to adjust the sorting      #
 #   | sequence of dimension values, and to place the Grand Totals and Subtotals in different positions for either axis                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <pd.pivot_table>, see its documents for detailed argument list                     #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Calculate Grand Totals and Subtotals and put them in different positions in the pivot table                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Known Limits:                                                                                                                      #
+#   |[Known Limits]                                                                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] (v1.00) Groupers and Arrays in [index] and [columns] arguments are not tested, hence may cause unexpected results              #
+#   |[1] (v1.00) Groupers and Arrays in <index> and <columns> arguments are not tested, hence may cause unexpected results              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |df            :   [pd.DataFrame] to be pivoted                                                                                     #
-#   |rowSortAsc    :   Whether to sort the values in ascending order for [index] dimensions                                             #
-#   |                  [True            ] <Default> Follow the default behavior as [pd.pivot_table]                                     #
-#   |                  [False           ]           Sort the respective [index] dimensions in descending order                          #
-#   |fRowTot       :   Whether to display the Grand Totals for [index] axis                                                             #
+#   |df            :   <pd.DataFrame> to be pivoted                                                                                     #
+#   |rowSortAsc    :   Whether to sort the values in ascending order for <index> dimensions                                             #
+#   |                  [True            ] <Default> Follow the default behavior as <pd.pivot_table>                                     #
+#   |                  [False           ]           Sort the respective <index> dimensions in descending order                          #
+#   |fRowTot       :   Whether to display the Grand Totals for <index> axis                                                             #
 #   |                  [True            ] <Default> Display Grand Total as extra rows in the pivot table                                #
-#   |                  [False           ]           Suppress Grand Total of [index] axis from being calculated                          #
-#   |fRowSubt      :   Whether to display the Subtotals for respective [index] dimensions                                               #
+#   |                  [False           ]           Suppress Grand Total of <index> axis from being calculated                          #
+#   |fRowSubt      :   Whether to display the Subtotals for respective <index> dimensions                                               #
 #   |                  [True            ] <Default> Display Subtotals as extra rows in the pivot table                                  #
-#   |                  [False           ]           Suppress Subtotals of [index] dimensions from being calculated                      #
-#   |rowTot        :   Name of the Grand Total stats for [index] axis as displayed in the pivot table                                   #
+#   |                  [False           ]           Suppress Subtotals of <index> dimensions from being calculated                      #
+#   |rowTot        :   Name of the Grand Total stats for <index> axis as displayed in the pivot table                                   #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any data value within either [index] or        #
-#   |                                                [columns]                                                                          #
-#   |rowSubt       :   Name of the Subtotals stats for [index] dimensions as displayed in the pivot table                               #
+#   |                  [<str>           ]           Character string that DOES NOT match any value within either <index> or <columns>   #
+#   |rowSubt       :   Name of the Subtotals stats for <index> dimensions as displayed in the pivot table                               #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any data value within either [index] or        #
-#   |                                                [columns]                                                                          #
-#   |posRowTot     :   Where to place Grand Total stats for [index] axis                                                                #
+#   |                  [<str>           ]           Character string that DOES NOT match any value within either <index> or <columns>   #
+#   |posRowTot     :   Where to place Grand Total stats for <index> axis                                                                #
 #   |                  [after           ] <Default> Place the Grand Total AFTER all stats in the pivot table                            #
 #   |                  [before          ]           Place the Grand Total BEFORE all stats in the pivot table                           #
-#   |posRowSubt    :   Where to place Subtotals within each group for [index] dimensions                                                #
+#   |posRowSubt    :   Where to place Subtotals within each group for <index> dimensions                                                #
 #   |                  [after           ] <Default> Place the Subtotals AFTER all stats in the same group of the pivot table            #
 #   |                  [before          ]           Place the Subtotals BEFORE all stats in the same group of the pivot table           #
-#   |colSortAsc    :   Whether to sort the values in ascending order for [columns] dimensions                                           #
-#   |                  [True            ] <Default> Follow the default behavior as [pd.pivot_table]                                     #
-#   |                  [False           ]           Sort the respective [columns] dimensions in descending order                        #
-#   |fColTot       :   Whether to display the Grand Totals for [columns] axis                                                           #
+#   |colSortAsc    :   Whether to sort the values in ascending order for <columns> dimensions                                           #
+#   |                  [True            ] <Default> Follow the default behavior as <pd.pivot_table>                                     #
+#   |                  [False           ]           Sort the respective <columns> dimensions in descending order                        #
+#   |fColTot       :   Whether to display the Grand Totals for <columns> axis                                                           #
 #   |                  [True            ] <Default> Display Grand Total as extra column in the pivot table                              #
-#   |                  [False           ]           Suppress Grand Total of [columns] axis from being calculated                        #
-#   |fColSubt      :   Whether to display the Subtotals for respective [columns] dimensions                                             #
+#   |                  [False           ]           Suppress Grand Total of <columns> axis from being calculated                        #
+#   |fColSubt      :   Whether to display the Subtotals for respective <columns> dimensions                                             #
 #   |                  [True            ] <Default> Display Subtotals as extra columns in the pivot table                               #
-#   |                  [False           ]           Suppress Subtotals of [columns] dimensions from being calculated                    #
-#   |colTot        :   Name of the Grand Total stats for [columns] axis as displayed in the pivot table                                 #
+#   |                  [False           ]           Suppress Subtotals of <columns> dimensions from being calculated                    #
+#   |colTot        :   Name of the Grand Total stats for <columns> axis as displayed in the pivot table                                 #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any data value within either [index] or        #
-#   |                                                [columns]                                                                          #
-#   |colSubt       :   Name of the Subtotals stats for [columns] dimensions as displayed in the pivot table                             #
+#   |                  [<str>           ]           Character string that DOES NOT match any value within either <index> or <columns>   #
+#   |colSubt       :   Name of the Subtotals stats for <columns> dimensions as displayed in the pivot table                             #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any data value within either [index] or        #
-#   |                                                [columns]                                                                          #
-#   |posColTot     :   Where to place Grand Total stats for [columns] axis                                                              #
+#   |                  [<str>           ]           Character string that DOES NOT match any value within either <index> or <columns>   #
+#   |posColTot     :   Where to place Grand Total stats for <columns> axis                                                              #
 #   |                  [after           ] <Default> Place the Grand Total AFTER all stats in the pivot table                            #
 #   |                  [before          ]           Place the Grand Total BEFORE all stats in the pivot table                           #
-#   |posColSubt    :   Where to place Subtotals within each group for [columns] dimensions                                              #
+#   |posColSubt    :   Where to place Subtotals within each group for <columns> dimensions                                              #
 #   |                  [after           ] <Default> Place the Subtotals AFTER all stats in the same group of the pivot table            #
 #   |                  [before          ]           Place the Subtotals BEFORE all stats in the same group of the pivot table           #
-#   |name_vals     :   Level name in the pivot table that represents the dimension [values], baiscally for sorting purpose, see example #
+#   |name_vals     :   Level name in the pivot table that represents the dimension <values>, baiscally for sorting purpose, see example #
 #   |                   for actual usage                                                                                                #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any value within [values]                      #
+#   |                  [<str>           ]           Character string that DOES NOT match any value within <values>                      #
 #   |name_stats    :   Level name in the pivot table that represents the dimension of user requested stats, baiscally for sorting       #
 #   |                   purpose, see example for actual usage                                                                           #
 #   |                  [<see def.>      ] <Default> See function definition                                                             #
-#   |                  [<str>           ]           Character string that DOES NOT match any callable names within [aggfunc]            #
+#   |                  [<str>           ]           Character string that DOES NOT match any callable names within <aggfunc>            #
 #   |keyPatcher    :   <dict> to patch the default sorter of dimension values, useful to tweak the display order of several values      #
 #   |                  It must be provided in the form: {<column_name>:{<value1>:<sequence1>,...},...}; where <column_name> must be     #
-#   |                   among [index] or [columns] for the pivot table, while <value<n>> represents the <n>th unique value as described #
-#   |                   by <df>[<column_name>].unique() and <sequence<n>> must be within range(len(<df>[<column_name>].unique()))       #
-#   |                   representing the order for sorting. See example for actual usage                                                #
-#   |                  [None            ] <Default> Follow the default sorting behavior of [pandas.pivot_table]                         #
+#   |                   among <index> or <columns> for the pivot table, while <value[n]> represents the <[n]>th unique value as         #
+#   |                   described by <df[column_name].unique()> and <sequence[n]> must be within                                        #
+#   |                   <range(len(df[column_name].unique()))> representing the order for sorting. See example for actual usage         #
+#   |                  [None            ] <Default> Follow the default sorting behavior of <pandas.pivot_table>                         #
 #   |                  [<dict>          ]           Overwrite part of the default sorting behavior as tweak to the display order of     #
 #   |                                                categories                                                                         #
 #   |data          :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <df> so it no      #
@@ -148,26 +152,26 @@ def pandasPivot(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221024        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when there is only a single column involved in either [index] or [columns] dimensions                       #
+#   | Log  |[1] Fixed a bug when there is only a single column involved in either <index> or <columns> dimensions                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221026        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Changed the behavior of the native argument [observed] for pd.pivot_table() to indicate whether only to embed the       #
+#   | Log  |[1] Changed the behavior of the native argument <observed> for <pd.pivot_table()> to indicate whether only to embed the     #
 #   |      |     observed combinations in the result for dimensions other than categorical type                                         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230112        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when no [columns] is provided and [aggfunc] only contain one field with one aggregation method              #
+#   | Log  |[1] Fixed a bug when no <columns> is provided and <aggfunc> only contain one field with one aggregation method              #
 #   |      |[2] Now set the placeholder for subtotals as a single white space to facilitate EXCEL formatting where necessary            #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230218        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Allow [keyPatcher] to have uncontinuous sequence, and if it contains equal sequence numbers, further sort the keys to   #
+#   | Log  |[1] Allow <keyPatcher> to have uncontinuous sequence, and if it contains equal sequence numbers, further sort the keys to   #
 #   |      |     ensure a unique sequence number for each item in the final value list                                                  #
-#   |      |[2] Correct the sequence of values in the output totals and subtotals of [columns]                                          #
+#   |      |[2] Correct the sequence of values in the output totals and subtotals of <columns>                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230609        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
@@ -214,7 +218,7 @@ def pandasPivot(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |modifyDict                                                                                                                 #
 #   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -255,39 +259,39 @@ def pandasPivot(
     #[1] Below arguments are NOT shared between the callables, hence it is a good practice to restrict the lookup inside the
     #     scope of <src>
     if not eSig.isDefault('margins', 'src'):
-        mgn_flag = eSig.getParam('margins', pos_in, kw_in)
+        mgn_flag = eSig.getParam('margins', pos_in, kw_in, inc_default = True)
         fRowTot = fRowSubt = fColTot = fColSubt = mgn_flag
         pos_fnl, kw_fnl = eSig.updParams({'margins' : False}, pos_fnl, kw_fnl)
     if not eSig.isDefault('margins_name', 'src'):
-        mgn_name = eSig.getParam('margins_name', pos_in, kw_in)
+        mgn_name = eSig.getParam('margins_name', pos_in, kw_in, inc_default = True)
         rowTot = colTot = mgn_name
     if not eSig.isDefault('sort', 'src'):
-        sort_flag = eSig.getParam('sort', pos_in, kw_in)
+        sort_flag = eSig.getParam('sort', pos_in, kw_in, inc_default = True)
         rowSortAsc = colSortAsc = sort_flag
         pos_fnl, kw_fnl = eSig.updParams({'sort' : False}, pos_fnl, kw_fnl)
 
     #050. Local parameters
-    var_rows = eSig.getParam('index', pos_fnl, kw_fnl) or []
+    var_rows = eSig.getParam('index', pos_fnl, kw_fnl, inc_default = True) or []
     if isinstance(var_rows, str):
         var_rows = [var_rows]
     if var_rows:
         if isinstance(var_rows, pd.Grouper):
             var_rows = list(
                 df.groupby(var_rows)
-                [eSig.getParam('values', pos_fnl, kw_fnl)].min()
+                [eSig.getParam('values', pos_fnl, kw_fnl, inc_default = True)].min()
                 .index.names
             )
         else:
             var_rows = list(df.set_index(var_rows).index.names)
 
-    var_cols = eSig.getParam('columns', pos_fnl, kw_fnl) or []
+    var_cols = eSig.getParam('columns', pos_fnl, kw_fnl, inc_default = True) or []
     if isinstance(var_cols, str):
         var_cols = [var_cols]
     if var_cols:
         if isinstance(var_cols, pd.Grouper):
             var_cols = list(
                 df.groupby(var_cols)
-                [eSig.getParam('values', pos_fnl, kw_fnl)].min()
+                [eSig.getParam('values', pos_fnl, kw_fnl, inc_default = True)].min()
                 .index.names
             )
         else:
@@ -408,7 +412,7 @@ def pandasPivot(
         rstOut = eSig.src(*pos_rpt, **kw_rpt)
 
         #700. Remove combinations of dimensions that are not observed
-        if eSig.getParam('observed', pos_rpt, kw_rpt) or False:
+        if eSig.getParam('observed', pos_rpt, kw_rpt, inc_default = True) or False:
             #400. On axis-0
             if f_rows:
                 #100. Different number of dimensions

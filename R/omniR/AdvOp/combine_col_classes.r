@@ -1,24 +1,24 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to extract the [class] attributes from all [column]s in all the provided [data.frame]s and combine them  #
-#   | into one [data.frame]                                                                                                             #
+#   |This function is intended to extract the <class> attributes from all <column>s in all the provided <data.frame>s and combine them  #
+#   | into one <data.frame>                                                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |...          :   Various named parameters in either form as below, that indicates a list of data frames for extraction             #
-#   |                 [1] Name parameters just as calling other functions with [...] as parameter                                       #
+#   |                 [1] Name parameters just as calling other functions with <...> as parameter                                       #
 #   |                 [2] A list with named members, similar as above, but provided in a combined list                                  #
-#   |with.attr    :   Whether to include the [attr]s from the input data frames into the output data frame                              #
-#   |                 [NULL            ] <Default> No need to include the [attr]s of the input list of data frames                      #
-#   |                 [chr list/vector ]           The indicated [attr]s to extract from the input data frames and set as new column in #
+#   |with.attr    :   Whether to include the <attr>s from the input data frames into the output data frame                              #
+#   |                 [NULL            ] <Default> No need to include the <attr>s of the input list of data frames                      #
+#   |                 [chr list/vector ]           The indicated <attr>s to extract from the input data frames and set as new column in #
 #   |                                               the output data frame                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[data.frame] :   The combined data frame that stores the classes of all columns of all input data frames                           #
+#   |<data.frame> :   The combined data frame that stores the classes of all columns of all input data frames                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

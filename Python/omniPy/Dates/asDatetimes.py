@@ -30,31 +30,36 @@ def asDatetimes(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert any type of input values into valid datetime (with type as [datetime.datetime])               #
-#   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
-#   |             column(s) in the type of [dt.datetime] to ensure a dedicated result, i.e. below methods create the columns in the     #
-#   |             same [dtype] as [object] no matter the input is empty or not:                                                         #
-#   |            [1] [pd.Series.apply(asDatetimes).astype('object')] or [pd.DataFrame.map(asDatetimes).astype('object')]                #
-#   |            [2] [asDatetimes(pd.Series)] or [asDatetimes(pd.DataFrame)]                                                            #
+#   |This function is intended to convert any type of input values into valid datetime (with type as <datetime.datetime>)               #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |IMPORTANT                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] When the input is an empty <pd.Series> or <pd.DataFrame>, make sure to use either of below forms to assign the column(s) in the#
+#   |     type of <dt.datetime> to ensure a dedicated result, i.e. below methods create the columns in the same <dtype> as <object> no  #
+#   |     matter the input is empty or not                                                                                              #
+#   |    [1] <asDatetimes(pd.Series)> (preferred for high efficiency)                                                                   #
+#   |    [2] <asDatetimes(pd.DataFrame)> (preferred for high efficiency)                                                                #
+#   |    [3] <pd.Series.apply(asDatetimes).astype('object')>                                                                            #
+#   |    [4] <pd.DataFrame.map(asDatetimes).astype('object')>                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indate      :   Date-like values, can be list/tuple of date values, character strings, integers or date column of a data frame     #
-#   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
+#   |indate      :   Date-like values, can be Iterable of date values, character strings, integers or date column of a data frame       #
+#   |fmt         :   Alternative format to be passed to function <strptime> when the input is a character string.                       #
 #   |                Re-introduced at v1.4, requiring caller to provide specific format, or spend lots of time during parsing           #
-#   |                 [ <list>     ] <Default> Try to match these formats for any input strings, see function definition                #
-#   |origin      :   Date-like scalar, as origin, to convert the values in the type of [int], [float], [np.integer] or [np.floating]    #
-#   |                See official document of [pd.to_datetime]                                                                          #
-#   |                 [ 1960-01-01 ] <Default> Also the default origin of SAS for easy conversion                                       #
-#   |unit        :   Unit by which to convert the values in the type of [int], [float], [np.integer] or [np.floating]                   #
-#   |                See official document of [datetime.timedelta]                                                                      #
+#   |                 [<see def.>  ] <Default> Try to match these formats for any input strings, see function definition                #
+#   |origin      :   Date-like scalar, as origin, to convert the values in the type of <int>, <float>, <np.integer> or <np.floating>.   #
+#   |                See official document of <pd.to_datetime>                                                                          #
+#   |                 [<see def.>  ] <Default> Also the default origin of SAS for easy conversion                                       #
+#   |unit        :   <str> Unit by which to convert the values in the type of <int>, <float>, <np.integer> or <np.floating>.            #
+#   |                See official document of <datetime.timedelta>                                                                      #
 #   |                 [ seconds    ] <Default> Also the default unit of SAS datetime storage for easy conversion                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Any>       :   The returned value may be <dt.datetime | Iterable[dt.datetime]> depending on the input type                        #
+#   |<Any>       :   The returned value may be <dt.datetime> or <Iterable[dt.datetime]> depending on the input type                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,19 +70,19 @@ def asDatetimes(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210619        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce [Iterable] to support more iterable input types for the arguments                                             #
+#   | Log  |[1] Introduce <Iterable> to support more iterable input types for the arguments                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210816        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new argument [asnat] to indicate whether to accept invalid input values                                             #
-#   |      |[2] Add methods to convert [pd.Timestamp] to [dt.datetime] and store the values as the type [object] for [pandas] input,    #
-#   |      |     to ensure type consistency of the output, esp. when the date values that are beyond/within the limit of [pd.Timestamp] #
+#   | Log  |[1] Add new argument <asnat> to indicate whether to accept invalid input values                                             #
+#   |      |[2] Add methods to convert <pd.Timestamp> to <dt.datetime> and store the values as the type <object> for <pandas> input,    #
+#   |      |     to ensure type consistency of the output, esp. when the date values that are beyond/within the limit of <pd.Timestamp> #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210909        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
+#   | Log  |[1] Remove the argument <asnat> as the function no longer raise errors for invalid inputs, but output <pd.NaT>              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230608        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
@@ -137,14 +142,12 @@ def asDatetimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |thisFunction                                                                                                               #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.

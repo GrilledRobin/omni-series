@@ -23,58 +23,60 @@ def apply_MapVal(
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to map the values within the provided list or vector into another set of values by the given dictionary  #
-#   | a.k.a. the similar function as [Format Procedure] in SAS.                                                                         #
-#   |It also acts as a helper function to conduct value mapping in a data frame via [apply] function from [pandas] package, see below   #
-#   | examples. However, it is strongly recommended NOT to use [Series.apply(f)], but use [f(Series)], to make it efficient.            #
+#   | a.k.a. the similar function as <Format Procedure> in SAS.                                                                         #
+#   |It also acts as a helper function to conduct value mapping in a data frame via <apply> function from <pandas> package, see below   #
+#   | examples. However, it is strongly recommended NOT to use <Series.apply(f)>, but use <f(Series)>, to make it efficient.            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Special case: when using [df['aa'] = df['bb'].apply( functools.partial(apply_MapVal , mydict) )] or [lambda]                       #
+#   |SIMPLE EXAMPLE                                                                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[IMPORTANT] For any zero-length pd.Series, make sure to use [astype] as below to convert the column type if the type of [value] in #
-#   |             the provided [dict] is NOT [str]! Otherwise [pandas] will imperatively convert the output (whic is also zero-length)  #
-#   |             into [np.float64], which might be unexpected.                                                                         #
-#   |[EXAMPLE  ] mytypes = list(set([ type(v) for v in mydict.values() ]))                                                              #
-#   |            df['aa'] = df['bb'].apply( functools.partial(apply_MapVal , mydict) ).astype(mytypes[0])                               #
+#   |[1] <df['aa'] = df['bb'].apply( functools.partial(apply_MapVal , mydict) ).astype(mytypes[0])>                                     #
+#   |[2] <mytypes = list(set([ type(v) for v in mydict.values() ]))>                                                                    #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |IMPORTANT                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |For any zero-length pd.Series, make sure to use <astype> as below to convert the column type if the type of <value> in the provided#
+#   | <dict> is NOT <str>! Otherwise <pandas> will imperatively convert the output (which is also zero-length) into <np.float64>, which #
+#   | might be unexpected.                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |vec         :   List or vector of values to be mapped into another set of values (also accept a column in a data.frame when used   #
-#   |                 in [mutate] function of [dplyr] package)                                                                          #
-#   |dict_map    :   List or vector of value mapping within which: [names] represent the values to be mapped from the [vec]; [values]   #
+#   |vec         :   List or vector of values to be mapped into another set of values, also accept a column in a data.frame when used   #
+#   |                 in <mutate> function of <dplyr> package.                                                                          #
+#   |dict_map    :   List or vector of value mapping within which <names> represent the values to be mapped from the <vec>; <values>    #
 #   |                 represent the new values as mapping result                                                                        #
-#   |                [IMPORTANT] Unlike FORMAT Procedure in SAS, the same name cannot exist twice in a Python [dict]; hence we cannot   #
+#   |                [IMPORTANT] Unlike FORMAT Procedure in SAS, the same name cannot exist twice in a Python <dict>; hence we cannot   #
 #   |                             define the process for a multiple match                                                               #
 #   |preserve    :   Logical value indicating whether to preserve the input values if they cannot be mapped in the given dictionary     #
-#   |                 [TRUE        ]  <Default> Preserve the original values if there is mo mapping for them                            #
-#   |                 [FALSE       ]             Discard the input values and output an [NA] in place if there is no mapping for them   #
+#   |                 [True        ]  <Default> Preserve the original values if there is mo mapping for them                            #
+#   |                 [False       ]             Discard the input values and output an <NA> in place if there is no mapping for them   #
 #   |placeholder :   The placeholder for output if the length (i.e. number of elements) of the entire input vector is 0                 #
-#   |                 [TRUE        ]  <Default> Output a zero-length placeholder in the same type as the values in [dict_map]           #
-#   |                 [FALSE       ]            Do not output a placeholder                                                             #
-#   |force_mark  :   The name in the [dict_map] with value to force output when there is no mapping result for the input value while    #
-#   |                 the parameter [preserve] is set FALSE.                                                                            #
-#   |                 [...         ]  <Default> Output the value in the name of '...' in the [dict_map] when condition is fulfilled     #
-#   |                 [(char. str) ]            Output the value in the name of '(char. str)' in the [dict_map] when condition is       #
-#   |                                            fulfilled                                                                              #
+#   |                 [True        ]  <Default> Output a zero-length placeholder in the same type as the values in <dict_map>           #
+#   |                 [False       ]            Do not output a placeholder                                                             #
+#   |force_mark  :   The name in the <dict_map> with value to force output when there is no mapping result for the input value while    #
+#   |                 the parameter <preserve> is set False.                                                                            #
+#   |                 [...         ]  <Default> Output the value in the name of <'...'> in the <dict_map> when condition is fulfilled   #
+#   |                 [<char. str> ]            Output the value in the provided name in the <dict_map> when condition is fulfilled     #
 #   |fPartial    :   Whether to partially replace the input values by the mapping dictionary                                            #
-#   |                 [FALSE       ]  <Default> Replace the entire string if it matches any name in the dictionary, i.e. DO NOT keep    #
-#   |                                            the rest of the the input [vec] given they are not matched in the dictionary           #
-#   |                 [TRUE        ]            Replace the matching part of the string with the value in the dictionary                #
+#   |                 [False       ]  <Default> Replace the entire string if it matches any name in the dictionary, i.e. DO NOT keep    #
+#   |                                            the rest of the the input <vec> given they are not matched in the dictionary           #
+#   |                 [True        ]            Replace the matching part of the string with the value in the dictionary                #
 #   |PRX         :   Whether to use Perl Regular Expression to conduct the replacement                                                  #
-#   |                 [FALSE       ]  <Default> Match the string without Perl Regular Expression, i.e. no special character patterns    #
-#   |                 [TRUE        ]            Match the string with Perl Regular Expression                                           #
-#   |                 [list/vector ]            Match each element in the input [dict_map] with/without PRX respectively                #
-#   |full_match  :   Whether to match the entire input string within [vec]                                                              #
-#   |                 [TRUE        ]  <Default> The match is valid ONLY WHEN the first match is on the first character AND its length   #
-#   |                                            is the same as the number of characters of the input [vec]                             #
-#   |                 [FALSE       ]            Any sub-string in [vec] that matches anyone in the dictionary will suffice the rule     #
-#   |ignore_case :   Same as that in the official document for [gregexpr]                                                               #
+#   |                 [False       ]  <Default> Match the string without Perl Regular Expression, i.e. no special character patterns    #
+#   |                 [True        ]            Match the string with Perl Regular Expression                                           #
+#   |                 [list/vector ]            Match each element in the input <dict_map> with/without PRX respectively                #
+#   |full_match  :   Whether to match the entire input string within <vec>                                                              #
+#   |                 [True        ]  <Default> The match is valid ONLY WHEN the first match is on the first character AND its length   #
+#   |                                            is the same as the number of characters of the input <vec>                             #
+#   |                 [False       ]            Any sub-string in <vec> that matches anyone in the dictionary will suffice the rule     #
+#   |ignore_case :   Same as that in the official document for <gregexpr>                                                               #
 #   |                 [list/vector ]            Extend the parameter by applying this rule to each element respectively                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ list  ]   :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
-#   |                If the input is only a single string, the output is NO LONGER a list, but the same type of value as in [dict_map]  #
+#   |<list>      :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
+#   |                If the input is only a single string, the output is NO LONGER a list, but the same type of value as in <dict_map>  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -85,8 +87,8 @@ def apply_MapVal(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210317        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add support for [pandas.DataFrame]                                                                                      #
-#   |      |    One can now use the form of [aaa = apply_MapVal(df, **kw)] to process the whole data frame or a batch of columns        #
+#   | Log  |[1] Add support for <pandas.DataFrame>                                                                                      #
+#   |      |    One can now use the form of <aaa = apply_MapVal(df, **kw)> to process the whole data frame or a batch of columns        #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210503        | Version | 1.11        | Updater/Creator | Lu Robin Bin                                                #
@@ -96,14 +98,14 @@ def apply_MapVal(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210620        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Arguments [PRX] and [ignore_case] now only accept [bool] values to reduce the function complexity                       #
-#   |      |[2] Introduce [functools.reduce] to sanitize the function logic (although without performance improvement)                  #
+#   | Log  |[1] Arguments <PRX> and <ignore_case> now only accept <bool> values to reduce the function complexity                       #
+#   |      |[2] Introduce <functools.reduce> to sanitize the function logic (although without performance improvement)                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210624        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the entire function to utilize the helper function for [re.sub], which raises the speed by 30 times             #
-#   |      |[2] Remove the dependency on [functools.reduce]                                                                             #
+#   | Log  |[1] Rewrite the entire function to utilize the helper function for <re.sub>, which raises the speed by 30 times             #
+#   |      |[2] Remove the dependency on <functools.reduce>                                                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210923        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #

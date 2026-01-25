@@ -13,37 +13,24 @@
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to instantiate a User Calender object                                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[Signature Expansion]                                                                                                  #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] Signature of this function is expanded from <CoreUserCalendar>, see its documents for detailed argument list       #
+#   |   |   |   |[2] With the Signature Expansion functionality, one can obtain its correct signature at runtime in below way           #
+#   |   |   |   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[dateBgn      ]   :   Beginning date of the user calendar, provided by any object that can be coerced to [Date] class      #
-#   |   |   |                      [NULL                ]<Default> Same as [clnBgn]                                                     #
-#   |   |   |[dateEnd      ]   :   Ending date of the user calendar, provided by any object that can be coerced to [Date] class         #
-#   |   |   |                      [NULL                ]<Default> Same as [clnEnd]                                                     #
-#   |   |   |[clnBgn       ]   :   Beginning date of the universal calendar, provided by any object that can be coerced to [Date] class #
-#   |   |   |                      [<today - 1 year>    ]<Default> Beginning of the previous year to the system date                    #
-#   |   |   |[clnEnd       ]   :   Ending date of the universal calendar, provided by any object that can be coerced to [Date] class    #
-#   |   |   |                      [<today + 1 year>    ]<Default> End of the next year to the system date                              #
-#   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
-#   |   |   |                      [CN                  ]<Default> China                                                                #
-#   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [NULL                ]<Default> Automatically determined, see [omniR$Dates$CoreUserCalendar]         #
-#   |   |   |                       [IMPORTANT] The file must contain below columns (case sensitive to column names):                   #
-#   |   |   |                                   [CountryCode ] Country Code for selection of adjustment and display of weekday names    #
-#   |   |   |                                   [F_WORKDAY   ] [1/0] values indicating [workday/holiday] respectively                   #
-#   |   |   |                                   [D_DATE      ] Strings to be imported as [Dates] by default option of [readr:read_csv]  #
-#   |   |   |                                   [C_DESC      ] Description/Name of the special dates (compared to: Mon., Tue., etc.)    #
-#   |   |   |[fmtDateIn    ]   :   Format of the [dateBgn] and [dateEnd] to be coerced to [Date] class                                  #
-#   |   |   |                      [<various>           ]<Default> Follow the rules set in [omniR$asDates]                              #
-#   |   |   |[fmtDateOut   ]   :   Format of the output date values to be translated into character strings when necessary              #
-#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see [strftime] convention          #
-#   |   |   |[DateOutAsStr ]   :   Whether to convert the output date values into character strings                                     #
-#   |   |   |                      [False               ]<Default> Output dates directly in the type of [datetime.date]                 #
-#   |   |   |                      [True                ]          Convert dates into strings based on [fmtDateOut]                     #
+#   |   |   |[dateBgn      ]   :   Beginning date of the user calendar, provided by any object that can be coerced to <Date> class      #
+#   |   |   |                      [NULL                ]<Default> Same as <clnBgn>                                                     #
+#   |   |   |[dateEnd      ]   :   Ending date of the user calendar, provided by any object that can be coerced to <Date> class         #
+#   |   |   |                      [NULL                ]<Default> Same as <clnEnd>                                                     #
+#   |   |   |...               :   Any other arguments to expand from its ancestor; see its official document                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not return values, but may assign values to variables for [private] object          #
+#   |   |   |<NULL>            :   This method does not return values, but will assign values to variables for <private> object         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -53,17 +40,17 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to get the [first/last] of [workdays/tradedays] for the specified period                       #
+#   |   |   |   |This method is intended to get the <first/last> of <workdays/tradedays> for the specified period                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[daytype      ]   :   Type of the date to retrieve                                                                         #
+#   |   |   |[daytype      ]   :   <chr> Type of the date to retrieve                                                                   #
 #   |   |   |                      [W                   ]<Default> Extract Workday                                                      #
 #   |   |   |                      [T                   ]          Extract Tradeday                                                     #
-#   |   |   |[.bound       ]   :   Determine whether to retrieve the beginning or ending of the period                                  #
+#   |   |   |[.bound       ]   :   <chr> Determine whether to retrieve the beginning or ending of the period                            #
 #   |   |   |                      [head                ]<Default> Extract the beginning                                                #
 #   |   |   |                      [tail                ]          Extract the end                                                      #
-#   |   |   |[.period      ]   :   Period name to extract the date                                                                      #
+#   |   |   |[.period      ]   :   <chr> Period name to extract the date                                                                #
 #   |   |   |                      [MONTH               ]<Default> Extract the bound of each month                                      #
 #   |   |   |                      [QUARTER             ]          Extract the bound of each QUARTER                                    #
 #   |   |   |                      [WEEK                ]          Extract the bound of each workweek/tradeweek                         #
@@ -71,20 +58,25 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ vec         ]   :   Vector of the extraction result for the entire period of user calendar                               #
+#   |   |   |<Date>            :   Vector of the extraction result for the entire period of user calendar                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |500.   Read-only properties.                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |100.   Description.                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |This section lists all the read-only properties of the class.                                                                  #
-#   |   |The examples listed are based on the provision of: [dateBgn = date(2015,1,1)] and [dateEnd = date(2016,7,3)]                   #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |This section lists all the read-only properties of the class. The examples listed are based on below provision                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |EXAMPLE                                                                                                                        #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[<dateBgn = date(2015,1,1)>]                                                                                                   #
+#   |   |[<dateEnd = date(2016,7,3)>]                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |       Property Name         |                             Value Examples and Property Description                         #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   | params                      | <log> Display the key information for calculation within current instance                   #
-#   |   |   | usrCalendar                 | <data.frame> data frame of the user calendar defined by [datebgn] and [dateend]             #
+#   |   |   | usrCalendar                 | <data.frame> data frame of the user calendar defined by <dateBgn> and <dateEnd>             #
 #   |   |   | kYear                       | <2> # of years that the period covers                                                       #
 #   |   |   | kMth                        | <19> # of months that the period covers                                                     #
 #   |   |   | yearlist                    | <2015,2016> numeric vector of years that the period covers                                  #
@@ -98,70 +90,59 @@
 #   |   |   | kTradeDay                   | <365> # of Trade Days within the period                                                     #
 #   |   |   | d_AllTD                     | <date(20150105),...,date(20160701)> vector of All Trade days                                #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | cd_of_months                | <...> 2-D list: D1 represents all months; D2 represents Calendar Days of each month         #
-#   |   |   |                             | Example: (cdlst = cln$cd_of_months)                                                         #
-#   |   |   |                             | days = sapply(cdlst, function(m){v <- c(m[[1]], m[[length(m)]])})                           #
+#   |   |   | cd_of_months                | <list> names represent all months; values represent Calendar Days of each month             #
 #   |   |   | FirstCDofMon                | <date(20150101),...,date(20160701)> First Calendar Days of each month                       #
 #   |   |   | LastCDofMon                 | <date(20150131),...,date(20160703)> Last Calendar Days of each month                        #
 #   |   |   | kCDofMon                    | <31,...,3> # of Calendar Days of each month                                                 #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | wd_of_months                | <...> 2-D list: D1 represents all months; D2 represents Work Days of each month             #
-#   |   |   |                             | Example: (wdlst = cln$wd_of_months)                                                         #
+#   |   |   | wd_of_months                | <list> names represent all months; values represent Work Days of each month                 #
 #   |   |   | FirstWDofMon                | <date(20150104),...,date(20160701)> First Workdays of each month                            #
 #   |   |   | LastWDofMon                 | <date(20150130),...,date(20160701)> Last Workdays of each month                             #
 #   |   |   | kWDofMon                    | <21,...,1> # of Workdays of each month                                                      #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | td_of_months                | <...> 2-D list: D1 represents all months; D2 represents Trade Days of each month            #
-#   |   |   |                             | Example: (tdlst = cln$td_of_months)                                                         #
+#   |   |   | td_of_months                | <list> names represent all months; values represent Trade Days of each month                #
 #   |   |   | FirstTDofMon                | <date(20150105),...,date(20160701)> First Tradedays of each month                           #
 #   |   |   | LastTDofMon                 | <date(20150130),...,date(20160701)> Last Tradedays of each month                            #
 #   |   |   | kTDofMon                    | <20,...,1> # of Tradedays of each month                                                     #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   | kWorkWeek                   | <77> # of Work Weeks within the period                                                      #
-#   |   |   | workweeks                   | <...> 2-D list: D1 represents all Work Weeks; D2 represents Work Days of each Week          #
-#   |   |   |                             | Example: (wwlst = cln$workweeks)                                                            #
+#   |   |   | workweeks                   | <list> names represent all Work Weeks; values represent Work Days of each Week              #
 #   |   |   | FirstWDofWeek               | <date(20150104),...,date(20160701)> First Workdays of each work week                        #
 #   |   |   | LastWDofWeek                | <date(20150109),...,date(20160701)> Last Workdays of each work week                         #
 #   |   |   | kWDofWeek                   | <6,...,5> # of Workdays of each work week                                                   #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   | kTradeWeek                  | <77> # of Trade Weeks within the period                                                     #
-#   |   |   | tradeweeks                  | <...> 2-D list: D1 represents all Trade Weeks; D2 represents Trade Days of each Week        #
-#   |   |   |                             | Example: (twlst = cln$tradeweeks)                                                           #
+#   |   |   | tradeweeks                  | <list> names represent all Trade Weeks; values represent Trade Days of each Week            #
 #   |   |   | FirstTDofWeek               | <date(20150105),...,date(20160701)> First Tradedays of each trade week                      #
 #   |   |   | LastTDofWeek                | <date(20150109),...,date(20160701)> Last Tradedays of each trade week                       #
 #   |   |   | kTDofWeek                   | <5,...,5> # of Tradedays of each trade week                                                 #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | cd_of_quarters              | <...> 2-D list: D1 represents all quarters; D2 represents Calendar Days of each quarter     #
-#   |   |   |                             | Example: (qlst = cln$cd_of_quarters)                                                        #
-#   |   |   |                             | days = sapply(qlst, function(m){v <- c(m[[1]], m[[length(m)]])})                            #
+#   |   |   | cd_of_quarters              | <list> names represent all quarters; values represent Calendar Days of each quarter         #
 #   |   |   | FirstCDofQtr                | <date(20150101),...,date(20160701)> First Calendar Days of each quarter                     #
 #   |   |   | LastCDofQtr                 | <date(20150331),...,date(20160703)> Last Calendar Days of each quarter                      #
 #   |   |   | kCDofQtr                    | <90,...,3> # of Calendar Days of each quarter                                               #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | wd_of_quarters              | <...> 2-D list: D1 represents all quarters; D2 represents Work Days of each quarter         #
-#   |   |   |                             | Example: (qlst = cln$wd_of_quarters)                                                        #
-#   |   |   |                             | days = sapply(qlst, function(m){v <- c(m[[1]], m[[length(m)]])})                            #
+#   |   |   | wd_of_quarters              | <list> names represent all quarters; values represent Work Days of each quarter             #
 #   |   |   | FirstWDofQtr                | <date(20150104),...,date(20160701)> First Workdays of each quarter                          #
 #   |   |   | LastWDofQtr                 | <date(20150331),...,date(20160701)> Last Workdays of each quarter                           #
 #   |   |   | kWDofQtr                    | <60,...,1> # of Workdays of each quarter                                                    #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | td_of_quarters              | <...> 2-D list: D1 represents all quarters; D2 represents Trade Days of each quarter        #
-#   |   |   |                             | Example: (qlst = cln$td_of_quarters)                                                        #
+#   |   |   | td_of_quarters              | <list> names represent all quarters; values represent Trade Days of each quarter            #
 #   |   |   | FirstTDofQtr                | <date(20150105),...,date(20160701)> First Tradedays of each quarter                         #
 #   |   |   | LastTDofQtr                 | <date(20150331),...,date(20160701)> Last Tradedays of each quarter                          #
 #   |   |   | kTDofQtr                    | <57,...,1> # of Tradedays of each quarter                                                   #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | cd_of_years                 | <...> 2-D list: D1 represents all years; D2 represents Calendar Days of each year           #
+#   |   |   | cd_of_years                 | <list> names represent all years; values represent Calendar Days of each year               #
 #   |   |   | FirstCDofYear               | <date(20150101),...,date(20160101)> First Calendar Days of each year                        #
 #   |   |   | LastCDofYear                | <date(20151231),...,date(20160703)> Last Calendar Days of each year                         #
 #   |   |   | kCDofYear                   | <365,185> # of Calendar Days of each year                                                   #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | wd_of_years                 | <...> 2-D list: D1 represents all years; D2 represents Work Days of each year               #
+#   |   |   | wd_of_years                 | <list> names represent all years; values represent Work Days of each year                   #
 #   |   |   | FirstWDofYear               | <date(20150104),...,date(20160104)> First Workdays of each year                             #
 #   |   |   | LastWDofYear                | <date(20151231),...,date(20160701)> Last Workdays of each year                              #
 #   |   |   | kWDofYear                   | <249,124> # of Workdays of each year                                                        #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | td_of_years                 | <...> 2-D list: D1 represents all years; D2 represents Trade Days of each year              #
+#   |   |   | td_of_years                 | <list> names represent all years; values represent Trade Days of each year                  #
 #   |   |   | FirstTDofYear               | <date(20150105),...,date(20160104)> First Tradedays of each year                            #
 #   |   |   | LastTDofYear                | <date(20150130),...,date(20160701)> Last Tradedays of each year                             #
 #   |   |   | kTDofYear                   | <244,121> # of Tradedays of each year                                                       #
@@ -175,32 +156,38 @@
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the beginning date of the subset of universal calendar, e.g. for loop usage   #
-#   |   |   |   |[1] When [set] is called, it changes [private$.dateBgn]                                                                #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.dateBgn]                                           #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.dateBgn>                                                                #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.dateBgn>                                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to [Date] class                      #
+#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to <Date> class                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<vec/list>   ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<vec/list>        :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[dateEnd]                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the ending date of the subset of universal calendar, e.g. for loop usage      #
-#   |   |   |   |[1] When [set] is called, it changes [private$.dateEnd]                                                                #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.dateEnd]                                           #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.dateEnd>                                                                #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.dateEnd>                                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to [Date] class                      #
+#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to <Date> class                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<vec/list>   ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<vec/list>        :   The same values as the previous input by the user                                                    #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -214,13 +201,19 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210904        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Set default [clnBgn] as Jan 1st of the previous year to current one, and [clnEnd] as Dec 31st of the next year to       #
+#   | Log  |[1] Set default <clnBgn> as Jan 1st of the previous year to current one, and <clnEnd> as Dec 31st of the next year to       #
 #   |      |     current one, given none of the dates is provided. This is the minimum reasonable period for processing.                #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251231        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to simplify the initialization arguments                                                    #
+#   |      |[2] Enhance the logic when <clnBgn> or <clnEnd> is not provided at initialization                                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -235,15 +228,16 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |match.arg.x                                                                                                                #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |CoreUserCalendar                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -265,98 +259,137 @@ library(magrittr)
 if (!require(R6)) install.packages(R6)
 
 #100. Prepare the Class.
-UserCalendar <- R6::R6Class('UserCalendar'
+UserCalendar <- local({
+#100. Prepare a decorated initialization structure as parametric signature expansion
+#[ASSUMPTION]
+#[1] By instantiation of below class, we resemble a <class decorator> in Python
+deco <- ExpandSignature$new(CoreUserCalendar$public_methods$initialize, instance = 'eSig')
+
+.init. <- deco$wrap(function(
+	dateBgn = NULL
+	,dateEnd = NULL
+	,...
+){
+	#020. Local environment
+	dots <- rlang::list2(...)
+	args_share <- list()
+	eSig$vfyConflict(args_share)
+	self$.eSig. <- eSig
+	args_in <- self$.eSig.$updParams(args_share, dots)
+
+	#100. Assign values to local variables
+	private$classname <- head(class(self),1)
+	super$fmtDateIn = self$.eSig.$getParam('fmtDateIn', args_in, inc_default = T) %>% eval()
+	fr_default_clnBgn <- self$.eSig.$isDefault('clnBgn', scope_ = 'src') %>% eval()
+	fr_default_clnEnd <- self$.eSig.$isDefault('clnEnd', scope_ = 'src') %>% eval()
+
+	#300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
+	#310. Identify the valid dates from the input
+	int_clnBgn <- asDates(self$.eSig.$getParam('clnBgn', args_in, inc_default = T) %>% eval(), super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+	int_clnEnd <- asDates(self$.eSig.$getParam('clnEnd', args_in, inc_default = T) %>% eval(), super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+	int_dateBgn <- asDates(dateBgn, super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+	int_dateEnd <- asDates(dateEnd, super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+
+	#317. Raise exception for invalid input
+	if (length(int_dateBgn) > 1){
+		stop('[',private$classname,']Multiple <dateBgn> provided!')
+	}
+	if (length(int_dateEnd) > 1){
+		stop('[',private$classname,']Multiple <dateEnd> provided!')
+	}
+	if (length(int_clnBgn) > 1){
+		stop('[',private$classname,']Multiple <clnBgn> provided!')
+	}
+	if (length(int_clnEnd) > 1){
+		stop('[',private$classname,']Multiple <clnEnd> provided!')
+	}
+	if (length(int_dateBgn) == 0 && length(int_clnBgn) == 0){
+		stop('[',private$classname,']Both <dateBgn> and <clnBgn> are invalid!')
+	}
+	if (length(int_dateEnd) == 0 && length(int_clnEnd) == 0){
+		stop('[',private$classname,']Both <dateEnd> and <clnEnd> are invalid!')
+	}
+
+	#319. Warn for invalid input that can be overridden
+	if (length(int_clnBgn) == 0){
+		warning('[',private$classname,']<clnBgn> is invalid and deemed the same as <dateBgn>!')
+	}
+	if (length(int_clnEnd) == 0){
+		warning('[',private$classname,']<clnEnd> is invalid and deemed the same as <dateEnd>!')
+	}
+
+	#340. Transform the beginning when necessary
+	if (length(int_dateBgn) == 1){
+		if (fr_default_clnBgn || (length(int_clnBgn) == 0)) {
+			int_clnBgn <- int_dateBgn
+		}
+	}
+
+	#370. Transform the ending when necessary
+	if (length(int_dateEnd) == 1){
+		if (fr_default_clnEnd || (length(int_clnEnd) == 0)) {
+			int_clnEnd <- int_dateEnd
+		}
+	}
+
+	#500. Instantiate parent class
+	#[For methods/variables (i.e. members) set in parent class]
+	#[1] After the instantiation of parent class, all its [private] members will have been localized
+	#[2] We have to use [private$] syntax for referencing the [private] members in parent class
+	#[3] We have to use [super$] syntax for referencing the [public] and [active] members in parent class
+	#[For members set in current class]
+	#[1] We have to use [self$] syntax for referencing the [public] and [active] members in current class
+	args_upd = list(
+		'clnBgn' = int_clnBgn
+		,'clnEnd' = int_clnEnd
+	)
+	args_super <- self$.eSig.$updParams(args_upd, args_in)
+	do.call(super$initialize, args_super)
+
+	#700. Assign values to local variables
+	#We cannot call methods to assign below values, for they are mutually bound to verification against each other.
+	if (length(int_dateBgn)==0) private$.dateBgn <- super$clnBgn
+	else private$.dateBgn <- int_dateBgn
+	if (length(int_dateEnd)==0) private$.dateEnd <- super$clnEnd
+	else private$.dateEnd <- int_dateEnd
+
+	#709. Raise warning if the user required period exceeds the universal calendar
+	if ( (self$dateBgn < super$clnBgn) | (self$dateEnd > super$clnEnd) ){
+		stop(
+			'[',private$classname,']User requested period exceeds the universal calendar!\n'
+			,'[dateBgn]=[',self$dateBgn,'][dateEnd]=[',self$dateEnd,']'
+			,'[clnBgn]=[',super$clnBgn,'][clnEnd]=[',super$clnEnd,']'
+		)
+	}
+
+	#800. Create the user calendar
+	private$.usrclndr <- private$.subCalendar(
+		datebgn = self$dateBgn
+		,dateend = self$dateEnd
+	)
+})
+
+#900. Export the complete definition of the class
+myclass <- do.call(R6::R6Class, list(
+	classname = 'UserCalendar'
 	,inherit = CoreUserCalendar
 	,public = list(
 		#Below link demonstrates the way to initialize an R6 Class together with its parent class generator
 		#[Quote: https://stackoverflow.com/questions/35925664/change-initialize-method-in-subclass-of-an-r6-class ]
 		#Below link demonstrates the way to find all ancestors of an R6 Class recursively
 		#[Quote: https://stackoverflow.com/questions/37303552/r-r6-get-full-class-name-from-r6generator-object ]
-		initialize = function(
-			dateBgn = NULL
-			,dateEnd = NULL
-			,clnBgn = NULL
-			,clnEnd = NULL
-			,countrycode = 'CN'
-			,CalendarAdj = getOption('ClndrAdj')
-			,fmtDateIn = c('%Y%m%d', '%Y-%m-%d', '%Y/%m/%d')
-			,fmtDateOut = '%Y%m%d'
-			,DateOutAsStr = F
-		){
-			#001. Handle parameters
-
-			#300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
-			#310. Identify the valid dates from the input
-			int_clnBgn <- asDates(clnBgn, fmtDateIn)
-			int_clnBgn <- int_clnBgn[!is.na(int_clnBgn)]
-			int_clnEnd <- asDates(clnEnd, fmtDateIn)
-			int_clnEnd <- int_clnEnd[!is.na(int_clnEnd)]
-			int_dateBgn <- asDates(dateBgn, fmtDateIn)
-			int_dateBgn <- int_dateBgn[!is.na(int_dateBgn)]
-			int_dateEnd <- asDates(dateEnd, fmtDateIn)
-			int_dateEnd <- int_dateEnd[!is.na(int_dateEnd)]
-
-			#340. Transform the beginning when necessary
-			if (length(int_clnBgn) != 1) {
-				if (length(int_dateBgn) != 1) {
-					int_clnBgn <- lubridate::make_date(lubridate::year(lubridate::today()) - 1, 1, 1)
-				} else {
-					int_clnBgn <- int_dateBgn
-				}
-			}
-			if (length(int_clnEnd) != 1) {
-				if (length(int_dateEnd) != 1) {
-					int_clnEnd <- lubridate::make_date(lubridate::year(lubridate::today()) + 1, 12, 31)
-				} else {
-					int_clnEnd <- int_dateEnd
-				}
-			}
-
-			#500. Instantiate parent class
-			#[For methods/variables (i.e. members) set in parent class]
-			#[1] After the instantiation of parent class, all its [private] members will have been localized
-			#[2] We have to use [private$] syntax for referencing the [private] members in parent class
-			#[3] We have to use [super$] syntax for referencing the [public] and [active] members in parent class
-			#[For members set in current class]
-			#[1] We have to use [self$] syntax for referencing the [public] and [active] members in current class
-			super$initialize(
-				clnBgn = int_clnBgn
-				,clnEnd = int_clnEnd
-				,countrycode = countrycode
-				,CalendarAdj = CalendarAdj
-				,fmtDateIn = fmtDateIn
-				,fmtDateOut = fmtDateOut
-				,DateOutAsStr = DateOutAsStr
-			)
-
-			#700. Assign values to local variables
-			#We cannot call methods to assign below values, for they are mutually bound to verification against each other.
-			if (length(int_dateBgn)==0) private$.dateBgn <- super$clnBgn
-			else private$.dateBgn <- int_dateBgn
-			if (length(int_dateEnd)==0) private$.dateEnd <- super$clnEnd
-			else private$.dateEnd <- int_dateEnd
-
-			#709. Raise warning if the user required period exceeds the universal calendar
-			if ( (self$dateBgn < super$clnBgn) | (self$dateEnd > super$clnEnd) ){
-				warning('[',private$classname,']User requested period exceeds the universal calendar! Result is unexpected!')
-				stop(
-					'[',private$classname,']'
-					,'[dateBgn]=[',self$dateBgn,'][dateEnd]=[',self$dateEnd,']'
-					,'[clnBgn]=[',super$clnBgn,'][clnEnd]=[',super$clnEnd,']'
-				)
-			}
-
-			#800. Create the user calendar
-			private$.usrclndr <- private$.subCalendar(
-				datebgn = self$dateBgn
-				,dateend = self$dateEnd
-			)
-		}
+		initialize = .init.
+		,.eSig. = NULL
 	)
 	,private = list(
 		.usrclndr = NULL
 		,.dateBgn = NULL
 		,.dateEnd = NULL
+		,classname = NULL
 		,.getBoundOfPeriod = function(
 			daytype = c('W','T')
 			,.bound = c('head','tail')
@@ -423,20 +456,20 @@ UserCalendar <- R6::R6Class('UserCalendar'
 
 			#100. Reset the user requested beginning to that of the universal calendar if it is provided but with no value
 			if (length(udate)==0) {
-				warning('[',private$classname,']No value is provided for [User Calendar Beginning], reset it to lower bound.')
+				warning('[',private$classname,']No value is provided for [Beginning], reset it to lower bound.')
 				udate <- super$clnBgn
 			}
 
 			#300. Translate the input values if any
 			tmpdate <- asDates(udate, fmt = super$fmtDateIn)
 			if (length(tmpdate)>1) {
-				warning('[',private$classname,']Multiple values provided for [User Calendar Beginning], only the first one is used.')
+				warning('[',private$classname,']Multiple values provided for [Beginning], only the first one is used.')
 				tmpdate <- head(tmpdate, 1)
 			}
 
 			#700. Reset it if it exceeds the boundary of the calendar
 			if (tmpdate < super$clnBgn | tmpdate > private$.dateEnd) {
-				warning('[',private$classname,']Input value for [User Calendar Beginning] exceeds the boundary, reset it to lower bound.')
+				warning('[',private$classname,']Input value for [Beginning] exceeds the boundary, reset it to lower bound.')
 				tmpdate <- super$clnBgn
 			}
 
@@ -456,20 +489,20 @@ UserCalendar <- R6::R6Class('UserCalendar'
 
 			#100. Reset the user requested ending to that of the universal calendar if it is provided but with no value
 			if (length(udate)==0) {
-				warning('[',private$classname,']No value is provided for [User Calendar Ending], reset it to upper bound.')
+				warning('[',private$classname,']No value is provided for [Ending], reset it to upper bound.')
 				udate <- super$clnEnd
 			}
 
 			#300. Translate the input values if any
 			tmpdate <- asDates(udate, fmt = super$fmtDateIn)
 			if (length(tmpdate)>1) {
-				warning('[',private$classname,']Multiple values provided for [User Calendar Ending], only the first one is used.')
+				warning('[',private$classname,']Multiple values provided for [Ending], only the first one is used.')
 				tmpdate <- head(tmpdate, 1)
 			}
 
 			#700. Reset it if it exceeds the boundary of the calendar
 			if (tmpdate > super$clnEnd | tmpdate < private$.dateBgn) {
-				warning('[',private$classname,']Input value for [User Calendar Ending] exceeds the boundary, reset it to upper bound.')
+				warning('[',private$classname,']Input value for [Ending] exceeds the boundary, reset it to upper bound.')
 				tmpdate <- super$clnEnd
 			}
 
@@ -933,7 +966,9 @@ UserCalendar <- R6::R6Class('UserCalendar'
 			sapply(self$td_of_years, function(m){length(m)}, USE.NAMES = T)
 		}
 	)
-)
+))
+return(myclass)
+})
 
 #-Notes- -Begin-
 #Full Test Program[1]:
@@ -974,10 +1009,34 @@ if (FALSE){
 		#410. Work Days of Months.
 		wdlst <- cln$wd_of_months
 
-		#710. Last Work days of all quarters in the period respectively.
+		#611. Last Work days of all quarters in the period respectively.
 		cln2 <- UserCalendar$new('20201011', '20210103')
 		cln2$usrCalendar %>% View()
 		qtrlst <- cln2$wd_of_quarters
+
+		#700. Test invalid input
+		#710. Provide no parameter
+		#[ASSUMPTION]
+		#[1] In such case, <clnBgn> and <clnEnd> are not provided and the instance falls back to their respective default values,
+		#     hence there is no warning message
+		#[2] It has the same behavior as when <dateBgn> and <dateEnd> are provided while <clnBgn> and <clnEnd> are not
+		cln <- UserCalendar$new()
+		sprintf('cln$dateBgn=%s, cln$dateEnd=%s', cln$dateBgn %>% strftime('%Y%m%d'), cln$dateEnd %>% strftime('%Y%m%d'))
+		# [1] "cln$dateBgn=20210104, cln$dateEnd=20260202"
+
+		#730. Provide invalid parameters
+		#[ASSUMPTION]
+		#[1] In such case, <clnBgn> and/or <clnEnd> are provided with invalid dates, the instance tries to overwrite them with the
+		#     requested dates with a warning message
+		cln <- UserCalendar$new(dateBgn = '20260101', dateEnd = '20260102', clnBgn = NULL, clnEnd = NULL)
+		# Warning messages:
+		# 1: In (function (dateBgn = NULL, dateEnd = NULL, ...)  :
+		#   [UserCalendar]<clnBgn> is invalid and deemed the same as <dateBgn>!
+		# 2: In (function (dateBgn = NULL, dateEnd = NULL, ...)  :
+		#   [UserCalendar]<clnEnd> is invalid and deemed the same as <dateEnd>!
+
+		sprintf('cln$dateBgn=%s, cln$dateEnd=%s', cln$dateBgn %>% strftime('%Y%m%d'), cln$dateEnd %>% strftime('%Y%m%d'))
+		# [1] "cln$dateBgn=20260101, cln$dateEnd=20260102"
 	}
 }
 #-Notes- -End-

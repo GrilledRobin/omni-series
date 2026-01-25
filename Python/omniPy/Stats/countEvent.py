@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def countEvent( inDAT , event = 1 ) -> 'Count the Event and Non-Event from a DataFrame or Series':
-    #000.   Info.
-    """
+import sys
+import numpy as np
+import pandas as pd
+
+def countEvent( inDAT , event = 1 ) -> tuple[int, int]:
+    #000. Info.
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -16,12 +20,13 @@ def countEvent( inDAT , event = 1 ) -> 'Count the Event and Non-Event from a Dat
 #   |inDAT      :   The input pd.DataFrame or pd.Series, in which to count the Event as well as Non-Event in terms of the condition.    #
 #   |               IMPORTANT: This input should be 1-Dimensional                                                                       #
 #   |event      :   The value that represents the Event                                                                                 #
-#   |               DEFAULT : [1]                                                                                                       #
+#   |               [int <1>    ]<Default> Use this value as <Positive> for the calculation                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |k_Event    :   [int]The count of Event                                                                                             #
-#   |k_NonEvent :   [int]The count of the rest observations/records except the Event                                                    #
+#   |<tuple>    :   2-tuple as described below:                                                                                         #
+#   |               k_Event    :   <int> The count of Event                                                                             #
+#   |               k_NonEvent :   <int> The count of the rest observations/records except the Event                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -37,47 +42,38 @@ def countEvent( inDAT , event = 1 ) -> 'Count the Event and Non-Event from a Dat
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas                                                                                                                    #
+#   |   |sys, pandas, numpy                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
+    '''
 
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import sys
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( inDAT , ( pd.DataFrame , pd.Series ) ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame] or [pd.Series]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame] or [pd.Series]! Given [{type(inDAT)}]')
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #100.   Retrieve the count of [Event] in the provided dataframe.
-    k_Event : int64 = ( inDAT == event ).sum()
+    #100. Retrieve the count of [Event] in the provided dataframe.
+    k_Event : np.int64 = ( inDAT == event ).sum()
 
-    #200.   Count the rest observations.
-    k_NonEvent : int64 = inDAT.shape[0] - k_Event
+    #200. Count the rest observations.
+    k_NonEvent : np.int64 = inDAT.shape[0] - k_Event
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-
-    #900.   Output.
+    #900. Output.
     return( k_Event , k_NonEvent )
 #End countEvent
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
+if __name__=='__main__':
     #010.   Create envionment.
     import pandas as pd
     import sys
@@ -93,4 +89,4 @@ if __name__=="__main__":
     #200.   Retrieve the counts of True values and False values.
     k_True , k_False = countEvent( data['y_label'] )
 #-Notes- -End-
-"""
+'''

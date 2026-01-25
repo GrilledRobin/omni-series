@@ -19,15 +19,17 @@ def getMSDNKnownFolderIDDoc(
     ,update = False
     ,save_hdf = os.path.join(os.path.dirname(path_thisfile), 'getMSDNKnownFolderIDDoc.hdf')
     ,key_hdf = 'KnownFolders'
-) -> 'Get the document of [Known Folders on Windows OS] from MSDN and export a readable table':
+) -> pd.DataFrame:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to get the document of [Known Folders on Windows OS] from MSDN and export a readable table               #
+#   |This function is intended to get the document of <Known Folders on Windows OS> from MSDN and export a readable table               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[NOTE] Specify [update=True] for the first time and then [update=False] for the rest time to save internet connection              #
+#   |[NOTE]                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Specify <update=True> for the first time and then <update=False> for the rest time to save internet connection                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -38,19 +40,19 @@ def getMSDNKnownFolderIDDoc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |lang        :   The language that indicates the URL from which to scrape the contents of dedicated <table>                         #
-#   |update      :   Whether to update the document from the latest URL                                                                 #
-#   |                 [False       ] <Default> Use the existing [HDF] storage by default, in case there is no internet connection       #
-#   |                 [True        ]           Update the existing [HDF] storage by the latest URL at the mean time                     #
-#   |save_hdf    :   The HDF storage to store the data scraped from the URL                                                             #
-#   |                 [<str>       ] <Default> HDF storage in the same directory as this script, see function definition                #
-#   |key_hdf     :   The <key> in the HDF storage to store the data scraped from the URL                                                #
+#   |lang        :   <str > The language that indicates the URL from which to scrape the contents of dedicated <table>                  #
+#   |update      :   <bool> Whether to update the document from the latest URL                                                          #
+#   |                 [False       ] <Default> Use the existing <HDF> storage by default, in case there is no internet connection       #
+#   |                 [True        ]           Update the existing <HDF> storage by the latest URL at the mean time                     #
+#   |save_hdf    :   <str > The HDF storage to store the data scraped from the URL                                                      #
+#   |                 [<str>       ] <Default> <HDF> storage in the same directory as this script, see function definition              #
+#   |key_hdf     :   <str > The <key> in the <HDF> storage to store the data scraped from the URL                                       #
 #   |                 [KnownFolders] <Default> The default <key>                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<df>        :   Data Frame with below columns                                                                                      #
-#   |                [FOLDERID             ] ID of Known Folders, which can be prefixed by [FOLDERID_] to represent the constant in C   #
+#   |<df>        :   <pd.DataFrame> Data Frame with below columns                                                                       #
+#   |                [FOLDERID             ] ID of Known Folders, which can be prefixed by <FOLDERID_> to represent the constant in C   #
 #   |                [GUID                 ] The GUID to search in Windows Registry                                                     #
 #   |                [Display Name         ] The Display Name of the dedicated folder in the Display Language of current Windows OS     #
 #   |                [Folder Type          ] Type of the folder for identification by group                                             #
@@ -78,7 +80,7 @@ def getMSDNKnownFolderIDDoc(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |   |getWinUILanguage                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#

@@ -1,33 +1,33 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert an [htmlwidget] into character vector                                                         #
+#   |This function is intended to convert an <htmlwidget> into character vector                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://github.com/rstudio/DT/issues/410                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] This is the very first among the helper functions that enables one to insert [htmlwidget] into cells of [DT::datatable]       #
+#   |[01] This is the very first among the helper functions that enables one to insert <htmlwidget> into cells of <DT::datatable>       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Method to insert htmlwidgets into datatable]                                                                                      #
+#   |[Method to insert <htmlwidgets> into <datatable>]                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[10] Convert htmlwidget into character version; using function [as.character.htmlwidget]                                           #
-#   |[20] Make sure [escape = FALSE]                                                                                                    #
-#   |[30] Add static render callback; using function [add_datatable_render_code]                                                        #
-#   |[40] Add dependencies for the htmlwidget being used; using function [add_deps]                                                     #
+#   |[10] Convert <htmlwidget> into character version; using function <as.character.htmlwidget>                                         #
+#   |[20] Make sure <escape = FALSE>                                                                                                    #
+#   |[30] Add static render callback; using function <add_datatable_render_code>                                                        #
+#   |[40] Add dependencies for the <htmlwidget> being used; using function <add_deps>                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x           :   The [htmlwidget] to convert. Call [class(x)] to see if it is [htmlwidget].                                         #
-#   |...         :   See document for [htmltools:::as.character.shiny.tag.list]                                                         #
+#   |x           :   The <htmlwidget> to convert. Call <class(x)> to see if it is <htmlwidget>.                                         #
+#   |...         :   See document for <htmltools:::as.character.shiny.tag.list>                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>       :   Character vector the represents the translated html tags of the widget                                             #
+#   |<chr>       :   Character vector the represents the translated html tags of the widget                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

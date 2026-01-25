@@ -2,7 +2,10 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to obtain a part, from either left or right at any depth, of the path defined in the input vector        #
-#   |Quote: https://stackoverflow.com/questions/17315431/parent-directory-in-r                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[QUOTE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/17315431/parent-directory-in-r                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[SCENARIO]                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -13,8 +16,8 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |path        :   <character> vector to be recognized as paths on the computer                                                       #
-#   |depth       :   <integer> vector at length 1 to indicate the depth by which to obtain the sub-paths, float is coerced as integer   #
+#   |path        :   <chr    > vector to be recognized as paths on the computer                                                         #
+#   |depth       :   <int    > vector at length 1 to indicate the depth by which to obtain the sub-paths, float is coerced as integer   #
 #   |.coerce     :   <logical> vector at length 1 to indicate whether to ignore <depth> which is beyond the actual depth of any <path>  #
 #   |                 [TRUE        ] <Default> Force return the most available depth of paths, e.g. return the left-most sub-path when  #
 #   |                                           <path> has the depth of 3 and <depth> is provided 5 as <FUN> indicates <tail>           #
@@ -22,7 +25,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<str>       :   The extracted sub-paths in the same length as <path>                                                               #
+#   |<chr>       :   The extracted sub-paths in the same length as <path>                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

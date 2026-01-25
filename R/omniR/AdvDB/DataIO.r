@@ -70,7 +70,7 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |.attr             :   <str     > Name of the dedicated API to register, e.g. SAS, R or RAM                                 #
+#   |   |   |.attr             :   <str     > Name of the dedicated API to register, e.g. <SAS>, <R> or <RAM>                           #
 #   |   |   |apiPullHdl        :   <function> Function with only one argument as handler to process the data pulled at once             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
 #   |   |   |                      [<function>          ]          Function to process the pulled data                                  #
@@ -219,7 +219,7 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This property is to retrieve all the available <push> and <push> methods regardless of API names                       #
+#   |   |   |   |This property is to retrieve all the available <pull> and <push> methods regardless of API names                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -234,7 +234,7 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This property is to retrieve all in-RAM <push> and <push> methods regardless of API names                              #
+#   |   |   |   |This property is to retrieve all in-RAM <pull> and <push> methods regardless of API names                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -264,8 +264,8 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This property is to retrieve the status of all available APIs, <True> means the API is activated and instantiated,     #
-#   |   |   |   | <False> is otherwise                                                                                                  #
+#   |   |   |   |This property is to retrieve the status of all available APIs, <TRUE> means the API is activated and instantiated,     #
+#   |   |   |   | <FALSE> is otherwise                                                                                                  #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -817,7 +817,7 @@ if (FALSE){
 
 		#560. Change the handler of <pull> method for the API
 		#561. Prepare the function to remove the required column from the data frame
-		h_remcol <- function(x){x %>% dplyr::select(-tidyselect::any_of(c('bb','kk')))}
+		h_remcol <- function(x){x %>% dplyr::select(-dplyr::any_of(c('bb','kk')))}
 
 		#563. Modify the handler
 		#[ASSUMPTION]

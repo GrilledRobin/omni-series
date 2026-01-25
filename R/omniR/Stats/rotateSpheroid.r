@@ -6,14 +6,14 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[ASSUMPTION]                                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] The spheroid has the center as [0,0,0] and a standard form as [X^2 + Y^2 + Z^2 == 1]                                           #
-#   |[2] Direct3D and the plugin Element3D (from Video Copilot) for Adobe After Effects, as well as many other 3D modeling environments,#
-#   |     use the <left-handed cartesian coordinates> to draw 3D objects.                                                               #
-#   |    https://baike.baidu.com/item/%E5%B7%A6%E6%89%8B%E5%9D%90%E6%A0%87%E7%B3%BB/9171764?fr=ge_ala                                   #
-#   |[3] Adobe After Effects draw video clips with <right-handed cartesian coordinates>                                                 #
+#   |[1] The spheroid has the center as <[0,0,0]> and a standard form as <X^2 + Y^2 + Z^2 == 1>                                         #
+#   |[2] <Direct3D> and the plugin <Element 3D> (from <Video Copilot>) for <Adobe\u00AE After Effects>, as well as many other 3D        #
+#   |     modeling environments, use the <left-handed cartesian coordinates> to draw 3D objects.                                        #
+#   |    Quote: https://baike.baidu.com/item/%E5%B7%A6%E6%89%8B%E5%9D%90%E6%A0%87%E7%B3%BB/9171764?fr=ge_ala                            #
+#   |[3] <Adobe\u00AE After Effects> draw video clips with <right-handed cartesian coordinates>                                         #
 #   |[4] The only factor that impacts the result is whether the point itself moves or the axes rotate                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Reference]                                                                                                                        #
+#   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Rotation on spheroid: https://wenku.baidu.com/view/8be9144b1db91a37f111f18583d049649b660e83.html?_wkts_=1728186022243          #
 #   |[2] Rotation on ellipse: https://blog.csdn.net/u014779685/article/details/136454696                                                #
@@ -22,38 +22,38 @@
 #   |[5] Rotation on Left-handed system: https://blog.csdn.net/qq_20828983/article/details/81481437                                     #
 #   |[6] DCM is the same of Left/Right, only different on the positive directions: https://zhuanlan.zhihu.com/p/677674288               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Calculate the new position of a point when only rotating it along the spheroidal surface in a 3D system                        #
-#   |[2] Attach the <light source> to the E3D objects in Adobe After Effects, to simulate a rotating Sun around the planet              #
+#   |[2] Attach the <light source> to the E3D objects in <Adobe\u00AE After Effects>, to simulate a rotating Sun around the planet      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |X,Y,Z        :   Coordinate on 3D axes on the surface of a unit sphere                                                             #
-#   |rotX,Y,Z     :   Arcs to rotate the axes                                                                                           #
+#   |X,Y,Z        :   <num    > Coordinate on 3D axes on the surface of a unit sphere                                                   #
+#   |rotX,Y,Z     :   <num    > Arcs to rotate the axes                                                                                 #
 #   |                 [0.0            ]  <Default> Do not rotate the vector                                                             #
-#   |moveX,Y,Z    :   Values as coordinate to shift the vector                                                                          #
+#   |moveX,Y,Z    :   <num    > Values as coordinate to shift the vector                                                                #
 #   |                 [0.0            ]  <Default> Do not shift the vector                                                              #
-#   |scaleX,Y,Z   :   Multipliers to scale the axes                                                                                     #
+#   |scaleX,Y,Z   :   <num    > Multipliers to scale the axes                                                                           #
 #   |                 [1.0            ]  <Default> Do not scale the axes                                                                #
-#   |rotSeq       :   Sequence of the rotation on axes, currently only support <extrinsic> rotations, see official document of the      #
-#   |                  Python method <scipy.spatial.transform.Rotation.from_euler>                                                      #
-#   |                 [IMPORTANT] Different sequences result in different new positions                                                 #
+#   |rotSeq       :   <chr    > Sequence of the rotation on axes, currently only support <extrinsic> rotations, see official document of#
+#   |                  the <Python> method <scipy.spatial.transform.Rotation.from_euler>                                                #
 #   |                 [xyz            ]  <Default> Rotate X axis, then Y, then Z                                                        #
-#   |                 [Perm<x,y,z>    ]            Other permutations of the 3 axis names                                               #
-#   |tolSurface   :   Tolerance when verifying whether the provided coordinates represents a point on the dedicated spheroid            #
+#   |                 [Perm(<x,y,z>)  ]            Other permutations of the 3 axis names                                               #
+#   |                  [IMPORTANT] Different sequences result in different new positions                                                #
+#   |tolSurface   :   <num    > Tolerance when verifying whether the provided coordinates represents a point on the dedicated spheroid  #
 #   |                 [<see def.>     ]  <Default> Use the generally sufficient tolerance level                                         #
-#   |moveOf       :   Whether to move the point (holding the axes static) or rotate the axes (holding the position of the point)        #
-#   |                 [A<xis>         ]  <Default> Rotate the axes by holding the position of the provided point                        #
-#   |                 [P<oint>        ]            Move the point by holding the axes static                                            #
-#   |invRotX,Y,Z  :   If True then the inverse of the rotation(s) is applied to the input vectors. Default is False.                    #
+#   |moveOf       :   <chr    > Whether to move the point (holding the axes static) or the axes (holding the position of the point)     #
+#   |                 [A/Axis         ]  <Default> Rotate the axes by holding the position of the provided point                        #
+#   |                 [P/Point        ]            Move the point by holding the axes static                                            #
+#   |invRotX,Y,Z  :   <logical> If True then the inverse of the rotation(s) is applied to the input vectors. Default is False.          #
 #   |                 [FALSE          ]  <Default> Rotate in the classic way                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<matrix>     :   matrix [N,3] where N is the number of elements in the provided vectors X, Y and Z                                 #
+#   |<Matrix>     :   Matrix of <[N,3]> where <N> is the number of elements in the provided vectors <X>, <Y> and <Z>                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -64,7 +64,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20241009        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Corrected the logic by <Reference [6]>                                                                                  #
+#   | Log  |[1] Corrected the logic by <Reference 6>                                                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

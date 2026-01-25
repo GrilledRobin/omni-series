@@ -47,21 +47,21 @@
 #   |                |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>      #
 #   |                |                |           | It can be empty for data type <RAM>                                                 #
 #   |                |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                          #
-#   |                |DF_NAME         |Yes        | For some cases, such as [inDatType=HDFS] there should be such an additional field   #
+#   |                |DF_NAME         |Yes        | For some cases, such as <inDatType=HDFS> there should be such an additional field   #
 #   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
-#   |                |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [HDFS]              #
-#   |                |options         |Yes        | Literal string representation of <list> representing the options used for the API   #
+#   |                |                |           | It is required if <C_KPI_FILE_TYPE> on any record is similar to <HDFS>              #
+#   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
 #   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
-#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
-#   |                                      variable [trans_var].                                                                        #
-#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
-#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                [    IMPORTANT     ] Program will translate several columns in below way as per requested by <fTrans>, see local   #
+#   |                                      variable <trans_var>.                                                                        #
+#   |                                     [1] <fTrans> is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] <fTrans> is provided a named list or vector: Translate the special strings in accordance  #
 #   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
 #   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
-#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
-#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
-#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                                           the parent environment and are <get>ed for translation, e.g.:                           #
+#   |                                           <'&c_date.' = 'G_d_curr'  > Current reporting/data date in SAS syntax <&c_date.> to be  #
+#   |                                               translated by the value of Python variable <G_d_curr> in the parent frame           #
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |mapper      :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                          #
 #   |                |------------------------------------------------------------------------------------------------------------------#
@@ -76,34 +76,34 @@
 #   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
 #   |                [NULL            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
 #   |                                              the result is highly unexpected                                                      #
-#   |fTrans.opt  :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                        #
-#   |                [list()          ] <Default> Use default options in [apply_MapVal]                                                 #
-#   |                [<list>          ]           Use alternative options as provided by a list, see documents of [apply_MapVal]        #
+#   |fTrans.opt  :   Additional options for value translation on <fTrans>, see document for <AdvOp$apply_MapVal>                        #
+#   |                [list()          ] <Default> Use default options in <apply_MapVal>                                                 #
+#   |                [<list>          ]           Use alternative options as provided by a list, see documents of <apply_MapVal>        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |.parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but may be slow for small ones #
+#   |.parallel   :   Whether to load the data files in <Parallel>; it is useful for lots of large files, but may be slow for small ones #
 #   |                [False           ]  <Default> Load the data files sequentially                                                     #
 #   |                [True            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
 #   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
 #   |                                               that RAM is the requested location for search                                       #
 #   |cores       :   Number of system cores to read the data files in parallel                                                          #
-#   |                [4               ] <Default> No need when [.parallel=False]                                                        #
+#   |                [4               ] <Default> No need when <.parallel=False>                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please    #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to <Date> by <Dates$asDates> internally, hence please    #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
-#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to <Date> by <Dates$asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |160.   Retrieval of previously aggregated result for Checking Period                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to <Date> by <Dates$asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
-#   |                [NULL            ] <Default> Function will set it the same as [dateBgn]                                            #
+#   |                [NULL            ] <Default> Function will set it the same as <dateBgn>                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -124,35 +124,35 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
 #   |                 proper Multipliers, to minimize the system effort                                                                 #
-#   |                [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
-#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                [TRUE            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
+#   |                                             in terms of the indicator <calcInd>                                                   #
 #   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
-#   |                [False           ]           Function will NOT generate pseudo data for Public Holidays                            #
+#   |                [FALSE           ]           Function will NOT generate pseudo data for Public Holidays                            #
 #   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
 #   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
 #   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
-#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
-#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
-#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
-#   |                [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions         #
-#   |                [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed     #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, <genPHMul> will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, <genPHMul> will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a <function>                           #
+#   |                [IMPORTANT] All <NaN> values are excluded as they create meaningless results for all aggregation functions         #
+#   |                [mean            ] <Default> Calculate the average of <aggrVar> per <byVar> as a time series, with <NaN> removed   #
 #   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
 #   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
-#   |                [False           ] <Default> Do not print debug messages during calculation                                        #
-#   |                [True            ]           Print debug messages during calculation                                               #
-#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |fDebug      :   The switch of Debug Mode.                                                                                          #
+#   |                [FALSE           ] <Default> Do not print debug messages during calculation                                        #
+#   |                [TRUE            ]           Print debug messages during calculation                                               #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in <fTrans>                   #
 #   |                [ <list>         ] <Default> See the function definition as the default argument of usage                          #
-#   |kw_d        :   Arguments for function [Dates$asDates] to convert the [indate] where necessary                                     #
-#   |                [<see def.>      ] <Default> Use the default arguments for [asDates]                                               #
-#   |kw_cal      :   Arguments for instantiating the class [Dates$UserCalendar] if [cal] is NOT provided                                #
-#   |                [<see def.>      ] <Default> Use the default arguments for [UserCalendar]                                          #
+#   |kw_d        :   Arguments for function <Dates$asDates> to convert the <indate> where necessary                                     #
+#   |                [<see def.>      ] <Default> Use the default arguments for <asDates>                                               #
+#   |kw_cal      :   Arguments for instantiating the class <Dates$UserCalendar> if <cal> is NOT provided                                #
+#   |                [<see def.>      ] <Default> Use the default arguments for <UserCalendar>                                          #
 #   |kw_DataIO   :   Arguments to instantiate <DataIO>                                                                                  #
 #   |                [ empty-<list>   ] <Default> See the function definition as the default argument of usage                          #
-#   |...         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
+#   |...         :   Any other arguments that are required by <funcAggr>. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -427,9 +427,9 @@ kfCore_ts_agg <- function(
 	#520. Column filter during loading data
 	h_keepVar <- function(.vars = c(aggrVar,byVar,copyVar)){
 		if (keep_all_col) {
-			rlang::expr(tidyselect::everything())
+			rlang::expr(dplyr::everything())
 		} else {
-			substitute(tidyselect::matches(paste0('^(',paste0(.vars, collapse = '|'),')$'), ignore.case = T))
+			substitute(dplyr::matches(paste0('^(',paste0(.vars, collapse = '|'),')$'), ignore.case = T))
 		}
 	}
 
@@ -468,9 +468,9 @@ kfCore_ts_agg <- function(
 					dplyr::filter(!!rlang::sym('DF_NAME') == v_key) %>%
 					dplyr::pull('C_KPI_ID')
 			)) %>%
-			dplyr::select(-tidyselect::any_of(c('C_LIB_PATH','C_KPI_FILE_NAME'))) %>%
+			dplyr::select(-dplyr::any_of(c('C_LIB_PATH','C_KPI_FILE_NAME'))) %>%
 			dplyr::left_join(
-				inKPICfg %>% dplyr::select(tidyselect::all_of(c(cfg_unique_row,'C_LIB_PATH','C_KPI_FILE_NAME')))
+				inKPICfg %>% dplyr::select(dplyr::all_of(c(cfg_unique_row,'C_LIB_PATH','C_KPI_FILE_NAME')))
 				,by = cfg_unique_row
 			) %>%
 			dplyr::mutate_at(c('C_LIB_PATH','C_KPI_FILE_NAME'), tidyr::replace_na, replace = '')
@@ -611,7 +611,7 @@ kfCore_ts_agg <- function(
 		#[4] The loop is hence determined by unique <FileName> + <key>, taking into account all their candidate paths during searching
 		#[5] To adapt to the function <aggrByPeriod>, <options> for loading the same file MUST be the same in the candidate paths
 		loop_agg <- cfg_daily %>%
-			dplyr::select(tidyselect::all_of(c('C_KPI_FILE_NAME','DF_NAME','options'))) %>%
+			dplyr::select(dplyr::all_of(c('C_KPI_FILE_NAME','DF_NAME','options'))) %>%
 			dplyr::distinct()
 
 		#591. Raise exception if there are ambiguous parameters for the same file
@@ -716,7 +716,7 @@ kfCore_ts_agg <- function(
 						'tmp' = (
 							chkdat_vfy %>%
 								dplyr::filter(!!rlang::sym('C_KPI_ID') %in% cfg_input[['C_KPI_ID']]) %>%
-								dplyr::select(-tidyselect::any_of(c('D_RecDate')))
+								dplyr::select(-dplyr::any_of(c('D_RecDate')))
 						)
 					)
 					,outfile = paste0('chk_kpi_pd',chkEnd)
@@ -860,7 +860,7 @@ kfCore_ts_agg <- function(
 				,!!rlang::sym('inRAM') := !!rlang::sym('C_KPI_FILE_TYPE') =='RAM'
 			) %>%
 			dplyr::filter(toupper(!!rlang::sym('FilePath')) == u_fpath) %>%
-			dplyr::select(tidyselect::all_of(c('FilePath','inRAM'))) %>%
+			dplyr::select(dplyr::all_of(c('FilePath','inRAM'))) %>%
 			dplyr::slice_head(n = 1)
 
 		#745. Parse the pattern with the data date
@@ -957,7 +957,7 @@ kfCore_ts_agg <- function(
 	#719. Verify the duplication of file API options
 	vfy_opt <- cfg_rst %>%
 		dplyr::filter(!!rlang::sym('C_KPI_FILE_TYPE') %in% hasKeys) %>%
-		dplyr::select(tidyselect::all_of(c('FilePath','options'))) %>%
+		dplyr::select(dplyr::all_of(c('FilePath','options'))) %>%
 		dplyr::distinct() %>%
 		dplyr::group_by_at('FilePath') %>%
 		dplyr::summarise_at('options', ~dplyr::n()) %>%
@@ -987,7 +987,7 @@ kfCore_ts_agg <- function(
 			!!rlang::sym('FilePath') := sapply(!!rlang::sym('rc_pre'), names, simplify = T)
 			,!!rlang::sym('rc') := unlist(!!rlang::sym('rc_pre'))
 		) %>%
-		dplyr::select(tidyselect::all_of(c('FilePath','C_KPI_FILE_TYPE','rc')))
+		dplyr::select(dplyr::all_of(c('FilePath','C_KPI_FILE_TYPE','rc')))
 
 	#999. Validate the completion
 	return(rstOut)

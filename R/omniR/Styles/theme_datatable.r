@@ -1,7 +1,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to prepare CSS for DT::datatable in terms of various themes                                              #
+#   |This function is intended to prepare <CSS> for <DT::datatable> in terms of various themes                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -11,22 +11,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |theme       :   The pre-defined themes                                                                                             #
-#   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
-#   |transparent :   Whether to set the entire background of the datatable as transparent                                               #
+#   |theme       :   <chr    > The pre-defined themes                                                                                   #
+#   |                 [BlackGold   ] <Default> Modified <MS PBI Innovation> theme with specific <black> and <gold> colors               #
+#   |transparent :   <logical> Whether to set the entire background of the <datatable> as transparent                                   #
 #   |                 [FALSE       ] <Default> Use the theme color                                                                      #
 #   |                 [TRUE        ]           Set the alpha of background color as 0                                                   #
-#   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
-#   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]                                                  #
+#   |fontFamily  :   <chr    > Character vector of font family to be translated to <CSS> syntax                                         #
+#   |                 [<see def.>  ] <Default> See function definition                                                                  #
+#   |fontSize    :   Any vector that can be translated by <htmltools::validateCssUnit>                                                  #
 #   |                 [14px        ] <Default> Common font size                                                                         #
-#   |fs_header   :   Any vector that can be translated by [htmltools::validateCssUnit].                                                 #
-#   |                 [IMPORTANT] Font size for table header will override [fontSize]                                                   #
+#   |fs_header   :   Any vector that can be translated by <htmltools::validateCssUnit>.                                                 #
 #   |                 [14px        ] <Default> Common font size                                                                         #
+#   |                  [IMPORTANT] This will override <fontSize> for table header                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<shiny.tag> :   An object in the class of [shiny.tag] to be used in shinyApp                                                       #
+#   |<shiny.tag> :   An object in the class of <shiny.tag> to be used in <shinyApp>                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -37,7 +37,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211218        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new function [themeColors] to standardize the theme selection                                               #
+#   | Log  |[1] Introduce a new function <themeColors> to standardize the theme selection                                               #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -52,7 +52,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Styles                                                                                                                   #
+#   |   |Styles                                                                                                                         #
 #   |   |   |themeColors                                                                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import datetime as dt
 import pandas as pd
 import numpy as np
 #Quote: https://stackoverflow.com/questions/847936/how-can-i-find-the-number-of-arguments-of-a-python-function
@@ -10,32 +9,37 @@ from inspect import signature
 from collections.abc import Iterable
 from omniPy.AdvOp import vecStack, vecUnstack
 
-def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or timestamp':
-    #000.   Info.
+def asQuarters(indate) -> np.int8 | Iterable[np.int8]:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to extract the [Quarter] of the provided [dt.date], [dt.datetime] or [pd.Timestamp], or the [pd.Series]  #
-#   | or [pd.DataFrame] comprised of these value types                                                                                  #
-#   |[IMPORTANT] Any one among the provided values should have the attribute [month] for calculation                                    #
-#   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
-#   |             column(s) in the type of [np.int8] to ensure a dedicated result, i.e. below methods create the columns in the same    #
-#   |             [dtype] as [object] no matter the input is empty or not:                                                              #
-#   |            [1] [pd.Series.apply(asQuarters).astype('object').astype(np.int8)]                                                     #
-#   |                 or [pd.DataFrame.map(asQuarters).astype('object').astype(np.int8)]                                                #
-#   |                This is because 'datetime64[ns]' cannot be coerced to 'np.int8' directly, and we have to walk around it            #
-#   |            [2] [asQuarters(pd.Series)] or [asQuarters(pd.DataFrame)]                                                              #
+#   |This function is intended to extract the <Quarter> of the provided <dt.date>, <dt.datetime> or <pd.Timestamp>, or the <pd.Series>  #
+#   | or <pd.DataFrame> comprised of these value types                                                                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |IMPORTANT                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Any one among the provided values should have the attribute <month> for calculation                                            #
+#   |[2] When the input is an empty <pd.Series> or <pd.DataFrame>, make sure to use either of below forms to assign the column(s) in the#
+#   |     type of <np.int8> to ensure a dedicated result, i.e. below methods create the columns in the same <dtype> as <object> no      #
+#   |     matter the input is empty or not                                                                                              #
+#   |    [1] <asQuarters(pd.Series)> (preferred for high efficiency)                                                                    #
+#   |    [2] <asQuarters(pd.DataFrame)> (preferred for high efficiency)                                                                 #
+#   |    [3] <pd.Series.apply(asQuarters).astype('object').astype(np.int8)>. This is because <datetime64[ns]> cannot be coerced to      #
+#   |         <np.int8> directly, and we have to walk around it                                                                         #
+#   |    [4] <pd.DataFrame.map(asQuarters).astype('object').astype(np.int8)>. This is because <datetime64[ns]> cannot be coerced to     #
+#   |         <np.int8> directly, and we have to walk around it                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indate      :   [dt.date], [dt.datetime], [pd.Timestamp], or a [list], [tuple], [pd.Series] or [pd.DataFrame] comprised of them    #
+#   |indate      :   <dt.date>, <dt.datetime>, <pd.Timestamp>, or <Iterable> comprised of them                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[np.int8  ] :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
+#   |<Any>       :   The mapped result stored in the type of <np.int8> or <Iterable[np.int8]> depending on the input                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -46,7 +50,7 @@ def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or tim
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210619        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce [Iterable] to support more iterable input types for the arguments                                             #
+#   | Log  |[1] Introduce <Iterable> to support more iterable input types for the arguments                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230902        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
@@ -71,7 +75,7 @@ def asQuarters(indate) -> 'Extract the [Quarter] part of a date, datetime or tim
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#

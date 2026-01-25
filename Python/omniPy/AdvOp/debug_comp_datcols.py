@@ -4,25 +4,25 @@
 import sys
 import pandas as pd
 
-def debug_comp_datcols( *arg , **kw ) -> 'Compare the [dtypes] of the columns in the provided data frames':
-    #000.   Info.
+def debug_comp_datcols( *arg , **kw ) -> pd.DataFrame:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to compare the columns of the input list of data frames, and output a checklist (data frame) for those   #
-#   | columns that have different [dtype] among the input data frames while issuing a message in terms of the requested message level.  #
+#   | columns that have different <dtype> among the input data frames while issuing a message in terms of the requested message level.  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |arg          :   Various positional parameters that indicates a list of data frames for comparison                                 #
-#   |kw           :   Various named parameters that indicates a list of data frames for comparison                                      #
+#   |*arg         :   Various positional parameters that indicates a list of data frames for comparison                                 #
+#   |**kw         :   Various named parameters that indicates a list of data frames for comparison                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[data frame] :   The combined data frame that stores the columns in the same names but with different [dtype] in the input list of #
+#   |<data frame> :   The combined data frame that stores the columns in the same names but with different <dtype> in the input list of #
 #   |                  data frames                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -34,7 +34,7 @@ def debug_comp_datcols( *arg , **kw ) -> 'Compare the [dtypes] of the columns in
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210503        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Replace the usage of [\] as new-row-expansion with the officially recommended way [(multi-line-expr.)], see PEP-8       #
+#   | Log  |[1] Replace the usage of backslash as new-row-expansion with the officially recommended way <(multi-line-expr.)>, see PEP-8 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -58,7 +58,6 @@ def debug_comp_datcols( *arg , **kw ) -> 'Compare the [dtypes] of the columns in
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #012. Parameter buffer
     if (not arg) and (not kw): return()

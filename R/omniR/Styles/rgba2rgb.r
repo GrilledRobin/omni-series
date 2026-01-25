@@ -3,27 +3,30 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to switch the input [RGBA] color value(s) into the actual [HEX] value(s) in terms of the provided        #
 #   | background color, which translates the [alpha] channel                                                                            #
-#   |Quote: http://marcodiiga.github.io/rgba-to-rgb-conversion                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |QUOTE                                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 有些主题色的调色板是用[RGBA]的值体现，最终的效果带有透明度。因此需要用到这个方法消除透明度                                     #
+#   |[1] http://marcodiiga.github.io/rgba-to-rgb-conversion                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Colors from some palettes are defined <RGBA> (with <alpha> or transparency), we need to covert them into <RGB> sometimes       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |color_in   :   The color codes of [RGB] part extracted from the dedicated [RGBA] color                                             #
-#   |                It can be provided as below types of vectors:                                                                      #
-#   |                [#FFFFFF]          The HEX value of the RGB color                                                                  #
-#   |                [grDevices::rgb()] The RGB matrix translated by the [rgb] function                                                 #
-#   |alpha_in   :   The alpha value representing the opacity of the color, values from 0 (transparent) to 1                             #
-#   |color_bg   :   The background color to translate the [alpha] channel as attenuation                                                #
-#   |                [#FFFFFF]<Default> It can also be provided in [HEX] or [RGB] values                                                #
+#   |color_in   :   The color codes of <RGB> part extracted from the dedicated <RGBA> color                                             #
+#   |                [#FFFFFF           ]          The <HEX> value of the <RGB> color                                                   #
+#   |                [<grDevices::rgb()>] The <RGB> matrix translated by the <rgb> function                                             #
+#   |alpha_in   :   <num> The alpha value representing the opacity of the color, values from 0 (transparent) to 1                       #
+#   |                 [num <1>          ] <Default> No transparency                                                                     #
+#   |color_bg   :   The background color to translate the <alpha> channel as attenuation                                                #
+#   |                [#FFFFFF           ]<Default> It can also be provided in <HEX> or <RGB> values                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   A vector of translated colors in [HEX] values                                                                       #
+#   |<chr>      :   A vector of translated colors in <HEX> values                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -95,4 +98,8 @@ if (FALSE){
 		color_sticker <- rgba2rgb( rep(color_def, 10), alpha_in = alpha_def )
 
 	}
+
+	if (FALSE){'
+		有些主题色的调色板是用[RGBA]的值体现，最终的效果带有透明度。因此需要用到这个方法消除透明度
+	'}
 }

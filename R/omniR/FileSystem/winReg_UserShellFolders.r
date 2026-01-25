@@ -1,23 +1,28 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve all values under the key [User Shell Folders] from the Windows(R) registry                   #
-#   |[Quote: https://blog.csdn.net/yq_forever/article/details/89638012 ]                                                                #
-#   |Usage:                                                                                                                             #
-#   |It is often used to retrieve the special folder [My Documents] on Windows OS, which is set as default working directory of RStudio #
+#   |This function is intended to retrieve all values under the key <User Shell Folders> from the Windows\u00AE registry                #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[QUOTE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://blog.csdn.net/yq_forever/article/details/89638012                                                                      #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[USAGE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Often used to retrieve the special folder <My Documents> on Windows OS, which is set as default working directory of RStudio   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |( none )   :   This function does not take any input parameter                                                                     #
+#   |<NULL>     :   This function does not take any input parameter                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[out_lst]  :   A list that stores entries queried from Windows Registry; elements of each entry (as a list, too) is set as below   #
-#   |                [$name       ]   The name of the entry (e.g. [Personal] ==> [My Documents])                                        #
+#   |<list>     :   A list that stores entries queried from Windows Registry; elements of each entry (as a list, too) is set as below   #
+#   |                [$name       ]   The name of the entry (e.g. <Personal> means <My Documents>)                                      #
 #   |                [$reg_tp     ]   The type of the entry in Windows Registry                                                         #
-#   |                [$value_mask ]   The masked value (by DOS variable) of the entry in Windows Registry                               #
+#   |                [$value_mask ]   The masked value (by <DOS> variable) of the entry in Windows Registry                             #
 #   |                [$value      ]   The value of the entry                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -29,9 +34,9 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221016        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Replace [shell] with [Sys.getenv] to increase the query speed                                                           #
-#   |      |[2] Introduce package [stringi] to replace the references of Windows Environment Variables with their respective values     #
-#   |      |[3] Introduce a function [winReg_getInfByStrPattern] to query the Windows Registry                                          #
+#   | Log  |[1] Replace <shell> with <Sys.getenv> to increase the query speed                                                           #
+#   |      |[2] Introduce package <stringi> to replace the references of Windows Environment Variables with their respective values     #
+#   |      |[3] Introduce a function <winReg_getInfByStrPattern> to query the Windows Registry                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -46,7 +51,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$FileSystem                                                                                                               #
+#   |   |FileSystem                                                                                                                     #
 #   |   |   |winReg_getInfByStrPattern                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 

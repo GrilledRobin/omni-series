@@ -3,9 +3,15 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [...] that have no negative impact to current function call        #
+#   |[1] Signature of this function is expanded from <haven::read_sas>, see its documents for detailed argument list                    #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] We could pass various parameters into one single expression <...> that have no negative impact to current function call        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -17,7 +23,7 @@
 #   |                   [<see def.>  ] <Default> Only a placeholder and takes no effect                                                 #
 #   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
 #   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
-#   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
+#   |                   [callable    ]           Callable that takes only one positional argument with <data.frame> type                #
 #   |usecols       :   <chr     > Character vector naming the columns to be kept during loading, actually it is done after loading the  #
 #   |                   entire file                                                                                                     #
 #   |                   [<see def.>  ] <Default> Keep all columns of <key>                                                              #
@@ -38,7 +44,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]          :   The data frame to be read into RAM from the source                                                               #
+#   |<df>          :   The data frame to be read into RAM from the source                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -55,7 +61,7 @@
 #   | Date |    20240213        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce argument <usecols> to act in the same way as <col_select> for standardization purpose                         #
-#   |      |[2] <usecols> and <col_select> (see haven::read_sas()) cannot be specified at the same time, but take the same effect       #
+#   |      |[2] <usecols> and <col_select> (see <haven::read_sas()>) cannot be specified at the same time, but take the same effect     #
 #   |      |[3] The provided column list is matched to all columns in the source data in the first place, so that anyone that is NOT in #
 #   |      |     the source can be ignored, rather than triggering exception                                                            #
 #   |      |[4] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and rows          #
@@ -185,7 +191,7 @@ myfunc <- deco$wrap(function(
 	#800. Load the data
 	rstOut <- do.call(eSig$src, args_out)
 	if (f_nullify) {
-		rstOut %<>% dplyr::select(-tidyselect::all_of(names(.)))
+		rstOut %<>% dplyr::select(-dplyr::all_of(names(.)))
 	}
 
 	#850. Convert the <time> columns

@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 from collections.abc import Mapping
 from omniPy.AdvOp import thisFunction
 
 def modifyDict( d : dict , u : dict , inplace = False ) -> dict:
-    #000.   Info.
-    """
+    #000. Info.
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to modify a dict by a sub-dict in recursion, resembling [modifyList] in R language                       #
-#   |[Quote]     https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth                       #
+#   |This function is intended to modify a dict by a sub-dict in recursion, resembling <modifyList> in R language                       #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   | https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -20,14 +22,14 @@ def modifyDict( d : dict , u : dict , inplace = False ) -> dict:
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |d          :   Dict to be updated, with any depth of sub-dicts                                                                     #
 #   |u          :   Dict used to update[d], with any depth of sub-dicts                                                                 #
-#   |               [IMPORTANT] This dict is dedicated to replace the corresponding items in [d]                                        #
-#   |inplace    :   Whether to overwrite the input [d]                                                                                  #
-#   |               [False    ]  <Default> Create a new dict and leave the input [d] un-impacted                                        #
-#   |               [True     ]            Replace the input [d]                                                                        #
+#   |               [IMPORTANT] This dict is dedicated to replace the corresponding items in <d>                                        #
+#   |inplace    :   Whether to overwrite the input <d>                                                                                  #
+#   |               [False    ]  <Default> Create a new dict and leave the input <d> un-impacted                                        #
+#   |               [True     ]            Replace the input <d>                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Dict    ] :   The updated [d] as a new dict (by default), or in place if required                                                 #
+#   |<dict>     :   The updated <d> as a new dict (by default), or in place if required                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -63,22 +65,19 @@ def modifyDict( d : dict , u : dict , inplace = False ) -> dict:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, collections                                                                                                               #
+#   |   |collections                                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
+    '''
 
     #001. Import necessary functions for processing.
 
     #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
     recall = thisFunction()
 
     #012. Parameter buffer
@@ -99,10 +98,10 @@ def modifyDict( d : dict , u : dict , inplace = False ) -> dict:
     return d_out
 #End modifyDict
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
+if __name__=='__main__':
     #010. Create envionment.
     import os
     import sys
@@ -145,4 +144,4 @@ if __name__=="__main__":
     print(tt2)
     print(getOption['args.def.GTSFK'])
 #-Notes- -End-
-"""
+'''

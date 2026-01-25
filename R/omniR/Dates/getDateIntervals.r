@@ -13,32 +13,31 @@
 #   |                |Category |Interval  |Definition                                        |Example    |Description                   #
 #   |                |---------+----------+--------------------------------------------------+-----------+------------------------------#
 #   |                |Date     |DAY       |Daily intervals                                   |day3       |each 3-day starting on Sunday #
-#   |                |         |WEEK      |Weekly intervals                                  |week2      |2 weeks from now              #
-#   |                |         |WEEKDAY   |Daily intervals with Sat and Sun as holidays      |weekday2   |2 weekdays from now           #
-#   |                |         |TENDAY    |10-day intervals cut by 1st, 11th and 21st of     |tenday2    |20 days from now              #
-#   |                |         |          | each month                                       |           |                              #
-#   |                |         |SEMIMONTH |Half-month intervals, cut at 15th                 |semimonth3 |3 half-months from now        #
-#   |                |         |MONTH     |Monthly intervals                                 |month3     |3 months from now             #
-#   |                |         |QTR       |Quarterly intervals, on Jan, Mar, Jul and Oct     |qtr2       |2 quarters from now           #
-#   |                |         |SEMIYEAR  |Semiannual intervals, on Jan and Jul              |semiyear3  |3 semiyears from now          #
-#   |                |         |YEAR      |Yearly intervals, on Jan                          |year2      |2 years from now              #
+#   |                |Date     |WEEK      |Weekly intervals                                  |week2      |2 weeks from now              #
+#   |                |Date     |WEEKDAY   |Daily intervals with Sat and Sun as holidays      |weekday2   |2 weekdays from now           #
+#   |                |Date     |TENDAY    |10-day intervals cut by 1st, 11th and 21st        |tenday2    |20 days from now              #
+#   |                |Date     |SEMIMONTH |Half-month intervals, cut at 15th                 |semimonth3 |3 half-months from now        #
+#   |                |Date     |MONTH     |Monthly intervals                                 |month3     |3 months from now             #
+#   |                |Date     |QTR       |Quarterly intervals, on Jan, Mar, Jul and Oct     |qtr2       |2 quarters from now           #
+#   |                |Date     |SEMIYEAR  |Semiannual intervals, on Jan and Jul              |semiyear3  |3 semiyears from now          #
+#   |                |Date     |YEAR      |Yearly intervals, on Jan                          |year2      |2 years from now              #
 #   |                |---------+----------+--------------------------------------------------+-----------+------------------------------#
 #   |                |Time     |SECOND    |Second intervals                                  |second2    |each 2 seconds                #
-#   |                |         |MINUTE    |Minute intervals                                  |minute2    |each 2 minutes                #
-#   |                |         |HOUR      |Hour intervals                                    |hour2      |each 2 hours                  #
+#   |                |Time     |MINUTE    |Minute intervals                                  |minute2    |each 2 minutes                #
+#   |                |Time     |HOUR      |Hour intervals                                    |hour2      |each 2 hours                  #
 #   |                |---------+----------+--------------------------------------------------+-----------+------------------------------#
-#   |                |Datetime |DT+<DATE> |Add [DT] to any of the [Date] or [time] intervals |dtday3     |each 3-day starting on Sunday #
+#   |                |Datetime |DT+<DATE> |Add <DT> to any of the <Date> or <Time> intervals |dtday3     |each 3-day starting on Sunday #
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>      :   List of lists with their respective [names] set the same as the input vector of [interval] and values include:     #
-#   |                [itype         ] Type of the interval among the choices: [d, dt, t]                                                #
-#   |                [name          ] Name of the interval among the choices as defined for [interval]                                  #
-#   |                [span          ] Date span to extend [omniR$Dates$UserCalendar] for each of current interval during calculation    #
-#   |                [multiple      ] Multiple as input for the calculation of date incremental, default as [1]                         #
+#   |<list>      :   List of lists with their respective <names> set the same as the input vector of <interval> and values include:     #
+#   |                [itype         ] Type of the interval among the choices: <c('d', 'dt', 't')>                                       #
+#   |                [name          ] Name of the interval among the choices as defined for <interval>                                  #
+#   |                [span          ] Date span to extend <Dates$UserCalendar> for each of current interval during calculation          #
+#   |                [multiple      ] Multiple as input for the calculation of date incremental, default as <1>                         #
 #   |                [recycle       ] Indicator of how many periods will be recycled during the calculation, only affects the           #
-#   |                                  calculation upon [time] intervals                                                                #
+#   |                                  calculation upon <Time> intervals                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -49,12 +48,12 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211005        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Correct the [span] for [weekday] as 1, instead of 5, to make it a type of incremental on single units instead of period #
+#   | Log  |[1] Correct the <span> for <weekday> as 1, instead of 5, to make it a type of incremental on single units instead of period #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230302        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Added attribute [recycle] in output result to indicate the span when recycling the periods                              #
+#   | Log  |[1] Added attribute <recycle> in output result to indicate the span when recycling the periods                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

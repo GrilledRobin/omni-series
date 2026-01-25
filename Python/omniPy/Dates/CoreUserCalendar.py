@@ -5,7 +5,7 @@
 import datetime as dt
 import pandas as pd
 from collections.abc import Iterable
-from . import asDates, asQuarters, getCalendarAdj
+from omniPy.Dates import asDates, asQuarters, getCalendarAdj
 
 #100. Definition of the class.
 class CoreUserCalendar:
@@ -21,7 +21,7 @@ class CoreUserCalendar:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Public method                                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[initialize]                                                                                                                   #
+#   |   |[__init__]                                                                                                                     #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -29,30 +29,30 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[clnBgn       ]   :   Beginning date of the calendar, provided by any object that can be coerced to [Date] class           #
+#   |   |   |[clnBgn       ]   :   Beginning date of the calendar, provided by any object that can be coerced to <dt.date> class        #
 #   |   |   |                      [<today - 5 years>   ]<Default> 5 years counting back from the system date                           #
-#   |   |   |[clnEnd       ]   :   Ending date of the calendar, provided by any object that can be coerced to [Date] class              #
+#   |   |   |[clnEnd       ]   :   Ending date of the calendar, provided by any object that can be coerced to <dt.date> class           #
 #   |   |   |                      [<today + 30 days>   ]<Default> 30 days counting forward from the system date                        #
 #   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
 #   |   |   |                      [CN                  ]<Default> China                                                                #
 #   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [opt('ClndrAdj')     ]<Default> Retrieve the system option [via getOption()] for the file path       #
+#   |   |   |                      [<opt('ClndrAdj')>   ]<Default> Retrieve the system option (via <getOption[]>) for the file path     #
 #   |   |   |                       [IMPORTANT] The file must contain below columns (case sensitive to column names):                   #
 #   |   |   |                                   [CountryCode ] Country Code for selection of adjustment and display of weekday names    #
-#   |   |   |                                   [F_WORKDAY   ] [1/0] values indicating [workday/holiday] respectively                   #
-#   |   |   |                                   [D_DATE      ] Strings to be imported as [Dates] by default option of [readr:read_csv]  #
+#   |   |   |                                   [F_WORKDAY   ] <1/0> values indicating <workday/holiday> respectively                   #
+#   |   |   |                                   [D_DATE      ] Strings to be imported as <dt.date> by default option of <readr:read_csv>#
 #   |   |   |                                   [C_DESC      ] Description/Name of the special dates (compared to: Mon., Tue., etc.)    #
-#   |   |   |[fmtDateIn    ]   :   Format of the [datebgn] and [dateend] to be coerced to [Date] class                                  #
-#   |   |   |                      [<various>           ]<Default> Follow the rules set in [omniR$asDates]                              #
+#   |   |   |[fmtDateIn    ]   :   Format of the <datebgn> and <dateend> to be coerced to <dt.date> class                               #
+#   |   |   |                      [<various>           ]<Default> Follow the rules set in <asDates>                                    #
 #   |   |   |[fmtDateOut   ]   :   Format of the output date values to be translated into character strings when necessary              #
-#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see [strftime] convention          #
+#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see <strftime> convention          #
 #   |   |   |[DateOutAsStr ]   :   Whether to convert the output date values into character strings                                     #
-#   |   |   |                      [False               ]<Default> Output dates directly in the type of [datetime.date]                 #
-#   |   |   |                      [True                ]          Convert dates into strings based on [fmtDateOut]                     #
+#   |   |   |                      [False               ]<Default> Output dates directly in the type of <dt.date>                       #
+#   |   |   |                      [True                ]          Convert dates into strings based on <fmtDateOut>                     #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not return values, but may assign values to variables for [private] object          #
+#   |   |   |<None>            :   This method does not return values, but will assign values to variables for <private> object         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -66,11 +66,11 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not take input arguments                                                            #
+#   |   |   |<None>            :   This method does not take input arguments                                                            #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ dict        ]   :   Dictionary storing the mapping table of weekdays in different languages                              #
+#   |   |   |<dict>            :   Dictionary storing the mapping table of weekdays in different languages                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[_crCalendar]                                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -80,34 +80,33 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[datebgn      ]   :   Beginning date of the calendar, provided by any object that can be coerced to [Date] class           #
-#   |   |   |                      [private$.clnBgn        ]<Default> The value at Calendar initialization                              #
-#   |   |   |[dateend      ]   :   Ending date of the calendar, provided by any object that can be coerced to [Date] class              #
-#   |   |   |                      [private$.clnEnd        ]<Default> The value at Calendar initialization                              #
+#   |   |   |[datebgn      ]   :   Beginning date of the calendar, provided by any object that can be coerced to <dt.date> class        #
+#   |   |   |                      [self.clnBgn            ]<Default> The value at Calendar initialization                              #
+#   |   |   |[dateend      ]   :   Ending date of the calendar, provided by any object that can be coerced to <dt.date> class           #
+#   |   |   |                      [self.clnEnd            ]<Default> The value at Calendar initialization                              #
 #   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
-#   |   |   |                      [private$.countrycode   ]<Default> The value at Calendar initialization                              #
+#   |   |   |                      [self.countrycode       ]<Default> The value at Calendar initialization                              #
 #   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [private$.clnAdj        ]<Default> The value at Calendar initialization                              #
-#   |   |   |[infmt        ]   :   Format of the [datebgn] and [dateend] to be coerced to [Date] class                                  #
-#   |   |   |                      [private$.fmtDateIn     ]<Default> The value at Calendar initialization                              #
+#   |   |   |                      [self.clnAdj            ]<Default> The value at Calendar initialization                              #
+#   |   |   |[infmt        ]   :   Format of the <datebgn> and <dateend> to be coerced to <dt.date> class                               #
+#   |   |   |                      [self.fmtDateIn         ]<Default> The value at Calendar initialization                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ df          ]   :   Data.frame storing the adjusted Calendar, yet without the Workweek/Tradeweek information, as they    #
-#   |   |   |                       will be separately created when user calls the corresponding methods                                #
+#   |   |   |<pd.DataFrame>    :   Data frame storing the adjusted Calendar, yet without the Workweek/Tradeweek information, as they    #
+#   |   |   |                       will be separately created when user calls the corresponding methods. See below table info.         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |100.   Field specifications for the dataset. (For field types please use [df.info()] for retrieval)                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   |          Field Name     |                                 Field Description                                           #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   | D_DATE                  | Calendar Date in the type of [Date]                                                         #
+#   |   |   |   | D_DATE                  | Calendar Date in the type of <dt.date>                                                      #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | C_DESC                  | The description of current Calendar Date                                                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | F_WORKDAY               | Flag of whether current date is Work Day in terms of user-defined holiday arrangements.     #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | F_TradeDay              | Flag of whether current date is Trade Day in terms of user-defined holiday arrangements.    #
-#   |   |   |   |                         | Its difference to [F_WORKDAY] is that the Shifted Work Days can often be Saturdays or       #
+#   |   |   |   |                         | Its difference to <F_WORKDAY> is that the Shifted Work Days can often be Saturdays or       #
 #   |   |   |   |                         |  Sundays while they are not always Trade Days around the world.                             #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | D_PrevWorkDay           | The previous Work Day to current date (in terms of user-defined holiday arrangements)       #
@@ -128,29 +127,27 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[datebgn      ]   :   Beginning date to subset the calendar, provided by any object that can be coerced to [Date] class    #
-#   |   |   |                      [private$.dateBgn       ]<Default> The value per user request on the fly                             #
-#   |   |   |[dateend      ]   :   Ending date to subset the calendar, provided by any object that can be coerced to [Date] class       #
-#   |   |   |                      [private$.dateEnd       ]<Default> The value per user request on the fly                             #
+#   |   |   |[datebgn      ]   :   Beginning date to subset the calendar, provided by any object that can be coerced to <dt.date> class #
+#   |   |   |                      [self.dateBgn           ]<Default> The value per user request on the fly                             #
+#   |   |   |[dateend      ]   :   Ending date to subset the calendar, provided by any object that can be coerced to <dt.date> class    #
+#   |   |   |                      [self.dateEnd           ]<Default> The value per user request on the fly                             #
 #   |   |   |[inCln        ]   :   Universal calendar to subset                                                                         #
-#   |   |   |                      [private$.uniClndr      ]<Default> The value at Calendar initialization                              #
+#   |   |   |                      [self.uniClndr          ]<Default> The value at Calendar initialization                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ df          ]   :   Data.frame storing the subset of the universal calendar, with the Workweek/Tradeweek information     #
+#   |   |   |<pd.DataFrame>    :   Data frame storing the subset of the universal calendar, with the Workweek/Tradeweek information     #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |100.   Field specifications for the dataset. (For field types please use [df.info()] for retrieval)                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   |          Field Name     |                                 Field Description                                           #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   |<Other fields created as | Keep all other fields in [.crCalendar] with additional field created as below               #
-#   |   |   |   | output of [.crCalendar]>|                                                                                             #
+#   |   |   |   |<from [_crCalendar]>     | Keep all other fields in <_crCalendar> with additional field created as below               #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   | K_WorkWeek              | The number of Work Weeks in current period of time (Each Work Week represents a period of   #
-#   |   |   |   |                         |  consecutive Work Days)                                                                     #
+#   |   |   |   | K_WorkWeek              | The number of Work Weeks in current period of time, each Work Week represents a period of   #
+#   |   |   |   |                         |  consecutive Work Days.                                                                     #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   | K_TradeWeek             | The number of Trade Weeks in current period of time (Each Trade Week represents a period of #
-#   |   |   |   |                         |  consecutive Trade Days)                                                                    #
+#   |   |   |   | K_TradeWeek             | The number of Trade Weeks in current period of time, each Trade Week represents a period of #
+#   |   |   |   |                         |  consecutive Trade Days.                                                                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -163,7 +160,7 @@ class CoreUserCalendar:
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |       Property Name         |                             Value Examples and Property Description                         #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   | uniCalendar                 | <data.frame> data frame of the universal calendar (enclosing the user calendar)             #
+#   |   |   | uniCalendar                 | <pd.DataFrame> data frame of the universal calendar (enclosing the user calendar)           #
 #   |   |   | clnAdj                      | <string> Full path of the adjustment file in use, for holidays/workdays                     #
 #   |   |   | clnBgn                      | <datetime.date> Beginning date of the universal calendar                                    #
 #   |   |   | clnEnd                      | <datetime.date> Ending date of the universal calendar                                       #
@@ -178,9 +175,12 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested format to translate the character strings into dates       #
 #   |   |   |   | within specific date input methods defined by this family of classes                                                  #
-#   |   |   |   |[1] When [set] is called, it changes [private$.fmtDateIn]; while all methods that translate character strings into     #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <self.fmtDateIn>; while all methods that translate character strings into         #
 #   |   |   |   |     dates will change the input format in accordance                                                                  #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.fmtDateIn]                                         #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <self.fmtDateIn>                                             #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -188,7 +188,7 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<str>             :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[fmtDateOut]                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -196,9 +196,12 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested format to translate the dates into character strings       #
 #   |   |   |   | within specific date retrieval methods defined by this family of classes                                              #
-#   |   |   |   |[1] When [set] is called, it changes [private$.fmtDateOut]; while all methods that generate character string out of    #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <self.fmtDateOut>; while all methods that generate character string out of        #
 #   |   |   |   |     dates will change the output format in accordance                                                                 #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.fmtDateOut]                                        #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <self.fmtDateOut>                                            #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -206,7 +209,7 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<str>             :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[datespan]                                                                                                                     #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -214,24 +217,30 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested span of date periods to calculate the Previous/Next        #
 #   |   |   |   | Workdays/Tradedays for any specific dates; basically used to extend the universal calendar during calculation         #
-#   |   |   |   |[1] When [set] is called, it changes [private$.datespan] and re-generate the universal calendar                        #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.datespan]                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <self.datespan> and re-generate the universal calendar                            #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <self.datespan>                                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[tdelta       ]   :   The timespan for calculation, provided a class of [difftime]                                         #
+#   |   |   |[tdelta       ]   :   The timespan for calculation, provided the type of <dt.timedelta>                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<difftime>   ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<dt.timedelta>    :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[country]                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested Country Code.                                              #
-#   |   |   |   |[1] When [set] is called, it changes the Country Code and re-generate the universal calendar                           #
-#   |   |   |   |[2] When [return] is called, it returns the last value of Country Country Code                                         #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes the Country Code and re-generate the universal calendar                           #
+#   |   |   |   |[2] When <return> is called, it returns the last value of Country Country Code                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -239,7 +248,7 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<str>             :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[DateOutAsStr]                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -254,7 +263,7 @@ class CoreUserCalendar:
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<bool>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<bool>            :   The same values as the previous input by the user                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -268,19 +277,19 @@ class CoreUserCalendar:
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210308        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Abandon the usage of [pd.Timestamp] for all date-like columns as its lower/upper bounds are much less than [dt.date]    #
+#   | Log  |[1] Abandon the usage of <pd.Timestamp> for all date-like columns as its lower/upper bounds are much less than <dt.date>    #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210821        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Eliminate all [pd.DataFrame.merge] operations and the most of [.apply] methods to improve the overall efficiency, now   #
+#   | Log  |[1] Eliminate all <pd.DataFrame.merge> operations and the most of <.apply> methods to improve the overall efficiency, now   #
 #   |      |     use indexing of data frames and the time expense reduced by 90%.                                                       #
-#   |      |[2] Introduce a separate function [getCalendarAdj] to search for the calendar adjustment in current environment             #
+#   |      |[2] Introduce a separate function <getCalendarAdj> to search for the calendar adjustment in current environment             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211228        | Version | 2.01        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Refine the verification of arguments of [__init__]                                                                      #
+#   | Log  |[1] Refine the verification of arguments of <__init__>                                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20250323        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -300,7 +309,7 @@ class CoreUserCalendar:
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |getCalendarAdj                                                                                                             #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |asQuarters                                                                                                                 #
@@ -390,7 +399,7 @@ class CoreUserCalendar:
 
     #201. Define the list of all weekday names under different settings (such as different languages).
     @property
-    def _weekdayname( self ) -> 'Create the dict of all weekday names':
+    def _weekdayname( self ) -> dict:
         #Below statements allow user not to use unicode input to define the text string in Chinese, such as [u'XXX']
         #import os
         #os.environ['NLS_LANG']='SIMPLIFIED CHINESE_CHINA.UTF8'
@@ -406,7 +415,7 @@ class CoreUserCalendar:
         ,dateend : dt.date = None
         ,countrycode : str = None
         ,CalendarAdj : str = None
-    ) -> 'Create the Universal Calendar':
+    ) -> pd.DataFrame:
         #010. Set environment
         if not datebgn: datebgn = self.clnBgn
         if not dateend: dateend = self.clnEnd
@@ -507,7 +516,7 @@ class CoreUserCalendar:
         ,datebgn : dt.date = None
         ,dateend : dt.date = None
         ,inCln : pd.DataFrame = None
-    ) -> 'Subset the Universal Data as per user request':
+    ) -> pd.DataFrame:
         #010. Set environment
         if not datebgn: datebgn = self.clnBgn
         if not dateend: dateend = self.clnEnd
@@ -555,38 +564,38 @@ class CoreUserCalendar:
 
     #505. Retrieve the Universal Calendar Dataset
     @property
-    def uniCalendar( self ) -> 'Get the Universal Calendar Dataset':
+    def uniCalendar( self ) -> pd.DataFrame:
         return( self._uniClndr_ )
 
     #507. Retrieve the full path to the calendar adjustment file
     @property
-    def clnAdj( self ) -> 'Get the full path to the calendar adjustment file':
+    def clnAdj( self ) -> str:
         return( self._clnAdj_ )
 
     #511. Retrieve the beginning date of the Universal Calendar
     @property
-    def clnBgn( self ) -> 'Get the beginning date of the Universal Calendar':
+    def clnBgn( self ) -> dt.date:
         return( self._clnBgn_ )
 
     #512. Retrieve the ending date of the Universal Calendar
     @property
-    def clnEnd( self ) -> 'Get the ending date of the Universal Calendar':
+    def clnEnd( self ) -> dt.date:
         return( self._clnEnd_ )
 
     #701. Define the format to input the date values if required
     @property
-    def fmtDateIn( self ) -> 'Get the format to input the date values if required':
+    def fmtDateIn( self ) -> str:
         return( self._fmtDateIn_ )
     @fmtDateIn.setter
-    def fmtDateIn( self , strfmt : ( str , list, tuple ) ) -> 'Set the format to input the date values if required':
+    def fmtDateIn( self , strfmt : ( str , list, tuple ) ):
         self._fmtDateIn_ = strfmt
 
     #702. Define the format to output the date values if required
     @property
-    def fmtDateOut( self ) -> 'Get the format to output the date values if required':
+    def fmtDateOut( self ) -> str:
         return( self._fmtDateOut_ )
     @fmtDateOut.setter
-    def fmtDateOut( self , strfmt : str ) -> 'Set the format to output the date values if required':
+    def fmtDateOut( self , strfmt : str ):
         #100. Validation
         try:
             dt.date.today().strftime(strfmt)
@@ -603,26 +612,26 @@ class CoreUserCalendar:
     #710. Define the method to extend the span of the user requested period of time
     #This is for the retrieval of Previous Work/Trade Days or Next Work/Trade Days.
     @property
-    def datespan( self ) -> 'Get the time span to extend the user requested period':
+    def datespan( self ) -> dt.timedelta:
         return( self._datespan_ )
     @datespan.setter
-    def datespan( self , tdelta : dt.timedelta ) -> 'Set the time span to extend the user requested period':
+    def datespan( self , tdelta : dt.timedelta ):
         self._datespan_ : dt.timedelta = tdelta
 
     #720. Define the method to modify the country configuration at runtime
     @property
-    def country( self ) -> 'Get the country code':
+    def country( self ) -> str:
         return( self._countrycode_ )
     @country.setter
-    def country( self , cc : str = 'CN' ) -> 'Set the country code':
+    def country( self , cc : str = 'CN' ):
         self._countrycode_ : str = cc.strip().upper()
 
     #730. Define the method to indicate whether to convert the output dates into character strings
     @property
-    def DateOutAsStr( self ) -> 'Get the indicator of whether to convert the output dates into strings':
+    def DateOutAsStr( self ) -> bool:
         return( self._OutAsStr_ )
     @DateOutAsStr.setter
-    def DateOutAsStr( self , flag : bool ) -> 'Set the indicator of whether to convert the output dates into strings':
+    def DateOutAsStr( self , flag : bool ):
         if not flag: flag = False
         if not isinstance( flag , bool ):
             raise TypeError('[' + self.LClassName + '][DateOutAsStr]:[{0}] should be [bool]!'.format( type(flag) ))

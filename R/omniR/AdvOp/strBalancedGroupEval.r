@@ -5,33 +5,31 @@
 #   | Group in Regular Expression (while NOT using RegExp as it would fail in many cases), and then replace their respective positions  #
 #   | with their parsed values in current environment, i.e. treat them as variables in current session                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Resolve the jinja-like expression such as: f<g<a>>, when [a] is a variable, [g<a>] is another, and so forth                    #
+#   |[1] Signature of this function is expanded from <strNestedParser>, see its documents for detailed argument list                    #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Resolve the jinja-like expression such as: <f{g{a}}>, when <a> is a variable, <g{a}> is another, and so forth                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |txt        :   Character string from which to extract the substrings                                                               #
-#   |lBound     :   Left bound of the substring, can be provided with a string, which will be stripped and then treated as a whole      #
-#   |               [(          ] <Default> A single left parenthesis                                                                   #
-#   |rBound     :   Right bound of the substring, can be provided with a string, which will be stripped and then treated as a whole     #
-#   |               [)          ] <Default> A single right parenthesis                                                                  #
-#   |rx         :   Whether to treat the [lBound] and [rBound] as Regular Expression                                                    #
-#   |               [FALSE      ] <Default> Treat them as raw character strings                                                         #
-#   |               [TRUE       ]           Treat them as regular expressions                                                           #
+#   |...               :   All arguments taken from the source function                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<various>  :   The character vector with possible replacement at the positions of Balanced Group Expressions                       #
-#   |               [1] Expressions such as : f<g<a>>, will be evaluated in recursion                                                   #
-#   |               [2] Given that any expression, such as: <a>, is not a known variable in current session, it will be treated as      #
-#   |                    plain text with the bounds removed in the output result                                                        #
-#   |               [3] When all elements of the result are of the same internal type, i.e. <character>, the output result is flattened #
-#   |                    as a vector, otherwise it is a list in the same length as the input vector                                     #
-#   |               [Special Case] When the whole string is surrounded by the bounds and its evaluation is successful, the return value #
-#   |                               will be the same as its referenced object, which may be of any type                                 #
+#   |<list>            :   List of character vectors with possible replacement at the positions of Balanced Group Expressions           #
+#   |                      [1] Expressions such as : <f{g{a}}>, will be evaluated in recursion                                          #
+#   |                      [2] Given that any expression, such as: <{a}>, is not a known variable in current session, it will be treated#
+#   |                           as plain text with the bounds removed in the output result                                              #
+#   |                      [3] The whole concatenated substring between the boundaries (exclusive of them) is stripped for object lookup#
+#   |                      [4] When the whole string is enclosed by the bounds and its evaluation is successful, the return value       #
+#   |                           will be the same as its referenced object, which may be of any type                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -44,6 +42,12 @@
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce <sys.function> to complement the base <Recall> under certain circumstances                                    #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260120        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |      |[2] Now behave in the same way as the source function                                                                       #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -53,21 +57,32 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |base                                                                                                                           #
+#   |   |rlang, glue                                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
-#   |   |   |re.escape                                                                                                                  #
-#   |   |   |locSubstr                                                                                                                  #
+#   |   |   |strNestedParser                                                                                                            #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
-strBalancedGroupEval <- function(
-	txt
-	,lBound = '('
-	,rBound = ')'
-	,rx = FALSE
+#001. Append the list of required packages to the global environment
+#Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
+lst_pkg <- deparse(substitute(c(
+	rlang, glue
+)))
+#Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
+lst_pkg <- paste0(lst_pkg, collapse = '')
+lst_pkg <- gsub('[[:space:]]', '', lst_pkg, perl = T)
+lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
+lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
+options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
+
+strBalancedGroupEval <- local({
+deco <- ExpandSignature$new(strNestedParser, instance = 'eSig')
+myfunc <- deco$wrap(function(
+	...
 ){
 	#001. Handle parameters
 	#[Quote: https://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine ]
@@ -75,171 +90,89 @@ strBalancedGroupEval <- function(
 	#If above statement cannot find the name correctly, this function must have been called via [do.call] or else,
 	# hence we need to traverse one layer above current one and extract the first argument of that call.
 	if (grepl('^function.+$',LfuncName[[1]],perl = T)) LfuncName <- gsub('^.+?\\((.+?),.+$','\\1',deparse(sys.call(-1)),perl = T)[[1]]
-	recall <- sys.function()
 
-	#012. Parameter buffer
-	if (!is.character(txt)) stop('[',LfuncName,'][txt]:[', typeof(txt), '] must be provided a character vector!')
-	if (any(lBound == rBound)) stop('[',LfuncName,'][lBound]:[', lBound, '] and [rBound]:[', rBound, '] must be different strings!')
-	if (!is.logical(rx)) stop('[',LfuncName,'][rx]:[', typeof(rx), '] must be provided a logical value!')
-	if (!rx) {
-		lBound_i <- re.escape(lBound)
-		rBound_i <- re.escape(rBound)
-	} else {
-		lBound_i <- lBound
-		rBound_i <- rBound
+	#050. Local parameters
+	dots <- rlang::list2(...)
+	args_share <- list('include' = FALSE)
+	eSig$vfyConflict(args_share)
+	args_in <- eSig$updParams(args_share, dots)
+
+	#060. Ensure no extra effort
+	meta_ <- eSig$getParam('meta_', args_in, inc_default = T) |> eval()
+	if (meta_){
+		message(glue::glue('[{LfuncName}]<meta_> is set as FALSE as this function does not require extra effort.'))
 	}
+	args_out <- eSig$updParams(list('meta_' = FALSE), args_in)
 
-	#100. Compare the occurrences of both bounds and stop if they do not match
-	#Return value of below function is a list of matrices comprised of start and end positions
-	posLB <- locSubstr(lBound_i, txt, overlap = FALSE)
-	posRB <- locSubstr(rBound_i, txt, overlap = FALSE)
-
-	#200. Define helper functions
-	#210. Function to count the occurrences of bounds
-	h_cnt_bound <- function(x){length(Filter(Negate(is.na), x[,'start']))}
-
-	#250. Function to identify the bounds of string extraction
-	h_ext_bound <- function(mat, rowid, method){
-		#100. Identify the starts and ends of current group
-		submat <- mat[rownames(mat) == rowid,]
-		rownames(submat) <- NULL
-		rowBgn <- rowEnd <- seq_len(nrow(submat))
-		rowEnd <- rowEnd[rowEnd %% 2 == 0]
-		rowBgn <- rowBgn[!(rowBgn %in% rowEnd)]
-
-		#300. Determine the bound name to extract
-		if (method == 'get') {
-			strBgn <- 'end'
-			strEnd <- 'start'
-		} else {
-			strBgn <- 'start'
-			strEnd <- 'end'
-		}
-
-		#500. Extraction
-		posBgn <- submat[rowBgn, strBgn]
-		posEnd <- submat[rowEnd, strEnd]
-
-		#700. Adjust the positions
-		if (method == 'get') {
-			posBgn <- posBgn + 1
-			posEnd <- posEnd - 1
-		}
-
-		#800. Form a new matrix and reset its rownames
-		rstOut <- cbind(posBgn, posEnd)
-		rownames(rstOut) <- NULL
-
-		#900. Return a new matrix
-		return(rstOut)
-	}
-
-	#290. Function to replace substrings of each element of the input vector in recursion
-	replstr <- function(i){
-		#100. Combine the positions of both bounds and arrange them from left to right
-		posLB_i <- posLB[[i]]
-		posRB_i <- posRB[[i]]
-		pos_all <- rbind(posLB_i, posRB_i)
-		pos_all <- pos_all[order(pos_all[,'start'], decreasing = F),]
-
-		#200. Prepare the adjuster of the Balanced Group
-		pos_adj <- as.integer(pos_all[,'start'] %in% posRB_i[,'start'])
-
-		#300. Add 1 on group ID if we encounter the left bound, or subtract by 1 if we encounter the round bound
-		pos_cnt <- cumsum((pos_all[,'start'] %in% posLB_i[,'start']) - (pos_all[,'start'] %in% posRB_i[,'start'])) + pos_adj
-
-		#500. Set the rowname of the combined positions, for later string replacement in recursion
-		rownames(pos_all) <- pos_cnt
-
-		#600. Replace the group with the largest ID (aka the inner-most group) with its parsed value
-		#610. Identify the ID of the inner-most groups
-		max_grp <- max(pos_cnt)
-		#Retrieve the first among the IDs as initiation
-		idx_grp <- match(max_grp, pos_cnt)
-		#The same Group ID always exists in pairs
-		k_grp <- as.integer(length(pos_cnt[pos_cnt == max_grp]) / 2)
-
-		#620. Determine the replacement of each identified group
-		idx_get <- h_ext_bound(pos_all, max_grp, 'get')
-		idx_rep <- h_ext_bound(pos_all, max_grp, 'rep')
-
-		#650. Try to get the value of the variables represented by the embraced substrings
-		val <- get_values(as.list(trimws(substring(txt[[i]], idx_get[,'posBgn'], idx_get[,'posEnd']))), inplace = T)
-
-		#670. Identify whether the whole string is to be replaced
-		#[IMPORTANT]
-		#[1] There can only be 0 or 1 group that matches such rule
-		#[2] If there is 1 group that matches the rule, it is the only one, i.e. [k_grp == 1]
-		pos_whole <- idx_rep[idx_rep[,'posBgn'] == 1 & idx_rep[,'posEnd'] == nchar(txt[[i]]),'posBgn']
-		if (length(pos_whole) == 1) return(val)
-
-		#680. Prepare the loop to replace the substrings
-		#[IMPORTANT]
-		#[1] Conduct replacement from right to left, which is safe
-		if (length(val) > 1) {
-			bgn_rep <- rev(idx_rep[,'posBgn'])
-			end_rep <- rev(idx_rep[,'posEnd'])
-			val <- rev(val)
-		} else {
-			bgn_rep <- idx_rep[,'posBgn']
-			end_rep <- idx_rep[,'posEnd']
-		}
-
-		#690. Conduct the replacement
-		rstMid <- txt[[i]]
-		for (j in seq_along(bgn_rep)) {
-			rstMid <- paste0(
-				substring(rstMid, 1, bgn_rep[[j]] - 1)
-				,val[[j]]
-				,substring(rstMid, end_rep[[j]] + 1)
-			)
-		}
-
-		#700. Process the new string by the provided bounds in recursion
-		rstOut <- recall(
-			txt = rstMid
-			,lBound = lBound
-			,rBound = rBound
-			,rx = rx
+	#100. Parse the nested structure out of the input string
+	nest_struct <- do.call(eSig$src, args_out) |>
+		sapply(
+			function(s){s[['RESULT']]}
+			,simplify = F
+			,USE.NAMES = T
 		)
 
-		#999. Return
-		return(rstOut)
+	#200. Define helper functions
+	#210. Function to join the nested structures into strings respectively, then evaluate the strings into new ones, with recursion
+	h_conj_str <- function(struct){
+		#[ASSUMPTION]
+		#[1] Input structure always has the form: [<string | nested struct>]
+		#[2] <nested struct> will be further processed by this function itself,
+		#     with its evaluation result MUST BE able to convert to a string using <as.character()>
+		#[3] All the evaluated items will be concatenated and then stripped, and then evaluated at current layer
+		#100. Initialize
+		str_struct <- ''
+
+		#500. Loop over the nested structure
+		for (m in struct){
+			if (!is.character(m)) {
+				str_struct <- paste0(str_struct, as.character(Recall(m)))
+			} else {
+				str_struct <- paste0(str_struct, m)
+			}
+		}
+
+		#999. Purge
+		return(get_values(trimws(str_struct), inplace = T))
 	}
 
-	#500. Count the occurrences of both bounds
-	kLB <- sapply(posLB, h_cnt_bound)
-	kRB <- sapply(posRB, h_cnt_bound)
-
-	#700. Calculation
-	seq_loop <- seq_along(txt)
-	calc_loop <- seq_loop[(kLB != 0) & (kLB == kRB) & sapply(txt, is.character)]
-	rstOut <- txt
-
-	#750. Vectorize the translation if all of the results are of the same value type
-	if (length(calc_loop) > 0) {
-		#100. Element-wise calculation
-		rstTmp <- lapply(calc_loop, replstr)
-
-		#500. Flatten the result when all of the results are of the same value type
-		vec_internal <- c('logical','integer','double','complex','character','raw')
-		rstType <- unique(sapply(rstTmp, typeof))
-		if ((length(rstType) == 1) & all(rstType %in% vec_internal)) rstTmp <- unlist(rstTmp)
-
-		#900. Overwrite the values for certain elements
-		if (length(calc_loop) == length(rstOut)) {
-			rstOut <- rstTmp
+	#230. Function to differ the approaches for conversion
+	#[ASSUMPTION]
+	#[1] Given any substring that is not enclosed by the boundaries, we mark it as <S>
+	#[2] According to the feature of the nested structure, if <S> exists in the top layer, we do separate concatenation WITHOUT
+	#     further evaluation, as the top layer is never enclosed by boundaries
+	#[3] According to the feature of the nested structure, every sub-layer <nested struct> is processed in recursion
+	#[4] If <nest_struct> is empty, we export an empty string
+	#[5] If <nest_struct> has only one <nested struct>, we honor its evaluated result type
+	#[6] Otherwise we export a concatenated string
+	h_conv <- function(struct){
+		len_struct <- length(struct)
+		if (len_struct == 0) {
+			return('')
+		} else if (len_struct == 1) {
+			return(h_conj_str(struct[[1]]))
 		} else {
-			rstOut[calc_loop] <- rstTmp
+			val <- sapply(
+				struct
+				,function(s){
+					if (is.list(s)) return(as.character(h_conj_str(s)))
+					else return(s)
+				}
+			)
+			return(paste0(val, collapse = ''))
 		}
 	}
 
-	#800. Flatten if there is only one element of the input vector
-	if (length(rstOut) == 1) rstOut <- rstOut[[1]]
-
-	#999. Return
-	return(rstOut)
-}
+	#500. Differentiate the result
+	return(sapply(
+		nest_struct
+		,h_conv
+		,simplify = F
+		,USE.NAMES = T
+	))
+})
+return(myfunc)
+})
 
 #[Full Test Program;]
 if (FALSE){
@@ -247,6 +180,7 @@ if (FALSE){
 	if (TRUE){
 		#010. Load user defined functions
 		source('D:\\R\\autoexec.r')
+		# Toy function <nestedFormatter> is from <Styles>
 
 		#100. Prepare strings
 		fill_a <- 'bb'
@@ -254,7 +188,7 @@ if (FALSE){
 		fill_cc <- 10
 		fill_dd <- data.frame(x = 1)
 		fill_ee <- data.frame(x = 2)
-		teststr <- c('(gg (fill_(fill_a))) aa (ee (ff))', '(fill_bb)', 'fill_a', 'aa(b')
+		teststr <- c('(gg (fill_(fill_a))) aa (ee (ff))', '(fill_bb)', 'fill_a')
 		teststr2 <- c('(fill_bb)', '(fill_cc)')
 		testjinja <- '{{ fill_{{ fill_a }} }}'
 		testjinja2 <- '{{ fill_dd }}'
@@ -264,43 +198,123 @@ if (FALSE){
 		#Return a list as the parsed results are of different value types
 		eval_str <- strBalancedGroupEval(
 			teststr
-			,lBound = '('
-			,rBound = ')'
+			,enclosers = c('(' = ')')
 			,rx = FALSE
 		)
+		nestedFormatter(eval_str)
+		# list(
+		#   $`(gg (fill_(fill_a))) aa (ee (ff))` : chr. ("gg 5 aa ee ff")
+		#   $`(fill_bb)` : double (5)
+		#   $`fill_a` : chr. ("bb")
+		# )
 
-		#Return a numeric vector as the parsed results are of the same internal type
+		#[ASSUMPTION]
+		#[1] Since there could be different types of resolved objects in the output, we do not simplify the result into a vector
 		eval_str2 <- strBalancedGroupEval(
 			teststr2
-			,lBound = '('
-			,rBound = ')'
+			,enclosers = c('(' = ')')
 			,rx = FALSE
 		)
+		nestedFormatter(eval_str2)
+		# list(
+		#   $`(fill_bb)` : double (5)
+		#   $`(fill_cc)` : double (10)
+		# )
 
 		#Recursion
 		eval_jinja <- strBalancedGroupEval(
 			testjinja
-			,lBound = '{{'
-			,rBound = '}}'
+			,enclosers = c('{{' = '}}')
 			,rx = FALSE
 		)
+		nestedFormatter(eval_jinja)
+		# list(
+		#   $`{{ fill_{{ fill_a }} }}` : double (5)
+		# )
 
 		#Return a data.frame as the input vector has the length of 1
 		eval_jinja2 <- strBalancedGroupEval(
 			testjinja2
-			,lBound = '{{'
-			,rBound = '}}'
+			,enclosers = c('{{' = '}}')
 			,rx = FALSE
 		)
-		class(eval_jinja2)
+		nestedFormatter(eval_jinja2)
+		# list(
+		#   $`{{ fill_dd }}` : Object of class: (data.frame)
+		# )
 
 		#Return a list of [data.frame]s
 		eval_jinja3 <- strBalancedGroupEval(
 			testjinja3
-			,lBound = '{{'
-			,rBound = '}}'
+			,enclosers = c('{{' = '}}')
 			,rx = FALSE
 		)
-		sapply(eval_jinja3, class)
+		nestedFormatter(eval_jinja3)
+		# list(
+		#   $`{{ fill_dd }}` : Object of class: (data.frame)
+		#   $`{{ fill_ee }}` : Object of class: (data.frame)
+		# )
+
+		#300. Special cases
+		#[ASSUMPTION]
+		#[1] We export a placeholder
+		nestedFormatter(strBalancedGroupEval(''))
+		# list(
+		#   chr. ("")
+		# )
+
+		nestedFormatter(strBalancedGroupEval('()'))
+		# list(
+		#   $`()` : chr. ("")
+		# )
+
+		#[ASSUMPTION]
+		#[1] The name is retained as the output value, since it does not denote a variable in current environment
+		nestedFormatter(strBalancedGroupEval('a'))
+		# list(
+		#   $`a` : chr. ("a")
+		# )
+
+		#[ASSUMPTION]
+		#[1] All the content inside the enclosers is treated as a whole, so it cannot denote a valid variable
+		nestedFormatter(strBalancedGroupEval('(a fill_a)'))
+		# list(
+		#   $`(a fill_a)` : chr. ("a fill_a")
+		# )
+
+		nestedFormatter(strBalancedGroupEval('a (fill_a)'))
+		# list(
+		#   $`a (fill_a)` : chr. ("a bb")
+		# )
+
+		nestedFormatter(strBalancedGroupEval('(fill_bb) b'))
+		# list(
+		#   $`(fill_bb) b` : chr. ("5 b")
+		# )
+
+		nestedFormatter(strBalancedGroupEval('(a) fill_bb'))
+		# list(
+		#   $`(a) fill_bb` : chr. ("a fill_bb")
+		# )
+
+		# [CPU] Intel Core i9-14900K 8-Core 5.00GHz
+		# [RAM] 128GB DDR5 4800MHz
+		#900. Test timing
+		#[ASSUMPTION]
+		#[1] Due to below features, this function is 300 times slower than its counterpart in <Python> branch
+		#    [1] There are 5 more stacks to store necessary information during calculation
+		#    [2] Calculation upon stacks is actually <copy> + <modify> + <overwrite>, as there is no immutable design
+		#    [3] There are a lot of evaluation steps over the fabricated scripts during the loop, the parsing of these steps
+		#         takes up around 1/3 of the time complexity. This is primarily due to the lack of methods to modify the
+		#         elements inside a list with many nesting levels in a parametric way.
+		#910. Large string for RegExp
+		str_large <- strrep(teststr, 10000)
+		t_overall <- 0.0
+		t1 <- lubridate::now()
+		eval_large <- strBalancedGroupEval(str_large)
+		t2 <- lubridate::now()
+		t_overall <<- t_overall + t2 - t1
+		print(t_overall)
+		# Time difference of 36.31147 secs
 	}
 }

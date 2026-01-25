@@ -7,12 +7,13 @@ import sys, re
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
 import pywintypes
 import win32gui
+from typing import Optional
 from collections.abc import Iterable
-from . import isWindowCloaked
+from omniPy.RPA import isWindowCloaked
 
 def getDesktopWindows(
-    classes : Iterable = None
-    ,titles : Iterable = None
+    classes : Optional[str | Iterable[str]] = None
+    ,titles : Optional[str | Iterable[str]] = None
     ,regex : bool = False
 ) -> dict:
     #000. Info.
@@ -24,21 +25,24 @@ def getDesktopWindows(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   | https://stackoverflow.com/questions/61865399/win32gui-shows-some-windows-that-are-not-open                                        #
-#   | https://stackoverflow.com/questions/64586371/filtering-background-processes-pywin32                                               #
+#   |[1] https://stackoverflow.com/questions/61865399/win32gui-shows-some-windows-that-are-not-open                                     #
+#   |[2] https://stackoverflow.com/questions/64586371/filtering-background-processes-pywin32                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |classes     :   Iterable of [class] strings to filter from the results                                                             #
+#   |classes     :   Iterable of <class> strings to filter from the results                                                             #
 #   |                 [<None>      ] <Default> Function does not filter out any class                                                   #
-#   |titles      :   Iterable of [title] strings to filter from the results                                                             #
+#   |titles      :   Iterable of <title> strings to filter from the results                                                             #
 #   |                 [<None>      ] <Default> Function does not filter out any title                                                   #
+#   |regex       :   <bool> Whether to search for the names using RegExp                                                                #
+#   |                 [False       ] <Default> Direct match of the window names                                                         #
+#   |                 [True        ]           Match the certain pattern to the names                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<dict>      :   Dictionary with <keys> set as the [handles] of the windows found, while the <values> set as below for each:        #
+#   |<dict>      :   Dictionary with <keys> set as the <handles> of the windows found, while the <values> set as below for each:        #
 #   |                [class   ] Class of the window by which to filter the dedicated one among these many                               #
 #   |                [title   ] Title of the window by which to filter the dedicated one among these many                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -51,7 +55,7 @@ def getDesktopWindows(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211126        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add arguments [classes] and [titles] to filter the windows when required                                                #
+#   | Log  |[1] Add arguments <classes> and <titles> to filter the windows when required                                                #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20251102        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -67,16 +71,14 @@ def getDesktopWindows(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, collections, win32gui                                                                                                     #
+#   |   |sys, collections, win32gui, typing                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.RPA                                                                                                                     #
+#   |   |RPA                                                                                                                            #
 #   |   |   |isWindowCloaked                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.

@@ -16,30 +16,30 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[clnBgn       ]   :   Beginning date of the calendar, provided by any object that can be coerced to [Date] class           #
+#   |   |   |[clnBgn       ]   :   Beginning date of the calendar, provided by any object that can be coerced to <Date> class           #
 #   |   |   |                      [<today - 5 years>   ]<Default> 5 years counting back from the system date                           #
-#   |   |   |[clnEnd       ]   :   Ending date of the calendar, provided by any object that can be coerced to [Date] class              #
+#   |   |   |[clnEnd       ]   :   Ending date of the calendar, provided by any object that can be coerced to <Date> class              #
 #   |   |   |                      [<today + 30 days>   ]<Default> 30 days counting forward from the system date                        #
 #   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
 #   |   |   |                      [CN                  ]<Default> China                                                                #
 #   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [opt('ClndrAdj')     ]<Default> Retrieve the system option [via getOption()] for the file path       #
+#   |   |   |                      [<opt('ClndrAdj')>   ]<Default> Retrieve the system option (via <getOption()>) for the file path     #
 #   |   |   |                       [IMPORTANT] The file must contain below columns (case sensitive to column names):                   #
 #   |   |   |                                   [CountryCode ] Country Code for selection of adjustment and display of weekday names    #
-#   |   |   |                                   [F_WORKDAY   ] [1/0] values indicating [workday/holiday] respectively                   #
-#   |   |   |                                   [D_DATE      ] Strings to be imported as [Dates] by default option of [readr:read_csv]  #
+#   |   |   |                                   [F_WORKDAY   ] <1/0> values indicating <workday/holiday> respectively                   #
+#   |   |   |                                   [D_DATE      ] Strings to be imported as <Date> by default option of <readr:read_csv>   #
 #   |   |   |                                   [C_DESC      ] Description/Name of the special dates (compared to: Mon., Tue., etc.)    #
-#   |   |   |[fmtDateIn    ]   :   Format of the [clnBgn] and [clnEnd] to be coerced to [Date] class                                    #
-#   |   |   |                      [<various>           ]<Default> Follow the rules set in [omniR$asDates]                              #
+#   |   |   |[fmtDateIn    ]   :   Format of the <clnBgn> and <clnEnd> to be coerced to <Date> class                                    #
+#   |   |   |                      [<various>           ]<Default> Follow the rules set in <asDates>                                    #
 #   |   |   |[fmtDateOut   ]   :   Format of the output date values to be translated into character strings when necessary              #
-#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see [strftime] convention          #
+#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see <strftime> convention          #
 #   |   |   |[DateOutAsStr ]   :   Whether to convert the output date values into character strings                                     #
-#   |   |   |                      [False               ]<Default> Output dates directly in the type of [datetime.date]                 #
-#   |   |   |                      [True                ]          Convert dates into strings based on [fmtDateOut]                     #
+#   |   |   |                      [False               ]<Default> Output dates directly in the type of <Date>                          #
+#   |   |   |                      [True                ]          Convert dates into strings based on <fmtDateOut>                     #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not return values, but may assign values to variables for [private] object          #
+#   |   |   |<NULL>            :   This method does not return values, but will assign values to variables for <private> object         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -53,11 +53,11 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not take input arguments                                                            #
+#   |   |   |<NULL>            :   This method does not take input arguments                                                            #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ df          ]   :   Data.frame storing the mapping table of weekdays in different languages                              #
+#   |   |   |<data.frame>      :   Data.frame storing the mapping table of weekdays in different languages                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[.crCalendar]                                                                                                                  #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -67,23 +67,22 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[datebgn      ]   :   Beginning date of the calendar, provided by any object that can be coerced to [Date] class           #
+#   |   |   |[datebgn      ]   :   Beginning date of the calendar, provided by any object that can be coerced to <Date> class           #
 #   |   |   |                      [private$.clnBgn        ]<Default> The value at Calendar initialization                              #
-#   |   |   |[dateend      ]   :   Ending date of the calendar, provided by any object that can be coerced to [Date] class              #
+#   |   |   |[dateend      ]   :   Ending date of the calendar, provided by any object that can be coerced to <Date> class              #
 #   |   |   |                      [private$.clnEnd        ]<Default> The value at Calendar initialization                              #
 #   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
 #   |   |   |                      [private$.countrycode   ]<Default> The value at Calendar initialization                              #
 #   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
 #   |   |   |                      [private$.clnAdj        ]<Default> The value at Calendar initialization                              #
-#   |   |   |[infmt        ]   :   Format of the [datebgn] and [dateend] to be coerced to [Date] class                                  #
+#   |   |   |[infmt        ]   :   Format of the [datebgn] and [dateend] to be coerced to <Date> class                                  #
 #   |   |   |                      [private$.fmtDateIn     ]<Default> The value at Calendar initialization                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ df          ]   :   Data.frame storing the adjusted Calendar, yet without the Workweek/Tradeweek information, as they    #
-#   |   |   |                       will be separately created when user calls the corresponding methods                                #
+#   |   |   |<data.frame>      :   Data.frame storing the adjusted Calendar, yet without the Workweek/Tradeweek information, as they    #
+#   |   |   |                       will be separately created when user calls the corresponding methods. See below table info.         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |100.   Field specifications for the dataset. (For field types please use [df.info()] for retrieval)                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   |          Field Name     |                                 Field Description                                           #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
@@ -94,7 +93,7 @@
 #   |   |   |   | F_WORKDAY               | Flag of whether current date is Work Day in terms of user-defined holiday arrangements.     #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | F_TradeDay              | Flag of whether current date is Trade Day in terms of user-defined holiday arrangements.    #
-#   |   |   |   |                         | Its difference to [F_WORKDAY] is that the Shifted Work Days can often be Saturdays or       #
+#   |   |   |   |                         | Its difference to <F_WORKDAY> is that the Shifted Work Days can often be Saturdays or       #
 #   |   |   |   |                         |  Sundays while they are not always Trade Days around the world.                             #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   | D_PrevWorkDay           | The previous Work Day to current date (in terms of user-defined holiday arrangements)       #
@@ -115,29 +114,27 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[datebgn      ]   :   Beginning date to subset the calendar, provided by any object that can be coerced to [Date] class    #
+#   |   |   |[datebgn      ]   :   Beginning date to subset the calendar, provided by any object that can be coerced to <Date> class    #
 #   |   |   |                      [private$.dateBgn       ]<Default> The value per user request on the fly                             #
-#   |   |   |[dateend      ]   :   Ending date to subset the calendar, provided by any object that can be coerced to [Date] class       #
+#   |   |   |[dateend      ]   :   Ending date to subset the calendar, provided by any object that can be coerced to <Date> class       #
 #   |   |   |                      [private$.dateEnd       ]<Default> The value per user request on the fly                             #
 #   |   |   |[inCln        ]   :   Universal calendar to subset                                                                         #
 #   |   |   |                      [private$.uniClndr      ]<Default> The value at Calendar initialization                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ df          ]   :   Data.frame storing the subset of the universal calendar, with the Workweek/Tradeweek information     #
+#   |   |   |<data.frame>      :   Data.frame storing the subset of the universal calendar, with the Workweek/Tradeweek information     #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |100.   Field specifications for the dataset. (For field types please use [df.info()] for retrieval)                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |   |          Field Name     |                                 Field Description                                           #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   |<Other fields created as | Keep all other fields in [.crCalendar] with additional field created as below               #
-#   |   |   |   | output of [.crCalendar]>|                                                                                             #
+#   |   |   |   |<from [.crCalendar]>     | Keep all other fields in <.crCalendar> with additional field created as below               #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   | K_WorkWeek              | The number of Work Weeks in current period of time (Each Work Week represents a period of   #
-#   |   |   |   |                         |  consecutive Work Days)                                                                     #
+#   |   |   |   | K_WorkWeek              | The number of Work Weeks in current period of time, each Work Week represents a period of   #
+#   |   |   |   |                         |  consecutive Work Days.                                                                     #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
-#   |   |   |   | K_TradeWeek             | The number of Trade Weeks in current period of time (Each Trade Week represents a period of #
-#   |   |   |   |                         |  consecutive Trade Days)                                                                    #
+#   |   |   |   | K_TradeWeek             | The number of Trade Weeks in current period of time, each Trade Week represents a period of #
+#   |   |   |   |                         |  consecutive Trade Days.                                                                    #
 #   |   |   |   |-------------------------|---------------------------------------------------------------------------------------------#
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -165,9 +162,12 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested format to translate the character strings into dates       #
 #   |   |   |   | within specific date input methods defined by this family of classes                                                  #
-#   |   |   |   |[1] When [set] is called, it changes [private$.fmtDateIn]; while all methods that translate character strings into     #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.fmtDateIn>; while all methods that translate character strings into     #
 #   |   |   |   |     dates will change the input format in accordance                                                                  #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.fmtDateIn]                                         #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.fmtDateIn>                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -175,7 +175,7 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<chr.>            :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[fmtDateOut]                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -183,9 +183,12 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested format to translate the dates into character strings       #
 #   |   |   |   | within specific date retrieval methods defined by this family of classes                                              #
-#   |   |   |   |[1] When [set] is called, it changes [private$.fmtDateOut]; while all methods that generate character string out of    #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.fmtDateOut>; while all methods that generate character string out of    #
 #   |   |   |   |     dates will change the output format in accordance                                                                 #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.fmtDateOut]                                        #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.fmtDateOut>                                        #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -193,7 +196,7 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<chr.>            :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[datespan]                                                                                                                     #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -201,8 +204,11 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested span of date periods to calculate the Previous/Next        #
 #   |   |   |   | Workdays/Tradedays for any specific dates; basically used to extend the universal calendar during calculation         #
-#   |   |   |   |[1] When [set] is called, it changes [private$.datespan] and re-generate the universal calendar                        #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.datespan]                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.datespan> and re-generate the universal calendar                        #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.datespan>                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -210,15 +216,18 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<difftime>   ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<difftime>        :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[country]                                                                                                                      #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested Country Code.                                              #
-#   |   |   |   |[1] When [set] is called, it changes the Country Code and re-generate the universal calendar                           #
-#   |   |   |   |[2] When [return] is called, it returns the last value of Country Country Code                                         #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes the Country Code and re-generate the universal calendar                           #
+#   |   |   |   |[2] When <return> is called, it returns the last value of Country Country Code                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -226,7 +235,7 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<chr.>       ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<chr.>            :   The same values as the previous input by the user                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[DateOutAsStr]                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
@@ -241,7 +250,7 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<logical>    ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<logical>         :   The same values as the previous input by the user                                                    #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -255,7 +264,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210904        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a separate function [getCalendarAdj] to search for the calendar adjustment in current environment             #
+#   | Log  |[1] Introduce a separate function <getCalendarAdj> to search for the calendar adjustment in current environment             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -269,7 +278,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |getCalendarAdj                                                                                                             #
 #   |   |   |asDates                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -414,7 +423,7 @@ CoreUserCalendar <- R6::R6Class('CoreUserCalendar'
 					dplyr::left_join( shiftdata , by = 'D_DATE' , suffix = c( '' , '.y' ) ) %>%
 					dplyr::mutate(F_WORKDAY = ifelse(is.na(F_WORKDAY.y), F_WORKDAY, F_WORKDAY.y)) %>%
 					dplyr::mutate(C_DESC = ifelse(is.na(C_DESC.y), C_DESC, C_DESC.y)) %>%
-					dplyr::select(-tidyselect::ends_with('.y'))
+					dplyr::select(-dplyr::ends_with('.y'))
 			}
 
 			#230. Identify the Trade days

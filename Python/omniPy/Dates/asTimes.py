@@ -28,28 +28,33 @@ def asTimes(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert any type of input values into valid [datetime.time], i.e. time of day                         #
-#   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
-#   |             column(s) in the type of [dt.date] to ensure a dedicated result, i.e. below methods create the columns in the same    #
-#   |             [dtype] as [object] no matter the input is empty or not:                                                              #
-#   |            [1] [pd.Series.apply(asTimes).astype('object')] or [pd.DataFrame.map(asTimes).astype('object')]                        #
-#   |            [2] [asTimes(pd.Series)] or [asTimes(pd.DataFrame)]                                                                    #
+#   |This function is intended to convert any type of input values into valid <datetime.time>, i.e. time of day                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |IMPORTANT                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] When the input is an empty <pd.Series> or <pd.DataFrame>, make sure to use either of below forms to assign the column(s) in the#
+#   |     type of <dt.date> to ensure a dedicated result, i.e. below methods create the columns in the same <dtype> as <object> no      #
+#   |     matter the input is empty or not                                                                                              #
+#   |    [1] <asTimes(pd.Series)> (preferred for high efficiency)                                                                       #
+#   |    [2] <asTimes(pd.DataFrame)> (preferred for high efficiency)                                                                    #
+#   |    [3] <pd.Series.apply(asTimes).astype('object')>                                                                                #
+#   |    [4] <pd.DataFrame.map(asTimes).astype('object')>                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indate      :   Time-like values, can be list/tuple of date values, character strings, integers or date column of a data frame     #
-#   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
+#   |indate      :   Time-like values, can be Iterable of date values, character strings, integers or date column of a data frame       #
+#   |fmt         :   Alternative format to be passed to function <strptime> when the input is a character string.                       #
 #   |                Re-introduced at v1.4, requiring caller to provide specific format, or spend lots of time during parsing           #
-#   |                 [ <list>     ] <Default> Try to match these formats for any input strings, see function definition                #
-#   |unit        :   Unit by which to convert the values in the type of [int], [float], [np.integer] or [np.floating]                   #
-#   |                See official document of [datetime.timedelta]                                                                      #
+#   |                 [<see def.>  ] <Default> Try to match these formats for any input strings, see function definition                #
+#   |unit        :   Unit by which to convert the values in the type of <int>, <float>, <np.integer> or <np.floating>.                  #
+#   |                See official document of <datetime.timedelta>                                                                      #
 #   |                 [ seconds    ] <Default> Also the default unit of SAS time/datetime storage for easy conversion                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<Any>       :   The returned value may be <dt.time | Iterable[dt.time]> depending on the input type                                #
+#   |<Any>       :   The returned value may be <dt.time> or <Iterable[dt.time]> depending on the input type                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -60,17 +65,17 @@ def asTimes(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210619        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce [Iterable] to support more iterable input types for the arguments                                             #
+#   | Log  |[1] Introduce <Iterable> to support more iterable input types for the arguments                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210816        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new argument [asnat] to indicate whether to accept invalid input values                                             #
+#   | Log  |[1] Add new argument <asnat> to indicate whether to accept invalid input values                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210909        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
+#   | Log  |[1] Remove the argument <asnat> as the function no longer raise errors for invalid inputs, but output <pd.NaT>              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230608        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
@@ -110,13 +115,11 @@ def asTimes(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.

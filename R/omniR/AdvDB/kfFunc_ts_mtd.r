@@ -4,6 +4,12 @@
 #   |This function is intended to standardize the generation of KPI datasets by minimize the calculation effort and consumption of      #
 #   | system resources                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <kfCore_ts_agg>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <M>onth-<T>o-<D>ate algorithm                                        #

@@ -24,7 +24,7 @@ def customLog(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to create or extend a customized logger (only when it is a Singleton)                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Log the results both inside the command console and to an external log file, optionally with a debug file                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -33,8 +33,8 @@ def customLog(
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |name        :   Character string as the name of the logger to be created/extended                                                  #
-#   |propagate   :   Whether to propagate the messages to all parent loggers, see Python: logging.Logger.propagate                      #
-#   |                 [not set     ] <Default> Follow the default behavior of Python                                                    #
+#   |propagate   :   Whether to propagate the messages to all parent loggers, see Python: <logging.Logger.propagate>                    #
+#   |                 [<not set>   ] <Default> Follow the default behavior of Python                                                    #
 #   |                 [False       ]           Usually used in custom logger                                                            #
 #   |mode        :   Mode to write to logfile and debugfile                                                                             #
 #   |                 [a           ] <Default> Use the dedicated mode, see logging.FileHandler                                          #

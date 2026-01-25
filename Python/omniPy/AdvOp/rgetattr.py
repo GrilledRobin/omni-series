@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 from functools import reduce
+from typing import Any
 
 def rgetattr(
     obj
@@ -10,20 +10,20 @@ def rgetattr(
     ,*default
     ,args : dict = {}
     ,sep : str = '.'
-) -> 'Get the attribute of object in recursion':
-    #000.   Info.
+) -> Any:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to get the attribute of the object in recursion, in case the provided attributes are nested; when any    #
-#   | nested attribute is a [callable], also enable the requestor to provide arguments for it to call                                   #
+#   | nested attribute is a <callable>, also enable the requestor to provide arguments for it to call                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Provide a nested string of attributes for the object and try to obtain the value for the deepest attribute                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote:                                                                                                                             #
+#   |QUOTE:                                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-subobjects-chained-properties                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -33,27 +33,27 @@ def rgetattr(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |obj        :   Any object to obtain the attributes                                                                                 #
 #   |attr       :   (Possibly nested) attributes to retrieve                                                                            #
-#   |               IMPORTANT: When any sub-attributes are [callable], for instance [aaa.bbb(arg).ccc] is to be obtained, DO NOT        #
-#   |                           provide the call, but provide [aaa.bbb.ccc] instead; the function handles such case via [args]          #
-#   |default    :   [Optional] positional argument, in place of the default value in case the dedicated attribute is not obtainable     #
-#   |               IMPORTANT: It represents the same argument in the native function [getattr()]                                       #
-#   |args       :   A nested dict for any [callable] sub-attribute to call, see examples for the usage                                  #
+#   |               [IMPORTANT] When any sub-attributes are <callable>, for instance <aaa.bbb(arg).ccc> is to be obtained, DO NOT       #
+#   |                           provide the call, but provide <aaa.bbb.ccc> instead; the function handles such case via <args>          #
+#   |default    :   <Optional> positional argument, in place of the default value in case the dedicated attribute is not obtainable     #
+#   |               [IMPORTANT] It represents the same argument in the native function <getattr()>                                      #
+#   |args       :   A nested dict for any <callable> sub-attribute to call, see examples for the usage                                  #
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
-#   |               [dict       ]           In the form: {subattr1:{'pos':tuple(),'kw':dict()},...}                                     #
-#   |                                       [<subattr1-n>] Any attribute name scanned by [sep] from within [attr]. (updated) Since some #
-#   |                                                       attribute names may exist in the nested search, e.g. [aa.bb.cc.bb.dd], we   #
+#   |               [dict       ]           In the form: <{subattr1:{'pos':tuple(),'kw':dict()},...}>                                   #
+#   |                                       [<subattr1-n>] Any attribute name scanned by <sep> from within <attr>. (updated) Since some #
+#   |                                                       attribute names may exist in the nested search, e.g. <aa.bb.cc.bb.dd>, we   #
 #   |                                                       should use their respective full names to identify the correct call, i.e.   #
-#   |                                                       for above case [aa.bb] and [aa.bb.cc.bb] should be provided respectively    #
+#   |                                                       for above case <aa.bb> and <aa.bb.cc.bb> should be provided respectively    #
 #   |                                                       for the correct call to them.                                               #
-#   |                                       [pos         ] Positional arguments to current [callable], can be 0-tuple or None           #
-#   |                                       [kw          ] Keyword arguments to current [callable], can be 0-dict or None               #
-#   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
+#   |                                       [pos         ] Positional arguments to current <callable>, can be <0-tuple> or <None>       #
+#   |                                       [kw          ] Keyword arguments to current <callable>, can be <0-dict> or <None>           #
+#   |sep        :   Separator to scan for sub-attributes from within <attr>                                                             #
 #   |               [<see def.> ] <Default> See function definition                                                                     #
 #   |               [<str>      ]           Single character to be used for separation                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<obj>      :   Value of the leaf attribute as obtained, or [default] if it is provided while the leaf attribute is unobtainable    #
+#   |<obj>      :   Value of the leaf attribute as obtained, or <default> if it is provided while the leaf attribute is unobtainable    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -70,17 +70,12 @@ def rgetattr(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, functools                                                                                                                 #
+#   |   |functools, typing                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Parameter buffer
 

@@ -9,7 +9,7 @@ def thisShell() -> str:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to identify the shell environment in which current session is running, e.g. <Spyder>                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Differentiate the process when in Command Line Interface or in Interactive Python                                              #
 #   |[2] https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook                       #

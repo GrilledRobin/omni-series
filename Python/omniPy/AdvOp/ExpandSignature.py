@@ -57,8 +57,9 @@ class ExpandSignature:
 #   |[3] <co_nlocals> is merged in below way                                                                                            #
 #   |    [1] Number of arguments in <src> (rather than <co_nlocals> in <src> as we do not need its other local variables)               #
 #   |    [2] Number of arguments in <dst> eliminating VAR_POSITIONAL and VAR_KEYWORD                                                    #
-#   |[4] <co_flags> is the bitwise OR of <src> and (<dst>.<co_flags> - CO_VARARGS - CO_VARKEYWORDS). E.g. if <src> is not a generator   #
-#   |     while <dst> is one, then the wrapped callable is still a generator                                                            #
+#   |[4] <co_flags> is the bitwise OR of various flags from both callables, details are as below                                        #
+#   |    [1] <CO_VARARGS> and <CO_VARKEYWORDS> are taken from <src>                                                                     #
+#   |    [2] All the rest <co_flags> are from <dst>                                                                                     #
 #   |    see: https://docs.python.org/3/library/inspect.html#inspect-module-co-flags                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |INSTANCE ATTRIBUTES                                                                                                                #
@@ -680,7 +681,7 @@ class ExpandSignature:
 
         #300. Identify specific attributes
         #320. Code Object Flags
-        flags_upd = dst.__code__.co_flags
+        flags_dst = dst.__code__.co_flags
 
         #400. Merge arguments
         #410. POSITIONAL_ONLY
@@ -732,12 +733,18 @@ class ExpandSignature:
         co_base = {k:getattr(dst.__code__, k) for k in dir(dst.__code__) if k.startswith('co_')}
 
         #530. Prepare merged flags
-        if self._hasFlag(flags_upd, inspect.CO_VARARGS):
-            flags_upd -= inspect.CO_VARARGS
-        if self._hasFlag(flags_upd, inspect.CO_VARKEYWORDS):
-            flags_upd -= inspect.CO_VARKEYWORDS
+        flags_from_src = 0
+        if self._hasFlag(self.sig_src['flags'], inspect.CO_VARARGS):
+            flags_from_src += inspect.CO_VARARGS
+        if self._hasFlag(self.sig_src['flags'], inspect.CO_VARKEYWORDS):
+            flags_from_src += inspect.CO_VARKEYWORDS
 
-        flags = self.sig_src['flags'] | flags_upd
+        if self._hasFlag(flags_dst, inspect.CO_VARARGS):
+            flags_dst -= inspect.CO_VARARGS
+        if self._hasFlag(flags_dst, inspect.CO_VARKEYWORDS):
+            flags_dst -= inspect.CO_VARKEYWORDS
+
+        flags = flags_from_src | flags_dst
 
         #550. Prepare the local variable names
         # var_local = tuple(set(co_base['co_varnames']) - set(args_dst.keys()))
@@ -1282,9 +1289,13 @@ if __name__=='__main__':
     # gen_print2 begin
     # gen_print begin
     # print [paper] [0] out of [5]
+    # gen_print msg=None
     # print [paper] [1] out of [5]
+    # gen_print msg=None
     # print [paper] [2] out of [5]
+    # gen_print msg=None
     # print [paper] [3] out of [5]
+    # gen_print msg=None
     # gen_print end
     # gen_print2 end
     # r_gen.value='gen_print done'
@@ -1332,9 +1343,13 @@ if __name__=='__main__':
     # gen_print3 begin
     # gen_print begin
     # print [word] [0] out of [5]print [word] [0] out of [5]
+    # gen_print msg=None
     # print [word] [1] out of [5]print [word] [1] out of [5]
+    # gen_print msg=None
     # print [word] [2] out of [5]print [word] [2] out of [5]
+    # gen_print msg=None
     # print [word] [3] out of [5]print [word] [3] out of [5]
+    # gen_print msg=None
     # gen_print end
     # gen_print3 end
     # r_gen3.value='[User] gen_print done'
@@ -1527,7 +1542,7 @@ if __name__=='__main__':
     #[2] However, <__name__> is the wrapped one instead of the wrapper, which is the design but not what we need
     help(dst5)
     # Help on function dst4 in module __main__:
-    # dst4(self, arg4, /, arg1, *, arg5, arg3=3, **kw)
+    # dst4(self, arg4, /, arg1, *, arg5, arg9=90, arg8=8, arg3=3, **kw)
 
     #[ASSUMPTION]
     #[1] <dst5.__code__.co_flags> is <15>, indicating both <*pos> and <**kw> exists in the signature

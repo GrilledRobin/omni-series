@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import pandas as pd
 import numpy as np
 from typing import Any
@@ -13,7 +12,7 @@ def vecStack(
     ,idCol : str = '.idCol.'
     ,valName : str = '.val.'
 ) -> pd.DataFrame:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -21,7 +20,7 @@ def vecStack(
 #   |This function is intended to stack (i.e. unfold) the provided 1-D or 2-D iterable object into a dataframe by setting all input     #
 #   | values into one column, to simplify the future process. Use <vecUnstack> to transform such structure back to its shape and type   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] When any function is designed to unanimously handle <pd.Series>, <pd.DataFrame> and scalar value (or iterable of such), use    #
 #   |     this function to unify the input data and hence the internal process                                                          #
@@ -41,7 +40,7 @@ def vecStack(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<DataFrame> :   pd.DataFrame with below columns:                                                                                   #
+#   |<DataFrame> :   <pd.DataFrame> with below columns:                                                                                 #
 #   |                 [<idRow>     ]           Input position at axis-0                                                                 #
 #   |                 [<idCol>     ]           Input position at axis-1                                                                 #
 #   |                 [<valName>   ]           Input value at above position                                                            #
@@ -66,18 +65,12 @@ def vecStack(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, numpy, typing, collections                                                                                        #
+#   |   |pandas, numpy, typing, collections                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #100. Convert the input value into a dataframe
     if isinstance(vec, pd.DataFrame):

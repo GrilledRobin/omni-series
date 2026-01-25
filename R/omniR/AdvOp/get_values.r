@@ -1,35 +1,35 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the values of the provided [values] (by regarding them as variable names) from the closest   #
-#   | call stack, which could possibly be [global], if they are defined more than once in different frames                              #
+#   |This function is intended to retrieve the values of the provided <values> (by regarding them as variable names) from the closest   #
+#   | call stack, which could possibly be <global>, if they are defined more than once in different frames                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Scenarios:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Map the values of variables as they are provided [character strings]                                                           #
+#   |[1] Map the values of variables as they are provided <character strings>                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |...          :   Various arguments in either form as below, that indicates a list of objects to be validated                       #
-#   |                 [1] Name parameters just as calling other functions with [...] as parameter                                       #
+#   |                 [1] Name parameters just as calling other functions with <...> as parameter                                       #
 #   |                 [2] A list with named members, similar as above, but provided in a combined list                                  #
-#   |inplace      :   Whether to keep the output the same as the input values if any cannot be found as [object names] from the frames  #
-#   |                 [TRUE       ] <Default> Keep the input values as output if they cannot be identified as [object names]            #
-#   |                 [FALSE      ]           Output [NA] for those which cannot be identified as [object names]                        #
-#   |mode         :   The mode or type of object sought, see definition of [mget]                                                       #
+#   |inplace      :   Whether to keep the output the same as the input values if any cannot be found as <object names> from the frames  #
+#   |                 [TRUE       ] <Default> Keep the input values as output if they cannot be identified as <object names>            #
+#   |                 [FALSE      ]           Output <NA> for those which cannot be identified as <object names>                        #
+#   |mode         :   The mode or type of object sought, see definition of <mget>                                                       #
 #   |                 [any        ] <Default> Seek out for any type of values for the input                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>    :   This function output different values in below convention:                                                        #
-#   |                 [1] If [...] is provided with at least two elements or a [is_flattenable] list with at least two elements, return #
+#   |                 [1] If <...> is provided with at least two elements or a <is_flattenable> list with at least two elements, return #
 #   |                      a [list] of the respective values retrieved from current session, with their respective [names] if any       #
-#   |                     [names ] the respective input names, or [''] for positional arguments                                         #
+#   |                     [names ] the respective input names, or empty for positional arguments                                        #
 #   |                     [values] when NOT found:                                                                                      #
-#   |                              [NA            ] if [inplace==FALSE]                                                                 #
-#   |                              [input values  ] if [inplace==TRUE]                                                                  #
+#   |                              [NA            ] if <inplace==FALSE>                                                                 #
+#   |                              [input values  ] if <inplace==TRUE>                                                                  #
 #   |                 [2] If there is only one positional argument provided, return its value                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -56,7 +56,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isVEC                                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 

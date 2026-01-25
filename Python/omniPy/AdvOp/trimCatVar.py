@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def trimCatVar( inDAT , inplace : bool = True ) -> 'Remove the leading and trailing blanks from all records in all Categorical Variables':
-    #000.   Info.
-    """
+import sys
+import pandas as pd
+from omniPy.AdvOp import selCatVar
+
+def trimCatVar( inDAT , inplace : bool = True ) -> pd.DataFrame:
+    #000. Info.
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -18,8 +22,8 @@ def trimCatVar( inDAT , inplace : bool = True ) -> 'Remove the leading and trail
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[OutD]     :   [pd.DataFrame]The new pd.DataFrame as a mirror of the input one, with all categorical fields trimmed                #
-#   |[inDAT]    :   [pd.DataFrame]The same dataset as replaced by this function                                                         #
+#   |<OutD>     :   <pd.DataFrame>The new pd.DataFrame as a mirror of the input one, with all categorical fields trimmed                #
+#   |<inDAT>    :   <pd.DataFrame>The same dataset as replaced by this function                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -39,52 +43,41 @@ def trimCatVar( inDAT , inplace : bool = True ) -> 'Remove the leading and trail
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |omniPy.AdvOp                                                                                                               #
+#   |   |   |AdvOp                                                                                                                      #
 #   |   |   |   |selCatVar                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
+    '''
 
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import sys
-    from omniPy.AdvOp import selCatVar
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( inDAT , pd.DataFrame ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame]! Given [{type(inDAT)}]')
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #090.   Create a copy of the input data.
+    #090. Create a copy of the input data.
     OutD : pd.DataFrame = inDAT.copy()
 
-    #100.   Retrieve all categorical fields.
+    #100. Retrieve all categorical fields.
     cols : list = selCatVar( inDAT )
 
-    #110.   Count the variables as found.
+    #110. Count the variables as found.
     ncol : int = len( cols )
 
-    #500.   Trim the values.
+    #500. Trim the values.
     if ncol != 0:
         for col in cols:
             OutD[col] = OutD[col].str.strip()
 
-    #700.   Decide whether to overwrite the input data.
+    #700. Decide whether to overwrite the input data.
     if inplace and cols:
         inDAT.update( OutD )
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-    cols , ncol = None , None
-
-    #900.   Output.
+    #900. Output.
     if inplace:
         OutD = None
         return( inDAT )
@@ -92,10 +85,10 @@ def trimCatVar( inDAT , inplace : bool = True ) -> 'Remove the leading and trail
         return( OutD )
 #End trimCatVar
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
+if __name__=='__main__':
     #010.   Create envionment.
     import pandas as pd
     import numpy as np
@@ -114,9 +107,4 @@ if __name__=="__main__":
     #300.   Encode the categorical fields by replacing the original dataset.
     trimCatVar( testtrim )
 #-Notes- -End-
-"""
-
-"""
-#-Explanation- -Begin-
-#-Explanation- -End-
-"""
+'''

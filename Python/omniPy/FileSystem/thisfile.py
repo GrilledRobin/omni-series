@@ -3,32 +3,37 @@
 
 import sys, os, inspect
 
-def thisfile(follow_symlinks = True) -> 'Get the absolute path of the executing script':
-    #000.   Info.
+def thisfile(follow_symlinks = True) -> str:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to retrieve the full path of current executing script                                                    #
-#   |Quote: https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path/6098238#6098238                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE:                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path/6098238#6098238                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |IMPORTANT:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] The script calling this function should be saved before being executed                                                         #
-#   |[2] cmd_folder = os.path.dirname(os.path.abspath(__file__)) # DO NOT USE __file__ !!!                                              #
-#   |[3] __file__ fails if the script is called in different ways on Windows.                                                           #
-#   |[4] __file__ fails if someone does os.chdir() before.                                                                              #
-#   |[5] sys.argv[0] also fails, because it doesn't not always contains the path.                                                       #
+#   |[2] <cmd_folder = os.path.dirname(os.path.abspath(__file__)) # DO NOT USE <__file__> !!!>                                          #
+#   |[3] <__file__> fails if the script is called in different ways on Windows.                                                         #
+#   |[4] <__file__> fails if someone executed <os.chdir()> before.                                                                      #
+#   |[5] <sys.argv[0]> also fails, because it does not always contain the path.                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<NA>       :   This function does not take arguments                                                                               #
+#   |follow_symlinks   :   <bool    > Whether to follow the <Symbolic Links> to determine the <RealPath> of this file                   #
+#   |                      [True                ]<Default> Find the real path of this file following the <Symbolic Links>               #
+#   |                      [False               ]          Find the literal path of this file                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[<str>]    :   Full path of current executing script as character string                                                           #
+#   |<str>             :   Full path of current executing script as character string                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -51,14 +56,6 @@ def thisfile(follow_symlinks = True) -> 'Get the absolute path of the executing 
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #900. Output
     #return( os.path.realpath(inspect.getfile(inspect.currentframe())) )

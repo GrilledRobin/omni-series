@@ -977,7 +977,7 @@ UM_FundCompare_svr <- function(input,output,session
 			,suffix = c('', '.nhold')
 		) %>%
 		dplyr::mutate(item_color = ifelse(is.na(item_color),item_color.nhold,item_color)) %>%
-		dplyr::select(-tidyselect::ends_with('.nhold'))
+		dplyr::select(-dplyr::ends_with('.nhold'))
 
 	#435. Order the products in the charts, by the customer holding amount and then the product P&L
 	#IMPORTANT!!! This sequence also determines the sequence of the items listed in the [legend].

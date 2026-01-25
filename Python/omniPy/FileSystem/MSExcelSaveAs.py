@@ -9,12 +9,12 @@ import pywintypes
 from win32com.client import Dispatch
 
 def MSExcelSaveAs(
-    infile
-    ,outfile
-    ,inSheet = 1
+    infile : str
+    ,outfile : str
+    ,inSheet : str | int = 1
     ,outtype = 51
-) -> 'Use Windows Dispatch to save MS EXCEL files as other file types':
-    #000.   Info.
+) -> str:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -25,19 +25,19 @@ def MSExcelSaveAs(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |infile         :   Full path of the input MX EXCEL file                                                                            #
-#   |outfile        :   Full path of the converted file                                                                                 #
+#   |infile         :   <str> Full path of the input MX EXCEL file                                                                      #
+#   |outfile        :   <str> Full path of the converted file                                                                           #
 #   |                   [None      ]<default> Throw error if not provided                                                               #
-#   |inSheet        :   Which sheet to convert if [outfile] is a plain text file or only contains one [sheet]                           #
-#   |                   [1         ]<default> Convert the first sheet in the input file for certain [outtype]                           #
-#   |                   [<name>    ]          Provide the sheet id or name to convert for certain [outtype]                             #
-#   |outtype        :   Type of the output file as integer during [saveas], see the [Full Test Program] section for full list of types  #
-#   |                   [51        ]<default> Save the file as the default EXCEL file                                                   #
+#   |inSheet        :   <str/int> Which sheet to convert if <outfile> is a plain text file or only contains one <sheet>                 #
+#   |                   [int <1>   ]<default> Convert the first sheet in the input file for certain <outtype>                           #
+#   |                   [<name>    ]          Provide the sheet id or name to convert for certain <outtype>                             #
+#   |outtype        :   <int> Type of the output file as integer during <saveas>                                                        #
+#   |                   [int <51>  ]<default> Save the file as the default EXCEL file                                                   #
 #   |                   [<int>     ]          Other types to save the input file as                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[chr. string ] :   Full path of the converted file if process is completed                                                         #
+#   |<str>          :   Full path of the converted file if process is completed                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -60,8 +60,6 @@ def MSExcelSaveAs(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.
@@ -105,7 +103,7 @@ def MSExcelSaveAs(
 
     #999. Return the full path of the output file when completed
     return( outfile )
-#End userBasedCF
+#End MSExcelSaveAs
 
 '''
 #-Notes- -Begin-

@@ -1,7 +1,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to compare the columns of the input list of data frames, and output a checklist (data.frame) for those   #
+#   |This function is intended to compare the columns of the input list of data frames, and output a checklist (<data.frame>) for those #
 #   | columns that have different classes among the input data frames while issuing a message in terms of the requested message level.  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -9,16 +9,16 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |...          :   Various named parameters in either form as below, that indicates a list of data frames for extraction             #
-#   |                 [1] Name parameters just as calling other functions with [...] as parameter                                       #
+#   |                 [1] Name parameters just as calling other functions with <...> as parameter                                       #
 #   |                 [2] A list with named members, similar as above, but provided in a combined list                                  #
-#   |with.attr    :   Whether to include the [attr]s from the input data frames into the output data frame                              #
-#   |                 [NULL            ] <Default> No need to include the [attr]s of the input list of data frames                      #
-#   |                 [chr list/vector ]           The indicated [attr]s to extract from the input data frames and set as new column in #
+#   |with.attr    :   Whether to include the <attr>s from the input data frames into the output data frame                              #
+#   |                 [NULL            ] <Default> No need to include the <attr>s of the input list of data frames                      #
+#   |                 [chr list/vector ]           The indicated <attr>s to extract from the input data frames and set as new column in #
 #   |                                               the output data frame                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[data.frame] :   The combined data frame that stores the columns in the same names but with different classes in the input list of #
+#   |<data.frame> :   The combined data frame that stores the columns in the same names but with different classes in the input list of #
 #   |                  data frames as well as any requested attibutes (given they are provided in the input list)                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -40,7 +40,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |combine_col_classes                                                                                                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 

@@ -12,25 +12,26 @@ def calcKS( inDAT , dependent , response , event = 1 ) -> tuple:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the K-S Value for the variable [response] in terms of [dependent] variable in the provided  #
-#   | pd.DataFrame.                                                                                                                     #
+#   |This function is intended to calculate the K-S Value for the variable <response> in terms of <dependent> variable in the provided  #
+#   | <pd.DataFrame>.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDAT      :   The input pd.DataFrame for the calculation.                                                                         #
+#   |inDAT      :   The input <pd.DataFrame> for the calculation.                                                                       #
 #   |dependent  :   The dependent variable in the procided dataset                                                                      #
 #   |response   :   The independent variable, or the response variable, in the procided dataset                                         #
 #   |event      :   The value that represents the Event                                                                                 #
-#   |               DEFAULT : [1]                                                                                                       #
+#   |               [int <1>    ]<Default> Use this value as <Positive> for the calculation                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[outKS]    :   [float64]The K-S score upon [response] for [dependent]                                                              #
-#   |[outDAT]   :   [pd.DataFrame]The cross-tabulation of [dependent] X [Event/NonEvent] with the interim calculation values for        #
-#   |                validation                                                                                                         #
-#   |[ourAR]    :   [float64]The K-S score upon [response] for [dependent]                                                              #
+#   |<tuple>    :   3-tuple as described below:                                                                                         #
+#   |               [outKS]    :   <np.float64  > The K-S score upon <response> for <dependent>                                         #
+#   |               [outDAT]   :   <pd.DataFrame> The cross-tabulation of <dependent> X <Event/NonEvent> with the interim calculation   #
+#   |                              values for validation                                                                                #
+#   |               [ourAR]    :   <np.float64  > The Accuracy Ratio upon <response> for <dependent>                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

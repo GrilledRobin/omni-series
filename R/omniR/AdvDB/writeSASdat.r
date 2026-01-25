@@ -35,7 +35,7 @@
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #   |dt_map      :   Mapping table to define the format for the SAS datetime values                                                     #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
-#   |nlsMap      :   Mapping table to call SAS in native environment, see the directory <sasHome\nls>                                   #
+#   |nlsMap      :   Mapping table to call SAS in native environment, see the directory <sasHome/nls>                                   #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
 #   |encoding    :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console   #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
@@ -49,7 +49,7 @@
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<int>       :   Integer return code from the communication with Windows Command Console during SAS programm execution              #
-#   |                [0           ] Execution successful                                                                                #
+#   |                [int <0>     ] Execution successful                                                                                #
 #   |                [non-0 int   ] Failure                                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -70,15 +70,15 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvDB                                                                                                                    #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |inferContents                                                                                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |chr                                                                                                                        #
 #   |   |   |getDtypes                                                                                                                  #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$FileSystem                                                                                                               #
+#   |   |FileSystem                                                                                                                     #
 #   |   |   |winReg_getInfByStrPattern                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -236,7 +236,7 @@ writeSASdat <- function(
 	#380. Translation
 	calcVar <- c('INFORMAT','INFORML','INFORMD')
 	metaConv <- metaVar %>%
-		dplyr::select(-tidyselect::any_of(calcVar)) %>%
+		dplyr::select(-dplyr::any_of(calcVar)) %>%
 		dplyr::arrange_at('VARNUM') %>%
 		dplyr::mutate(
 			!!rlang::sym('.trns_type.') := h_getInType(!!rlang::sym('TYPE'), !!rlang::sym('FORMAT'))

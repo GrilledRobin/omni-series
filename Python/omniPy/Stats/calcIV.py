@@ -12,23 +12,24 @@ def calcIV( inDAT , dependent , response , event = 1 ) -> tuple:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the Information Value for the variable [response] in terms of [dependent] variable in the   #
-#   | provided pd.DataFrame.                                                                                                            #
+#   |This function is intended to calculate the Information Value for the variable <response> in terms of <dependent> variable in the   #
+#   | provided <pd.DataFrame>.                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDAT      :   The input pd.DataFrame for the calculation.                                                                         #
-#   |dependent  :   The dependent variable in the procided dataset                                                                      #
+#   |inDAT      :   The input <pd.DataFrame> for the calculation.                                                                       #
+#   |dependent  :   The dependent variable in the provided dataset                                                                      #
 #   |response   :   The independent variable, or the response variable, in the procided dataset                                         #
 #   |event      :   The value that represents the Event                                                                                 #
-#   |               DEFAULT : [1]                                                                                                       #
+#   |               [int <1>    ]<Default> Use this value as <Positive> for the calculation                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[outRST]   :   [float64]The Information Value calculation result                                                                   #
-#   |[dataWoE]  :   [pd.DataFrame]The dataset as calculation of WoE for validation                                                      #
+#   |<tuple>    :   2-tuple as described below:                                                                                         #
+#   |               [outRST ]  :   <np.float64  > The Information Value calculation result                                              #
+#   |               [dataWoE]  :   <pd.DataFrame> The dataset as calculation of WoE for validation                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

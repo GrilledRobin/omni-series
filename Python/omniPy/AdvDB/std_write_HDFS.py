@@ -7,7 +7,7 @@ from inspect import signature
 from omniPy.AdvOp import get_values
 
 def std_write_HDFS(
-    indat : dict[str : [str | pd.DataFrame]]
+    indat : dict[str, [str | pd.DataFrame]]
     ,outfile : str | os.PathLike
     ,funcConv : callable = lambda x: x
     ,kw_open : dict = {'mode' : 'w'}
@@ -19,11 +19,11 @@ def std_write_HDFS(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the writing of files or data frames with different processing arguments        #
+#   |This function acts as a <helper> one to standardize the writing of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [kw] that have no negative impact to current function call         #
+#   |[1] We could pass various parameters into one single expression <kw> that have no negative impact to current function call         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -38,8 +38,8 @@ def std_write_HDFS(
 #   |kw_open     :   Named parameters for <pd.HDFStore>, excluding <path> as it is already provided                                     #
 #   |                 [<see def.>  ] <Default> Open the data file in the dedicated mode                                                 #
 #   |kw_put      :   Named parameters for <pd.HDFStore.put>, excluding <key>, <value> as they are already provided                      #
-#   |                 [IMPORTANT   ] To ensure the same behavior, when any API that is designed to push the data in {key:value} fashion #
-#   |                                 , please set the same argument to differ the process                                              #
+#   |                 [IMPORTANT   ] To ensure the same behavior, when any API that is designed to push the data in <{key:value}>       #
+#   |                                 fashion, please set the same argument to differ the process                                       #
 #   |kw          :   Various named parameters for the encapsulated function call if applicable                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -75,7 +75,7 @@ def std_write_HDFS(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''

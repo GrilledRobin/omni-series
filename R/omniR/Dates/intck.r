@@ -1,24 +1,24 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to resemble the same one in SAS to return the number of interval boundaries of a given kind that lie     #
+#   |This function is intended to resemble the same one in <SAS> to return the number of interval boundaries of a given kind that lie   #
 #   | between two dates, times, or datetime values                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Although this function supports [sapply(e,f)] or [lapply(e,f)] methods to apply to an Iterable, it is strongly recommended    #
-#   |      to call it directly by [f(e,...)] as it internally uses Table Join processes to facilitate bulk data massage                 #
-#   |[02] Similar to above, it is strongly recommended to pass an existing [User Calendar] to the argument [cal] if one insists to call #
-#   |      it by means of [sapply(e,f)] or [lapply(e,f)], to minimize the system calculation effort                                     #
+#   |[01] Although this function supports <sapply(e,f)> or <lapply(e,f)> methods to apply to an Iterable, it is strongly recommended    #
+#   |      to call it directly by <f(e,...)> as it internally uses Table Join processes to facilitate bulk data massage                 #
+#   |[02] Similar to above, it is strongly recommended to pass an existing <User Calendar> to the argument <cal> if one insists to call #
+#   |      it by means of <sapply(e,f)> or <lapply(e,f)>, to minimize the system calculation effort                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[FEATURE]                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Support different types of [date_*], i.e. table-like, Date, POSIXt, lubridate::Period as time, strings indicating datetimes   #
-#   |[02] Does not support [.starting-point] in [interval] as that in SAS, as it is useless and ambiguous under most circumstances      #
-#   |[03] Calculate on [DISCRETE] method, in spite of that in SAS, as there are other simpler ways to calculate on [CONTINUOUS] method  #
+#   |[01] Support different types of <date_*>, i.e. table-like, Date, POSIXt, lubridate::Period as time, strings indicating datetimes   #
+#   |[02] Does not support <.starting-point> in <interval> as that in <SAS>, as it is useless and ambiguous under most circumstances    #
+#   |[03] Calculate on <DISCRETE> method, in spite of that in <SAS>, as there are other simpler ways to calculate on <CONTINUOUS> method#
 #   |[04] Support the increment by Calendar Days, Working Days, or Trade Days                                                           #
-#   |[05] [WEEKDAY] as [interval] has different definition to that in SAS, see below definition of [omniR$Dates$getDateIntervals]       #
-#   |[06] [WEEK] starts with Sunday=0 and ends with Saturday=6, to align that in SAS                                                    #
+#   |[05] <WEEKDAY> as <interval> has different definition to that in <SAS>, see below definition of <Dates$getDateIntervals>           #
+#   |[06] <WEEK> starts with Sunday=0 and ends with Saturday=6, to align that in SAS                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,33 +26,33 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |interval    :   Character string as a time interval such as WEEK, SEMIYEAR, QTR, or HOUR, case insensitive. It has no default      #
 #   |                 value, while the functions raises error if it is NOT provided.                                                    #
-#   |                See definition of [omniR$Dates$getDateIntervals] for accepted values                                               #
-#   |date_bgn    :   Date-like values, will be converted by [asDates], [asDatetimes] or [asTimes] as per request                        #
-#   |date_end    :   Date-like values, will be converted by [asDates], [asDatetimes] or [asTimes] as per request                        #
+#   |                See definition of <Dates$getDateIntervals> for accepted values                                                     #
+#   |date_bgn    :   Date-like values, will be converted by <asDates>, <asDatetimes> or <asTimes> as per request                        #
+#   |date_end    :   Date-like values, will be converted by <asDates>, <asDatetimes> or <asTimes> as per request                        #
 #   |daytype     :   Type of days for the calculation                                                                                   #
 #   |                 [C           ] <Default> Calendar Days                                                                            #
 #   |                 [W           ]           Working Days                                                                             #
 #   |                 [T           ]           Trading Days                                                                             #
-#   |cal         :   data.frame that is usually created by [omniR$Dates$intCalendar] object as the essential during the calculation     #
-#   |                 [<None>      ] <Default> Function calls [intCalendar] with the arguments [**kw_cal]                               #
-#   |kw_d        :   Arguments for function [omniR$Dates$asDates] to convert the [indate] where necessary                               #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDates]                                                  #
-#   |kw_dt       :   Arguments for function [omniR$Dates$asDatetimes] to convert the [indate] where necessary                           #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDatetimes]                                              #
-#   |kw_t        :   Arguments for function [omniR$Dates$asTimes] to convert the [indate] where necessary                               #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asTimes]                                                  #
-#   |kw_cal      :   Arguments for instantiating the class [omniR$Dates$UserCalendar] if [cal] is NOT provided                          #
-#   |                 [<Default>   ] <Default> Use the default arguments for [UserCalendar]                                             #
+#   |cal         :   <data.frame> that is usually created by <Dates$intCalendar> object as the essential during the calculation         #
+#   |                 [<NULL>      ] <Default> Function calls <intCalendar> with the arguments <**kw_cal>                               #
+#   |kw_d        :   Arguments for function <Dates$asDates> to convert <date_bgn> and <date_end> where necessary                        #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDates>                                                  #
+#   |kw_dt       :   Arguments for function <Dates$asDatetimes> to convert <date_bgn> and <date_end> where necessary                    #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDatetimes>                                              #
+#   |kw_t        :   Arguments for function <Dates$asTimes> to convert <date_bgn> and <date_end> where necessary                        #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asTimes>                                                  #
+#   |kw_cal      :   Arguments for instantiating the class <Dates$UserCalendar> if <cal> is NOT provided                                #
+#   |                 [<Default>   ] <Default> Use the default arguments for <UserCalendar>                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<various>   :   The return value depends on the input arguments                                                                    #
-#   |                [1] For case of pairs as (M,1):                                                                                    #
-#   |                    [1] If [M] is table-like, return a data.frame in the same shape as [M]                                         #
-#   |                    [2] If [M] is a vector, return a vector in the same length                                                     #
-#   |                [2] For case of pairs as (M,N), [M.shape] must be the same as [N.shape] :                                          #
-#   |                    [1] If either is table-like, return a data.frame in the same shape as [M]                                      #
-#   |                    [2] In other cases, Return a vector in the same length as [M]                                                  #
+#   |                [1] For case of pairs as <(M,1)>:                                                                                  #
+#   |                    [1] If <M> is <Iterable>, return the same type as <M>                                                          #
+#   |                    [2] When <M> is provided a single scalar, return a single integer, or <np.NaN> where applicable                #
+#   |                [2] For case of pairs as <(M,N)>, <M.shape> must be the same as <N.shape>:                                         #
+#   |                    [1] If either is <Iterable>, return the same type as it                                                        #
+#   |                    [2] Return an integer in other cases                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -63,17 +63,17 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211122        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
+#   | Log  |[1] Fixed a bug: <multiple> is not implemented when <dtt> is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211204        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   | Log  |[1] Unify the effect of <col_rowidx> and <col_period> when <span==1>, hence <col_rowidx> is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230618        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
@@ -98,14 +98,14 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #
 #   |   |   |match.arg.x                                                                                                                #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |intCalendar                                                                                                                #
 #   |   |   |getDateIntervals                                                                                                           #
 #   |   |   |asDates                                                                                                                    #
@@ -372,10 +372,10 @@ intck <- function(
 	if (dict_attr[['itype']] %in% c('dtt')) {
         #100. Conduct the calculation for [date] and [time] parts respectively
         #101. We ensure both inputs are [vectors]
-		dtt_Mdate <- df_M %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% lubridate::date()
-		dtt_Mtime <- df_M %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% h_cr_hms()
-		dtt_Ndate <- df_N %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% lubridate::date()
-		dtt_Ntime <- df_N %>% dplyr::pull(tidyselect::all_of(col_calc)) %>% h_cr_hms()
+		dtt_Mdate <- df_M %>% dplyr::pull(dplyr::all_of(col_calc)) %>% lubridate::date()
+		dtt_Mtime <- df_M %>% dplyr::pull(dplyr::all_of(col_calc)) %>% h_cr_hms()
+		dtt_Ndate <- df_N %>% dplyr::pull(dplyr::all_of(col_calc)) %>% lubridate::date()
+		dtt_Ntime <- df_N %>% dplyr::pull(dplyr::all_of(col_calc)) %>% h_cr_hms()
 
 		#110. Increment by [day]
 		dtt_rst_date <- Recall(
@@ -466,7 +466,7 @@ intck <- function(
 		}
 
 		#700. Transform the [date] part into the same [span] as [time] part, and combine both
-		dtt_rst <- df_M %>% dplyr::select(tidyselect::all_of(c(col_idxrow, col_idxcol)))
+		dtt_rst <- df_M %>% dplyr::select(dplyr::all_of(c(col_idxrow, col_idxcol)))
 
 		#750. Combine the date and time parts
 		#[IMPORTANT] We have to add the [time part] before dividing it!
@@ -507,8 +507,8 @@ intck <- function(
 
 		#300. Concatenate the date values of both input values
 		srs_indate <- c(
-			df_M %>% dplyr::pull(tidyselect::all_of(col_merge))
-			,df_N %>% dplyr::pull(tidyselect::all_of(col_merge))
+			df_M %>% dplyr::pull(dplyr::all_of(col_merge))
+			,df_N %>% dplyr::pull(dplyr::all_of(col_merge))
 		)
 
 		#500. Define the bound of the calendar
@@ -535,8 +535,8 @@ intck <- function(
 
 		#300. Concatenate the date values of both input values
 		srs_indate <- c(
-			df_M %>% dplyr::pull(tidyselect::all_of(col_merge))
-			,df_N %>% dplyr::pull(tidyselect::all_of(col_merge))
+			df_M %>% dplyr::pull(dplyr::all_of(col_merge))
+			,df_N %>% dplyr::pull(dplyr::all_of(col_merge))
 		)
 
 		#500. Define the bound of the calendar
@@ -576,7 +576,7 @@ intck <- function(
 			,kw_cal = kw_cal_fnl
 		)
 	} else {
-		intck_calfull <- cal %>% dplyr::arrange_at(tidyselect::all_of(col_out))
+		intck_calfull <- cal %>% dplyr::arrange_at(dplyr::all_of(col_out))
 	}
 
 	#700. Calculate the incremental
@@ -586,19 +586,19 @@ intck <- function(
 	names(by_var) <- col_merge
 
 	#710. Create a subset of the requested data
-	df_M_in <- df_M %>% dplyr::select(tidyselect::all_of(c(col_keys, col_merge)))
-	df_N_in <- df_N %>% dplyr::select(tidyselect::all_of(c(col_keys, col_merge)))
+	df_M_in <- df_M %>% dplyr::select(dplyr::all_of(c(col_keys, col_merge)))
+	df_N_in <- df_N %>% dplyr::select(dplyr::all_of(c(col_keys, col_merge)))
 
 	#720. Retrieve the corresponding columns from the calendar for non-empty dates
 	df_M_in %<>%
 		dplyr::left_join(
-			intck_calfull %>% dplyr::select(tidyselect::all_of(col_cal))
+			intck_calfull %>% dplyr::select(dplyr::all_of(col_cal))
 			,by = by_var
 		)
 
 	df_N_in %<>%
 		dplyr::left_join(
-			intck_calfull %>% dplyr::select(tidyselect::all_of(col_cal))
+			intck_calfull %>% dplyr::select(dplyr::all_of(col_cal))
 			,by = by_var
 		)
 
@@ -641,7 +641,7 @@ intck <- function(
 	#800. Transform the data backwards to the same as input
 	#810. Merge the incremental back to the input data for later transformation
 	col_dt <- c(col_keys, col_idxrow, col_idxcol)
-	df_rst <- df_M %>% dplyr::select(tidyselect::all_of(col_dt))
+	df_rst <- df_M %>% dplyr::select(dplyr::all_of(col_dt))
 
 	#[IMPORTANT] Till now the indexes of both data are exactly the same
 	df_rst[[col_rst]] <- df_M_in[['.intckRst_wMul.']]
@@ -794,8 +794,8 @@ if (FALSE){
 		#Return: NA
 
 		#940. Empty data frames
-		emp1 <- pair4_dt1 %>% dplyr::select(-tidyselect::all_of(names(pair4_dt1)))
-		emp2 <- pair4_dt2 %>% dplyr::select(-tidyselect::all_of(names(pair4_dt2)))
+		emp1 <- pair4_dt1 %>% dplyr::select(-dplyr::all_of(names(pair4_dt1)))
+		emp2 <- pair4_dt2 %>% dplyr::select(-dplyr::all_of(names(pair4_dt2)))
 		emp3 <- pair6_dt4 %>% dplyr::filter(FALSE)
 		emp4 <- pair6_dt4[c('d','c')] %>% dplyr::filter(FALSE)
 		print(intck('dthour', emp1, emp2, daytype = 'c'))

@@ -1,30 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 #We have to import [pywintypes] to activate the DLL required by [pywin32]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
 import pywintypes
 import win32gui, win32com
 
-def setForegroundWindow(hwnd) -> 'Set the window to foreground as indicated by the provided handle':
+def setForegroundWindow(hwnd):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to set the window to foreground as indicated by the provided handle, resembling the function             #
-#   | [win32gui.SetForegroundWindow] which sometimes has no effect but causes an error                                                  #
+#   | <win32gui.SetForegroundWindow> which sometimes has no effect but causes an error                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] This function is quoted by below article:                                                                                      #
-#   | https://exceptionshub.com/python-win32gui-setasforegroundwindow-function-not-working-properly.html                                #
-#   |[2] Mapping table of [shell.sendkeys] is in below website:                                                                         #
-#   | https://devguru.com/content/technologies/wsh/wshshell-sendkeys.html                                                               #
-#   |[3] Below forum discussed on [Start] button and [Shell_TrayWnd] (Task Bar) exceptions, but it works fine for me regardless of them #
-#   | https://stackoverflow.com/questions/30200381/python-win32gui-setasforegroundwindow-function-not-working-properly                  #
+#   |[1] https://exceptionshub.com/python-win32gui-setasforegroundwindow-function-not-working-properly.html                             #
+#   |[2] Mapping table of <shell.sendkeys>: https://devguru.com/content/technologies/wsh/wshshell-sendkeys.html                         #
+#   |[3] This is for <Start> button and <Shell_TrayWnd> (Task Bar) exceptions, but it works fine for me regardless of them:             #
+#   |    https://stackoverflow.com/questions/30200381/python-win32gui-setasforegroundwindow-function-not-working-properly               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -51,18 +48,11 @@ def setForegroundWindow(hwnd) -> 'Set the window to foreground as indicated by t
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, win32gui, win32com                                                                                                        #
+#   |   |win32gui, win32com                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
 

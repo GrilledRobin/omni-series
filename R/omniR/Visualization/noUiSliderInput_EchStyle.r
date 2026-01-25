@@ -1,22 +1,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create a [shinyWidgets::noUiSliderInput] with [handles] in the same style as [Echarts]                #
+#   |This function is intended to create a <shinyWidgets::noUiSliderInput> with <handles> in the same style as <echarts>                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |handleStyle :   Choose from the preset handles for output                                                                          #
-#   |                 [circle  ]<Default> See also: [omniR$Visualization$slider-handle-inuse.svg]                                       #
-#   |                 [rect    ]          See also: [omniR$Visualization$slider-handle-default.svg]                                     #
-#   |handleScale :   How many times the handle is larger than the bar-width of the sliderInput, MUST be larger than 0                   #
-#   |                 [1       ]<Default> The handle size is exactly the same as the bar-width                                          #
-#   |...         :   Same parameters as [shinyWidgets::noUiSliderInput]                                                                 #
+#   |                 [circle  ]<Default> See also: <Visualization$slider-handle-inuse.svg>                                             #
+#   |                 [rect    ]          See also: <Visualization$slider-handle-default.svg>                                           #
+#   |handleScale :   How many times the handle is larger than the bar-width of the <sliderInput>, MUST be larger than 0                 #
+#   |                 [num <1> ]<Default> The handle size is exactly the same as the bar-width                                          #
+#   |...         :   Same parameters as <shinyWidgets::noUiSliderInput>                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Widget]   :   The same widget as [shinyWidgets::noUiSliderInput] for [shiny] environment                                          #
+#   |<Widget>   :   The same widget as <shinyWidgets::noUiSliderInput> for <shiny> environment                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -27,7 +27,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200329        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Add [handleStyle] and [handleScale] to further imitate the handle styles in [echarts]                                       #
+#   | Log  |Add <handleStyle> and <handleScale> to further imitate the handle styles in <echarts>                                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -83,17 +83,17 @@ noUiSliderInput_EchStyle <- function(handleStyle = c('circle','rect'),handleScal
 	handle_icons <- list(
 		#Below handle style comes from below official site:
 		#[Quote: https://www.echartsjs.com/examples/en/editor.html?c=area-simple ]
-		#[Quote: [omniR$Visualization$slider-handle-inuse.svg]]
+		#[Quote: [Visualization$slider-handle-inuse.svg]]
 		circle = 'PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj48c3ZnIGhlaWdodD0iMjAiIGlkPSJMYXllcl8xIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMTAgMjQgMjQiIHdpZHRoPSIxNCIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CTxmaWx0ZXIgaWQgPSAiaS1oYW5kbGUiIHdpZHRoID0gIjE1MCUiIGhlaWdodCA9ICIxNTAlIj4JCTxmZU9mZnNldCByZXN1bHQgPSAib2ZmT3V0IiBpbiA9ICJTb3VyY2VBbHBoYSIgZHggPSAiMSIgZHkgPSAiMiIvPgkJPGZlR2F1c3NpYW5CbHVyIHJlc3VsdCA9ICJibHVyT3V0IiBpbiA9ICJvZmZPdXQiIHN0ZERldmlhdGlvbiA9ICIyIi8+CQk8ZmVCbGVuZCBpbiA9ICJTb3VyY2VHcmFwaGljIiBpbjIgPSAiYmx1ck91dCIgbW9kZSA9ICJub3JtYWwiLz4JPC9maWx0ZXI+CTxkZWZzPgkJPHN0eWxlIHR5cGU9InRleHQvY3NzIj4uc3ZnY2xzLWhhbmRsZSB7ZmlsbDpyZ2JhKDI1NSwyNTUsMjU1LDAuNyk7fTwvc3R5bGU+CTwvZGVmcz4JPHBhdGggY2xhc3M9InN2Z2Nscy1oYW5kbGUiIGZpbHRlciA9ICJ1cmwoI2ktaGFuZGxlKSIgZD0iTTEwLjcsMTEuOXYtMS4zSDkuM3YxLjNjLTQuOSwwLjMtOC44LDQuNC04LjgsOS40YzAsNSwzLjksOS4xLDguOCw5LjR2MS4zaDEuM3YtMS4zYzQuOS0wLjMsOC44LTQuNCw4LjgtOS40QzE5LjUsMTYuMywxNS42LDEyLjIsMTAuNywxMS45eiBNMTMuMywyNC40SDYuN1YyM2g2LjZWMjQuNHogTTEzLjMsMTkuNkg2Ljd2LTEuNGg2LjZWMTkuNnoiLz48L3N2Zz4='
 		#Below handle style comes from below official site ([echarts] default handle style):
 		#[Quote: https://www.echartsjs.com/zh/option.html#dataZoom-slider ]
-		#[Quote: [omniR$Visualization$slider-handle-default.svg]]
+		#[Quote: [Visualization$slider-handle-default.svg]]
 		,rect = 'PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj48IS0tIEhvdyB0byBjcmVhdGUgcmVtYXJrcyBpbiBYTUw6IGh0dHBzOi8vYmxvZy5jc2RuLm5ldC95aW5ib3dlbi9hcnRpY2xlL2RldGFpbHMvNDQ1NDY3OCAtLT48IS0tIFVuZGVyc3RhbmQgdGhlIFhNTCBhdHRyaWJ1dGVzLCBzdWNoIGFzIHZpZXdwb3J0L3ZpZXdCb3ggOiBodHRwczovL3d3dy56aGFuZ3hpbnh1LmNvbS93b3JkcHJlc3MvMjAxNC8wOC9zdmctdmlld3BvcnQtdmlld2JveC1wcmVzZXJ2ZWFzcGVjdHJhdGlvLyAtLT48c3ZnIGhlaWdodD0iMjAiIGlkPSJMYXllcl8xIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMTAgMjQgMjQiIHdpZHRoPSIxMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CTxmaWx0ZXIgaWQgPSAiaS1oYW5kbGUiIHdpZHRoID0gIjE1MCUiIGhlaWdodCA9ICIxNTAlIj4JCTxmZU9mZnNldCByZXN1bHQgPSAib2ZmT3V0IiBpbiA9ICJTb3VyY2VBbHBoYSIgZHggPSAiMSIgZHkgPSAiMiIvPgkJPGZlR2F1c3NpYW5CbHVyIHJlc3VsdCA9ICJibHVyT3V0IiBpbiA9ICJvZmZPdXQiIHN0ZERldmlhdGlvbiA9ICIyIi8+CQk8ZmVCbGVuZCBpbiA9ICJTb3VyY2VHcmFwaGljIiBpbjIgPSAiYmx1ck91dCIgbW9kZSA9ICJub3JtYWwiLz4JPC9maWx0ZXI+CTxkZWZzPgkJPHN0eWxlIHR5cGU9InRleHQvY3NzIj4uc3ZnY2xzLWhhbmRsZSB7ZmlsbDpyZ2JhKDI1NSwyNTUsMjU1LDAuNSk7fTwvc3R5bGU+CTwvZGVmcz4JPHBhdGggY2xhc3M9InN2Z2Nscy1oYW5kbGUiIGZpbHRlciA9ICJ1cmwoI2ktaGFuZGxlKSIgZD0iTTguMiwxMy42VjMuOUg2LjN2OS43SDMuMXYxNC45aDMuM3Y5LjdoMS44di05LjdoMy4zVjEzLjZIOC4yeiBNOS43LDI0LjRINC44di0xLjRoNC45VjI0LjR6IE05LjcsMTkuMUg0Ljh2LTEuNGg0LjlWMTkuMXoiLz48L3N2Zz4='
 	)
 	handle_icon <- handle_icons[which(names(handle_icons) == handleStyle)]
 	#Debug mode
 	if (FALSE){
-		svgfile <- file(paste0(omniR,'\\Visualization\\slider-handle-inuse.svg'),'rt')
+		svgfile <- file(file.path(omniR,'Visualization','slider-handle-inuse.svg'),'rt')
 		svgcode <- readLines(svgfile)
 		close(svgfile)
 		# handle_icon <- utils::URLencode(paste0(svgcode,collapse = ''))

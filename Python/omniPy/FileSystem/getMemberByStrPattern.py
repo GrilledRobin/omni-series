@@ -15,38 +15,40 @@ def getMemberByStrPattern(
     ,FSubDir : bool = False
 ) -> list[dict]:
     #000. Info.
-    """
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to search for specific files or sub-folders under given folder name by given matching rule with respect  #
 #   | of Regular Expression.                                                                                                            #
-#   |The switch [FSubDir] is intended to define whether to search for ALL sub-directories by infinite recursion.                        #
-#   |Documents for Regular Expressions are placed on the website: https://docs.python.org/3.6/library/re.html                           #
-#   |Documents for [os.path] are placed on the website: https://docs.python.org/3/library/os.path.html                                  #
-#   |Documents for [collections] are placed on the website: https://docs.python.org/3.6/library/collections.html                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDIR      :   Directory name under which files or sub-directories should be searched.                                             #
-#   |               IMPORTANT: If only a Driver Name is to be provided, make sure it is provided as: r'X:\ ' (Note the White Space)     #
-#   |inRegExp   :   Matching rule of character combination.                                                                             #
-#   |exclRegExp :   Excluding rule of character combination.                                                                            #
-#   |chkType    :   0 - both files and directories, 1 - files, 2 - directories.                                                         #
-#   |FSubDir    :   [False] - find members in current directory, [True] - search in all sub-directories.                                #
+#   |inDIR      :   <str > Directory name under which files or sub-directories should be searched.                                      #
+#   |inRegExp   :   <str > Matching rule of character combination.                                                                      #
+#   |exclRegExp :   <str > Excluding rule of character combination.                                                                     #
+#   |                [<see def.>  ] <Default> Do not exclude any file name                                                              #
+#   |chkType    :   <int > Type of members for search                                                                                   #
+#   |                [int <1>     ] <Default> Search for files only                                                                     #
+#   |                [int <0>     ]           Search for both files and directories                                                     #
+#   |                [int <2>     ]           Search for directories only                                                               #
+#   |FSubDir    :   <bool> [False] - find members in current directory, [True] - search in all sub-directories.                         #
+#   |                [False       ] <Default> Only search within the provided directory and ignore any sub-directories                  #
+#   |                [True        ]           Search within the provided directory and all its sub-directories                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Out_Rst    :   Output list storing all the members found: [ [ Elements<1> ] , [ Elements<2> ] , ... ]                              #
-#   |               <Elements for each member>                                                                                          #
-#   |               path<n>     :   Absolute Path Name of the member (including the member full name)                                   #
-#   |               type<n>     :   Type of member, 1 - File, 2 - Directory                                                             #
-#   |               name<n>     :   Name of member, including the extension if it is a File                                             #
-#   |               ctime<n>    :   Create Time of the member                                                                           #
-#   |               mtime<n>    :   Last Modified Time of the member                                                                    #
-#   |               size<n>     :   The size in bytes of the member                                                                     #
+#   |<list>     :   Output list storing all the members found, each one of which is a <dict> as described below                         #
+#   |               path        :   <str  > Absolute Path Name of the member (including the member full name)                           #
+#   |               type        :   <int  > Type of member                                                                              #
+#   |                                [int <1>     ] file                                                                                #
+#   |                                [int <2>     ] directory                                                                           #
+#   |               name        :   <str  > Name of member, including the extension if it is a File                                     #
+#   |               ctime       :   <float> Create Time of the member, counting from <Python> origin of date and time                   #
+#   |               mtime       :   <float> Last Modified Time of the member, counting from <Python> origin of date and time            #
+#   |               size        :   <int  > The size in bytes of the member                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -57,11 +59,10 @@ def getMemberByStrPattern(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200517        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Replace the function [os.walk] with the user-defined function itself as recursion as mentioned by below article, to     #
-#   |      | increase the overall efficiency.                                                                                           #
-#   |      | Quote: https://stackoverflow.com/questions/18394147/recursive-sub-folder-search-and-return-files-in-a-list-python          #
-#   |      | See the #5th answer of above article for speed comparison                                                                  #
-#   |      |[2] Remove the [AbsPath<n>] and [RelPath<n>] from the output list as they are obselete during usage                         #
+#   | Log  |[1] Replace the function <os.walk> with the user-defined function itself as recursion as mentioned by below article, to     #
+#   |      |     increase the overall efficiency.                                                                                       #
+#   |      |[2] See the #5th answer of above article for speed comparison: https://stackoverflow.com/questions/18394147/                #
+#   |      |[3] Remove the <AbsPath[n]> and <RelPath[n]> from the output list as they are obselete during usage                         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230815        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -99,7 +100,7 @@ def getMemberByStrPattern(
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |thisFunction                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
+    '''
 
     #010. Check parameters.
     #011. Prepare log text.
@@ -174,36 +175,36 @@ def getMemberByStrPattern(
     return( list(Out_Rst) )
 #End getMemberByStrPattern
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
-    #010.   Create envionment.
+if __name__=='__main__':
+    #010. Create envionment.
     import sys
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
         sys.path.append( dir_omniPy )
     from omniPy.FileSystem import getMemberByStrPattern
 
-    #100.   Look up files in current directory.
+    #100. Look up files in current directory.
     PyLst = getMemberByStrPattern( r'D:\Python\Learning' , r'.+\.py' )
     print( PyLst )
 
-    #200.   Look up files in current directory and all its subdirectories.
+    #200. Look up files in current directory and all its subdirectories.
     PyLst = getMemberByStrPattern( r'D:\Python' , r'.+\.py' , FSubDir = True )
     print( PyLst )
 
-    #300.   Print all files in current directory and all its subdirectories.
+    #300. Print all files in current directory and all its subdirectories.
     print( getMemberByStrPattern( r'D:\Python\Learning' , '' , FSubDir = True ) )
 
-    #400.   Look up files in an entire hard drive.
+    #400. Look up files in an entire hard drive.
     #Please note the usage of the function [strip()].
     print( getMemberByStrPattern( r'E:\ '.strip() , r'.+\.mp4' , FSubDir = True ) )
 
-    #500.   Look up files by excluding the 'testing' ones.
+    #500. Look up files by excluding the 'testing' ones.
     print( getMemberByStrPattern( r'D:\Python\omniPy' , r'.+\.py$' , exclRegExp = r'^test' , FSubDir = True ) )
 
-    #600.   Look up all directory names.
+    #600. Look up all directory names.
     print( getMemberByStrPattern( r'D:\Python' , '' , chkType = 2 , FSubDir = True ) )
 #-Notes- -End-
-"""
+'''

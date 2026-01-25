@@ -1,11 +1,14 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to switch the input [Pixel] value(s) into the length [MM], i.e. millimeter value(s) in terms of the      #
-#   | provided resolution [PPI], which represents Pixels per Inch                                                                       #
-#   |Quote: https://www.cnblogs.com/ChineseMoonGod/p/3685703.html                                                                       #
+#   |This function is intended to switch the input <Pixel> value(s) into the length <MM>, i.e. millimeter value(s) in terms of the      #
+#   | provided resolution <PPI>, which represents Pixels per Inch                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://www.cnblogs.com/ChineseMoonGod/p/3685703.html                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] MS PowerPoint uses length (CM) to define the height and width of the shapes, while Power BI uses pixels.                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -13,13 +16,13 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |pixels     :   The provided vector as pixels to be translated                                                                      #
-#   |PPI        :   The Pixel per Inch standard to conduct the translation                                                              #
-#   |                [  96  ] <Default> This value can be used during the translation from MS PPT to MS PowerBI                         #
+#   |pixels     :   <num> The provided vector as pixels to be translated                                                                #
+#   |PPI        :   <num> The Pixel per Inch standard to conduct the translation                                                        #
+#   |                [int <96>  ] <Default> This value can be used during the translation from MS PPT to MS PowerBI                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   A vector of translated lengths in [MM], i.e. millimeters                                                            #
+#   |<num>      :   A vector of translated lengths in <MM>, i.e. millimeters                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

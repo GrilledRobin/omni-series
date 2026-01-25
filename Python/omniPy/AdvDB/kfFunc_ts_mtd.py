@@ -31,6 +31,14 @@ def kfFunc_ts_mtd(
 #   |This function is intended to standardize the generation of KPI datasets by minimize the calculation effort and consumption of      #
 #   | system resources                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <kfCore_ts_agg>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <M>onth-<T>o-<D>ate algorithm                                        #
@@ -145,9 +153,9 @@ def kfFunc_ts_mtd(
     pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
 
     #330. Retrieve the environment from the reshaped input
-    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
-    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
-    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in, inc_default = True)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in, inc_default = True)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in, inc_default = True)
 
     #350. Ending date
     dateEnd_d = asDates(inDate, **kw_d)

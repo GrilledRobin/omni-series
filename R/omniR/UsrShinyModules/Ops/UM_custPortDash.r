@@ -1309,7 +1309,7 @@ UM_custPortDash_svr <- function(input,output,session
 	}
 	#491. Transpose the product holding to facilitate the stacked bar chart
 	uRV$trns_ProdCTT <- CustData$Bal_ProdCTT %>%
-		dplyr::select(-tidyselect::starts_with('ProdCTT')) %>%
+		dplyr::select(-dplyr::starts_with('ProdCTT')) %>%
 		data.table::transpose(keep.names = 'kpi')
 	names(uRV$trns_ProdCTT) <- c('kpi',unlist(CustData$Bal_ProdCTT$ProdCTT))
 	uRV$trns_ProdCTT <- uRV$trns_ProdCTT %>%

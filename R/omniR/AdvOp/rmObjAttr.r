@@ -1,25 +1,25 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to remove the dedicated attribute(s) or all attributes from the provided object, while leaving [names]   #
+#   |This function is intended to remove the dedicated attribute(s) or all attributes from the provided object, while leaving <names>   #
 #   | untouched                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIO                                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 对两个data frame执行[*join]时，若使用的[key]字段分别有不同的[attributes]，会报warning；用这个function作预处理即可              #
+#   |[1] Pre-process either of the <data.frame>s when <*join>ing them and when any <column>s as joining keys have different <attr>      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |obj        :   Any object that can be visited by both methods of [names()] and [attr(,in_attr)], such as a [data.frame]            #
+#   |obj        :   Any object that can be visited by both methods of <names()> and <attr(,in_attr)>, such as a <data.frame>            #
 #   |req.attr   :   The attribute(s) of the provided object to be removed                                                               #
 #   |               [NULL            ] <Default> Remove all attributes if any                                                           #
 #   |               [<chr. vec/list> ]           Attributes to be removed if any                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[obj   ]   :   The same object as the input one, without the requested attribute(s)                                                #
+#   |<obj>      :   The same object as the input one, without the requested attribute(s)                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -112,4 +112,8 @@ if (FALSE){
 		View(rmAttr4)
 
 	}
+
+	if (FALSE){'
+		[1] 对两个data frame执行[*join]时，若使用的[key]字段分别有不同的[attributes]，会报warning；用这个function作预处理即可
+	'}
 }

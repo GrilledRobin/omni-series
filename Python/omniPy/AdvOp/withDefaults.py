@@ -25,8 +25,8 @@ def withDefaults(
 #   |[1] When the same defaults exist in both <pos_> (will be identified by position) and <kw_>, the one in <pos_> will be used,        #
 #   |     following Python syntax at parameter interpretation                                                                           #
 #   |[2] If any positional argument is required to set default value, all arguments before its position should have defaults as well or #
-#   |     provided during the function call, otherwise the call fails due to missing input for positional argument (instead of missing  #
-#   |     default value, following Python syntax)                                                                                       #
+#   |     provided during the function call, otherwise the call fails due to missing input for positional argument instead of missing   #
+#   |     default value, following Python syntax                                                                                        #
 #   |[3] Priority of final input for any POSITIONAL_ONLY argument is as below, from high to low:                                        #
 #   |    [1] Value passed in <pos> for the call of <f__>                                                                                #
 #   |    [2] Value passed in <kw> for the call of <f__>                                                                                 #

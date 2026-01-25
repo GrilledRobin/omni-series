@@ -1,11 +1,11 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
+#   |This function acts as a <helper> one to standardize the reading of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [...] that have no negative impact to current function call        #
+#   |[1] We could pass various parameters into one single expression <...> that have no negative impact to current function call        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -14,7 +14,7 @@
 #   |infile      :   The name (as character string) of the file or data frame to read into RAM                                          #
 #   |funcConv    :   Callable to mutate the loaded dataframe                                                                            #
 #   |                [<see def.>  ] <Default> Do not apply further process upon the data                                                #
-#   |                [callable    ]           Callable that takes only one positional argument with data.frame type                     #
+#   |                [callable    ]           Callable that takes only one positional argument with <data.frame> type                   #
 #   |frame       :   Environment in which to search for objects                                                                         #
 #   |                [None        ] <Default> Search in all frames along the call stack                                                 #
 #   |                [environment ]           Dedicated environment in which to search the objects                                      #
@@ -36,7 +36,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210829        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce the new function [omniR$AdvOp$get_values] to standardize the value retrieval of variables                     #
+#   | Log  |[1] Introduce the new function <AdvOp$get_values> to standardize the value retrieval of variables                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20231209        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -49,8 +49,8 @@
 #   | Log  |[1] Introduce argument <usecols> to filter columns before applying <funcConv> for standardization purpose                   #
 #   |      |[2] The provided column list is matched to all columns in the source data in the first place, so that anyone that is NOT in #
 #   |      |     the source can be ignored, rather than triggering exception                                                            #
-#   |      |[4] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and <k> rows      #
-#   |      |[5] Superfluous arguments are now eliminated without triggering exception                                                   #
+#   |      |[3] If none of the requested columns exists in the source, an empty data frame is returned with 0 columns and <k> rows      #
+#   |      |[4] Superfluous arguments are now eliminated without triggering exception                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20250308        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
@@ -185,7 +185,7 @@ std_read_RAM <- function(
 
 	#800. Filter the columns
 	if (has_usecols) {
-		rstOut %<>% dplyr::select(tidyselect::any_of(usecols))
+		rstOut %<>% dplyr::select(dplyr::any_of(usecols))
 	}
 
 	#999. Post process
@@ -207,7 +207,7 @@ if (FALSE){
 		#200. Load a data frame from current frame
 		bbb <- std_read_RAM(
 			'aaa'
-			,funcConv = function(x){x %>% dplyr::select(-tidyselect::any_of('b'))}
+			,funcConv = function(x){x %>% dplyr::select(-dplyr::any_of('b'))}
 		)
 		print(bbb)
 		#   a

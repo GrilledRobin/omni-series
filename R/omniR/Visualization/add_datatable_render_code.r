@@ -1,32 +1,32 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to add static render callback to a [DT::datatable] object                                                #
+#   |This function is intended to add static render callback to a <DT::datatable> object                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://github.com/rstudio/DT/issues/410                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] This is one of the helper functions that enables one to insert [htmlwidget] into cells of [DT::datatable]                     #
+#   |[01] This is one of the helper functions that enables one to insert <htmlwidget> into cells of <DT::datatable>                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Method to insert htmlwidgets into datatable]                                                                                      #
+#   |[Method to insert <htmlwidgets> into <datatable>]                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[10] Convert htmlwidget into character version; using function [as.character.htmlwidget]                                           #
-#   |[20] Make sure [escape = FALSE]                                                                                                    #
-#   |[30] Add static render callback; using function [add_datatable_render_code]                                                        #
-#   |[40] Add dependencies for the htmlwidget being used; using function [add_deps]                                                     #
+#   |[10] Convert <htmlwidget> into character version; using function <as.character.htmlwidget>                                         #
+#   |[20] Make sure <escape = FALSE>                                                                                                    #
+#   |[30] Add static render callback; using function <add_datatable_render_code>                                                        #
+#   |[40] Add dependencies for the <htmlwidget> being used; using function <add_deps>                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dtbl        :   The [DT::datatable] object to which to add the callback                                                            #
+#   |dtbl        :   The <DT::datatable> object to which to add the callback                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<datatable> :   The [DT::datatable] object with the added callback                                                                 #
+#   |<datatable> :   The <DT::datatable> object with the added callback                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -74,7 +74,7 @@ if (FALSE){
 	if (TRUE){
 		#100. Prepare the [datatable] object
 		m <- data.frame(a = 1, b = 2, c = 3)
-		dt <- datatable(m)
+		dt <- DT::datatable(m)
 
 		#200. Add callback to it
 		dt_with_cb <- add_datatable_render_code(dt)

@@ -8,31 +8,31 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inKEY       :   The Key within which to search for the item in Windows Registry, e.g. <HKEY_LOCAL_MACHINE\SOFTWARE>                #
-#   |inRegExp    :   Name pattern of the item, i.e. <sub-key>s or the name of <value>s for a key                                        #
-#   |                NOTE: If one needs to query the unnamed <Default> value of a key, just input '^HK_Def$' for this argument          #
+#   |inKEY       :   <chr     > The Key within which to search for the item in Windows Registry, e.g. <HKEY_LOCAL_MACHINE\SOFTWARE>     #
+#   |inRegExp    :   <chr     > Name pattern of the item, i.e. <sub-key>s or the name of <value>s for a key                             #
 #   |                 [^HK_Def$    ] <Default> Query the unnamed <Default> value of <inKEY>                                             #
-#   |exRegExp    :   Name pattern of the item to be excluded from the searching result                                                  #
+#   |                  NOTE: If one needs to query the unnamed <Default> value of a key, just input <'^HK_Def$'> for this argument      #
+#   |exRegExp    :   <chr     > Name pattern of the item to be excluded from the searching result                                       #
 #   |                 [^$          ] <Default> Do not exclude any valid pattern                                                         #
-#   |chkType     :   Type of the item to be searched                                                                                    #
-#   |                 [1           ] <Default> Query the content of <value> of any Windows Registry Item                                #
-#   |                 [2           ]           Query the names of <sub-key> of any Windows Registry Key (like a sub-directory)          #
-#   |                 [0           ]           Query the names of <sub-key> and the content of <value> within the key                   #
-#   |recursive   :   Whether to search for all sub-keys, if any, within the requested <inKEY> recursively                               #
-#   |                 [False       ] <Default> Only query the direct subordinates of the requested <inKEY>                              #
-#   |                 [True        ]           Query the names within all <sub-keys> in recursion                                       #
-#   |loggerInf   :   Callable to print <NOTE> into the logging system for debugging purpose                                             #
+#   |chkType     :   <int     > Type of the item to be searched                                                                         #
+#   |                 [int <1>     ] <Default> Query the content of <value> of any Windows Registry Item                                #
+#   |                 [int <2>     ]           Query the names of <sub-key> of any Windows Registry Key (like a sub-directory)          #
+#   |                 [int <0>     ]           Query the names of <sub-key> and the content of <value> within the key                   #
+#   |recursive   :   <logical > Whether to search for all sub-keys, if any, within the requested <inKEY> recursively                    #
+#   |                 [FALSE       ] <Default> Only query the direct subordinates of the requested <inKEY>                              #
+#   |                 [TRUE        ]           Query the names within all <sub-keys> in recursion                                       #
+#   |loggerInf   :   <function> Callable to print <NOTE> into the logging system for debugging purpose                                  #
 #   |                 [message     ] <Default> Print the <NOTE> messages into current console                                           #
-#   |                 [Callable    ]           Any Callable to conduct the log printing                                                 #
+#   |                 [function    ]           Any function to conduct the log printing                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |list        :   List of named lists with below items:                                                                              #
 #   |                 [path        ] Full path in the Windows Registry of current item                                                  #
-#   |                 [name        ] Name of the item, or 'HK_Default' when it is the unnamed default value of any key                  #
+#   |                 [name        ] Name of the item, or <'HK_Default'> when it is the unnamed default value of any key                #
 #   |                                NOTE: If the default value of any key is not set, there will not be a result for this key          #
-#   |                 [value       ] Value of the item, when [chkType==0], it is the same as <name>                                     #
-#   |                 [type        ] Type of the item, current function cannot retrieve it hence it is set to [NA] for all              #
+#   |                 [value       ] Value of the item, when <chkType==0>, it is the same as <name>                                     #
+#   |                 [type        ] Type of the item, current function cannot retrieve it hence it is set to <NA> for all              #
 #   |                 [regtype     ] Registry Type of the item, <subkey> or <value>                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #

@@ -98,21 +98,21 @@ def kfCore_ts_agg(
 #   |                |C_LIB_PATH      |Yes        | Candidate path to store the KPI data file. Used together with <N_LIB_PATH_SEQ>      #
 #   |                |                |           | It can be empty for data type <RAM>                                                 #
 #   |                |C_KPI_FILE_NAME |No         | Data file name, should be the same for all candidate paths                          #
-#   |                |DF_NAME         |Yes        | For some cases, such as [inDatType=HDFS] there should be such an additional field   #
+#   |                |DF_NAME         |Yes        | For some cases, such as <inDatType=HDFS> there should be such an additional field   #
 #   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
-#   |                |                |           | It is required if [C_KPI_FILE_TYPE] on any record is similar to [HDFS]              #
+#   |                |                |           | It is required if <C_KPI_FILE_TYPE> on any record is similar to <HDFS>              #
 #   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
 #   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
-#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
-#   |                                      variable [trans_var].                                                                        #
-#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
-#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                [    IMPORTANT     ] Program will translate several columns in below way as per requested by <fTrans>, see local   #
+#   |                                      variable <trans_var>.                                                                        #
+#   |                                     [1] <fTrans> is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] <fTrans> is provided a named list or vector: Translate the special strings in accordance  #
 #   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
 #   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
-#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
-#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
-#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                                           the parent environment and are <get>ed for translation, e.g.:                           #
+#   |                                           <'&c_date.' = 'G_d_curr'  > Current reporting/data date in SAS syntax <&c_date.> to be  #
+#   |                                               translated by the value of Python variable <G_d_curr> in the parent frame           #
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |mapper      :   Mapper from Daily KPI ID to aggregated KPI ID as a dataset. It MUST contain below fields:                          #
 #   |                |------------------------------------------------------------------------------------------------------------------#
@@ -127,9 +127,9 @@ def kfCore_ts_agg(
 #   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
 #   |                [None            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
 #   |                                              the result is highly unexpected                                                      #
-#   |fTrans_opt  :   Additional options for value translation on [fTrans], see document for [AdvOp.apply_MapVal]                        #
-#   |                [{}              ] <Default> Use default options in [apply_MapVal]                                                 #
-#   |                [<dict>          ]           Use alternative options as provided by a dict, see documents of [apply_MapVal]        #
+#   |fTrans_opt  :   Additional options for value translation on <fTrans>, see document for <AdvOp.apply_MapVal>                        #
+#   |                [{}              ] <Default> Use default options in <apply_MapVal>                                                 #
+#   |                [<dict>          ]           Use alternative options as provided by a dict, see documents of <apply_MapVal>        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -139,22 +139,22 @@ def kfCore_ts_agg(
 #   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
 #   |                                               that RAM is the requested location for search                                       #
 #   |cores       :   Number of system cores to read the data files in parallel                                                          #
-#   |                [4               ] <Default> No need when [_parallel=False]                                                        #
+#   |                [4               ] <Default> No need when <_parallel=False>                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please    #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to <Date> by <Dates.asDates> internally, hence please    #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
-#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates.asDates] internally, hence please       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to <Date> by <Dates.asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [None            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |160.   Retrieval of previously aggregated result for Checking Period                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates.asDates] internally, hence please       #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to <Date> by <Dates.asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
-#   |                [None            ] <Default> Function will set it the same as [dateBgn]                                            #
+#   |                [None            ] <Default> Function will set it the same as <dateBgn>                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -166,7 +166,7 @@ def kfCore_ts_agg(
 #   |                [None            ] <Default> There is no additional column to be retained for the output                           #
 #   |                [_all_           ]           Retain all related columns from all sources                                           #
 #   |                [list[col. name] ]           <list> of column names                                                                #
-#   |aggrVar     :   The single column name in the KPI data file that represents the value to be applied by function [funcAggr]         #
+#   |aggrVar     :   The single column name in the KPI data file that represents the value to be applied by function <funcAggr>         #
 #   |                [A_KPI_VAL       ] <Default> Function will aggregate this column                                                   #
 #   |tableVar    :   The single column name in the KPI data file that represents the table creation date as Time Series Convention      #
 #   |                [D_TABLE         ] <Default> Function will update this column with <dateEnd>                                       #
@@ -176,34 +176,34 @@ def kfCore_ts_agg(
 #   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
 #   |                 proper Multipliers, to minimize the system effort                                                                 #
 #   |                [True            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
-#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                                             in terms of the indicator <calcInd>                                                   #
 #   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
 #   |                [False           ]           Function will NOT generate pseudo data for Public Holidays                            #
 #   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
 #   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
 #   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
-#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
-#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
-#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
-#   |                [IMPORTANT] All [NaN] values are excluded as they create meaningless results for all aggregation functions         #
-#   |                [np.nanmean      ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series, with NaN removed     #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, <genPHMul> will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, <genPHMul> will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a <function>                           #
+#   |                [IMPORTANT] All <NaN> values are excluded as they create meaningless results for all aggregation functions         #
+#   |                [np.nanmean      ] <Default> Calculate the average of <aggrVar> per <byVar> as a time series, with <NaN> removed   #
 #   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
 #   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |fDebug      :   The switch of Debug Mode.                                                                                          #
 #   |                [False           ] <Default> Do not print debug messages during calculation                                        #
 #   |                [True            ]           Print debug messages during calculation                                               #
-#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in <fTrans>                   #
 #   |                [ <dict>         ] <Default> See the function definition as the default argument of usage                          #
-#   |kw_d        :   Arguments for function [Dates.asDates] to convert the [indate] where necessary                                     #
-#   |                [<see def.>      ] <Default> Use the default arguments for [asDates]                                               #
-#   |kw_cal      :   Arguments for instantiating the class [Dates.UserCalendar] if [cal] is NOT provided                                #
-#   |                [<see def.>      ] <Default> Use the default arguments for [UserCalendar]                                          #
+#   |kw_d        :   Arguments for function <Dates.asDates> to convert the <indate> where necessary                                     #
+#   |                [<see def.>      ] <Default> Use the default arguments for <asDates>                                               #
+#   |kw_cal      :   Arguments for instantiating the class <Dates.UserCalendar> if <cal> is NOT provided                                #
+#   |                [<see def.>      ] <Default> Use the default arguments for <UserCalendar>                                          #
 #   |kw_DataIO   :   Arguments to instantiate <DataIO>                                                                                  #
 #   |                [ empty-<dict>   ] <Default> See the function definition as the default argument of usage                          #
-#   |kw          :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
+#   |kw          :   Any other arguments that are required by <funcAggr>. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -211,7 +211,7 @@ def kfCore_ts_agg(
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |                |Column Name     |Nullable?  |Description                                                                          #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
-#   |                |FilePath        |No         | Absolute path of the data files that are written by this process                    #
+#   |                |FilePath        |No         | Absolute path of the data files that are written by this process.                   #
 #   |                |                |           | When file type is <RAM>, it represents the object name in current session           #
 #   |                |C_KPI_FILE_TYPE |No         | Same column retained from <inKPICfg>                                                #
 #   |                |rc              |Yes        | Return code from the I/O, 0 indicates success, otherwise there are errors           #

@@ -1,12 +1,12 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the special folders called [Known Folders] on Windows OS, derived from [KnownFolderID]       #
-#   |Unlike the equivalent function Python branch, the argument <hToken> is omitted as R cannot provide a handle to C++ environment     #
+#   |This function is intended to retrieve the special folders called <Known Folders> on Windows OS, derived from <KnownFolderID>       #
+#   |Unlike the equivalent function Python branch, the argument <hToken> is omitted as R cannot provide a handle to <C++> environment   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<RTools> compatible to R version must be installed, to compile the C++ script to DLL at runtime                                    #
+#   |[1] <RTools> compatible to <R> version must be installed, to compile the <C++> script to DLL at runtime                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -21,27 +21,27 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |...         :   Any positional/named arguments that represent [Known folder names] for search via C++                              #
-#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as [special folder names]           #
+#   |...         :   Any positional/named arguments that represent <Known folder names> for search                                      #
+#   |inplace     :   <logical> Whether to keep the output the same as the input values if any cannot be found as <special folder names> #
 #   |                 [TRUE        ] <Default> Keep the input values as output if they cannot be found                                  #
-#   |                 [FALSE       ]           Output [None] for those which cannot be found                                            #
+#   |                 [FALSE       ]           Output <NULL> for those which cannot be found                                            #
 #   |dwFlags     :   DWARD flags that specify special retrieval options, only length-1 is allowed                                       #
 #   |                 [<see def.>  ] <Default> No special retrieval options                                                             #
 #   |                 [int         ]           See constants <KNOWN_FOLDER_FLAG> as linked in above website                             #
-#   |                 [hex-string  ]           String representation of the DWORD hexadecimal values, R will do the conversion          #
+#   |                 [hex-string  ]           String representation of the <DWORD> hexadecimal values, <R> will do the conversion      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
 #   |                [1] If [...] is not provided, return the full character vector of Known Folder Paths, with their respective names  #
-#   |                     set as the official names, see the website: <KNOWNFOLDERID>                                                   #
+#   |                     set as the official names, see the website of <KNOWNFOLDERID>                                                 #
 #   |                [2] If [...] is provided with one element (character vector), return a named character vector with:                #
 #   |                    [names ] The requested Known Folder Name as provided                                                           #
 #   |                    [values] Absolute path of the requested names                                                                  #
 #   |                             [Requested Name] if not found when <inplace=T>                                                        #
 #   |                             [NA            ] if not found when <inplace=F>                                                        #
-#   |                [3] If [...] is provided with at least two elements, return a [list] of character vectors in the convention as [2] #
-#   |                    [names ] of the list: [str('.arg' + pos. num)] for [positional arguments] and [keys] for named arguments       #
+#   |                [3] If [...] is provided with at least two elements, return a <list> of character vectors in the convention as <2> #
+#   |                    [names ] <str('.arg' + pos. num)> for <positional arguments> and <keys> for named arguments                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -53,7 +53,7 @@
 #   | Date |    20240701        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Add a value mapping                                                                                                     #
-#   |      |[2] Make the C++ function more intuitive by referencing a constant than to provide a similar default value                  #
+#   |      |[2] Make the <C++> function more intuitive by referencing a constant than to provide a similar default value                #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

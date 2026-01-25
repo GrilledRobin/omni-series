@@ -1,20 +1,20 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the summary stats for each respective group of [byVar] by the provided aggregation function #
-#   | [funcAggr] in terms of a time-series data source based on indication of calculation for Calendar Days, Workdays or Tradedays      #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |This function is intended to calculate the summary stats for each respective group of <byVar> by the provided aggregation function #
+#   | as <funcAggr> in terms of a time-series data source based on indication of calculation for Calendar Days, Workdays or Tradedays.  #
 #   |It is used to minimize the computer resource consumption when the process is conducted on a daily basis, for it can leverage the   #
 #   | calculated result of the previous workday to calculate the value of current day, prior to the aggregation of all datasets in the  #
 #   | given period of time.                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |IMPORTANT:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] If there is any Descriptive Information in the series of input datasets, the Last Existing one will be kept in the output      #
 #   |     dataset. E.g. if a customer only exists from 1st to 15th in a month, his/her status on 15th will be kept in the output data.  #
-#   |[2] If there are multiple rows for the same [byVar] in a single import data (i.e. the daily snapshot of database), their [aggrVar] #
-#   |     will be aggregated by [sum] in the first place, before being merged to other data in the series. This is to avoid uncertainty.#
+#   |[2] If there are multiple rows for the same <byVar> in a single import data (i.e. the daily snapshot of database), their <aggrVar> #
+#   |     will be aggregated by <sum> in the first place, before being merged to other data in the series. This is to avoid uncertainty.#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Calculate the Date-to-Date average value of the KPI, such as ANR (i.e. Average Net Receivables)                                #
 #   |[2] Identify the maximum or minimum value of the KPI over the period                                                               #
@@ -33,41 +33,41 @@
 #   |                |FileName        |Yes        | The naming pattern of data files to be located in the candidate paths               #
 #   |                |FilePath        |Yes        | The naming pattern of the candidate paths to store the data (incl. file name)       #
 #   |                |PathSeq         |Yes        | The sequence of candidate paths to search for the data file. Should the same data   #
-#   |                |                |           |  exist in many among these paths, the one with the smaller [PathSeq] is retrieved   #
-#   |                |[inDatType]     |Yes        | The types of data files that indicates the method for this function to import data  #
+#   |                |                |           |  exist in many among these paths, the one with the smaller <PathSeq> is retrieved   #
+#   |                |inDatType       |Yes        | The types of data files that indicates the method for this function to import data  #
 #   |                |                |           | [RAM     ] Try to load the data frame from RAM in current session                   #
 #   |                |                |           | [R       ] Try to import as RData file                                              #
-#   |                |                |           | [SAS     ] Try to import via [pyreadstat.read_sas7bdat]                             #
-#   |                |[in_df]         |No         | For some cases, such as [inDatType=R] there should be such an additional field      #
-#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container)         #
-#   |                |                |           | It is required if [inDatType] on any record is [R]                                  #
+#   |                |                |           | [SAS     ] Try to import via <haven::read_sas>                                      #
+#   |                |in_df           |No         | For some cases, such as <inDatType=R> there should be such an additional field      #
+#   |                |                |           |  indicating the name of data.frame stored in the data file (i.e. container).        #
+#   |                |                |           | It is required if <inDatType> on any record is <R>                                  #
 #   |                |options         |Yes        | Literal string representation of <dict> representing the options used for the API   #
 #   |                |                |           |  when loading and writing data files, see <DataIO>                                  #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
-#   |                [--> IMPORTANT  <--] Program will translate several columns in below way as per requested by [fTrans], see local   #
-#   |                                      variable [trans_var].                                                                        #
-#   |                                     [1] [fTrans] is NOT provided: assume that the value in this field is a valid file path        #
-#   |                                     [2] [fTrans] is provided a named list or vector: Translate the special strings in accordance  #
+#   |                [    IMPORTANT     ] Program will translate several columns in below way as per requested by <fTrans>, see local   #
+#   |                                      variable <trans_var>.                                                                        #
+#   |                                     [1] <fTrans> is NOT provided: assume that the value in this field is a valid file path        #
+#   |                                     [2] <fTrans> is provided a named list or vector: Translate the special strings in accordance  #
 #   |                                           as data file names. in such case, names of the provided parameter are treated as strings#
 #   |                                           to be replaced; while the values of the provided parameter are treated as variables in  #
-#   |                                           the parent environment and are [get]ed for translation, e.g.:                           #
-#   |                                         [1] ['&c_date.' = 'G_d_curr'  ] Current reporting/data date in SAS syntax [&c_date.] to be#
-#   |                                               translated by the value of Python variable [G_d_curr] in the parent frame           #
+#   |                                           the parent environment and are <get>ed for translation, e.g.:                           #
+#   |                                           <'&c_date.' = 'G_d_curr'  > Current reporting/data date in SAS syntax <&c_date.> to be  #
+#   |                                               translated by the value of Python variable <G_d_curr> in the parent frame           #
 #   |                |------------------------------------------------------------------------------------------------------------------#
 #   |inDatType   :   The type of data files that indicates the method for this function to import data                                  #
 #   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
 #   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
 #   |                [R               ]           Try to import as R-Data                                                               #
-#   |                [<column name>   ]           Column name indicating the data file type if [inDatPtn] is provided a data.frame      #
-#   |in_df       :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading   #
+#   |                [<column name>   ]           Column name indicating the data file type if <inDatPtn> is provided a data.frame      #
+#   |in_df       :   For some containers, such as <inDatType=R> we should provide the name of data.frame stored inside it for loading   #
 #   |                [NULL            ] <Default> No need for default SAS data loading                                                  #
-#   |                [<column name>   ]           Column name indicating the data key if [inDatPtn] is provided a pd.DataFrame          #
+#   |                [<column name>   ]           Column name indicating the data key if <inDatPtn> is provided a pd.DataFrame          #
 #   |fImp.opt    :   List of options during the data file import for different engines; each element of it is a separate list, too      #
-#   |                Valid names of the option lists are set in the argument [inDatType]                                                #
+#   |                Valid names of the option lists are set in the argument <inDatType>                                                #
 #   |                [$SAS            ] <Default> Options for [AdvDB$std_read_SAS]                                                      #
 #   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
-#   |                [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
-#   |                [<col. name>     ]           Column name in <inDatPtn> that stores the options as a literal string that can be     #
+#   |                [<name>=<list>   ]           Other named lists for different engines, such as <R=list()> and <HDFS=list()>         #
+#   |                [<column name>   ]           Column name in <inDatPtn> that stores the options as a literal string that can be     #
 #   |                                               parsed as a <list>                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |120.   Naming pattern translation/mapping                                                                                          #
@@ -75,30 +75,30 @@
 #   |fTrans      :   Named list/vector to translate strings within the configuration to resolve the actual data file name for process   #
 #   |                [NULL            ] <Default> For time series process, please ensure this argument is manually defined, otherwise   #
 #   |                                              the result is highly unexpected                                                      #
-#   |fTrans.opt  :   Additional options for value translation on [fTrans], see document for [AdvOp$apply_MapVal]                        #
-#   |                [NULL            ] <Default> Use default options in [apply_MapVal]                                                 #
-#   |                [<list>          ]           Use alternative options as provided by a list, see documents of [apply_MapVal]        #
+#   |fTrans.opt  :   Additional options for value translation on <fTrans>, see document for <AdvOp$apply_MapVal>                        #
+#   |                [NULL            ] <Default> Use default options in <apply_MapVal>                                                 #
+#   |                [<list>          ]           Use alternative options as provided by a list, see documents of <apply_MapVal>        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |130.   Multi-processing support                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |.parallel   :   Whether to load the data files in [Parallel]; it is useful for lots of large files, but many be slow for small ones#
+#   |.parallel   :   Whether to load the data files in <Parallel>; it is useful for lots of large files, but many be slow for small ones#
 #   |                [FALSE           ]  <Default> Load the data files sequentially                                                     #
 #   |                [TRUE            ]            Use multiple CPU cores to load the data files in parallel. When using this option,   #
 #   |                                               please ensure correct environment is passed to <kw_DataIO> for API searching, given #
 #   |                                               that RAM is the requested location for search                                       #
-#   |omniR.ini   :   Initialization configuration script to load all user defined function in [omniR] when [.parallel=T]                #
-#   |                [D:/R/autoexec.r ] <Default> Parallel mode requires standalone environment hence we need to load [omniR] inside    #
-#   |                                              each batch of [%dopar%] to enable the dependent functions separately                 #
-#   |                [NULL            ]           No need when [.parallel=F]                                                            #
+#   |omniR.ini   :   Initialization configuration script to load all user defined function in <omniR> when <.parallel=T>                #
+#   |                [D:/R/autoexec.r ] <Default> Parallel mode requires standalone environment hence we need to load <omniR> inside    #
+#   |                                              each batch of <%dopar%> to enable the dependent functions separately                 #
+#   |                [NULL            ]           No need when <.parallel=F>                                                            #
 #   |cores       :   Number of system cores to read the data files in parallel                                                          #
-#   |                [4               ] <Default> No need when [.parallel=F]                                                            #
+#   |                [<int> 4         ] <Default> No need when <.parallel=F>                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |150.   Calculation period control                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dateBgn     :   Beginning of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please    #
+#   |dateBgn     :   Beginning of the calculation period. It will be converted to <Date> by <Dates$asDates> internally, hence please    #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
-#   |dateEnd     :   Ending of the calculation period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |dateEnd     :   Ending of the calculation period. It will be converted to <Date> by <Dates$asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
 #   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -106,37 +106,37 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |chkDatPtn   :   Naming pattern of the datasets that store the previously aggregated KPI for minimization of system effort, such as #
 #   |                 MTD Daily Average Balance by Account                                                                              #
-#   |                [IMPORTANT] This pattern will be translated by [fTrans], hence please ensure the correct convention                #
+#   |                [IMPORTANT] This pattern will be translated by <fTrans>, hence please ensure the correct convention                #
 #   |                [NULL            ] <Default> Function will not use existing results for performance improvement                    #
 #   |chkDatType  :   The type of data files for Checking Period that indicates the method for this function to import data              #
 #   |                [SAS             ] <Default> Try to import as the SAS dataset                                                      #
 #   |                [RAM             ]           Try to load the data frame from RAM in current environment                            #
 #   |                [R               ]           Try to import as R-Data                                                               #
-#   |chkDatVar   :   Variable name in the [data as of Checking Period], which is used for calculation in [Checking Period]              #
-#   |                [NULL            ] <Default> Not in use if [Checking Period] is not involved, or raise error when required         #
-#   |                [<str>           ]           Use this column to calculate [Leading Period] out of [Checking Period]                #
-#   |chkDat_df   :   For some containers, such as [inDatType=R] we should provide the name of data.frame stored inside it for loading   #
+#   |chkDatVar   :   Variable name in the <data as of Checking Period>, which is used for calculation in <Checking Period>              #
+#   |                [NULL            ] <Default> Not in use if <Checking Period> is not involved, or raise error when required         #
+#   |                [<str>           ]           Use this column to calculate <Leading Period> out of <Checking Period>                #
+#   |chkDat_df   :   For some containers, such as <inDatType=R> we should provide the name of data.frame stored inside it for loading   #
 #   |                [NULL            ] <Default> No need for default SAS data loading                                                  #
 #   |chkDat.opt  :   List of options during the data file import for different engines; each element of it is a separate list, too      #
 #   |                Valid names of the option lists are set in the field [inDatType]                                                   #
-#   |                [$SAS            ] <Default> Options for [AdvDB$std_read_SAS]                                                      #
+#   |                [$SAS            ] <Default> Options for <AdvDB$std_read_SAS>                                                      #
 #   |                                             [$encoding = 'GB2312' ]  <Default> Read SAS data in this encoding                     #
-#   |                [<name>=<list>   ]           Other named lists for different engines, such as [R=list()] and [HDFS=list()]         #
-#   |chkBgn      :   Beginning of the Checking Period. It will be converted to [Date] by [Dates$asDates] internally, hence please       #
+#   |                [<name>=<list>   ]           Other named lists for different engines, such as <R=list()> and <HDFS=list()>         #
+#   |chkBgn      :   Beginning of the Checking Period. It will be converted to <Date> by <Dates$asDates> internally, hence please       #
 #   |                 follow the syntax of this function during input                                                                   #
-#   |                [NULL            ] <Default> Function will set it the same as [dateBgn]                                            #
+#   |                [NULL            ] <Default> Function will set it the same as <dateBgn>                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |170.   Column inclusion                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |byVar       :   The list/vector of column names that are to be used as the group to aggregate the KPI                              #
-#   |                [IMPORTANT] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                        #
+#   |                [IMPORTANT] All these columns MUST exist in both <inDatPtn> and <chkDatPtn>                                        #
 #   |                [NULL            ] <Default> Function will raise error if it is NOT provided                                       #
 #   |copyVar     :   The list/vector of column names that are to be copied during the aggregation                                       #
-#   |                [Note 1] All these columns MUST exist in both [inDatPtn] and [chkDatPtn]                                           #
+#   |                [Note 1] All these columns MUST exist in both <inDatPtn> and <chkDatPtn>                                           #
 #   |                [Note 2] Only those values in the Last Existing observation/record can be copied to the output                     #
 #   |                [NULL            ] <Default> There is no additional column to be retained for the output                           #
 #   |                [_all_           ]           Retain all related columns from all sources                                           #
-#   |aggrVar     :   The single column name in [inDatPtn] that represents the value to be applied by function [funcAggr]                #
+#   |aggrVar     :   The single column name in <inDatPtn> that represents the value to be applied by function <funcAggr>                #
 #   |                [A_KPI_VAL       ] <Default> Function will aggregate this column                                                   #
 #   |outVar      :   The single column name as the aggregated value in the output data                                                  #
 #   |                [A_VAL_OUT       ] <Default> Function will output this column                                                      #
@@ -146,22 +146,22 @@
 #   |genPHMul    :   Whether to generate the data on Public Holidays by resembling their respective Previous Workdays/Tradedays with    #
 #   |                 proper Multipliers, to minimize the system effort                                                                 #
 #   |                [TRUE            ] <Default> Resemble the data on Public Holidays with their respective Previous Workdays/Tradedays#
-#   |                                             in terms of the indicator [calcInd]                                                   #
+#   |                                             in terms of the indicator <calcInd>                                                   #
 #   |                                             [IMPORTANT] Function will ignore any existing data on Public Holidays                 #
 #   |                [FALSE           ]           Function will NOT generate pseudo data for Public Holidays                            #
 #   |                                             [IMPORTANT] Function will raise error if there is no existing data on Public Holidays #
 #   |calcInd     :   The indicator for the function to calculate based on Calendar Days, Workdays or Tradedays                          #
 #   |                [C               ] <Default> Conduct calculation based on Calendar Days                                            #
-#   |                [W               ]           Conduct calculation based on Workdays. Namingly, [genPHMul] will hence take no effect #
-#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, [genPHMul] will hence take no effect#
-#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a [function]                           #
-#   |                [mean            ] <Default> Calculate the average of [aggrVar] per [byVar] as a time series                       #
+#   |                [W               ]           Conduct calculation based on Workdays. Namingly, <genPHMul> will hence take no effect #
+#   |                [T               ]           Conduct calculation based on Tradedays. Namingly, <genPHMul> will hence take no effect#
+#   |funcAggr    :   The function to aggregate the input time series data. It should be provided a <function>                           #
+#   |                [mean            ] <Default> Calculate the average of <aggrVar> per <byVar> as a time series                       #
 #   |                [<other aggr.>   ]           Other aggregation functions that are supported in current environment                 #
 #   |                                             [IMPORTANT] One can define specific aggregation function and use it here              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |190.   Process control                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fDebug      :   The switch of Debug Mode. Valid values are [F] or [T].                                                             #
+#   |fDebug      :   The switch of Debug Mode.                                                                                          #
 #   |                [FALSE           ] <Default> Do not print debug messages during calculation                                        #
 #   |                [TRUE            ]           Print debug messages during calculation                                               #
 #   |miss.files  :   Name of the global variable to store the debug data frame with missing file paths and names                        #
@@ -170,19 +170,19 @@
 #   |err.cols    :   Name of the global variable to store the debug data frame with error column information                            #
 #   |                [G_err_cols      ] <Default> If any columns are invalidated, please check this global variable to see the details  #
 #   |                [chr string      ]           User defined name of global variable that stores the debug information                #
-#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in [fTrans]                   #
+#   |outDTfmt    :   Format of dates as string to be used for assigning values to the variables indicated in <fTrans>                   #
 #   |                [ <vec/list>     ] <Default> See the function definition as the default argument of usage                          #
-#   |...         :   Any other arguments that are required by [funcAggr]. Please check the documents for it before defining this one    #
+#   |...         :   Any other arguments that are required by <funcAggr>. Please check the documents for it before defining this one    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<list>      :   The named list that contains below names as results:                                                               #
-#   |                [data            ] [data.frame] that contains the combined result                                                  #
-#   |                [ <miss.files>   ] [NULL] if all data files are successfully loaded, or [data.frame] that contains the paths to the#
+#   |                [data            ] <data.frame> that contains the combined result                                                  #
+#   |                [ <miss.files>   ] <NULL> if all data files are successfully loaded, or <data.frame> that contains the paths to the#
 #   |                                    data files that are required but missing                                                       #
-#   |                [ <err.cols>     ] [NULL] if all KPI data are successfully loaded, or [data.frame] that contains the column names  #
+#   |                [ <err.cols>     ] <NULL> if all KPI data are successfully loaded, or <data.frame> that contains the column names  #
 #   |                                    as well as the data files in which they are located, which cannot be concatenated due to       #
-#   |                                    different [dtypes]                                                                             #
+#   |                                    different <dtypes>                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -193,28 +193,28 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210512        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Change the type of the argument [funcAggr] from [character string] into [function] for more generalization              #
+#   | Log  |[1] Change the type of the argument <funcAggr> from <character string> into <function> for more generalization              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210614        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the verification part of data file existence, by introducing [AdvDB$parseDatName] as standardization            #
-#   |      |[2] Introduce an argument [outDTfmt] aligning above change, to bridge the mapping from [fTrans] to the date series          #
+#   | Log  |[1] Rewrite the verification part of data file existence, by introducing <AdvDB$parseDatName> as standardization            #
+#   |      |[2] Introduce an argument <outDTfmt> aligning above change, to bridge the mapping from <fTrans> to the date series          #
 #   |      |[3] Correct the part of frame lookup when assigning values to global variables for user request                             #
-#   |      |[4] Change the output into a [list] to store all results, including debug facilities, to avoid pollution in global          #
+#   |      |[4] Change the output into a <list> to store all results, including debug facilities, to avoid pollution in global          #
 #   |      |     environment                                                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210828        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Now accept [inDatPtn] as a data.frame which contains patterns of data files in different candidate paths                #
-#   |      |[2] If multiple [inDatPtn] are provided, each one must exist in at least one among the candidate paths                      #
-#   |      |[3] Now execute in silent mode by default. If one needs to see the calculation progress, switch to [fDebug = TRUE]          #
+#   | Log  |[1] Now accept <inDatPtn> as a data.frame which contains patterns of data files in different candidate paths                #
+#   |      |[2] If multiple <inDatPtn> are provided, each one must exist in at least one among the candidate paths                      #
+#   |      |[3] Now execute in silent mode by default. If one needs to see the calculation progress, switch to <fDebug = TRUE>          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220815        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when [chkBgn] > [chkEnd] so that the program no longer tries to conduct calculation for Checking Period in  #
+#   | Log  |[1] Fixed a bug when <chkBgn> GT <chkEnd> so that the program no longer tries to conduct calculation for Checking Period in #
 #   |      |     such case                                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -225,12 +225,12 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230111        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when [inDatCfg] is provided a pd.DataFrame while [in_df] is not specified                                   #
+#   | Log  |[1] Fixed a bug when <inDatCfg> is provided a pd.DataFrame while <in_df> is not specified                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230811        | Version | 3.50        | Updater/Creator | Lu Robin Bin                                                #
@@ -900,9 +900,9 @@ aggrByPeriod <- function(
 	#520. Column filter during loading data
 	h_keepVar <- function(.vars){
 		if (keep_all_col) {
-			rlang::expr(tidyselect::everything())
+			rlang::expr(dplyr::everything())
 		} else {
-			substitute(tidyselect::any_of(.vars))
+			substitute(dplyr::any_of(.vars))
 		}
 	}
 

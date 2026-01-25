@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pandas as pd
+import numpy as np
+import sys
+from omniPy.AdvOp import selCatVar
+
 def initCatVar(
     inDAT
     ,inplace : bool = False
     ,UniVal : str = ''
-) -> 'Initialize all categorical variables in a DataFrame with the same NULL string':
+) -> pd.DataFrame:
     #000.   Info.
-    """
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -19,16 +24,15 @@ def initCatVar(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |inDAT      :   The input pd.DataFrame within which to initialize the variables.                                                    #
 #   |inplace    :   Boolean value that indicates whether to replace the input DataFrame with the output.                                #
-#   |               [False]: Return a new pd.DataFrame object                                                                           #
-#   |               [True] : Overwrite the input DataFrame                                                                              #
-#   |               DEFAULT : [False]                                                                                                   #
+#   |               [False] <default> Return a new <pd.DataFrame> object                                                                #
+#   |               [True ]           Overwrite the input DataFrame                                                                     #
 #   |UniVal     :   The unified value at initialization. Only accepts a single value for all variables if any.                          #
-#   |               DEFAULT : ['']                                                                                                      #
+#   |               [''   ] <default> Use this value for initialization                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values as alternative output.                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[OutD]     :   [pd.DataFrame]The new pd.DataFrame within which the NULL values have been replaced by the provided one              #
-#   |[inDAT]    :   [pd.DataFrame]The input DataFrame as replaced in terms of the indication at [inplace]                               #
+#   |[OutD]     :   <pd.DataFrame>The new pd.DataFrame within which the NULL values have been replaced by the provided one              #
+#   |[inDAT]    :   <pd.DataFrame>The input DataFrame as replaced in terms of the indication at <inplace>                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -48,27 +52,19 @@ def initCatVar(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |omniPy.AdvOp                                                                                                               #
+#   |   |   |AdvOp                                                                                                                      #
 #   |   |   |   |selCatVar                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
-
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import numpy as np
-    import sys
-    from omniPy.AdvOp import selCatVar
+    '''
 
     #010.   Check parameters.
     #011.   Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
     #012.   Handle the parameter buffer.
     if not isinstance( inDAT , pd.DataFrame ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame]! Given [{type(inDAT)}]')
 
     #013.   Define the local environment.
 
@@ -86,10 +82,6 @@ def initCatVar(
         vals : dict = dict( zip( cols , [ { reps[i] : UniVal for i in range(len(reps)) } for j in range(ncol) ] ) )
         OutD : pd.DataFrame = inDAT.replace( vals , inplace = inplace )
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-    cols , ncol , vals = None , None , None
-
     #900.   Output.
     if inplace or ncol == 0:
         OutD = None
@@ -98,10 +90,10 @@ def initCatVar(
         return( OutD )
 #End initCatVar
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
+if __name__=='__main__':
     #010.   Create envionment.
     import pandas as pd
     import numpy as np
@@ -120,4 +112,4 @@ if __name__=="__main__":
     #300.   Overwrite the input dataset with the numeric values initialized as 0.
     initCatVar( testBlank , inplace = True )
 #-Notes- -End-
-"""
+'''

@@ -3,7 +3,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to try to assign proper names for the parameters provided BEFORE calling a function                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Coerce the arguments provided for the dynamic call to functions                                                                #
 #   |[2] Positional arguments without default values can be ignored during the call, which leaves a placeholder of type <symbol>, but   #
@@ -18,7 +18,7 @@
 #   |                [function    ]           Function that has various formals                                                         #
 #   |args_       :   <pairlist/list> for assigning names, preferably generated via <rlang::list2(...)>                                  #
 #   |                [<see def.>  ] <Default> Empty pairlist for processing                                                             #
-#   |coerce_     :   Whether to try to remove excessive arguments silently (This is the only naming convention accepted by Python and R)#
+#   |coerce_     :   Whether to try to remove excessive arguments silently (the only naming convention accepted by both Python and R)   #
 #   |                [TRUE        ] <Default> Remove excessive arguments                                                                #
 #   |                [FALSE       ]           Raise exceptions under certain situations                                                 #
 #   |strict_     :   Whether to allow less inputs than those arguments without defaults                                                 #
@@ -27,7 +27,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[list]      :   list of (preferably keyword) parameters for a correct syntax in the future function call. If <...> exists in the   #
+#   |<list>      :   list of (preferably keyword) parameters for a correct syntax in the future function call. If <...> exists in the   #
 #   |                 function formals, extra positional/keyword parameters are also included                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -45,6 +45,12 @@
 #   | Date |    20250212        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce new argument <strict_> to separately handle the scenarios when insufficient parameters are passed to the call #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260101        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug of issuing wrong error when named parameters are passed for the <positional arguments> that are AFTER the   #
+#   |      |     dots <...>, while <strict_ == T>; this should not happen as <R> allows such input for function call                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -180,15 +186,12 @@ nameArgsByFormals <- function(
 	#590. Raise if positional arguments (without default values) after <...> are not provided
 	if (strict_) {
 		if (has_dots) {
-			#100. Identify the keyword parameters passed for the arguments after <...>
-			kw_in_after_dots <- kw_in[loc_kw_in > loc_dots]
-
-			#300. Identify all arguments after <...>
+			#100. Identify all arguments after <...>
 			formals_after_dots <- formals_raw[seq_along(formals_raw) > loc_dots]
 
 			#500. Identify those without default values and without input as well
 			kw_miss <- formals_after_dots %>%
-				{.[!names(.) %in% names(kw_in_after_dots)]} %>%
+				{.[!names(.) %in% names(kw_in)]} %>%
 				{.[flagPositional(.)]}
 			len_kw_miss <- length(kw_miss)
 
@@ -323,132 +326,11 @@ nameArgsByFormals <- function(
 
 #[Full Test Program;]
 if (FALSE){
-	#Define helper function to print a list in a pretty format
-	if (FALSE){
-		library(magrittr)
-
-		printList <- function(n = NULL,l = list(),indent = 0) {
-			spaces <- strrep(' ', indent * 4)
-			if (length(spaces) == 1) {
-				curr_bgn <- spaces
-				curr_end <- spaces
-			} else {
-				curr_bgn <- ''
-				curr_end <- ''
-			}
-			if (is.character(n)) {
-				if (all(nchar(n) > 0)) {
-					curr_bgn %<>% paste0(glue::glue('{n} <- '))
-				}
-			}
-			if (is.list(l)) {
-				curr_bgn %<>% paste0('list(')
-				curr_cnt <- ''
-				curr_end %<>% paste0(')')
-				l_names <- names(l)
-				if (all(is.null(l_names))) {
-					l_names <- rlang::rep_along(l, '')
-				}
-				l_indent <- indent + 1
-			} else {
-				curr_cnt <- l
-			}
-			if (is.list(l)) {
-				print(paste0(curr_bgn, curr_cnt))
-				mapply(
-					function(n1,l1,i1) {
-						spaces <- strrep(' ', i1 * 4)
-						if (length(spaces) == 1) {
-							curr_bgn <- spaces
-							curr_end <- spaces
-						} else {
-							curr_bgn <- ''
-							curr_end <- ''
-						}
-						if (is.character(n1)) {
-							if (all(nchar(n1) > 0)) {
-								curr_bgn %<>% paste0(glue::glue('{n1} <- '))
-							}
-						}
-						if (is.list(l1)) {
-							curr_bgn %<>% paste0('list(')
-							curr_cnt <- ''
-							curr_end %<>% paste0(')')
-							l_names <- names(l1)
-							if (all(is.null(l_names))) {
-								l_names <- rlang::rep_along(l1, '')
-							}
-							l_indent <- i1 + 1
-						} else {
-							curr_cnt <- l1
-						}
-						if (is.list(l1)) {
-							print(paste0(curr_bgn, curr_cnt))
-							mapply(
-								printList
-								,l_names
-								,l1
-								,l_indent
-							)
-							print(curr_end)
-						} else {
-							print(paste0(curr_bgn, curr_cnt))
-						}
-					}
-					,l_names
-					,l
-					,l_indent
-				)
-				print(curr_end)
-			} else {
-				print(paste0(curr_bgn, curr_cnt))
-			}
-		}
-
-		printList(NULL, list(6,7,99, ff = 0, d = list(gg = 10)))
-		# [1] "list("
-		# [1] "    6"
-		# [1] "    7"
-		# [1] "    99"
-		# [1] "    ff <- 0"
-		# [1] "    d <- list("
-		# [1] "        gg <- 10"
-		# [1] "    )"
-		# [1] ")"
-
-		testfunc <- function(a,b,...,d = 5,gg = 20) {
-			print(paste0('a : ', a))
-			print(paste0('b : ', b))
-			printList(NULL, rlang::list2(...))
-			print(paste0('d : ', d))
-			print(glue::glue('missing gg : {missing(gg)}'))
-		}
-
-		testfunc(6,7,99, ff = 0, d = 10)
-		# [1] "a : 6"
-		# [1] "b : 7"
-		# [1] "list("
-		# [1] "    99"
-		# [1] "    ff <- 0"
-		# [1] ")"
-		# [1] "d : 10"
-		# missing gg : TRUE
-
-		testf1 <- function(a = 3,b,c,...){print(a);print(b);print(c);printList('dots',rlang::list2(...))}
-		testf1(b = 1, g = 20, 2, 4, 5)
-		# [1] 2
-		# [1] 1
-		# [1] 4
-		# [1] "dots <- list("
-		# [1] "    g <- 20"
-		# [1] "    5"
-		# [1] ")"
-	}
-
 	#Simple test
 	if (TRUE){
 		#010. Load user defined functions
 		source('D:\\R\\autoexec.r')
+		# Toy function <nestedFormatter> is from <Styles>
 
 		testf <- function(){}
 		kw_test <- list('abcd','cdef','gh','inplace' = F,'encoding' = 'GB18030')
@@ -457,65 +339,41 @@ if (FALSE){
 		#[ASSUMPTION]
 		#[1] Since <...> is the first among the formals, we do not assign <mode> as name of any among the positional arguments
 		kw_ren <- nameArgsByFormals(get_values, kw_test)
-		# $inplace
-		# [1] FALSE
-		#
-		# $encoding
-		# [1] "GB18030"
-		#
-		# [[3]]
-		# [1] "abcd"
-		#
-		# [[4]]
-		# [1] "cdef"
-		#
-		# [[5]]
-		# [1] "gh"
+		nestedFormatter(kw_ren)
+		# list(
+		#   $`inplace` : FALSE
+		#   $`encoding` : "GB18030"
+		#   "abcd"
+		#   "cdef"
+		#   "gh"
+		# )
 
 		#[ASSUMPTION]
 		#[1] Positional arguments have names corresponding to the formals by positions
 		#[2] <inplace> in the provision is eliminated
 		kw_ren2 <- nameArgsByFormals(writeSASdat, kw_test)
-		# $encoding
-		# [1] "GB18030"
-		#
-		# $inDat
-		# [1] "abcd"
-		#
-		# $outFile
-		# [1] "cdef"
-		#
-		# $metaVar
-		# [1] "gh"
+		nestedFormatter(kw_ren2)
+		# list(
+		#   $`encoding` : "GB18030"
+		#   $`inDat` : "abcd"
+		#   $`outFile` : "cdef"
+		#   $`metaVar` : "gh"
+		# )
 
 		kw_toolong <- c(kw_test, list('fdea','fddfi','f33','rrfdfs','fdafsf','hrggfd','gdfd','vcxc'))
 		kw_ren2_1 <- nameArgsByFormals(writeSASdat, kw_toolong)
-		# $encoding
-		# [1] "GB18030"
-		#
-		# $inDat
-		# [1] "abcd"
-		#
-		# $outFile
-		# [1] "cdef"
-		#
-		# $metaVar
-		# [1] "gh"
-		#
-		# $dt_map
-		# [1] "fdea"
-		#
-		# $nlsMap
-		# [1] "fddfi"
-		#
-		# $sasReg
-		# [1] "f33"
-		#
-		# $sasOpt
-		# [1] "rrfdfs"
-		#
-		# $wd
-		# [1] "fdafsf"
+		nestedFormatter(kw_ren2_1)
+		# list(
+		#   $`encoding` : "GB18030"
+		#   $`inDat` : "abcd"
+		#   $`outFile` : "cdef"
+		#   $`metaVar` : "gh"
+		#   $`dt_map` : "fdea"
+		#   $`nlsMap` : "fddfi"
+		#   $`sasReg` : "f33"
+		#   $`sasOpt` : "rrfdfs"
+		#   $`wd` : "fdafsf"
+		# )
 
 		#[ASSUMPTION]
 		#[1] Excessive arguments are not coerced
@@ -525,20 +383,13 @@ if (FALSE){
 		#[ASSUMPTION]
 		#[1] Excessive parameters are treated as part of <...>, including those excessive keyword ones
 		kw_ren4 <- nameArgsByFormals(std_read_SAS, kw_test)
-		# $inplace
-		# [1] FALSE
-		#
-		# $encoding
-		# [1] "GB18030"
-		#
-		# $infile
-		# [1] "abcd"
-		#
-		# $funcConv
-		# [1] "cdef"
-		#
-		# [[5]]
-		# [1] "gh"
+		nestedFormatter(kw_ren4)
+		# list(
+		#   $`encoding` : "GB18030"
+		#   $`infile` : "abcd"
+		#   $`funcConv` : "cdef"
+		#   $`key` : "gh"
+		# )
 
 		nameArgsByFormals(testf, list(5), coerce_ = F)
 		# [nameArgsByFormals]1 excessive positional argument provided!

@@ -1,11 +1,11 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the writing of files or data frames with different processing arguments        #
+#   |This function acts as a <helper> one to standardize the writing of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [kw] that have no negative impact to current function call         #
+#   |[1] We could pass various parameters into one single expression <...> that have no negative impact to current function call        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -17,7 +17,7 @@
 #   |outfile     :   Name as character string indicating the converted object                                                           #
 #   |funcConv    :   Function to mutate the input data frame before exporting it                                                        #
 #   |                [<see def.>  ] <Default> Do not apply further process upon the data                                                #
-#   |                [function    ]           Function that takes only one positional argument with data.frame type                     #
+#   |                [function    ]           Function that takes only one positional argument with <data.frame> type                   #
 #   |frame       :   <frame> object in which to create the variables                                                                    #
 #   |                [<see def.>  ] <Default> Create the variables in the caller frame                                                  #
 #   |                [frame       ]           Dedicated <frame> in which to create the variables                                        #
@@ -46,7 +46,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |get_values                                                                                                                 #
 #   |   |   |gen_locals                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -141,7 +141,7 @@ if (FALSE){
 		rc <- std_write_RAM(
 			list('vfy' = aaa)
 			,'bbb'
-			,funcConv = function(x){x %>% dplyr::select(-tidyselect::any_of('b'))}
+			,funcConv = function(x){x %>% dplyr::select(-dplyr::any_of('b'))}
 		)
 		print(bbb)
 		#   a

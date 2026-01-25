@@ -6,7 +6,7 @@ import inspect
 from typing import Optional
 
 def thisFunction() -> Optional[callable]:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -14,7 +14,7 @@ def thisFunction() -> Optional[callable]:
 #   |This function is intended to retrieve the frame as callable of its caller, instead of meerly its name, since name is not safe for  #
 #   | calls in recursion                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Create user defined recursive functions without apparent reference to their respective names                                   #
 #   |[2] https://stackoverflow.com/questions/4492559/how-to-get-current-function-into-a-variable/37099372                               #

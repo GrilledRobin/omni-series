@@ -1,81 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import pandas as pd
 import numpy as np
-import sys, warnings
 from scipy.stats import rankdata
-from .sim_matrix_cosine import sim_matrix_cosine
+from omniPy.Stats import sim_matrix_cosine
 
 def userBasedCF(
     dat,keyvar
-    ,method = 'CosSim',matrix_sim = None
-    ,sim_gt = None,score_gt = None
-    ,topk_sim = 10,topk_recom = 5
-    ,op_activity = 'all'
+    ,method : str = 'CosSim',matrix_sim : np.matrix = None
+    ,sim_gt : float = None,score_gt : float = None
+    ,topk_sim : int = 10,topk_recom : int = 5
+    ,op_activity : str = 'all'
     ,**kw
-) -> 'User-based Collaborative Filtering':
-    #000.   Info.
+) -> pd.DataFrame:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to make recommendation to each [row] in the provided data by item based similarity/distance for all      #
-#   | respective columns, other than the [keyvar], upon others                                                                          #
-#   |[Quote: http://www.salemmarafi.com/code/collaborative-filtering-r/ ]                                                               #
+#   |This function is intended to make recommendation to each <row> in the provided data by item based similarity/distance for all      #
+#   | respective columns, other than the <keyvar>, upon others                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Concept:                                                                                                                           #
+#   |QUOTE                                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[100] 将除了[keyvar]之外的其他字段([Item])组成一个矩阵                                                                             #
-#   |[200] 若未提供[相似度矩阵]，为上述矩阵中的[Item]两两计算[相似性]，默认为[余弦相似性]                                               #
-#   |[310] 将[相似度矩阵]的对角线赋值，使其在整个矩阵中为最小，其作用为：在排名时，每个[Item]对自己的相似度排最后，从而排除在计算之外   #
-#   |[320] 对[相似度矩阵]以“行”为单位排名，最大值排名为1（此时每个[Item]对自己的相似度被排为最低，所以不受影响）                        #
-#   |[330] 对所有排名小于（也即高于）给定值的相似度标记为有效                                                                           #
-#   |[340] 在上述有效标记的基础上，进一步筛选出相似度高于给定阈值的元素                                                                 #
-#   |[390] 根据上述标记为“有效”的元素，得出用于计算的[相似度矩阵]                                                                       #
-#   |[610] 对上述的新[相似度矩阵]按“行”加总，作为后续计算公式的“分母”                                                                   #
-#   |[640] 用公式：[sumproduct(purchaseHistory, similarities)/sum(similarities)]对[User]的这个未做过[Activity]的[Item]计算分数          #
-#   |[660] 将这些未做过[Activity]的[Item]s按上述的分数倒序排列，找出每个[User]排在前[topk_recom]的[Item]s，作为推荐结果输出             #
-#   |[670] 标记出每个[User]排在前[topk_recom]的[Item]s                                                                                  #
-#   |[680] 在上述有效标记的基础上，进一步筛选出分数高于给定阈值的元素                                                                   #
-#   |[690] 根据上述标记为“有效”的元素，得出用于输出的[分数矩阵]                                                                         #
-#   |[810] 按每个分数在[分数矩阵]中的绝对位置，标记出不为0的分数；方向为从上到下-从左到右（先行后列）；方便从中取出对应的分数           #
-#   |[820] 按每个分数在[分数矩阵]中的“行”与“列”位置，标记出不为0的分数；方便在输入数据集中对位填充符合推荐条件的[Item]s                 #
-#   |[890] 从输入数据集中取出符合推荐条件的[keyvar]，再补上推荐的[Item]s及它们的排名和分数；最后输出                                    #
+#   |[1] http://www.salemmarafi.com/code/collaborative-filtering-r/                                                                     #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |CONCEPT                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |See <Concept> in the section below the script                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |dat        :   The input dataset for which the calculation is to be taken upon the columns                                         #
-#   |                [IMPORTANT] All the variables, other than the [keyvar] should be [numeric], and [non-missing]                      #
-#   |keyvar     :   The variable name(s) that denotes to the [User]                                                                     #
+#   |                [IMPORTANT] All the variables, other than the <keyvar> should be <numeric>, and <non-missing>                      #
+#   |keyvar     :   The variable name(s) that denotes to the <User>.                                                                    #
 #   |                A character string or a list of character strings, which represent the column names, should be provided            #
-#   |method     :   The method to conduct the calculation, usually the similarity function or distance function                         #
-#   |                Below methods are supported:                                                                                       #
-#   |                [CosSim] Cosine Similarity between each respective columns and others                                              #
-#   |matrix_sim :   The pre-calculated [N*N] matrix that denotes the similarities between all [Item]s                                   #
-#   |                If it is not provided, the function will generate it out of the [dat] using the provided [method]                  #
-#   |sim_gt     :   Only preserve the [Item]s whose similarities between each other are greater than this value                         #
-#   |score_gt   :   Only preserve the scores in the output result which are greater than this value                                     #
-#   |topk_sim   :   How many similar [Item]s to the [Item] tha the [User] has NOT acted upon                                            #
-#   |topk_recom :   How many [Item]s to be recommended to each [User]                                                                   #
-#   |op_activity:   The strategy of recommendation (or operation) upon the items on which the user has taken activity                   #
-#   |                [all       ]<default>  Recommend all [item]s, regardless of those on which user has taken activity, e.g. purchased #
-#   |                [inclusive ]           Only recommend the [item]s on which user has taken activity, e.g. purchased                 #
+#   |method     :   <str      > The method to conduct the calculation, usually the similarity function or distance function             #
+#   |                [CosSim    ]<default> Cosine Similarity between each respective columns and others                                 #
+#   |matrix_sim :   <np.matrix> The pre-calculated <N*N> matrix that denotes the similarities between all <Item>s                       #
+#   |                [None      ]<default> The function will generate it out of the <dat> using the provided <method>                   #
+#   |sim_gt     :   <float    > Only preserve the <Item>s whose similarities between each other are greater than this value             #
+#   |                [None      ]<default> Output all similarities                                                                      #
+#   |score_gt   :   <float    > Only preserve the scores in the output result which are greater than this value                         #
+#   |                [None      ]<default> Output all scores                                                                            #
+#   |topk_sim   :   <int      > How many similar <Item>s to the <Item> that the <User> has NOT acted upon                               #
+#   |                [int <10>  ]<default> Only identify top 10 similar <Item>s for any <Item>                                          #
+#   |topk_recom :   <int      > How many <Item>s to be recommended to each <User>                                                       #
+#   |                [int <5>   ]<default> Only identify top 5 <Item>s for any <User>                                                   #
+#   |op_activity:   <str      > The strategy of recommendation (or operation) upon the items on which the user has taken activity       #
+#   |                [all       ]<default>  Recommend all <Item>s, regardless of those on which user has taken activity, e.g. purchased #
+#   |                [inclusive ]           Only recommend the <Item>s on which user has taken activity, e.g. purchased.                #
 #   |                                        This is used to recommend the products among those the user has purchased.                 #
-#   |                [exclusive ]           Only recommend the [item]s on which user has never taken activity, e.g. purchased           #
+#   |                [exclusive ]           Only recommend the <Item>s on which user has never taken activity, e.g. purchased.          #
 #   |                                        This is used to recommend the products among those the user never purchased.               #
-#   |**kw       :   Any other parameters that are required by the method to be used. Please check the documents for those functions     #
+#   |**kw       :   Any other parameters that are required by the <method> to be used. Please check the documents for those functions   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[df]       :   [data.frame] The dataset containing the recommendation for all users                                                #
+#   |<df>       :   <pd.DataFrame> The dataset containing the recommendation for all users                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[keyvar]   :   The variable(s) acting as [User] in the input data                                                              #
-#   |   |ItemName   :   The name of the [Item] to be recommended to the [User] based on the request                                     #
-#   |   |ItemRank   :   The rank of the [Item] for recommendation, the smaller the higher priority                                      #
-#   |   |Score      :   The score of the [Item] for evaluation                                                                          #
+#   |               <keyvar>   :   The variable(s) acting as <User> in the input data                                                   #
+#   |               ItemName   :   The name of the <Item> to be recommended to the <User> based on the request                          #
+#   |               ItemRank   :   The rank of the <Item> for recommendation, the smaller the higher priority                           #
+#   |               Score      :   The score of the <Item> for evaluation                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -86,7 +77,7 @@ def userBasedCF(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200706        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce the [rankdata] (scipy >= v1.5.1) to save 33% of system calculation effort, compared to [.argsort().argsort()] #
+#   | Log  |[1] Introduce the <rankdata> (scipy &ge; v1.5.1) to save 33% of calculation effort, compared to <.argsort().argsort()>      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20250323        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -102,16 +93,14 @@ def userBasedCF(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent packages                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |numpy, sys, warnings, scipy, pandas                                                                                            #
+#   |   |numpy, sys, scipy, pandas                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Stats                                                                                                                   #
+#   |   |Stats                                                                                                                          #
 #   |   |   |sim_matrix_cosine                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.
@@ -121,7 +110,7 @@ def userBasedCF(
     #012.   Handle the parameter buffer.
     op_choices = ('all','inclusive','exclusive')
     if op_activity not in op_choices:
-        raise ValueError( '[' + LfuncName + '][op_activity] must be among: ' + str(op_choices) + '! Input is [{0}]'.format( op_activity ) )
+        raise ValueError(f'[{LfuncName}][op_activity] must be among: {op_choices}! Input is [{op_activity}]')
     map_func = { 'CosSim': sim_matrix_cosine }
     if method is None: method = 'CosSim'
     if len(method) == 0: method = 'CosSim'
@@ -264,7 +253,12 @@ if __name__=='__main__':
     all_data_top_1k = all_data.merge( top_1k_songs , on = 'song_id' , suffixes = ( '' , '' ) )
 
     top_1k_wide_src = all_data_top_1k[['user','song_id','plays']].drop_duplicates()
-    top_1k_wide = pd.pivot_table( top_1k_wide_src , values = 'plays' , index = ['user'] , columns = ['song_id'] , aggfunc = sum , fill_value = 0 ).reset_index()
+    top_1k_wide = (
+        pd.pivot_table(
+            top_1k_wide_src , values = 'plays' , index = ['user'] , columns = ['song_id'] , aggfunc = sum , fill_value = 0
+        )
+        .reset_index()
+    )
 
     #190. Conduct the calculation
     t0 = time.time()
@@ -286,4 +280,25 @@ if __name__=='__main__':
     with pd.option_context('display.max_columns', None):
         display(recomm_usr)
 #-Notes- -End-
+'''
+
+'''
+#-Concept- -Begin-
+[100] 将除了[keyvar]之外的其他字段([Item])组成一个矩阵
+[200] 若未提供[相似度矩阵]，为上述矩阵中的[Item]两两计算[相似性]，默认为[余弦相似性]
+[310] 将[相似度矩阵]的对角线赋值，使其在整个矩阵中为最小，其作用为：在排名时，每个[Item]对自己的相似度排最后，从而排除在计算之外
+[320] 对[相似度矩阵]以“行”为单位排名，最大值排名为1（此时每个[Item]对自己的相似度被排为最低，所以不受影响）
+[330] 对所有排名小于（也即高于）给定值的相似度标记为有效
+[340] 在上述有效标记的基础上，进一步筛选出相似度高于给定阈值的元素
+[390] 根据上述标记为“有效”的元素，得出用于计算的[相似度矩阵]
+[610] 对上述的新[相似度矩阵]按“行”加总，作为后续计算公式的“分母”
+[640] 用公式：[sumproduct(purchaseHistory, similarities)/sum(similarities)]对[User]的这个未做过[Activity]的[Item]计算分数
+[660] 将这些未做过[Activity]的[Item]s按上述的分数倒序排列，找出每个[User]排在前[topk_recom]的[Item]s，作为推荐结果输出
+[670] 标记出每个[User]排在前[topk_recom]的[Item]s
+[680] 在上述有效标记的基础上，进一步筛选出分数高于给定阈值的元素
+[690] 根据上述标记为“有效”的元素，得出用于输出的[分数矩阵]
+[810] 按每个分数在[分数矩阵]中的绝对位置，标记出不为0的分数；方向为从上到下-从左到右（先行后列）；方便从中取出对应的分数
+[820] 按每个分数在[分数矩阵]中的“行”与“列”位置，标记出不为0的分数；方便在输入数据集中对位填充符合推荐条件的[Item]s
+[890] 从输入数据集中取出符合推荐条件的[keyvar]，再补上推荐的[Item]s及它们的排名和分数；最后输出
+#-Concept- -End-
 '''

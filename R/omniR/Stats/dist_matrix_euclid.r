@@ -1,28 +1,25 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the Euclidean Distance between each [ROW/COLUMN] of the provided matrix [x] and those of    #
-#   | the provided matrix [y]                                                                                                           #
-#   |[Special case] When y=x, it calculates the distance between each other [ROW/COLUMN] inside [x]                                     #
-#   |[Quote: https://blog.csdn.net/qq_33254870/article/details/82933317 ]                                                               #
+#   |This function is intended to calculate the Euclidean Distance between each <ROW/COLUMN> of the provided matrix <x> and those of    #
+#   | the provided matrix <y>                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Concept:                                                                                                                           #
+#   |[Special case]                                                                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[510] 将两个矩阵按[行]做[点积]，当dim(x)=[N,K]且dim(y)=[M,K]时，x%*%t(y)的形状为[N,M]                                              #
-#   |[520] 将两个矩阵各自按[行]做[平方和]                                                                                               #
-#   |[530] [x]的行平方和扩展成[M]列的矩阵(每列相同)，同时将[y]的行平方和扩展成[N]行的矩阵(每行相同)                                     #
-#   |[590] 按照公式：sqrt(sum of (x-y)**2) = x**2 + y**2 -2*x*y 计算各行距离的平方                                                      #
-#   |[900] 开方得到距离                                                                                                                 #
+#   |[1] When <y=x>, it calculates the distance between each other <ROW/COLUMN> inside <x>                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://blog.csdn.net/qq_33254870/article/details/82933317                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x,y        :   Matrices for calculation                                                                                            #
-#   |dim        :   On which dimension is the calculation requested                                                                     #
-#   |               [row] Calculate the distance between each row in [x] to that in [y]                                                 #
-#   |               [col] Calculate the distance between each column in [x] to that in [y]                                              #
-#   |               [Default] [row] (distance is usually calculated for models that are based upon observations instead of dimensions)  #
+#   |x,y        :   <Matrix> Matrices for calculation                                                                                   #
+#   |dim        :   <chr   > On which dimension is the calculation requested                                                            #
+#   |               [row    ]<Default> Calculate the distance between each row in <x> to that in <y>                                    #
+#   |               [col    ]          Calculate the distance between each column in <x> to that in <y>                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |800.   Naming Convention.                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -31,9 +28,9 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [N*M] matrix, where [N] is equal to number of rows in [x], [M] is equal to number of rows in [y]                #
-#   |               [i,j] means the distance of [i]th row in [x] to [j]th row in [y]                                                    #
-#   |                      (That's also why the columns of [x] and [y] should match)                                                    #
+#   |<Matrix>   :   The <N*M> matrix, where <N> is equal to number of rows in <x>, <M> is equal to number of rows in <y>,               #
+#   |               <[i,j]> means the distance of <i>th row in <x> to <j>th row in <y>                                                  #
+#   |                      (That's also why the columns of <x> and <y> should match)                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -44,32 +41,31 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200508        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Correct the expression: [tcrossprod(rep(1, length(ss_y)), ss_x)] with: [tcrossprod(rep(1, length(ss_x)), ss_y)]             #
+#   | Log  |Correct the expression <tcrossprod(rep(1, length(ss_y)), ss_x)> with <tcrossprod(rep(1, length(ss_x)), ss_y)>               #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200523        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Introduce the [eigenMapMatMult] method from [MatrixMultiplication.cpp] C++ function to replace [crossprod] and [tcrossprod] #
-#   |      | functions from R base; which dramatically increase the efficiency by almost 20 times!                                      #
-#   |      |Quote: https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                   #
-#   |      |Note:                                                                                                                       #
-#   |      | [1] You have to install the package [Rcpp] to enable dynamic compilation of [CPP] code                                     #
-#   |      | [2] You also have to [Rcpp::sourceCpp] the dependent [CPP] code to introduce the C++ functions to R                        #
-#   |      | [3] Use [Rfast::transpose] to transpose the corresponding matrix before multiplication in order to get the same result as  #
-#   |      |      [crossprod] or [tcrossprod] respectively                                                                              #
+#   | Log  |[1] Introduce the <eigenMapMatMult> method from <MatrixMultiplication.cpp> (<C++>) function to replace <crossprod> and      #
+#   |      | <tcrossprod> functions from <R> base; which dramatically increase the efficiency by almost 20 times!                       #
+#   |      |[2] https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                      #
+#   |      |[3] You have to install the package <Rcpp> to enable dynamic compilation of <C++> code                                      #
+#   |      |[4] You also have to <Rcpp::sourceCpp> the dependent <C++> code to introduce the <C++> functions to <R>                     #
+#   |      |[5] Use <Rfast::transpose> to transpose the corresponding matrix before multiplication in order to get the same result as   #
+#   |      |      <crossprod> or <tcrossprod> respectively                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |See the [Full Test Program] section                                                                                                #
+#   |See the [Full Test Program] section.                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Due to the feature of matrix calculation, [x] and [y] MUST have the same number of [COLUMN]s when the calculation is requestd upon #
-#   | [ROW]s, and vice versa.                                                                                                           #
+#   |Due to the feature of matrix calculation, <x> and <y> MUST have the same number of <COLUMN>s when the calculation is requested upon#
+#   | <ROW>s, and vice versa.                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #500.   Dependent Facilities.                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -79,10 +75,10 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Stats                                                                                                                    #
-#   |   |   |eigenMapMatMult       (See function definition in [MatrixMultiplication.cpp])                                              #
+#   |   |Stats                                                                                                                          #
+#   |   |   |eigenMapMatMult       (See function definition in <MatrixMultiplication.cpp>)                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |match.arg.x                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -197,4 +193,12 @@ if (FALSE){
 		all.equal(dist_xy1,dist_xy2)
 
 	}
+
+	if (FALSE){'
+		[1] 将两个矩阵按[行]做[点积]，当dim(x)=[N,K]且dim(y)=[M,K]时，x%*%t(y)的形状为[N,M]
+		[2] 将两个矩阵各自按[行]做[平方和]
+		[3] [x]的行平方和扩展成[M]列的矩阵(每列相同)，同时将[y]的行平方和扩展成[N]行的矩阵(每行相同)
+		[4] 按照公式：sqrt(sum of (x-y)**2) = x**2 + y**2 -2*x*y 计算各行距离的平方
+		[5] 开方得到距离
+	'}
 }

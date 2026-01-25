@@ -13,63 +13,50 @@
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to instantiate a User Calender object                                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[Signature Expansion]                                                                                                  #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] Signature of this function is expanded from <CoreUserCalendar>, see its documents for detailed argument list       #
+#   |   |   |   |[2] With the Signature Expansion functionality, one can obtain its correct signature at runtime in below way           #
+#   |   |   |   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[obsDate      ]   :   Vector/list of observing dates to evaluate                                                           #
-#   |   |   |                      [lubridate::today()  ]<Default> System date at class instantiation                                   #
-#   |   |   |[clnBgn       ]   :   Beginning date of the universal calendar, provided by any object that can be coerced to [Date] class #
-#   |   |   |                      [<today - 1 year>    ]<Default> Beginning of the previous year to the system date                    #
-#   |   |   |[clnEnd       ]   :   Ending date of the universal calendar, provided by any object that can be coerced to [Date] class    #
-#   |   |   |                      [<today + 1 year>    ]<Default> End of the next year to the system date                              #
-#   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
-#   |   |   |                      [CN                  ]<Default> China                                                                #
-#   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [NULL                ]<Default> Automatically determined, see [omniR$Dates$CoreUserCalendar]         #
-#   |   |   |                       [IMPORTANT] The file must contain below columns (case sensitive to column names):                   #
-#   |   |   |                                   [CountryCode ] Country Code for selection of adjustment and display of weekday names    #
-#   |   |   |                                   [F_WORKDAY   ] [1/0] values indicating [workday/holiday] respectively                   #
-#   |   |   |                                   [D_DATE      ] Strings to be imported as [Dates] by default option of [readr:read_csv]  #
-#   |   |   |                                   [C_DESC      ] Description/Name of the special dates (compared to: Mon., Tue., etc.)    #
-#   |   |   |[fmtDateIn    ]   :   Format of the [obsDate], [clnBgn] and [clnEnd] to be coerced to [Date] class                         #
-#   |   |   |                      [<various>           ]<Default> Follow the rules set in [omniR$asDates]                              #
-#   |   |   |[fmtDateOut   ]   :   Format of the output date values to be translated into character strings when necessary              #
-#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see [strftime] convention          #
-#   |   |   |[DateOutAsStr ]   :   Whether to convert the output date values into character strings                                     #
-#   |   |   |                      [FALSE               ]<Default> Output dates directly in the type of [datetime.date]                 #
-#   |   |   |                      [TRUE                ]          Convert dates into strings based on [fmtDateOut]                     #
+#   |   |   |obsDate           :   Vector/list of observing dates to evaluate                                                           #
+#   |   |   |                      [<lubridate::today()>]<Default> System date at class instantiation                                   #
+#   |   |   |...               :   Any other arguments to expand from its ancestor; see its official document                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ NULL        ]   :   This method does not return values, but may assign values to variables for [private] object          #
+#   |   |   |<NULL>            :   This method does not return values, but will assign values to variables for <private> object         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[shiftDays]                                                                                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to obtain the [kshift]th workday/tradeday (by [daytype]) counting from the provided [obsDate]  #
-#   |   |   |   | per requested, or return themselves if they are workday/tradeday as indicated by [preserve]                           #
+#   |   |   |   |This method is intended to obtain the <kshift>th workday/tradeday (by <daytype>) counting from the provided <obsDate>  #
+#   |   |   |   | per requested, or return themselves if they are workday/tradeday as indicated by <preserve>                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[obsDate      ]   :   Data.frame of observing dates to evaluate                                                            #
+#   |   |   |[obsDate      ]   :   <data.frame> of observing dates to evaluate                                                          #
 #   |   |   |                      [private$.obs_df     ]<Default> Default internal data frame containing observing dates               #
-#   |   |   |[kshift       ]   :   Number of workdays/tradedays to shift                                                                #
-#   |   |   |                      [0                   ]<Default> Return itself if it is workday/tradeday, or return its Previous      #
+#   |   |   |[kshift       ]   :   <int> Number of workdays/tradedays to shift                                                          #
+#   |   |   |                      [int <0>             ]<Default> Return itself if it is workday/tradeday, or return its Previous      #
 #   |   |   |                                                       Workday/Tradeday if it is not                                       #
-#   |   |   |[preserve     ]   :   Whether to force returning itself if it is workday/tradeday; no effect if [obsDate] is NOT workday   #
-#   |   |   |                       or tradeday, for that the function will always shift days against them as requested                 #
-#   |   |   |                      [TRUE                ]<Default> Return [obsDate] if it is workday/tradeday in any case               #
-#   |   |   |                      [FALSE               ]          Shift the days no matter [obsDate] is workday/tradeday or not        #
-#   |   |   |[daytype      ]   :   Which of the types of dates to shift; Calendar Date is not an option, for there is no need to call   #
-#   |   |   |                       this function for calculation                                                                       #
+#   |   |   |[preserve     ]   :   <logical> Whether to force returning itself if it is workday/tradeday; no effect if <obsDate> is NOT #
+#   |   |   |                       workday or tradeday, for that the function will always shift days against them as requested         #
+#   |   |   |                      [TRUE                ]<Default> Return <obsDate> if it is workday/tradeday in any case               #
+#   |   |   |                      [FALSE               ]          Shift the days no matter <obsDate> is workday/tradeday or not        #
+#   |   |   |[daytype      ]   :   <chr> Which of the types of dates to shift; Calendar Date is not an option, for there is no need to  #
+#   |   |   |                       call this function for calculation                                                                  #
 #   |   |   |                      [W                   ]<Default> Workday                                                              #
 #   |   |   |                      [T                   ]<Default> Tradeday                                                             #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ Date        ]   :   Vector of the shifted dates in the same sequence as the input [obsDate]                              #
+#   |   |   |<Date>            :   Vector of the shifted dates in the same sequence as the input <obsDate>                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -79,18 +66,18 @@
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to verify [obsDate] on whether it is the [first/last] of [workdays/tradedays] within specified #
+#   |   |   |   |This method is intended to verify <obsDate> on whether it is the <first/last> of <workdays/tradedays> within specified #
 #   |   |   |   | period                                                                                                                #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[daytype      ]   :   Type of the date to verify                                                                           #
+#   |   |   |[daytype      ]   :   <chr> Type of the date to verify                                                                     #
 #   |   |   |                      [W                   ]<Default> Whether the input date is Workday                                    #
 #   |   |   |                      [T                   ]          Whether the input date is Tradeday                                   #
-#   |   |   |[.bound       ]   :   Verify whether the date is at the beginning or ending of the period                                  #
+#   |   |   |[.bound       ]   :   <chr> Verify whether the date is at the beginning or ending of the period                            #
 #   |   |   |                      [head                ]<Default> Whether the input date is at the beginning                           #
 #   |   |   |                      [tail                ]          Whether the input date is at the end                                 #
-#   |   |   |[.period      ]   :   Period name to verify the date                                                                       #
+#   |   |   |[.period      ]   :   <chr> Period name to verify the date                                                                 #
 #   |   |   |                      [MONTH               ]<Default> Verify the bound of each month                                       #
 #   |   |   |                      [QUARTER             ]          Verify the bound of each QUARTER                                     #
 #   |   |   |                      [WEEK                ]          Verify the bound of each workweek/tradeweek                          #
@@ -98,17 +85,23 @@
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ vec         ]   :   Logical vector of the verification result for each [obsDate] respectively in the same sequence       #
+#   |   |   |<logical>         :   Logical vector of the verification result for each <obsDate> respectively in the same sequence       #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |500.   Read-only properties.                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |100.   Description.                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |This section lists all the read-only properties of the class.                                                                  #
-#   |   |The examples listed are based on the provision of: [cln$values <- c('20210104', '20210102', '20201030', '20210207')]           #
-#   |   |[NOTE:] <work week> represents the block of consecutive workdays                                                               #
-#   |   |[NOTE:] <trade week> represents the block of consecutive tradedays                                                             #
+#   |   |This section lists all the read-only properties of the class. The examples listed are based on below provision                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |EXAMPLE                                                                                                                        #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[<cln$values <- c('20210104', '20210102', '20201030', '20210207')>]                                                            #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |NOTE                                                                                                                           #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[1] <work week> represents the block of consecutive workdays                                                                   #
+#   |   |[2] <trade week> represents the block of consecutive tradedays                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |       Property Name         |                             Value Examples and Property Description                         #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
@@ -183,12 +176,15 @@
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested dates for observation within the universal calendar        #
-#   |   |   |   |[1] When [set] is called, it changes [private$.obsdates]                                                               #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.obsdates]                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <private$.obsdates>                                                               #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <private$.obsdates>                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to [Date] class                      #
+#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to <Date> class                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -206,24 +202,30 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210904        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Now treat all invalid inputs as [NA] and maintain their positions in the output result                                  #
-#   |      |[2] Output [NA] or [empty string] as the shifted ones for invalid inputs                                                    #
-#   |      |[3] Output [FALSE] as boundary detector for invalid inputs                                                                  #
+#   | Log  |[1] Now treat all invalid inputs as <NA> and maintain their positions in the output result                                  #
+#   |      |[2] Output <NA> or <empty string> as the shifted ones for invalid inputs                                                    #
+#   |      |[3] Output <FALSE> as boundary detector for invalid inputs                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211005        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Now support input as a table-like object (W-D, can be flagged by [omniR$AdvOp$isDF])                                    #
+#   | Log  |[1] Now support input as a table-like object (W-D, can be flagged by <AdvOp$isDF>)                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230619        | Version | 3.50        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce functions <vecStack> and <vecUnstack> to simplify the program                                                 #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251231        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to simplify the initialization arguments                                                    #
+#   |      |[2] Enhance the logic when <clnBgn> or <clnEnd> is not provided at initialization                                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -234,29 +236,30 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |R6, magrittr, lubridate, dplyr, tidyselect, tidyr, glue                                                                        #
+#   |   |R6, magrittr, lubridate, dplyr, tidyselect, tidyr, rlang                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |match.arg.x                                                                                                                #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Dates                                                                                                                    #
+#   |   |Dates                                                                                                                          #
 #   |   |   |CoreUserCalendar                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	R6, magrittr, lubridate, dplyr, tidyselect, tidyr
+	R6, magrittr, lubridate, dplyr, tidyselect, tidyr, rlang
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -271,93 +274,108 @@ library(magrittr)
 if (!require(R6)) install.packages(R6)
 
 #100. Prepare the Class.
-ObsDates <- R6::R6Class('ObsDates'
+ObsDates <- local({
+#[ASSUMPTION]
+#[1] By instantiation of below class, we resemble a <class decorator> in Python
+deco <- ExpandSignature$new(CoreUserCalendar$public_methods$initialize, instance = 'eSig')
+
+#100. Prepare a decorated initialization structure as parametric signature expansion
+.init. <- deco$wrap(function(
+	obsDate = lubridate::today()
+	,...
+){
+	#020. Local environment
+	dots <- rlang::list2(...)
+	args_share <- list()
+	eSig$vfyConflict(args_share)
+	self$.eSig. <- eSig
+	args_in <- self$.eSig.$updParams(args_share, dots)
+
+	#100. Assign values to local variables
+	private$classname <- head(class(self),1)
+	super$fmtDateIn = self$.eSig.$getParam('fmtDateIn', args_in, inc_default = T) %>% eval()
+	private$map_stack <- c(
+		'idRow' = '.obsKRow.'
+		,'idCol' = '.obsKCol.'
+	)
+	int_obs <- private$.obsDate.T(obsDate) %>% dplyr::pull('D_DATE')
+	fr_default_clnBgn <- self$.eSig.$isDefault('clnBgn', scope_ = 'src') %>% eval()
+	fr_default_clnEnd <- self$.eSig.$isDefault('clnEnd', scope_ = 'src') %>% eval()
+
+	#300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
+	#310. Identify the valid dates from the input
+	int_clnBgn <- asDates(self$.eSig.$getParam('clnBgn', args_in, inc_default = T) %>% eval(), super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+	int_clnEnd <- asDates(self$.eSig.$getParam('clnEnd', args_in, inc_default = T) %>% eval(), super$fmtDateIn) %>%
+		{.[!is.na(.)]}
+	int_obsDate <- int_obs %>%
+		{.[!is.na(.)]}
+
+	#317. Raise exception for invalid input
+	if (length(int_clnBgn) > 1){
+		stop('[',private$classname,']Multiple <clnBgn> provided!')
+	}
+	if (length(int_clnEnd) > 1){
+		stop('[',private$classname,']Multiple <clnEnd> provided!')
+	}
+	if (length(int_obsDate) == 0 && length(int_clnBgn) == 0){
+		stop('[',private$classname,']Both <obsDate> and <clnBgn> are invalid!')
+	}
+	if (length(int_obsDate) == 0 && length(int_clnEnd) == 0){
+		stop('[',private$classname,']Both <obsDate> and <clnEnd> are invalid!')
+	}
+
+	#319. Warn for invalid input that can be overridden
+	if (length(int_clnBgn) == 0){
+		warning('[',private$classname,']<clnBgn> is invalid and will be calculated from the minimum among <obsDate>!')
+	}
+	if (length(int_clnEnd) == 0){
+		warning('[',private$classname,']<clnEnd> is invalid and will be calculated from the maximum among <obsDate>!')
+	}
+
+	#340. Transform the calendar when necessary
+	if (length(int_obsDate) > 0){
+		#100. Determine the beginning
+		if (fr_default_clnBgn || (length(int_clnBgn) == 0)) {
+			#900. Set it to the beginning of its previous year, which is earlier than that all existing methods can calculate
+			int_clnBgn <- lubridate::make_date(lubridate::year(min(int_obsDate, na.rm = T)) - 1, 1, 1)
+		}
+		if (fr_default_clnEnd || (length(int_clnEnd) == 0)) {
+			#900. Set it to the end of its next year, which is earlier than that all existing methods can calculate
+			int_clnEnd <- lubridate::make_date(lubridate::year(max(int_obsDate, na.rm = T)) + 1, 12, 31)
+		}
+	}
+
+	#500. Instantiate parent class
+	#[For methods/variables (i.e. members) set in parent class]
+	#[1] After the instantiation of parent class, all its [private] members will have been localized
+	#[2] We have to use [private$] syntax for referencing the [private] members in parent class
+	#[3] We have to use [super$] syntax for referencing the [public] and [active] members in parent class
+	#[For members set in current class]
+	#[1] We have to use [self$] syntax for referencing the [public] and [active] members in current class
+	args_upd = list(
+		'clnBgn' = int_clnBgn
+		,'clnEnd' = int_clnEnd
+	)
+	args_super <- self$.eSig.$updParams(args_upd, args_in)
+	do.call(super$initialize, args_super)
+
+	#700. Verify the input values
+	self$values <- obsDate
+
+	#800. Create the user calendar, for it contains more columns that are required for calculation in this class
+	private$.uniclndr <- private$.subCalendar(datebgn = super$clnBgn, dateend = super$clnEnd)
+})
+
+#900. Export the complete definition of the class
+myclass <- eval(substitute(R6::R6Class('ObsDates'
 	,inherit = CoreUserCalendar
 	,public = list(
 		#Below link demonstrates the way to initialize an R6 Class together with its parent class generator
 		#[Quote: https://stackoverflow.com/questions/35925664/change-initialize-method-in-subclass-of-an-r6-class ]
 		#Below link demonstrates the way to find all ancestors of an R6 Class recursively
 		#[Quote: https://stackoverflow.com/questions/37303552/r-r6-get-full-class-name-from-r6generator-object ]
-		initialize = function(
-			obsDate = lubridate::today()
-			,clnBgn = NULL
-			,clnEnd = NULL
-			,countrycode = 'CN'
-			,CalendarAdj = NULL
-			,fmtDateIn = c('%Y%m%d', '%Y-%m-%d', '%Y/%m/%d')
-			,fmtDateOut = '%Y%m%d'
-			,DateOutAsStr = F
-		){
-			#001. Handle parameters
-
-			#100. Assign values to local variables
-			super$fmtDateIn = fmtDateIn
-			private$map_stack <- c(
-				'idRow' = '.obsKRow.'
-				,'idCol' = '.obsKCol.'
-			)
-			int_obs <- private$.obsDate.T(obsDate) %>% dplyr::pull('D_DATE')
-
-			#300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
-			#310. Identify the valid dates from the input
-			int_clnBgn <- asDates(clnBgn, fmtDateIn)
-			int_clnBgn <- int_clnBgn[!is.na(int_clnBgn)]
-			int_clnEnd <- asDates(clnEnd, fmtDateIn)
-			int_clnEnd <- int_clnEnd[!is.na(int_clnEnd)]
-
-			#340. Transform the beginning when necessary
-			if (length(int_clnBgn) != 1) {
-				#100. Seek help from the input values
-				int_clnBgn <- int_obs[!is.na(int_obs)]
-
-				#500. Set it when the input values can neither help
-				if (length(int_clnBgn) == 0) {
-					int_clnBgn <- lubridate::today()
-				} else {
-					int_clnBgn <- min(int_clnBgn, na.rm = T)
-				}
-
-				#900. Set it to the beginning of its previous year, which is earlier than that all existing methods can calculate
-				int_clnBgn <- lubridate::make_date(lubridate::year(int_clnBgn) - 1, 1, 1)
-			}
-			if (length(int_clnEnd) != 1) {
-				#100. Seek help from the input values
-				int_clnEnd <- int_obs[!is.na(int_obs)]
-
-				#500. Set it when the input values can neither help
-				if (length(int_clnEnd) == 0) {
-					int_clnEnd <- lubridate::today()
-				} else {
-					int_clnEnd <- max(int_clnEnd, na.rm = T)
-				}
-
-				#900. Set it to the end of its next year, which is earlier than that all existing methods can calculate
-				int_clnEnd <- lubridate::make_date(lubridate::year(int_clnEnd) + 1, 12, 31)
-			}
-
-			#500. Instantiate parent class
-			#[For methods/variables (i.e. members) set in parent class]
-			#[1] After the instantiation of parent class, all its [private] members will have been localized
-			#[2] We have to use [private$] syntax for referencing the [private] members in parent class
-			#[3] We have to use [super$] syntax for referencing the [public] and [active] members in parent class
-			#[For members set in current class]
-			#[1] We have to use [self$] syntax for referencing the [public] and [active] members in current class
-			super$initialize(
-				clnBgn = int_clnBgn
-				,clnEnd = int_clnEnd
-				,countrycode = countrycode
-				,CalendarAdj = CalendarAdj
-				,fmtDateIn = fmtDateIn
-				,fmtDateOut = fmtDateOut
-				,DateOutAsStr = DateOutAsStr
-			)
-
-			#700. Verify the input values
-			self$values <- obsDate
-
-			#800. Create the user calendar, for it contains more columns that are required for calculation in this class
-			private$.uniclndr <- private$.subCalendar(datebgn = super$clnBgn, dateend = super$clnEnd)
-		}
+		initialize = .init.
 		,shiftDays = function(
 			obsDate = private$.obs_df
 			,kshift = 0
@@ -388,7 +406,7 @@ ObsDates <- R6::R6Class('ObsDates'
 			DateFlag <- unname(col_filter[[daytype]])
 
 			#200. Prepare the calendar with the least requested columns and set the correct index
-			cal_shift <- private$.uniclndr %>% dplyr::select('D_DATE', tidyselect::all_of(DateFlag))
+			cal_shift <- private$.uniclndr %>% dplyr::select('D_DATE', dplyr::all_of(DateFlag))
 
 			#300. Prepare the shifted days by requested type
 			df_shift <- cal_shift %>%
@@ -423,6 +441,7 @@ ObsDates <- R6::R6Class('ObsDates'
 			#999. Return the values
 			return(private$.rst(df_out, 'D_DATE'))
 		}
+		,.eSig. = NULL
 	)
 	,private = list(
 		.uniclndr = NULL
@@ -430,6 +449,7 @@ ObsDates <- R6::R6Class('ObsDates'
 		,.inputs. = NULL
 		,.obs_df = NULL
 		,.v_struct. = FALSE
+		,classname = NULL
 		#100. Prepare helper functions
 		#110. Prepare the helper function to return proper results
 		,.rst = function(df, col){
@@ -475,7 +495,7 @@ ObsDates <- R6::R6Class('ObsDates'
 			#300. Prepare the data
 			cal_bound <- private$.uniclndr %>%
 				dplyr::filter_at(col_filter[[daytype]], ~.) %>%
-				dplyr::select('D_DATE', tidyselect::all_of(wk_filter[[daytype]]))
+				dplyr::select('D_DATE', dplyr::all_of(wk_filter[[daytype]]))
 
 			#500. Conduct different filtration as per request
 			if (.period=='MONTH') cal_bound %<>% dplyr::mutate(C_PRD = strftime(D_DATE, '%Y%m'))
@@ -856,7 +876,9 @@ ObsDates <- R6::R6Class('ObsDates'
 			self$shiftDays( kshift = 1, preserve = F, daytype = 't' )
 		}
 	)
-)
+)))
+return(myclass)
+})
 
 #-Notes- -Begin-
 #Full Test Program[1]:
@@ -889,10 +911,50 @@ if (FALSE){
 			a = asDates(c('20190412', NA, '20200925'))
 			,b = asDates(c('20181122', '20200214', NA))
 		)
-		thisday <- ObsDates$new(obsDate = dt_df, clnBgn = '20180101', clnEnd = '20201231')
+		thisday <- ObsDates$new(obsDate = dt_df)
 		View(thisday$values)
 		thisday$isWorkDay
 		thisday$prevMonLCDToPWD
+
+		#700. Test invalid input
+		#710. Provide no parameter
+		#[ASSUMPTION]
+		#[1] In such case, <obsDate> is not provided and the instance falls back to the respective default values of <clnBgn>
+		#     and <clnEnd>, hence there is no warning message
+		#[2] It has the same behavior as when <obsDate> is provided while <clnBgn> and <clnEnd> are not
+		thisday <- ObsDates$new('20260103')
+		sprintf(
+			'thisday$values=%s, thisday$clnBgn=%s, thisday$clnEnd=%s'
+			,thisday$values %>% strftime('%Y%m%d')
+			,thisday$clnBgn %>% strftime('%Y%m%d')
+			,thisday$clnEnd %>% strftime('%Y%m%d')
+		)
+		# [1] "thisday$values=20260103, thisday$clnBgn=20250101, thisday$clnEnd=20271231"
+
+		#730. Provide invalid parameters
+		#[ASSUMPTION]
+		#[1] In such case, <clnBgn> and/or <clnEnd> are provided with invalid dates, the instance tries to overwrite them with the
+		#     requested dates with a warning message
+		warnday <- ObsDates$new('20260103', clnBgn = NULL, clnEnd = NULL)
+		# Warning messages:
+		# 1: In (function (obsDate = lubridate::today(), ...)  :
+		#   [ObsDates]<clnBgn> is invalid and will be calculated from the minimum among <obsDate>!
+		# 2: In (function (obsDate = lubridate::today(), ...)  :
+		#   [ObsDates]<clnEnd> is invalid and will be calculated from the maximum among <obsDate>!
+
+		sprintf(
+			'warnday$values=%s, warnday$clnBgn=%s, warnday$clnEnd=%s'
+			,warnday$values %>% strftime('%Y%m%d')
+			,warnday$clnBgn %>% strftime('%Y%m%d')
+			,warnday$clnEnd %>% strftime('%Y%m%d')
+		)
+		# [1] "warnday$values=20260103, warnday$clnBgn=20250101, warnday$clnEnd=20271231"
+
+		#750. Provide invalid value for <obsDate>
+		defday <- ObsDates$new(NULL)
+		# Warning message:
+		# In (function (udate)  :
+		#   [ObsDates]No value is provided for [Observing Dates], reset it to today.
 	}
 }
 #-Notes- -End-

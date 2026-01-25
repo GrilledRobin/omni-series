@@ -2,55 +2,54 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to map the values within the provided list or vector into another set of values by the given dictionary  #
-#   | a.k.a. the similar function as [Format Procedure] in SAS.                                                                         #
-#   |It also acts as a helper function to conduct value mapping in a data.frame via [mutate] function from [dplyr] package, see below   #
+#   | a.k.a. the similar function as <Format Procedure> in SAS.                                                                         #
+#   |It also acts as a helper function to conduct value mapping in a <data.frame> via <mutate> function from <dplyr> package, see below #
 #   | examples.                                                                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |vec         :   List or vector of values to be mapped into another set of values (also accept a column in a data.frame when used   #
-#   |                 in [mutate] function of [dplyr] package)                                                                          #
-#   |                [IMPORTANT] It will be converted by [as.character()] during the mapping process                                    #
-#   |dict_map    :   List or vector of value mapping within which: [names] represent the values to be mapped from the [vec]; [values]   #
+#   |vec         :   List or vector of values to be mapped into another set of values, also accept a column in a data.frame when used   #
+#   |                 in <mutate> function of <dplyr> package.                                                                          #
+#   |                [IMPORTANT] It will be converted by <as.character()> during the mapping process                                    #
+#   |dict_map    :   List or vector of value mapping within which <names> represent the values to be mapped from the <vec>; <values>    #
 #   |                 represent the new values as mapping result                                                                        #
 #   |                [IMPORTANT] Unlike FORMAT Procedure in SAS, the same name cannot exist twice in an R list/vector; hence we cannot  #
 #   |                             define the process for a multiple match                                                               #
 #   |preserve    :   Logical value indicating whether to preserve the input values if they cannot be mapped in the given dictionary     #
 #   |                 [TRUE        ]  <Default> Preserve the original values if there is mo mapping for them                            #
-#   |                 [FALSE       ]            Discard the input values and output an [NA] in place if there is no mapping for them    #
+#   |                 [FALSE       ]            Discard the input values and output an <NA> in place if there is no mapping for them    #
 #   |placeholder :   The placeholder for output if the length (i.e. number of elements) of the entire input vector is 0                 #
-#   |                 [TRUE        ]  <Default> Output a zero-length placeholder in the same type as the values in [dict_map]           #
+#   |                 [TRUE        ]  <Default> Output a zero-length placeholder in the same type as the values in <dict_map>           #
 #   |                 [FALSE       ]            Do not output a placeholder                                                             #
-#   |force_mark  :   The name in the [dict_map] with value to force output when there is no mapping result for the input value while    #
-#   |                 the parameter [preserve] is set FALSE.                                                                            #
-#   |                 [...         ]  <Default> Output the value in the name of '...' in the [dict_map] when condition is fulfilled     #
-#   |                 [(char. str) ]            Output the value in the name of '(char. str)' in the [dict_map] when condition is       #
-#   |                                            fulfilled                                                                              #
+#   |force_mark  :   The name in the <dict_map> with value to force output when there is no mapping result for the input value while    #
+#   |                 the parameter <preserve> is set FALSE.                                                                            #
+#   |                 [...         ]  <Default> Output the value in the name of <'...'> in the <dict_map> when condition is fulfilled   #
+#   |                 [<char. str> ]            Output the value in the provided name in the <dict_map> when condition is fulfilled     #
 #   |fPartial    :   Whether to partially replace the input values by the mapping dictionary                                            #
 #   |                 [FALSE       ]  <Default> Replace the entire string if it matches any name in the dictionary, i.e. DO NOT keep    #
-#   |                                            the rest of the the input [vec] given they are not matched in the dictionary           #
+#   |                                            the rest of the the input <vec> given they are not matched in the dictionary           #
 #   |                 [TRUE        ]            Replace the matching part of the string with the value in the dictionary                #
-#   |out_first   :   Whether to output the first or last matching result given [fPartial==FALSE]                                        #
-#   |                 [TRUE        ]  <Default> When there is any match, output the first result in [dict_map]                          #
-#   |                 [FALSE       ]            When there is any match, output the last result in [dict_map]                           #
+#   |out_first   :   Whether to output the first or last matching result given <fPartial==FALSE>                                        #
+#   |                 [TRUE        ]  <Default> When there is any match, output the first result in <dict_map>                          #
+#   |                 [FALSE       ]            When there is any match, output the last result in <dict_map>                           #
 #   |PRX         :   Whether to use Perl Regular Expression to conduct the replacement                                                  #
 #   |                 [FALSE       ]  <Default> Match the string without Perl Regular Expression, i.e. no special character patterns    #
 #   |                 [TRUE        ]            Match the string with Perl Regular Expression                                           #
-#   |full.match  :   Whether to match the entire input string within [vec]                                                              #
+#   |full.match  :   Whether to match the entire input string within <vec>                                                              #
 #   |                 [TRUE        ]  <Default> The match is valid ONLY WHEN the first match is on the first character AND its length   #
-#   |                                            is the same as the number of characters of the input [vec]                             #
-#   |                 [FALSE       ]            Any sub-string in [vec] that matches anyone in the dictionary will suffice the rule     #
-#   |ignore.case :   Same as that in the official document for [gregexpr]                                                               #
+#   |                                            is the same as the number of characters of the input <vec>                             #
+#   |                 [FALSE       ]            Any sub-string in <vec> that matches anyone in the dictionary will suffice the rule     #
+#   |ignore.case :   Same as that in the official document for <gregexpr>                                                               #
 #   |                 [FALSE       ]  <Default> Do not ignore case during the match                                                     #
 #   |                 [TRUE        ]            Ignore case during the match                                                            #
-#   |...         :   Any other parameters that are required by [stringi::stri_opts_fixed], or [stringi::stri_opts_regex], except        #
-#   |                 [case_insensitive] as it is already used. Please check the documents for those functions                          #
+#   |...         :   Any other parameters that are required by <stringi::stri_opts_fixed>, or <stringi::stri_opts_regex>, except        #
+#   |                 <case_insensitive> as it is already used. Please check the documents for those functions                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vec/list]  :   The mapped result stored in a vector or list, as indicated by [vec]                                                #
+#   |<vec/list>  :   The mapped result stored in a vector or list, as indicated by <vec>                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -61,48 +60,48 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200729        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add a parameter [placeholder] to ensure a dedicated type of output if the input vector has no element.                  #
-#   |      | This is useful when a data.frame has no row but we still need to create a new column by the pre-defined mapping. In such   #
-#   |      |  case, when we only use [sapply/lapply] to the input, the corresponding output is NULL, hence the new column cannot be     #
+#   | Log  |[1] Add a parameter <placeholder> to ensure a dedicated type of output if the input vector has no element.                  #
+#   |      | This is useful when a <data.frame> has no row but we still need to create a new column by the pre-defined mapping. In such #
+#   |      |  case, when we only use <sapply>/<lapply> to the input, the corresponding output is NULL, hence the new column cannot be   #
 #   |      |  created. That is when we will set a placeholder to ensure this column with the dedicated data type is still created.      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200804        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add a parameter [force_mark] to ensure a user-defined replacement of value can be output when there is no mapping       #
-#   |      |     result for the input while the parameter [preserve] is set as [FALSE].                                                 #
-#   |      |[2] Enable mapping results in different data types when the output is a list as indicated by [func=='lapply'].              #
+#   | Log  |[1] Add a parameter <force_mark> to ensure a user-defined replacement of value can be output when there is no mapping       #
+#   |      |     result for the input while the parameter <preserve> is set as <FALSE>.                                                 #
+#   |      |[2] Enable mapping results in different data types when the output is a list as indicated by <func=='lapply'>.              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210123        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add a parameter [fPartial] to Indicate whether to partially replace the values instead of wholy replace                 #
-#   |      |[2] Add a parameter [PRX] to Indicate whether to use perl regular expression during value replacement                       #
-#   |      |[3] Add a parameter [full.match] to Indicate whether to match the entire string BEFORE replacing                            #
-#   |      |[2] Add other parameters that are same as in [gregexpr] for diversification                                                 #
+#   | Log  |[1] Add a parameter <fPartial> to Indicate whether to partially replace the values instead of wholy replace                 #
+#   |      |[2] Add a parameter <PRX> to Indicate whether to use perl regular expression during value replacement                       #
+#   |      |[3] Add a parameter <full.match> to Indicate whether to match the entire string BEFORE replacing                            #
+#   |      |[2] Add other parameters that are same as in <gregexpr> for diversification                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210131        | Version | 4.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fix the bug on [PRX] by adding pointer to each matched RegExp in the mapping dictionary so that each logical value in   #
-#   |      |     [PRX] can now be applied to the function [gsub] correctly                                                              #
+#   | Log  |[1] Fix the bug on <PRX> by adding pointer to each matched RegExp in the mapping dictionary so that each logical value      #
+#   |      |     inside <PRX> can now be applied to the function <gsub> correctly                                                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210613        | Version | 5.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the entire function by eliminating [for] loops, which improves the efficiency by 3 times                        #
+#   | Log  |[1] Rewrite the entire function by eliminating <for> loops, which improves the efficiency by 3 times                        #
 #   |      |[2] No longer handle numeric values, while focus on character strings, to purify the function                               #
-#   |      |[3] Introduce [stringi] functions to replace [gregexpr], also to improve the overall efficiency                             #
-#   |      |[4] New argument [out_first] indicates whether the first or last matching result to be output for each element when         #
-#   |      |     [fPartial==FALSE]                                                                                                      #
+#   |      |[3] Introduce <stringi> functions to replace <gregexpr>, also to improve the overall efficiency                             #
+#   |      |[4] New argument <out_first> indicates whether the first or last matching result to be output for each element when         #
+#   |      |     <fPartial==FALSE>                                                                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210624        | Version | 6.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Rewrite the entire function by fully applying [stringi] functions, which improves the efficiency by 50 times in line    #
-#   |      |[2] Remove the argument [out_first] as there is no API in [stringi] to handle this situation                                #
-#   |      |[3] Known limitation: '\$', '\\$' and '\\\$' cannot be differentiated for [full.match] when preparing proper [regex]        #
-#   |      |    Solution for this: avoid to provide '$' to indicate a line-end in [dict_map], as it is handled in the function          #
+#   | Log  |[1] Rewrite the entire function by fully applying <stringi> functions, which improves the efficiency by 50 times in line    #
+#   |      |[2] Remove the argument <out_first> as there is no API in <stringi> to handle this situation                                #
+#   |      |[3] Known limitation: <'\$'>, <'\\$'> and <'\\\$'> cannot be differentiated for <full.match> when preparing proper <regex>. #
+#   |      |    Solution for this is to avoid to provide <'$'> to indicate a line-end in <dict_map>, as it is handled in the function   #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20240214        | Version | 6.10        | Updater/Creator | Lu Robin Bin                                                #

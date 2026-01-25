@@ -1,22 +1,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert any type of input values into valid dates (with class [Date])                                 #
+#   |This function is intended to convert any type of input values into valid dates (with class <Date>)                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |indate      :   Date-like values, can be list/vector of date values, character strings, integers or data.frame                     #
-#   |fmt         :   Alternative format to be passed to function [as.Date] when the input is a character string                         #
-#   |                 [ <vec>      ] <Default> Try to match these formats for any input strings, see function definition                #
-#   |origin      :   Date-like scalar, as origin, to convert the values in the class of [Date]                                          #
-#   |                See official document of [lubridate::make_date]                                                                    #
-#   |                 [ 1960-01-01 ] <Default> Also the default origin of SAS for easy conversion                                       #
+#   |fmt         :   Alternative format to be passed to function <as.Date> when the input is a character string                         #
+#   |                 [<see def.>  ] <Default> Try to match these formats for any input strings, see function definition                #
+#   |origin      :   Date-like scalar, as origin, to convert the values in the class of <Date>.                                         #
+#   |                See official document of <lubridate::make_date>                                                                    #
+#   |                 [<see def.>  ] <Default> Also the default origin of SAS for easy conversion                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ vec   ]   :   The mapped result stored in a vector (or data.frame if the input is table-like)                                    #
+#   |<vec>       :   The mapped result stored in a vector (or <data.frame> if the input is table-like)                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -27,10 +27,10 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210831        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the arguments [...] as all the dedicated arguments for [sapply] are now specified                                #
-#   |      |[2] Introduce a new argument [origin] in order to convert [numeric] values by a given origin                                #
-#   |      |[3] Now accepts a single table-like input, such as [data.frame], and return a [data.frame] in the same shape                #
-#   |      |[4] Return a placeholder [Date(0)] given the input has zero length                                                          #
+#   | Log  |[1] Remove the arguments <...> as all the dedicated arguments for <sapply> are now specified                                #
+#   |      |[2] Introduce a new argument <origin> in order to convert <numeric> values by a given origin                                #
+#   |      |[3] Now accepts a single table-like input, such as <data.frame>, and return a <data.frame> in the same shape                #
+#   |      |[4] Return a placeholder <Date(0)> given the input has zero length                                                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210903        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -65,7 +65,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#

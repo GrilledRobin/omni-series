@@ -30,6 +30,14 @@ def kfFunc_ts_fullmonth(
 #   |This function is intended to standardize the generation of KPI datasets by minimize the calculation effort and consumption of      #
 #   | system resources                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <kfFunc_ts_mtd>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <FULL> <MONTH> algorithm                                             #
@@ -118,24 +126,24 @@ def kfFunc_ts_fullmonth(
     eSig.vfyConflict(args_share)
     pos_in, kw_in = eSig.insParams(args_share, pos, kw)
 
-    inDate = eSig.getParam('inDate', pos_in, kw_in)
-    inKPICfg = eSig.getParam('inKPICfg', pos_in, kw_in)
-    mapper = eSig.getParam('mapper', pos_in, kw_in)
-    _parallel = eSig.getParam('_parallel', pos_in, kw_in)
-    cores = eSig.getParam('cores', pos_in, kw_in)
-    aggrVar = eSig.getParam('aggrVar', pos_in, kw_in)
-    byVar = eSig.getParam('byVar', pos_in, kw_in)
-    copyVar = eSig.getParam('copyVar', pos_in, kw_in)
-    tableVar = eSig.getParam('tableVar', pos_in, kw_in)
-    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in)
-    calcInd = eSig.getParam('calcInd', pos_in, kw_in)
-    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
-    fTrans = eSig.getParam('fTrans', pos_in, kw_in)
-    fTrans_opt = eSig.getParam('fTrans_opt', pos_in, kw_in)
-    outDTfmt = eSig.getParam('outDTfmt', pos_in, kw_in)
-    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
-    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
-    kw_DataIO = eSig.getParam('kw_DataIO', pos_in, kw_in)
+    inDate = eSig.getParam('inDate', pos_in, kw_in, inc_default = True)
+    inKPICfg = eSig.getParam('inKPICfg', pos_in, kw_in, inc_default = True)
+    mapper = eSig.getParam('mapper', pos_in, kw_in, inc_default = True)
+    _parallel = eSig.getParam('_parallel', pos_in, kw_in, inc_default = True)
+    cores = eSig.getParam('cores', pos_in, kw_in, inc_default = True)
+    aggrVar = eSig.getParam('aggrVar', pos_in, kw_in, inc_default = True)
+    byVar = eSig.getParam('byVar', pos_in, kw_in, inc_default = True)
+    copyVar = eSig.getParam('copyVar', pos_in, kw_in, inc_default = True)
+    tableVar = eSig.getParam('tableVar', pos_in, kw_in, inc_default = True)
+    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in, inc_default = True)
+    calcInd = eSig.getParam('calcInd', pos_in, kw_in, inc_default = True)
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in, inc_default = True)
+    fTrans = eSig.getParam('fTrans', pos_in, kw_in, inc_default = True)
+    fTrans_opt = eSig.getParam('fTrans_opt', pos_in, kw_in, inc_default = True)
+    outDTfmt = eSig.getParam('outDTfmt', pos_in, kw_in, inc_default = True)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in, inc_default = True)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in, inc_default = True)
+    kw_DataIO = eSig.getParam('kw_DataIO', pos_in, kw_in, inc_default = True)
 
     if not isinstance(inKPICfg, (vfyType := pd.DataFrame)):
         raise TypeError(f'[{LfuncName}][inKPICfg] must be of the type <{vfyType}>!')

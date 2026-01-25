@@ -4,6 +4,12 @@
 #   |This function is intended to standardize the generation of KPI datasets by minimize the calculation effort and consumption of      #
 #   | system resources                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <kfFunc_ts_mtd>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <FULL> <MONTH> algorithm                                             #
@@ -108,25 +114,25 @@ myfunc <- deco$wrap(function(
 	eSig$vfyConflict(args_share)
 	args_in <- eSig$updParams(args_share, dots)
 
-	inDate <- eSig$getParam('inDate', args_in) %>% eval()
-	inKPICfg <- eSig$getParam('inKPICfg', args_in) %>% eval()
-	mapper <- eSig$getParam('mapper', args_in) %>% eval()
-	.parallel <- eSig$getParam('.parallel', args_in) %>% eval()
-	omniR.ini <- eSig$getParam('omniR.ini', args_in) %>% eval()
-	cores <- eSig$getParam('cores', args_in) %>% eval()
-	aggrVar <- eSig$getParam('aggrVar', args_in) %>% eval()
-	byVar <- eSig$getParam('byVar', args_in) %>% eval()
-	copyVar <- eSig$getParam('copyVar', args_in) %>% eval()
-	tableVar <- eSig$getParam('tableVar', args_in) %>% eval()
-	genPHMul <- eSig$getParam('genPHMul', args_in) %>% eval()
-	calcInd <- eSig$getParam('calcInd', args_in) %>% eval()
-	fDebug <- eSig$getParam('fDebug', args_in) %>% eval()
-	fTrans <- eSig$getParam('fTrans', args_in) %>% eval()
-	fTrans.opt <- eSig$getParam('fTrans.opt', args_in) %>% eval()
-	outDTfmt <- eSig$getParam('outDTfmt', args_in) %>% eval()
-	kw_d <- eSig$getParam('kw_d', args_in) %>% eval()
-	kw_cal <- eSig$getParam('kw_cal', args_in) %>% eval()
-	kw_DataIO <- eSig$getParam('kw_DataIO', args_in) %>% eval()
+	inDate <- eSig$getParam('inDate', args_in, inc_default = T) %>% eval()
+	inKPICfg <- eSig$getParam('inKPICfg', args_in, inc_default = T) %>% eval()
+	mapper <- eSig$getParam('mapper', args_in, inc_default = T) %>% eval()
+	.parallel <- eSig$getParam('.parallel', args_in, inc_default = T) %>% eval()
+	omniR.ini <- eSig$getParam('omniR.ini', args_in, inc_default = T) %>% eval()
+	cores <- eSig$getParam('cores', args_in, inc_default = T) %>% eval()
+	aggrVar <- eSig$getParam('aggrVar', args_in, inc_default = T) %>% eval()
+	byVar <- eSig$getParam('byVar', args_in, inc_default = T) %>% eval()
+	copyVar <- eSig$getParam('copyVar', args_in, inc_default = T) %>% eval()
+	tableVar <- eSig$getParam('tableVar', args_in, inc_default = T) %>% eval()
+	genPHMul <- eSig$getParam('genPHMul', args_in, inc_default = T) %>% eval()
+	calcInd <- eSig$getParam('calcInd', args_in, inc_default = T) %>% eval()
+	fDebug <- eSig$getParam('fDebug', args_in, inc_default = T) %>% eval()
+	fTrans <- eSig$getParam('fTrans', args_in, inc_default = T) %>% eval()
+	fTrans.opt <- eSig$getParam('fTrans.opt', args_in, inc_default = T) %>% eval()
+	outDTfmt <- eSig$getParam('outDTfmt', args_in, inc_default = T) %>% eval()
+	kw_d <- eSig$getParam('kw_d', args_in, inc_default = T) %>% eval()
+	kw_cal <- eSig$getParam('kw_cal', args_in, inc_default = T) %>% eval()
+	kw_DataIO <- eSig$getParam('kw_DataIO', args_in, inc_default = T) %>% eval()
 
 	if (!isDF(inKPICfg)) {
 		stop(glue::glue('[{LfuncName}][inKPICfg] must be a data frame, provided <{toString(class(inKPICfg))}>!'))
@@ -288,7 +294,7 @@ myfunc <- deco$wrap(function(
 
 	#170. Determine the unique paths for Full Month KPIs
 	file_fm_unique <- cfg_kpi_fm_pre %>%
-		dplyr::select(tidyselect::all_of(cfg_unique_file)) %>%
+		dplyr::select(dplyr::all_of(cfg_unique_file)) %>%
 		dplyr::distinct() %>%
 		dplyr::mutate(
 			!!rlang::sym('df_i') := seq_along(!!rlang::sym(head(cfg_unique_file,1)))
@@ -296,7 +302,7 @@ myfunc <- deco$wrap(function(
 
 	#180. Determine the unique <keys> for Full Month KPIs
 	key_fm_unique <- cfg_kpi_fm_pre %>%
-		dplyr::select(tidyselect::all_of(cfg_unique_key)) %>%
+		dplyr::select(dplyr::all_of(cfg_unique_key)) %>%
 		dplyr::distinct() %>%
 		dplyr::group_by_at(cfg_unique_file) %>%
 		dplyr::mutate(
@@ -308,7 +314,7 @@ myfunc <- deco$wrap(function(
 	cfg_kpi_fm <- cfg_kpi_fm_pre %>%
 		dplyr::inner_join(
 			cfg_kpi_fm_pre %>%
-				dplyr::select(tidyselect::all_of(cfg_unique_key)) %>%
+				dplyr::select(dplyr::all_of(cfg_unique_key)) %>%
 				dplyr::distinct() %>%
 				dplyr::arrange_at(cfg_unique_key) %>%
 				dplyr::mutate(
@@ -355,9 +361,9 @@ myfunc <- deco$wrap(function(
 	#520. Column filter during loading data
 	h_keepVar <- function(.vars = c('C_KPI_ID',aggrVar,byVar,copyVar)){
 		if (keep_all_col) {
-			rlang::expr(tidyselect::everything())
+			rlang::expr(dplyr::everything())
 		} else {
-			substitute(tidyselect::matches(paste0('^(',paste0(.vars, collapse = '|'),')$'), ignore.case = T))
+			substitute(dplyr::matches(paste0('^(',paste0(.vars, collapse = '|'),')$'), ignore.case = T))
 		}
 	}
 
@@ -467,7 +473,7 @@ myfunc <- deco$wrap(function(
 
 		#800. Mutate the result
 		rstOut <- rstPre[['data']] %>%
-			dplyr::select(-tidyselect::any_of('D_RecDate')) %>%
+			dplyr::select(-dplyr::any_of('D_RecDate')) %>%
 			dplyr::mutate(
 				!!rlang::sym('C_KPI_ID') := apply_MapVal(
 					!!rlang::sym('C_KPI_ID')
@@ -660,7 +666,7 @@ myfunc <- deco$wrap(function(
 			#510. Create mapper for current step
 			mapper_DtoFM <- mapper %>%
 				dplyr::filter(!!rlang::sym('mapper_fm') %in% rstInt[['C_KPI_ID']]) %>%
-				dplyr::select(tidyselect::all_of(c('mapper_daily','mapper_fm'))) %>%
+				dplyr::select(dplyr::all_of(c('mapper_daily','mapper_fm'))) %>%
 				dplyr::rename(c('mapper_fr' = 'mapper_daily', 'mapper_to' = 'mapper_fm'))
 
 			#530. Patch the behavior when writing the data
@@ -708,7 +714,7 @@ myfunc <- deco$wrap(function(
 			args_mtd <- eSig$updParams(args_mtd_pre, args_in)
 
 			#590. Call the process
-			rc_int <- do.call(kfFunc_ts_mtd, args_mtd)
+			rc_int <- do.call(eSig$src, args_mtd)
 
 			#599. Assert the success
 			if (fDebug){
@@ -774,7 +780,7 @@ myfunc <- deco$wrap(function(
 	#719. Verify the duplication of file API options
 	vfy_opt <- cfg_kpi_fm %>%
 		dplyr::filter(!!rlang::sym('kfts_org_type') %in% hasKeys) %>%
-		dplyr::select(tidyselect::all_of(c('kfts_org_path','kfts_org_file','kfts_org_opt'))) %>%
+		dplyr::select(dplyr::all_of(c('kfts_org_path','kfts_org_file','kfts_org_opt'))) %>%
 		dplyr::distinct() %>%
 		dplyr::mutate(
 			!!rlang::sym('FilePath') := safe_path(!!rlang::sym('kfts_org_path'), !!rlang::sym('kfts_org_file'))
@@ -809,7 +815,7 @@ myfunc <- deco$wrap(function(
 			,!!rlang::sym('rc') := unlist(!!rlang::sym('rc_pre'))
 		) %>%
 		dplyr::rename(c('C_KPI_FILE_TYPE' = 'kfts_org_type')) %>%
-		dplyr::select(tidyselect::all_of(c('FilePath','C_KPI_FILE_TYPE','rc')))
+		dplyr::select(dplyr::all_of(c('FilePath','C_KPI_FILE_TYPE','rc')))
 
 	#999. Validate the completion
 	return(rstOut)
@@ -854,6 +860,7 @@ if (FALSE){
 				,sheet = 'LibConfig'
 			)
 			,by = 'C_LIB_NAME'
+			,relationship = 'many-to-many'
 		) %>%
 		dplyr::mutate(
 			!!rlang::sym('F_KPI_INUSE') := !!rlang::sym('F_KPI_INUSE') %>% as.integer()

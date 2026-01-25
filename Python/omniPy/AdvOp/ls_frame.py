@@ -20,10 +20,10 @@ def ls_frame(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to list the object names or the dict[name:object] if verbose, in the provided frame or all frames along  #
+#   |This function is intended to list the object names or the <dict[name,object]> if verbose, in the provided frame or all frames along#
 #   | the call stack, by matching a specific pattern to the names and the predicate upon the objects                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Search for certain pattern of functions within current session                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -41,7 +41,7 @@ def ls_frame(
 #   |                [<see def.>  ] <Default> Do not apply predicate                                                                    #
 #   |                [callable    ]           Callable with the first argument to be applied upon the object as found, and return bool  #
 #   |scope       :   Which scope to search for the variables in the frames along the call stacks                                        #
-#   |                IMPORTANT: This must be provided a sequence or a single string, indicating the search order of the scopes          #
+#   |                [IMPORTANT] This must be provided a sequence or a single string, indicating the search order of the scopes         #
 #   |                [<see def.>  ] <Default> Search for the variables in <f_locals> and then <f_globals> until the last try            #
 #   |                [f_locals    ]           Only search for the variables in <f_locals> of every frame along the call stacks          #
 #   |                [f_globals   ]           Only search for the variables in <f_globals> of every frame along the call stacks         #
@@ -54,13 +54,13 @@ def ls_frame(
 #   |                [flags       ]           Valid flags defined in package <re>                                                       #
 #   |verbose     :   Whether to return verbose results                                                                                  #
 #   |                [False       ] <Default> Only return a list of names found by the conditions                                       #
-#   |                [True        ]           Return a dict[name:object]                                                                #
+#   |                [True        ]           Return a <dict[name,object]>                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
-#   |                [1] If <verbose == False>, return a [list] of names matching the conditions                                        #
-#   |                [2] If <verbose == True>, return a [dict] of names pairing the objects, which match the conditions                 #
+#   |                [1] If <verbose == False>, return a <list> of names matching the conditions                                        #
+#   |                [2] If <verbose == True>, return a <dict> of names pairing the objects, which match the conditions                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

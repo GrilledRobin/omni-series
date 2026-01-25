@@ -1,37 +1,37 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to add dependencies for the htmlwidget being used                                                        #
+#   |This function is intended to add dependencies for the <htmlwidget> being used                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://github.com/rstudio/DT/issues/410                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] This is the last among the required the helper functions that enables one to insert [htmlwidget] into cells of [DT::datatable]#
+#   |[01] This is the last among the required the helper functions that enables one to insert <htmlwidget> into cells of <DT::datatable>#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Method to insert htmlwidgets into datatable]                                                                                      #
+#   |[Method to insert <htmlwidgets> into <datatable>]                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[10] Convert htmlwidget into character version; using function [as.character.htmlwidget]                                           #
-#   |[20] Make sure [escape = FALSE]                                                                                                    #
-#   |[30] Add static render callback; using function [add_datatable_render_code]                                                        #
-#   |[40] Add dependencies for the htmlwidget being used; using function [add_deps]                                                     #
+#   |[10] Convert <htmlwidget> into character version; using function <as.character.htmlwidget>                                         #
+#   |[20] Make sure <escape = FALSE>                                                                                                    #
+#   |[30] Add static render callback; using function <add_datatable_render_code>                                                        #
+#   |[40] Add dependencies for the <htmlwidget> being used; using function <add_deps>                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |dtbl        :   The [DT::datatable] object to which to attach the dependencies                                                     #
-#   |name        :   The name of the widget (usually can be retrieved by [class(x)]) to be inserted into [dtbl].                        #
-#   |                 See document for [htmlwidgets::getDependency]                                                                     #
-#   |pkg         :   The package naming the widget (usually can be retrieved by [class(x)]) to be inserted into [dtbl].                 #
-#   |                 See document for [htmlwidgets::getDependency]                                                                     #
+#   |dtbl        :   The <DT::datatable> object to which to attach the dependencies                                                     #
+#   |name        :   The name of the widget (usually can be retrieved by <class(x)>) to be inserted into <dtbl>.                        #
+#   |                 See document for <htmlwidgets::getDependency>                                                                     #
+#   |pkg         :   The package naming the widget (usually can be retrieved by <class(x)>) to be inserted into <dtbl>.                 #
+#   |                 See document for <htmlwidgets::getDependency>                                                                     #
 #   |                 [name        ] <Default> The same as the widget name                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<tagList>   :   [shiny::tagList] object                                                                                            #
+#   |<tagList>   :   <shiny::tagList> object                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

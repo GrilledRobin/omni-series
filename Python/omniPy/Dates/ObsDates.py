@@ -5,11 +5,13 @@
 import datetime as dt
 import math
 import pandas as pd
-from copy import deepcopy
+from typing import Any
 from warnings import warn
 from collections.abc import Iterable
-from omniPy.AdvOp import vecStack, vecUnstack
+from omniPy.AdvOp import vecStack, vecUnstack, ExpandSignature
 from omniPy.Dates import asDates, asQuarters, CoreUserCalendar
+
+eSig = ExpandSignature(CoreUserCalendar.__init__)
 
 #100. Definition of the class.
 class ObsDates( CoreUserCalendar ):
@@ -25,68 +27,58 @@ class ObsDates( CoreUserCalendar ):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Public method                                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |[initialize]                                                                                                                   #
+#   |   |[__init__]                                                                                                                     #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to instantiate a User Calender object                                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[Signature Expansion]                                                                                                  #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] Signature of this function is expanded from <CoreUserCalendar>, see its documents for detailed argument list       #
+#   |   |   |   |[2] With the Signature Expansion functionality, one can obtain the correct signature at runtime in below ways          #
+#   |   |   |   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors  #
+#   |   |   |   |    [2] Type <print(func.__doc__)> in the console for the similar result as above                                      #
+#   |   |   |   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[obsDate      ]   :   Vector/list of observing dates to evaluate                                                           #
-#   |   |   |                      [dt.date.today()     ]<Default> System date at class instantiation                                   #
-#   |   |   |[clnBgn       ]   :   Beginning date of the universal calendar, provided by any object that can be coerced to [Date] class #
-#   |   |   |                      [<obsDate - 1 year>  ]<Default> Beginning of the year before the minimum of [obsDate]                #
-#   |   |   |[clnEnd       ]   :   Ending date of the universal calendar, provided by any object that can be coerced to [Date] class    #
-#   |   |   |                      [<obsDate year end>  ]<Default> End of the year of the maximum of [obsDate]                          #
-#   |   |   |[countrycode  ]   :   Country Code to select the weekday names from the internal mapping table                             #
-#   |   |   |                      [CN                  ]<Default> China                                                                #
-#   |   |   |[CalendarAdj  ]   :   CSV file that stores the adjustment instructions of holidays/workdays                                #
-#   |   |   |                      [opt('ClndrAdj')     ]<Default> Retrieve the system option [via getOption[]] for the file path       #
-#   |   |   |                       [IMPORTANT] The file must contain below columns (case sensitive to column names):                   #
-#   |   |   |                                   [CountryCode ] Country Code for selection of adjustment and display of weekday names    #
-#   |   |   |                                   [F_WORKDAY   ] [1/0] values indicating [workday/holiday] respectively                   #
-#   |   |   |                                   [D_DATE      ] Strings to be imported as [Dates] by default option of [readr:read_csv]  #
-#   |   |   |                                   [C_DESC      ] Description/Name of the special dates (compared to: Mon., Tue., etc.)    #
-#   |   |   |[fmtDateIn    ]   :   Format of the [obsDate], [clnBgn] and [clnEnd] to be coerced to [Date] class                         #
-#   |   |   |                      [<various>           ]<Default> Follow the rules set in [omniPy.asDates]                             #
-#   |   |   |[fmtDateOut   ]   :   Format of the output date values to be translated into character strings when necessary              #
-#   |   |   |                      [%Y%m%d              ]<Default> Only accept one string as format, see [strftime] convention          #
-#   |   |   |[DateOutAsStr ]   :   Whether to convert the output date values into character strings                                     #
-#   |   |   |                      [False               ]<Default> Output dates directly in the type of [datetime.date]                 #
-#   |   |   |                      [True                ]          Convert dates into strings based on [fmtDateOut]                     #
+#   |   |   |obsDate           :   Vector/list of observing dates to evaluate                                                           #
+#   |   |   |                      [<dt.date.today()>   ]<Default> System date at class instantiation                                   #
+#   |   |   |*pos              :   All the arguments are from its ancestor, please check its document                                   #
+#   |   |   |**kw              :   All the arguments are from its ancestor, please check its document                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ None        ]   :   This method does not return values, but may assign values to variables for [private] object          #
+#   |   |   |<None>            :   This method does not return values, but will assign values to variables for <private> object         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[shiftDays]                                                                                                                    #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to obtain the [kshift]th workday/tradeday (by [daytype]) counting from the provided [obsDate]  #
-#   |   |   |   | per requested, or return themselves if they are workday/tradeday as indicated by [preserve]                           #
+#   |   |   |   |This method is intended to obtain the <kshift>th workday/tradeday (by <daytype>) counting from the provided <obsDate>  #
+#   |   |   |   | per requested, or return themselves if they are workday/tradeday as indicated by <preserve>                           #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[obsDate      ]   :   Data.frame of observing dates to evaluate                                                            #
-#   |   |   |                      [private$.obs_df     ]<Default> Default internal data frame containing observing dates               #
-#   |   |   |[kshift       ]   :   Number of workdays/tradedays to shift                                                                #
-#   |   |   |                      [0                   ]<Default> Return itself if it is workday/tradeday, or return its Previous      #
+#   |   |   |[obsDate      ]   :   <pd.DataFrame> of observing dates to evaluate                                                        #
+#   |   |   |                      [self.obs_df         ]<Default> Default internal data frame containing observing dates               #
+#   |   |   |[kshift       ]   :   <int> Number of workdays/tradedays to shift                                                          #
+#   |   |   |                      [int <0>             ]<Default> Return itself if it is workday/tradeday, or return its Previous      #
 #   |   |   |                                                       Workday/Tradeday if it is not                                       #
-#   |   |   |[preserve     ]   :   Whether to force returning itself if it is workday/tradeday; no effect if [obsDate] is NOT workday   #
-#   |   |   |                       or tradeday, for that the function will always shift days against them as requested                 #
-#   |   |   |                      [TRUE                ]<Default> Return [obsDate] if it is workday/tradeday in any case               #
-#   |   |   |                      [FALSE               ]          Shift the days no matter [obsDate] is workday/tradeday or not        #
-#   |   |   |[daytype      ]   :   Which of the types of dates to shift; Calendar Date is not an option, for there is no need to call   #
-#   |   |   |                       this function for calculation                                                                       #
+#   |   |   |[preserve     ]   :   <bool> Whether to force returning itself if it is workday/tradeday; no effect if <obsDate> is NOT    #
+#   |   |   |                       workday or tradeday, for that the function will always shift days against them as requested         #
+#   |   |   |                      [True                ]<Default> Return <obsDate> if it is workday/tradeday in any case               #
+#   |   |   |                      [False               ]          Shift the days no matter <obsDate> is workday/tradeday or not        #
+#   |   |   |[daytype      ]   :   <str> Which of the types of dates to shift; Calendar Date is not an option, for there is no need to  #
+#   |   |   |                       call this function for calculation                                                                  #
 #   |   |   |                      [W                   ]<Default> Workday                                                              #
 #   |   |   |                      [T                   ]<Default> Tradeday                                                             #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ Date        ]   :   Vector of the shifted dates in the same sequence as the input [obsDate]                              #
+#   |   |   |<various>         :   Vector of the shifted dates in the same sequence as the input <obsDate>                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -96,18 +88,18 @@ class ObsDates( CoreUserCalendar ):
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This method is intended to verify [obsDate] on whether it is the [first/last] of [workdays/tradedays] within specified #
+#   |   |   |   |This method is intended to verify <obsDate> on whether it is the <first/last> of <workdays/tradedays> within specified #
 #   |   |   |   | period                                                                                                                #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[daytype      ]   :   Type of the date to verify                                                                           #
+#   |   |   |[daytype      ]   :   <str> Type of the date to verify                                                                     #
 #   |   |   |                      [W                   ]<Default> Whether the input date is Workday                                    #
 #   |   |   |                      [T                   ]          Whether the input date is Tradeday                                   #
-#   |   |   |[_bound       ]   :   Verify whether the date is at the beginning or ending of the period                                  #
+#   |   |   |[_bound       ]   :   <str> Verify whether the date is at the beginning or ending of the period                            #
 #   |   |   |                      [head                ]<Default> Whether the input date is at the beginning                           #
 #   |   |   |                      [tail                ]          Whether the input date is at the end                                 #
-#   |   |   |[_period      ]   :   Period name to verify the date                                                                       #
+#   |   |   |[_period      ]   :   <str> Period name to verify the date                                                                 #
 #   |   |   |                      [MONTH               ]<Default> Verify the bound of each month                                       #
 #   |   |   |                      [QUARTER             ]          Verify the bound of each QUARTER                                     #
 #   |   |   |                      [WEEK                ]          Verify the bound of each workweek/tradeweek                          #
@@ -115,17 +107,23 @@ class ObsDates( CoreUserCalendar ):
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[ list        ]   :   Logical values of the verification result for each [obsDate] respectively in the same sequence       #
+#   |   |   |<various>         :   Logical values of the verification result for each <obsDate> respectively in the same sequence       #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |500.   Read-only properties.                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |100.   Description.                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |This section lists all the read-only properties of the class.                                                                  #
-#   |   |The examples listed are based on the provision of: [cln.values <- c('20210104', '20210102', '20201030', '20210207')]           #
-#   |   |[NOTE:] <work week> represents the block of consecutive workdays                                                               #
-#   |   |[NOTE:] <trade week> represents the block of consecutive tradedays                                                             #
+#   |   |This section lists all the read-only properties of the class. The examples listed are based on below provision                 #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |EXAMPLE                                                                                                                        #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[<cln.values = ['20210104', '20210102', '20201030', '20210207']>]                                                              #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |NOTE                                                                                                                           #
+#   |   |-------------------------------------------------------------------------------------------------------------------------------#
+#   |   |[1] <work week> represents the block of consecutive workdays                                                                   #
+#   |   |[2] <trade week> represents the block of consecutive tradedays                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |       Property Name         |                             Value Examples and Property Description                         #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
@@ -200,16 +198,19 @@ class ObsDates( CoreUserCalendar ):
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |This method is intended to set or return the user requested dates for observation within the universal calendar        #
-#   |   |   |   |[1] When [set] is called, it changes [private$.obsdates]                                                               #
-#   |   |   |   |[2] When [return] is called, it returns the last value of [private$.obsdates]                                          #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |NOTE                                                                                                                   #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] When <set> is called, it changes <self.obsdates>                                                                   #
+#   |   |   |   |[2] When <return> is called, it returns the last value of <self.obsdates>                                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to [Date] class                      #
+#   |   |   |[udate        ]   :   Vector/list of dates, or character strings which can be coerced to <dt.date>                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |[<pd.Series>  ]   :   The same values as the previous input by the user                                                    #
+#   |   |   |<pd.Series>       :   The same values as the previous input by the user                                                    #
 #   |   |   |-----------------------------|---------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -223,16 +224,16 @@ class ObsDates( CoreUserCalendar ):
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210308        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Abandon the usage of [pd.Timestamp] for all date-like columns as its lower/upper bounds are much less than [dt.date]    #
+#   | Log  |[1] Abandon the usage of <pd.Timestamp> for all date-like columns as its lower/upper bounds are much less than <dt.date>    #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210821        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Eliminate all [pd.DataFrame.merge] operations and the most of [.apply] methods to improve the overall efficiency, now   #
+#   | Log  |[1] Eliminate all <pd.DataFrame.merge> operations and the most of <.apply> methods to improve the overall efficiency, now   #
 #   |      |     use indexing of data frames and the time expense reduced by 90%.                                                       #
-#   |      |[2] Now treat all invalid inputs as [pd.NaT] and maintain their positions in the output result                              #
-#   |      |[3] Output [pd.NaT] or [empty string] as the shifted ones for invalid inputs                                                #
-#   |      |[4] Output [False] as boundary detector for invalid inputs                                                                  #
+#   |      |[2] Now treat all invalid inputs as <pd.NaT> and maintain their positions in the output result                              #
+#   |      |[3] Output <pd.NaT> or <empty string> as the shifted ones for invalid inputs                                                #
+#   |      |[4] Output <False> as boundary detector for invalid inputs                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210921        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -247,7 +248,7 @@ class ObsDates( CoreUserCalendar ):
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230902        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Replace <pd.Series.fillna(method=)> with <pd.Series..__getattribute__('ffill'/'bfill')()> as the former will be         #
+#   | Log  |[1] Replace <pd.Series.fillna(method=)> with <pd.Series.__getattribute__('ffill'/'bfill')()> as the former will be          #
 #   |      |     deprecated in the future version                                                                                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -260,6 +261,12 @@ class ObsDates( CoreUserCalendar ):
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Remove the usage of <inplace> in terms of the FutureWarning of <pandas>                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251231        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to simplify the initialization arguments                                                    #
+#   |      |[2] Enhance the logic when <clnBgn> or <clnEnd> is not provided at initialization                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -269,21 +276,22 @@ class ObsDates( CoreUserCalendar ):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |datetime, math, pandas, collections, copy, warnings                                                                            #
+#   |   |datetime, math, pandas, collections, warnings, typing                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
+#   |   |   |ExpandSignature                                                                                                            #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |asDates                                                                                                                    #
 #   |   |   |asQuarters                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |700.   Parent classes                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |CoreUserCalendar                                                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
@@ -294,75 +302,106 @@ class ObsDates( CoreUserCalendar ):
     LClassName = __qualname__
 
     #002. Constructor
+    #[ASSUMPTION]
+    #[1] We cannot define <eSig> inside the body of class definition, as in such case it is created after the initialization of
+    #     the class; while we need it to be called at the initialization
+
+    @eSig
     def __init__(
         self
         ,obsDate = dt.date.today()
-        ,clnBgn = None
-        ,clnEnd = None
-        ,countrycode : str = 'CN'
-        ,CalendarAdj : Iterable = None
-        ,fmtDateIn : Iterable = ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
-        ,fmtDateOut : str = '%Y%m%d'
-        ,DateOutAsStr : bool = False
+        ,*pos
+        ,**kw
     ):
         #001. Handle parameters
+        self._eSig_ = eSig
+        args_share = {'self' : self}
+        eSig.vfyConflict(args_share)
+
+        #050. Reshape the parameters passed for the call
+        pos_int, kw_int = self._eSig_.insParams(args_share, pos, kw)
 
         #100. Assign values to local variables
-        self.fmtDateIn = fmtDateIn
+        self.fmtDateIn = self._eSig_.getParam('fmtDateIn', pos_int, kw_int, inc_default = True)
         self._map_stack_ : dict = {
             'idRow' : '_obsKRow_'
             ,'idCol' : '_obsKCol_'
         }
-        int_obs = self._obsDate_T(obsDate)['D_DATE'].copy(deep=True)
+        int_obs = self._obsDate_T(obsDate)['D_DATE']
+        fr_default_clnBgn = self._eSig_.isDefault('clnBgn', scope_ = 'src')
+        fr_default_clnEnd = self._eSig_.isDefault('clnEnd', scope_ = 'src')
 
         #300. Determine the bounds of the internal calendar, given either of them is not provided at initialization
         #310. Identify the valid dates from the input
-        int_clnBgn = asDates(pd.Series(clnBgn, dtype = 'object')).loc[lambda x: x.notnull()]
-        int_clnEnd = asDates(pd.Series(clnEnd, dtype = 'object')).loc[lambda x: x.notnull()]
+        int_clnBgn = (
+            asDates(
+                pd.Series(self._eSig_.getParam('clnBgn', pos_int, kw_int, inc_default = True), dtype = 'object')
+                ,self.fmtDateIn
+            )
+            .loc[lambda x: x.notnull()]
+        )
+        int_clnEnd = (
+            asDates(
+                pd.Series(self._eSig_.getParam('clnEnd', pos_int, kw_int, inc_default = True), dtype = 'object')
+                ,self.fmtDateIn
+            )
+            .loc[lambda x: x.notnull()]
+        )
+        int_obsDate = int_obs.loc[lambda x: x.notnull()]
 
-        #340. Transform the beginning when necessary
-        if (len(int_clnBgn) != 1):
-            #100. Seek help from the input values
-            int_clnBgn = int_obs.loc[lambda x: x.notnull()]
+        #317. Raise exception for invalid input
+        if len(int_clnBgn) > 1:
+            raise ValueError(f'[{self.LClassName}]Multiple <clnBgn> provided!')
+        if len(int_clnEnd) > 1:
+            raise ValueError(f'[{self.LClassName}]Multiple <clnEnd> provided!')
+        if (len(int_obsDate) == 0) and (len(int_clnBgn) == 0):
+            raise ValueError(f'[{self.LClassName}]Both <obsDate> and <clnBgn> are invalid!')
+        if (len(int_obsDate) == 0) and (len(int_clnEnd) == 0):
+            raise ValueError(f'[{self.LClassName}]Both <obsDate> and <clnEnd> are invalid!')
 
-            #500. Set it when the input values can neither help
-            #For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
-            if len(int_clnBgn) == 0:
-                int_clnBgn = dt.date.today()
-            else:
-                int_clnBgn = int_clnBgn.min(skipna = True)
+        #319. Warn for invalid input that can be overridden
+        if len(int_clnBgn) == 0:
+            warn(f'[{self.LClassName}]<clnBgn> is invalid and will be calculated from the minimum among <obsDate>!')
+        if len(int_clnEnd) == 0:
+            warn(f'[{self.LClassName}]<clnEnd> is invalid and will be calculated from the maximum among <obsDate>!')
 
-            #900. Set it to the beginning of its previous year, which is earlier than that all existing methods can calculate
-            int_clnBgn = int_clnBgn.replace(year = int_clnBgn.year - 1, month = 1, day = 1)
-        else:
-            int_clnBgn = int_clnBgn.iat[0]
+        #340. Transform the calendar when necessary
+        if len(int_obsDate) > 0:
+            #100. Determine the beginning
+            if fr_default_clnBgn or (len(int_clnBgn) == 0):
+                #900. Set it to the beginning of its previous year, which is earlier than that all existing methods can calculate
+                #[ASSUMPTION]
+                #[1] For [pandas == 1.2.1],the method [pd.Series.min(skipna = True)] cannot ignore [pd.NaT]
+                tmpdate = int_obsDate.min(skipna = True)
+                int_clnBgn = tmpdate.replace(year = tmpdate.year - 1, month = 1, day = 1)
 
-        #370. Transform the ending when necessary
-        if (len(int_clnEnd) != 1):
-            #100. Seek help from the input values
-            int_clnEnd = int_obs.loc[lambda x: x.notnull()]
-
-            #500. Set it when the input values can neither help
-            if len(int_clnEnd) == 0:
-                int_clnEnd = dt.date.today()
-            else:
-                int_clnEnd = int_clnEnd.max(skipna = True)
-
-            #900. Set it to the end of its next year, which is later than that all existing methods can calculate
-            int_clnEnd = int_clnEnd.replace(year = int_clnEnd.year + 1, month = 12, day = 31)
-        else:
-            int_clnEnd = int_clnEnd.iat[0]
+            #700. Determine the ending
+            if fr_default_clnEnd or (len(int_clnEnd) == 0):
+                #900. Set it to the end of its next year, which is later than that all existing methods can calculate
+                tmpdate = int_obsDate.max(skipna = True)
+                int_clnEnd = tmpdate.replace(year = tmpdate.year + 1, month = 12, day = 31)
 
         #500. Instantiate parent class
-        super(ObsDates,self).__init__(
-            clnBgn = int_clnBgn
-            ,clnEnd = int_clnEnd
-            ,countrycode = countrycode
-            ,CalendarAdj = CalendarAdj
-            ,fmtDateIn = fmtDateIn
-            ,fmtDateOut = fmtDateOut
-            ,DateOutAsStr = DateOutAsStr
-        )
+        args_upd = {
+            'clnBgn' : int_clnBgn
+            ,'clnEnd' : int_clnEnd
+        }
+        pos_sup, kw_sup = self._eSig_.updParams(args_upd, pos_int, kw_int)
+
+        #[ASSUMPTION]
+        #[1] <self> is the first POSITIONAL_ONLY or POSITIONAL_OR_KEYWORD argument in the parent class
+        #[2] Should it exist in [pos_sup, kw_sup], it can only exist in either of them
+        #[3] We should eliminate it from being passed on to the parent call
+        if pos_sup:
+            pos_super = pos_sup[1:]
+        else:
+            pos_super = pos_sup
+        if 'self' in kw_sup:
+            kw_super = {k:v for k,v in kw_sup.items() if k != 'self'}
+        else:
+            kw_super = kw_sup
+
+        super().__init__(*pos_super, **kw_super)
 
         #700. Verify the input values
         #Quote: https://stackoverflow.com/questions/38254290/pass-two-arguments-in-python-property-setter
@@ -374,12 +413,13 @@ class ObsDates( CoreUserCalendar ):
 
     #005. Define the attributes that can be accessed from inside
     __slots__ = (
-        '_uniclndr_' , '_inputs_' , '_obs_df_' , '_v_struct_' , '_v_index_' , '_map_stack_'
+        '_eSig_'
+        , '_uniclndr_' , '_inputs_' , '_obs_df_' , '_v_struct_' , '_v_index_' , '_map_stack_'
     )
 
     #010. Define the document when printing an object instantiated from current class
     def __str__( self ):
-        return( 'Date Shifting and Verification tool in accordance with User Defined Calendar for [{0}]'.format( self.country ) )
+        return(f'Date Shifting and Verification tool in accordance with User Defined Calendar for [{self.country}]')
 
     #011. Define the representation of the object
     __repr__ = __str__
@@ -389,7 +429,7 @@ class ObsDates( CoreUserCalendar ):
 
     #100. Prepare helper functions
     #110. Function to process the unstacked data before type conversion
-    def _chg_dtype(self, df):
+    def _chg_dtype(self, df) -> pd.DataFrame:
         #010. Create a copy of the input data to avoid unexpected result
         #[ASSUMPTION]
         #[1] [pd.DataFrame.fillna(pd.NaT)] will imperatively change the [dtype] of [datetime] into [pd.Timestamp]
@@ -411,7 +451,7 @@ class ObsDates( CoreUserCalendar ):
         return(df_out)
 
     #150. Prepare the helper function to return proper results
-    def _rst(self, df, col) -> 'Return the result in terms of the shape of [values]':
+    def _rst(self, df, col) -> Any:
         #500. Unstack the underlying data to the same shape as the input one
         #[ASSUMPTION]
         #[1] <col-id> and <row-id> do not have <NA> values
@@ -427,7 +467,7 @@ class ObsDates( CoreUserCalendar ):
             return([rstOut])
 
     #170. Function to transform the input values
-    def _obsDate_T(self, udate) -> 'Transform the input values':
+    def _obsDate_T(self, udate) -> pd.DataFrame:
         tmpdate = (
             vecStack(udate, valName = 'D_DATE', **self._map_stack_)
             .assign(**{
@@ -445,21 +485,19 @@ class ObsDates( CoreUserCalendar ):
         ,kshift : ( int , float ) = 0
         ,preserve : bool = False
         ,daytype : str = 'W'
-    ) -> 'Shift the input dates by <kshift> (Default:-1) in terms of the user requested flag of Work Days or Trade Days':
+    ) -> dt.date | Iterable[dt.date]:
         #001. Handle parameters
         if obsDate is None: obsDate = self._obs_df_
-        if not kshift: kshift = 0
         if not isinstance(kshift , ( int , float ) ):
-            raise TypeError('[' + self.LClassName + '][kshift]:[{0}] must be provided a number!'.format( type(kshift) ))
+            raise TypeError(f'[self.LClassName][kshift]:[{type(kshift)}] must be provided a number!')
         if preserve is None: preserve = False
         if not isinstance(preserve , bool ):
-            raise TypeError('[' + self.LClassName + '][preserve]:[{0}] must be provided a boolean value!'.format( type(preserve) ))
-        if not daytype: daytype = 'W'
+            raise TypeError(f'[self.LClassName][preserve]:[{type(preserve)}] must be provided a boolean value!')
         if not isinstance(daytype , str ):
-            raise TypeError('[' + self.LClassName + '][daytype]:[{0}] must be provided a character string!'.format( type(daytype) ))
+            raise TypeError(f'[self.LClassName][daytype]:[{type(daytype)}] must be provided a character string!')
         daytype = daytype[0].upper()
         if daytype not in ['W','T']:
-            raise ValueError('[' + self.LClassName + '][daytype]:[{0}] must be among [W,T]!'.format( daytype ))
+            raise ValueError(f'[self.LClassName][daytype]:[{daytype}] must be among [W,T]!')
 
         #100. Local variables
         #We set the actual shift days as [-1] if [kshift] is not provided or provided as [0]
@@ -520,26 +558,23 @@ class ObsDates( CoreUserCalendar ):
         ,daytype : str = 'W'
         ,_bound : str = 'head'
         ,_period : str = 'MONTH'
-    ) -> 'Verify whether the observing dates are at the lower/upper bound of the certain period':
+    ) -> bool | Iterable[bool]:
         #001. Handle parameters
-        if not daytype: daytype = 'W'
         if not isinstance(daytype , str ):
-            raise TypeError('[' + self.LClassName + '][daytype]:[{0}] must be provided a character string!'.format( type(daytype) ))
+            raise TypeError(f'[self.LClassName][daytype]:[{type(daytype)}] must be provided a character string!')
         daytype = daytype[0].upper()
         if daytype not in ['W','T']:
-            raise ValueError('[' + self.LClassName + '][daytype]:[{0}] must be among [W,T]!'.format( daytype ))
-        if not _bound: _bound = 'head'
+            raise ValueError(f'[self.LClassName][daytype]:[{daytype}] must be among [W,T]!')
         if not isinstance(_bound , str ):
-            raise TypeError('[' + self.LClassName + '][_bound]:[{0}] must be provided a character string!'.format( type(_bound) ))
+            raise TypeError(f'[self.LClassName][_bound]:[{type(_bound)}] must be provided a character string!')
         _bound = _bound[0].lower()
         if _bound not in [ v[0] for v in ['head','tail'] ]:
-            raise ValueError('[' + self.LClassName + '][_bound]:[{0}] must be among [head,tail]!'.format( _bound ))
-        if not _period: _period = 'MONTH'
+            raise ValueError(f'[self.LClassName][_bound]:[{_bound}] must be among [head,tail]!')
         if not isinstance(_period , str ):
-            raise TypeError('[' + self.LClassName + '][_period]:[{0}] must be provided a character string!'.format( type(_period) ))
+            raise TypeError(f'[self.LClassName]][_period]:[{type(_period)}] must be provided a character string!')
         _period = _period[0].upper()
         if _period not in [ v[0] for v in ['MONTH','QUARTER','WEEK','YEAR'] ]:
-            raise ValueError('[' + self.LClassName + '][_period]:[{0}] must be among [MONTH,QUARTER,WEEK,YEAR]!'.format( _period ))
+            raise ValueError(f'[self.LClassName][_period]:[{_period}] must be among [MONTH,QUARTER,WEEK,YEAR]!')
 
         #100. Local variables
         col_filter: dict = { 'W' : 'F_WORKDAY' , 'T' : 'F_TradeDay' }
@@ -607,7 +642,7 @@ class ObsDates( CoreUserCalendar ):
 
     #501. Print the parameters into log
     @property
-    def params( self ) -> 'Print the parameters into log':
+    def params( self ):
         print( 'Beginning of the Universal Calendar:[' + self.clnBgn.strftime('%Y-%m-%d') + ']' )
         print( 'Ending of the Universal Calendar:[' + self.clnEnd.strftime('%Y-%m-%d') + ']' )
         print( 'Observing dates (first 5 ones at most):' )
@@ -627,7 +662,7 @@ class ObsDates( CoreUserCalendar ):
 
     #510. Whether the observing dates are Work Days
     @property
-    def isWorkDay( self ) -> 'Whether the observing dates are Work Days':
+    def isWorkDay( self ) -> bool | Iterable[bool]:
         df_out = self._obs_df_.copy(deep=True)
         df_out.loc[:, 'F_WORKDAY'] = (
             self._uniclndr_
@@ -642,40 +677,40 @@ class ObsDates( CoreUserCalendar ):
 
     #511. Whether the observing dates are bounds of certain periods
     @property
-    def isFirstWDofMon( self ) -> 'Whether the observing dates are First Work Days of their respective months':
+    def isFirstWDofMon( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 'h', _period = 'm' ) )
 
     @property
-    def isLastWDofMon( self ) -> 'Whether the observing dates are Last Work Days of their respective months':
+    def isLastWDofMon( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 't', _period = 'm' ) )
 
     @property
-    def isFirstWDofQtr( self ) -> 'Whether the observing dates are First Work Days of their respective quarters':
+    def isFirstWDofQtr( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 'h', _period = 'q' ) )
 
     @property
-    def isLastWDofQtr( self ) -> 'Whether the observing dates are Last Work Days of their respective quarters':
+    def isLastWDofQtr( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 't', _period = 'q' ) )
 
     @property
-    def isFirstWDofWeek( self ) -> 'Whether the observing dates are First Work Days of their respective weeks':
+    def isFirstWDofWeek( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 'h', _period = 'w' ) )
 
     @property
-    def isLastWDofWeek( self ) -> 'Whether the observing dates are Last Work Days of their respective weeks':
+    def isLastWDofWeek( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 't', _period = 'w' ) )
 
     @property
-    def isFirstWDofYear( self ) -> 'Whether the observing dates are First Work Days of their respective years':
+    def isFirstWDofYear( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 'h', _period = 'y' ) )
 
     @property
-    def isLastWDofYear( self ) -> 'Whether the observing dates are Last Work Days of their respective years':
+    def isLastWDofYear( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 'w', _bound = 't', _period = 'y' ) )
 
     #520. Whether the observing dates are Trade Days
     @property
-    def isTradeDay( self ) -> 'Whether the observing dates are Trade Days':
+    def isTradeDay( self ) -> bool | Iterable[bool]:
         df_out = self._obs_df_.copy(deep=True)
         df_out.loc[:, 'F_TradeDay'] = (
             self._uniclndr_
@@ -690,40 +725,40 @@ class ObsDates( CoreUserCalendar ):
 
     #521. Whether the observing dates are bounds of certain periods
     @property
-    def isFirstTDofMon( self ) -> 'Whether the observing dates are First Trade Days of their respective months':
+    def isFirstTDofMon( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 'h', _period = 'm' ) )
 
     @property
-    def isLastTDofMon( self ) -> 'Whether the observing dates are Last Trade Days of their respective months':
+    def isLastTDofMon( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 't', _period = 'm' ) )
 
     @property
-    def isFirstTDofQtr( self ) -> 'Whether the observing dates are First Trade Days of their respective quarters':
+    def isFirstTDofQtr( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 'h', _period = 'q' ) )
 
     @property
-    def isLastTDofQtr( self ) -> 'Whether the observing dates are Last Trade Days of their respective quarters':
+    def isLastTDofQtr( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 't', _period = 'q' ) )
 
     @property
-    def isFirstTDofWeek( self ) -> 'Whether the observing dates are First Trade Days of their respective weeks':
+    def isFirstTDofWeek( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 'h', _period = 'w' ) )
 
     @property
-    def isLastTDofWeek( self ) -> 'Whether the observing dates are Last Trade Days of their respective weeks':
+    def isLastTDofWeek( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 't', _period = 'w' ) )
 
     @property
-    def isFirstTDofYear( self ) -> 'Whether the observing dates are First Trade Days of their respective years':
+    def isFirstTDofYear( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 'h', _period = 'y' ) )
 
     @property
-    def isLastTDofYear( self ) -> 'Whether the observing dates are Last Work Days of their respective years':
+    def isLastTDofYear( self ) -> bool | Iterable[bool]:
         return( self._isBoundOfPeriod( daytype = 't', _bound = 't', _period = 'y' ) )
 
     #531. Last Calendar Day of previous year
     @property
-    def prevYearLCD( self ) -> 'Last Calendar Day of previous year':
+    def prevYearLCD( self ) -> dt.date | Iterable[dt.date]:
         #100. Identify the first calendar dates of the years of current dates and roll them back by one day respectively
         df_out = (
             self._obs_df_
@@ -744,7 +779,7 @@ class ObsDates( CoreUserCalendar ):
 
     #532. Last Work Day of previous year
     @property
-    def prevYearLWD( self ) -> 'Last Work Day of previous year':
+    def prevYearLWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Identify the first calendar dates of the years of current dates
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(lambda x: x.replace(month = 1, day = 1))
@@ -754,7 +789,7 @@ class ObsDates( CoreUserCalendar ):
 
     #533. Last Trade Day of previous year
     @property
-    def prevYearLTD( self ) -> 'Last Trade Day of previous year':
+    def prevYearLTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Identify the first calendar dates of the years of current dates
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(lambda x: x.replace(month = 1, day = 1))
@@ -764,7 +799,7 @@ class ObsDates( CoreUserCalendar ):
 
     #534. Last Calendar Day of previous quarter
     @property
-    def prevQtrLCD( self ) -> 'Last Calendar Day of previous quarter':
+    def prevQtrLCD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first months of the same quarter to current dates and roll them back by one day respectively
         #Quote:(Floor #0) https://stackoverflow.com/questions/16864201/calculate-the-end-of-the-previous-quarter
         df_out = (
@@ -788,7 +823,7 @@ class ObsDates( CoreUserCalendar ):
 
     #535. Last Work Day of previous quarter
     @property
-    def prevQtrLWD( self ) -> 'Last Work Day of previous quarter':
+    def prevQtrLWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first month of the same quarter to current date
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(
@@ -800,7 +835,7 @@ class ObsDates( CoreUserCalendar ):
 
     #536. Last Trade Day of previous quarter
     @property
-    def prevQtrLTD( self ) -> 'Last Trade Day of previous quarter':
+    def prevQtrLTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first month of the same quarter to current date
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(
@@ -812,7 +847,7 @@ class ObsDates( CoreUserCalendar ):
 
     #540. Previous month
     @property
-    def prevMon( self ) -> 'Previous month in the format of [YYYYMM]':
+    def prevMon( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first day of the same month to current dates and roll them back by one day respectively
         df_out = (
             self._obs_df_
@@ -832,7 +867,7 @@ class ObsDates( CoreUserCalendar ):
 
     #541. Last Calendar Day of the previous month
     @property
-    def prevMonLCD( self ) -> 'Last Calendar Day of the previous month':
+    def prevMonLCD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first day of the same month to current dates and roll them back by one day respectively
         df_out = (
             self._obs_df_
@@ -853,7 +888,7 @@ class ObsDates( CoreUserCalendar ):
 
     #542. Last Work Day of the previous month
     @property
-    def prevMonLWD( self ) -> 'Last Work Day of the previous month':
+    def prevMonLWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first day of the same month to current dates
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(
@@ -865,7 +900,7 @@ class ObsDates( CoreUserCalendar ):
 
     #543. Last Trade Day of the previous month
     @property
-    def prevMonLTD( self ) -> 'Last Trade Day of the previous month':
+    def prevMonLTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Find the first day of the same month to current dates
         l_df = self._obs_df_.copy(deep=True)
         l_df['D_DATE'] = l_df['D_DATE'].apply(
@@ -877,17 +912,17 @@ class ObsDates( CoreUserCalendar ):
 
     #550. Previous Work Day
     @property
-    def prevWorkDay( self ) -> 'Previous Work Day':
+    def prevWorkDay( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = -1, preserve = False, daytype = 'w' ) )
 
     #551. Second Previous Work Day in line
     @property
-    def prevWorkDay2( self ) -> 'Second Previous Work Day in line':
+    def prevWorkDay2( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = -2, preserve = False, daytype = 'w' ) )
 
     #552. Previous month to the Previous Work Day of current date
     @property
-    def prevMonToPWD( self ) -> 'Previous month to the Previous Work Day of current date':
+    def prevMonToPWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -908,7 +943,7 @@ class ObsDates( CoreUserCalendar ):
 
     #553. Last Calendar Day of previous month to the Previous Work Day of current date
     @property
-    def prevMonLCDToPWD( self ) -> 'Last Calendar Day of previous month to the Previous Work Day of current date':
+    def prevMonLCDToPWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -929,7 +964,7 @@ class ObsDates( CoreUserCalendar ):
 
     #554. Last Work Day of previous month to the Previous Work Day of current date
     @property
-    def prevMonLWDToPWD( self ) -> 'Last Work Day of previous month to the Previous Work Day of current date':
+    def prevMonLWDToPWD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -950,22 +985,22 @@ class ObsDates( CoreUserCalendar ):
 
     #560. Next Work Day
     @property
-    def nextWorkDay( self ) -> 'Next Work Day':
+    def nextWorkDay( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = 1, preserve = False, daytype = 'w' ) )
 
     #570. Previous Trade Day
     @property
-    def prevTradeDay( self ) -> 'Previous Trade Day':
+    def prevTradeDay( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = -1, preserve = False, daytype = 't' ) )
 
     #571. Second Previous Trade Day in line
     @property
-    def prevTradeDay2( self ) -> 'Second Previous Trade Day in line':
+    def prevTradeDay2( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = -2, preserve = False, daytype = 't' ) )
 
     #572. Previous month to the Previous Trade Day of current date
     @property
-    def prevMonToPTD( self ) -> 'Previous month to the Previous Trade Day of current date':
+    def prevMonToPTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -986,7 +1021,7 @@ class ObsDates( CoreUserCalendar ):
 
     #573. Last Calendar Day of previous month to the Previous Trade Day of current date
     @property
-    def prevMonLCDToPTD( self ) -> 'Last Calendar Day of previous month to the Previous Trade Day of current date':
+    def prevMonLCDToPTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -1007,7 +1042,7 @@ class ObsDates( CoreUserCalendar ):
 
     #574. Last Trade Day of previous month to the Previous Trade Day of current date
     @property
-    def prevMonLTDToPTD( self ) -> 'Last Trade Day of previous month to the Previous Trade Day of current date':
+    def prevMonLTDToPTD( self ) -> dt.date | Iterable[dt.date]:
         #100. Store the current parameters
         int_flag = self.DateOutAsStr
         int_value = self.values
@@ -1028,18 +1063,18 @@ class ObsDates( CoreUserCalendar ):
 
     #580. Next Trade Day
     @property
-    def nextTradeDay( self ) -> 'Next Trade Day':
+    def nextTradeDay( self ) -> dt.date | Iterable[dt.date]:
         return( self.shiftDays( kshift = 1, preserve = False, daytype = 't' ) )
 
     #702. Get and set the values of the observing dates
     @property
-    def values( self ) -> 'Get the values of the observing dates':
+    def values( self ) -> dt.date | Iterable[dt.date]:
         return(self._rst(self._obs_df_, 'D_DATE'))
     @values.setter
-    def values( self , udate ) -> 'Set the values of the observing dates':
+    def values( self , udate ):
         #100. Reset it to [today] if it is provided but with no value
         if udate is None:
-            warn('[' + self.LClassName + ']No value is provided for [Observing Dates], reset it to today.')
+            warn(f'[{self.LClassName}]No value is provided for [Observing Dates], reset it to today.')
             udate = dt.date.today()
 
         #300. Translate the input values if any
@@ -1051,7 +1086,7 @@ class ObsDates( CoreUserCalendar ):
 
         #900. Update the environment as per request
         #910. Retrieve the attribute of the input
-        self._inputs_ = deepcopy(udate)
+        self._inputs_ = udate
         self._v_struct_ = isinstance(udate, (pd.DataFrame, pd.Series))
         self._v_index_ = isinstance(udate, pd.Index)
 
@@ -1101,5 +1136,32 @@ if __name__=='__main__':
     thisday.values
     thisday.isWorkDay
     thisday.prevMonLCDToPWD
+
+    #700. Test invalid input
+    #710. Provide no parameter
+    #[ASSUMPTION]
+    #[1] In such case, <obsDate> is not provided and the instance falls back to the respective default values of <clnBgn>
+    #     and <clnEnd>, hence there is no warning message
+    #[2] It has the same behavior as when <obsDate> is provided while <clnBgn> and <clnEnd> are not
+    thisday = ObsDates('20260103')
+    datevalues = pd.Series(thisday.values, dtype = 'O').apply(lambda x: x.strftime('%Y%m%d')).to_list()
+    print(f'thisday.values={datevalues}, {thisday.clnBgn=:%Y%m%d}, {thisday.clnEnd=:%Y%m%d}')
+    # thisday.values=['20260103'], thisday.clnBgn=20250101, thisday.clnEnd=20271231
+
+    #730. Provide invalid parameters
+    #[ASSUMPTION]
+    #[1] In such case, <clnBgn> and/or <clnEnd> are provided with invalid dates, the instance tries to overwrite them with the
+    #     requested dates with a warning message
+    warnday = ObsDates('20260103', clnBgn = None, clnEnd = None)
+    # UserWarning: [ObsDates]<clnBgn> is invalid and will be calculated from the minimum among <obsDate>!
+    # UserWarning: [ObsDates]<clnEnd> is invalid and will be calculated from the maximum among <obsDate>!
+
+    datevalues = pd.Series(warnday.values, dtype = 'O').apply(lambda x: x.strftime('%Y%m%d')).to_list()
+    print(f'warnday.values={datevalues}, {warnday.clnBgn=:%Y%m%d}, {warnday.clnEnd=:%Y%m%d}')
+    # warnday.values=['20260103'], warnday.clnBgn=20250101, warnday.clnEnd=20271231
+
+    #750. Provide invalid value for <obsDate>
+    defday = ObsDates(None)
+    # UserWarning: [ObsDates]No value is provided for [Observing Dates], reset it to today.
 #-Notes- -End-
 '''

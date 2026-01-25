@@ -1,8 +1,9 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the special folders called [User Shell Folders] on Windows OS                                #
-#   |[Supported values] (when providing below values as [str])                                                                          #
+#   |This function is intended to retrieve the special folders called <User Shell Folders> on Windows OS                                #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Supported input values]                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |AllUsersDesktop, AllUsersStartMenu, AllUsersPrograms, AllUsersStartup, Desktop, Favorites, Fonts, MyDocuments, NetHood, PrintHood, #
 #   | Recent, SendTo, StartMenu, Startup & Templates                                                                                    #
@@ -16,18 +17,18 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |...         :   Any positional/named arguments that represent [special folder names] for search in Windows COM                     #
-#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as [special folder names]           #
+#   |...         :   Any positional/named arguments that represent <special folder names> for search in Windows COM                     #
+#   |inplace     :   <logical> Whether to keep the output the same as the input values if any cannot be found as <special folder names> #
 #   |                 [TRUE        ] <Default> Keep the input values as output if they cannot be found                                  #
-#   |                 [FALSE       ]           Output [NA] for those which cannot be found                                              #
+#   |                 [FALSE       ]           Output <NA> for those which cannot be found                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
-#   |                [1] If [...] is not provided, return an empty list                                                                 #
-#   |                [2] If [...] is provided with at least one element, return a [list], with:                                         #
-#   |                    [names ] [str('.arg' + pos. num)] for [positional arguments] and [keys] for named arguments                    #
-#   |                    [values] absolute paths to the [names], or [NA] if not available                                               #
+#   |                [1] If <...> is not provided, return an empty list                                                                 #
+#   |                [2] If <...> is provided with at least one element, return a <list>, with:                                         #
+#   |                    [names ] <str('.arg' + pos. num)> for <positional arguments> and <keys> for named arguments                    #
+#   |                    [values] absolute paths to the <names>, or <NA> if not available                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

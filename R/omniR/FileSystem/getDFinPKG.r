@@ -1,26 +1,32 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve available data.frames in the dedicated packages/libraries                                    #
-#   |[Quote: https://stackoverflow.com/questions/27709936/get-a-list-of-the-data-sets-in-a-particular-package ]                         #
+#   |This function is intended to retrieve available dataframes in the dedicated packages/libraries                                     #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE:                                                                                                                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/27709936/get-a-list-of-the-data-sets-in-a-particular-package                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |pkgs       :   The vector that defines all packages to retrieve available data.frames                                              #
-#   |dfclass    :   The vector that defines the required [class] of the data.frames                                                     #
-#   |                [Default: NULL] Use the pre-defined list of classes as filtration                                                  #
-#   |allpkgs    :   Whether to search in all available packages in current session, which overwrites the parameter [pkgs]               #
-#   |                [Default: T] Force to search all available packates                                                                #
-#   |fDebug     :   Debug mode                                                                                                          #
-#   |                [Default: FALSE] Change this to TRUE if you need to identify required classes from existing environment            #
+#   |pkgs          :   <chr    > The vector that defines all packages to retrieve available dataframes                                  #
+#   |dfclass       :   <chr    > The vector that defines the required <class> of the dataframes                                         #
+#   |                   [NULL         ]<Default> Use the pre-defined list of classes as filtration                                      #
+#   |                   [<chr>        ]          Use the requested classes as filtration                                                #
+#   |allpkgs       :   <logical> Whether to search in all available packages in current session, which overwrites the parameter <pkgs>  #
+#   |                   [TRUE         ]<Default> Force to search all available packages                                                 #
+#   |                   [FALSE        ]          Only search in <pkgs>                                                                  #
+#   |fDebug        :   <logical> Debug mode                                                                                             #
+#   |                   [FALSE        ]<Default> Silent mode                                                                            #
+#   |                   [TRUE         ]          Use this if you need to identify required classes from existing environment            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[out_dfs]  :   A data.frame that stores the sames of the available data.frames as found                                            #
-#   |                [$pkg]  The name of the package within which the data.frame is found                                               #
-#   |                [$name] Name of the data.frame                                                                                     #
+#   |<data.frame>  :   Table that stores the sames of the available data.frames as found                                                #
+#   |                  [<$pkg> ] The name of the package within which the dataframe is found                                            #
+#   |                  [<$name>] Name of the dataframe                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -31,7 +37,7 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200304        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Change the output result into data.frame for more compatibility                                                             #
+#   | Log  |Change the output result into <data.frame> for more compatibility                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

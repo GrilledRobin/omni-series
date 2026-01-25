@@ -1,7 +1,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create an [echarts4r] object: [JointPlots], to display the [scatter plot]+[histograms for x and y] on #
+#   |This function is intended to create an <echarts4r> object <JointPlots>, to display the <scatter plot>+<histograms for x and y> on  #
 #   | both x-axis and y-axis within the same canvas.                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -11,23 +11,22 @@
 #   |x          :   The input list or vector to be plotted on x-axis                                                                    #
 #   |y          :   The input list or vector to be plotted on y-axis                                                                    #
 #   |xname      :   The name of x-axis                                                                                                  #
-#   |               [Default] [x]                                                                                                       #
+#   |               [x      ]<Default> Display this name                                                                                #
 #   |yname      :   The name of y-axis                                                                                                  #
-#   |               [Default] [y]                                                                                                       #
+#   |               [y      ]<Default> Display this name                                                                                #
 #   |title      :   The title of the plot                                                                                               #
-#   |               [Default] [NULL]                                                                                                    #
+#   |               [NULL   ]<Default> Do not display the chart title                                                                   #
 #   |breaks     :   The same parameter as in the function [base::hist]. Please check the official document for details.                 #
-#   |               [Default] [Sturges]                                                                                                 #
+#   |               [Sturges]<Default> Use this algorithm to split the data                                                             #
 #   |colorset   :   The list or vector of colors to be used to display the elements                                                     #
-#   |               [Default] [NULL]                                                                                                    #
+#   |               [NULL   ]<Default> Do not differ the colors for the charts                                                          #
 #   |samples    :   The number of samples to be extracted from the input data, useful for large data but lack some accuracy             #
-#   |               [NULL    ] Draw all points to the scatter plot, which consumes large system resources on large input data           #
-#   |               [integers] Extract this number of samples from the input for plotting                                               #
-#   |               [Default] [NULL]                                                                                                    #
+#   |               [NULL   ]<Default> Draw all points to the scatter plot, which consumes large system resources on large input data   #
+#   |               [<int>  ]          Extract this number of samples from the input for plotting                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[echarts]  :   The [echarts4r] object which can be used to plot directly in RStudio or rendered in Shiny                           #
+#   |<echarts>  :   The <echarts4r> object which can be used to plot directly in RStudio or rendered in Shiny                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -63,7 +62,7 @@ lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
 echarts4r_JointPlots <- function(x, y,
-		xname = 'x', yname = 'y', title = NULL, breaks = "Sturges",
+		xname = 'x', yname = 'y', title = NULL, breaks = 'Sturges',
 		colorset = NULL, samples = NULL
 	){
 	#010. Parameters
@@ -76,8 +75,8 @@ echarts4r_JointPlots <- function(x, y,
 		col_x <- colorset[[min(length(colorset),2)]]
 		col_y <- colorset[[min(length(colorset),3)]]
 	}
-	map_units <- c(kilo = "K", million = "M", billion = "B", trillion = "T", quintillion = "Q")
-	# map_bargap <- c("96%" = 5, "95%" = 6, "65%" = 7, "70%" = 8, "75%" = 9, "80%" = 10, "85%" = 11, "90%" = 12, "95%" = 13)
+	map_units <- c(kilo = 'K', million = 'M', billion = 'B', trillion = 'T', quintillion = 'Q')
+	# map_bargap <- c('96%' = 5, '95%' = 6, '65%' = 7, '70%' = 8, '75%' = 9, '80%' = 10, '85%' = 11, '90%' = 12, '95%' = 13)
 
 	#100. Prepare the input data
 	jp_df <- data.frame(x = x, y = y)
@@ -114,9 +113,9 @@ echarts4r_JointPlots <- function(x, y,
 	#210. Only need to extract the information for x-axis rather than draw the histogram separately
 	jp_x_prep <- hist(jp_df$x, plot = FALSE, breaks = breaks)
 	jp_x_prep_df <- data.frame(
-		mids = jp_x_prep$mids,
-		counts = jp_x_prep$counts,
-		density = jp_x_prep$density
+		mids = jp_x_prep$mids
+		,counts = jp_x_prep$counts
+		,density = jp_x_prep$density
 	)
 	len_whole_x_axis <- max(nchar(gsub('^\\s*(\\d*)?((\\.)(\\d*))?$','\\1',jp_x_prep$mids,perl = TRUE)))
 	len_frac_x_axis <- max(nchar(gsub('^\\s*(\\d*)?((\\.)(\\d*))?$','\\4',jp_x_prep$mids,perl = TRUE)))
@@ -127,9 +126,9 @@ echarts4r_JointPlots <- function(x, y,
 	#220. Prepare the data for histogram on [y]
 	jp_y_prep <- hist(jp_df$y, plot = FALSE, breaks = breaks)
 	jp_y_prep_df <- data.frame(
-		mids = jp_y_prep$mids,
-		counts = jp_y_prep$counts,
-		density = jp_y_prep$density
+		mids = jp_y_prep$mids
+		,counts = jp_y_prep$counts
+		,density = jp_y_prep$density
 	)
 
 	#230. Determine the number of characters of [mids] and the display format
@@ -176,13 +175,13 @@ echarts4r_JointPlots <- function(x, y,
 	jp_df <- jp_df %>%
 		dplyr::mutate(
 			mids = cut(
-				y,
-				jp_y_prep$breaks,
-				labels = jp_y_prep$mids,
+				y
+				,jp_y_prep$breaks
+				,labels = jp_y_prep$mids
 				#Align the same option in the function [base::hist]
-				include.lowest = TRUE
-			),
-			c_mids = tmcn::right(paste0(paste0(rep('0',len_max_y_axis),collapse = ''),mids),len_max_y_axis)
+				,include.lowest = TRUE
+			)
+			,c_mids = tmcn::right(paste0(paste0(rep('0',len_max_y_axis),collapse = ''),mids),len_max_y_axis)
 		)
 	jp_df$counts <- sapply(jp_df$mids,function(e){jp_y_prep$counts[which(jp_y_prep$mids==e)]})
 	jp_df$density <- sapply(jp_df$mids,function(e){jp_y_prep$density[which(jp_y_prep$mids==e)]})
@@ -218,94 +217,94 @@ echarts4r_JointPlots <- function(x, y,
 		echarts4r::e_charts(x) %>%
 
 		#100. Draw the scatter plot on the grid at the bottom left corner
-		echarts4r::e_grid(index = 0, top = "22%", right = "22%", bottom = "40px", left = "40px") %>%
+		echarts4r::e_grid(index = 0, top = '22%', right = '22%', bottom = '40px', left = '40px') %>%
 		echarts4r::e_scatter(
-			y,
-			legend = FALSE,
-			name = yname,
-			# itemStyle = list(opacity = .75),
-			symbol_size = 10,
-			color = col_s,
+			y
+			,legend = FALSE
+			,name = yname
+			# ,itemStyle = list(opacity = .75)
+			,symbol_size = 10
+			,color = col_s
 			#[Quote: https://stackoverflow.com/questions/50361947/how-to-format-tooltip-in-echarts4r ]
 			#[Quote: https://github.com/JohnCoene/echarts4r/blob/master/vignettes/tooltip.Rmd ]
-			tooltip = list(
-				formatter = htmlwidgets::JS(paste0(
-					"function(params){",
-						"return(",
-							"'<strong>",yname,"</strong> : ' + echarts.format.addCommas(params.value[1].toFixed(",fmtlen_y_axis,")) + '<br/>'",
-							"+ '<strong>",xname,"</strong> : ' + echarts.format.addCommas(params.value[0].toFixed(",fmtlen_x_axis,"))",
-						");",
-					"}"
+			,tooltip = list(
+				formatter = htmlwidgets::JS(paste0(''
+					,'function(params){'
+						,'return('
+							,"'<strong>",yname,"</strong> : ' + echarts.format.addCommas(params.value[1].toFixed(",fmtlen_y_axis,")) + '<br/>'"
+							,"+ '<strong>",xname,"</strong> : ' + echarts.format.addCommas(params.value[0].toFixed(",fmtlen_x_axis,"))"
+						,');'
+					,'}'
 				))
-			),
-			x_index = 0,
-			y_index = 0
+			)
+			,x_index = 0
+			,y_index = 0
 		) %>%
 
 		#400. Draw the histogram on the grid at the bottom right corner
 		#[IMPORTANT!!!]
 		#[1] Neither can the histogram on right side be placed beneath that one on top of the canvas,
 		#[2] Nor can it be placed on a grid with index larger than 1.
-		echarts4r::e_grid(index = 1, top = "22%", right = "15px", bottom = "40px", left = "78%") %>%
+		echarts4r::e_grid(index = 1, top = '22%', right = '15px', bottom = '40px', left = '78%') %>%
 		echarts4r::e_data(jp_df,counts) %>%
 		echarts4r::e_bar(
-			c_mids,
-			legend = FALSE,
-			name = yname,
-			barWidth = "90%",
-			# itemStyle = list(opacity = .75),
-			color = col_y,
-			tooltip = list(
-				formatter = htmlwidgets::JS(paste0(
-					"function(params){",
-						"return(",
-							"'<strong>",yname,"</strong><br/>'",
-							"+ '<i>[' + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(",fmtlen_y_axis,")) + ']</i>'",
-							"+ ' : ' + echarts.format.addCommas(params.value[0])",
-						");",
-					"}"
+			c_mids
+			,legend = FALSE
+			,name = yname
+			,barWidth = '90%'
+			# ,itemStyle = list(opacity = .75)
+			,color = col_y
+			,tooltip = list(
+				formatter = htmlwidgets::JS(paste0(''
+					,'function(params){'
+						,'return('
+							,"'<strong>",yname,"</strong><br/>'"
+							,"+ '<i>[' + echarts.format.addCommas(parseFloat(params.value[1]).toFixed(",fmtlen_y_axis,")) + ']</i>'"
+							,"+ ' : ' + echarts.format.addCommas(params.value[0])"
+						,');'
+					,'}'
 				))
-			),
-			x_index = 1,
-			y_index = 1
+			)
+			,x_index = 1
+			,y_index = 1
 		) %>%
 		echarts4r::e_y_axis(
-			index = 1,
-			gridIndex = 1,
-			data = jp_y_prep_df$c_mids,
-			type = 'category',
-			show = FALSE,
-			axisLabel = list(show = FALSE),
-			axisTick = list(show = FALSE),
-			axisPointer = list(
+			index = 1
+			,gridIndex = 1
+			,data = jp_y_prep_df$c_mids
+			,type = 'category'
+			,show = FALSE
+			,axisLabel = list(show = FALSE)
+			,axisTick = list(show = FALSE)
+			,axisPointer = list(
 				label = list(
-					formatter = htmlwidgets::JS(paste0(
-						"function(params){",
-							"return(",
-								"echarts.format.addCommas(parseFloat(params.value).toFixed(",fmtlen_y_axis,"))",
-							");",
-						"}"
+					formatter = htmlwidgets::JS(paste0(''
+						,'function(params){'
+							,'return('
+								,'echarts.format.addCommas(parseFloat(params.value).toFixed(',fmtlen_y_axis,'))'
+							,');'
+						,'}'
 					))
 				)
 			)
 		) %>%
 		echarts4r::e_x_axis(
-			index = 1,
-			gridIndex = 1,
-			type = 'value',
-			show = TRUE,
-			axisLabel = list(
-				rotate = -90,
-				formatter = htmlwidgets::JS(paste0(
-					"function(value, index){",
-						"if (index == 0 || index == 1){return '';}",
-						"return(",
-							"(value/",1000^logK_x1_whole,").toFixed(",nfrac_x1,") + '",str_unit_x1,"'",
-						");",
-					"}"
+			index = 1
+			,gridIndex = 1
+			,type = 'value'
+			,show = TRUE
+			,axisLabel = list(
+				rotate = -90
+				,formatter = htmlwidgets::JS(paste0(''
+					,'function(value, index){'
+						,"if (index == 0 || index == 1){return '';}"
+						,"return("
+							,"(value/",1000^logK_x1_whole,").toFixed(",nfrac_x1,") + '",str_unit_x1,"'"
+						,');'
+					,'}'
 				))
 			),
-			splitLine = list(
+			,splitLine = list(
 				lineStyle = list(
 					type = 'dashed'
 				)
@@ -313,55 +312,55 @@ echarts4r_JointPlots <- function(x, y,
 		) %>%
 
 		#700. Draw the histogram on the grid at the top left corner
-		echarts4r::e_grid(index = 2, top = "15px", right = "22%", bottom = "78%", left = "40px") %>%
+		echarts4r::e_grid(index = 2, top = '15px', right = '22%', bottom = '78%', left = '40px') %>%
 		echarts4r::e_histogram(
-			x,
-			legend = FALSE,
-			name = xname,
-			breaks = breaks,
-			bar_width = '90%',
-			# itemStyle = list(opacity = .75),
-			color = col_x,
-			tooltip = list(
-				formatter = htmlwidgets::JS(paste0(
-					"function(params){",
-						"return(",
-							"'<strong>",xname,"</strong><br/>'",
-							"+ '<i>[' + echarts.format.addCommas(parseFloat(params.value[0]).toFixed(",fmtlen_x_axis,")) + ']</i>'",
-							"+ ' : ' + echarts.format.addCommas(params.value[1])",
-						");",
-					"}"
+			x
+			,legend = FALSE
+			,name = xname
+			,breaks = breaks
+			,bar_width = '90%'
+			# ,itemStyle = list(opacity = .75)
+			,color = col_x
+			,tooltip = list(
+				formatter = htmlwidgets::JS(paste0(''
+					,'function(params){'
+						,'return('
+							,"'<strong>",xname,"</strong><br/>'"
+							,"+ '<i>[' + echarts.format.addCommas(parseFloat(params.value[0]).toFixed(",fmtlen_x_axis,")) + ']</i>'"
+							,"+ ' : ' + echarts.format.addCommas(params.value[1])"
+						,');'
+					,'}'
 				))
-			),
-			x_index = 2,
-			y_index = 2
+			)
+			,x_index = 2
+			,y_index = 2
 		) %>%
 		echarts4r::e_y_axis(
-			index = 2,
-			gridIndex = 2,
-			show = TRUE,
-			axisLabel = list(
-				formatter = htmlwidgets::JS(paste0(
-					"function(value, index){",
-						"if (index == 0 || index == 1){return '';}",
-						"return(",
-							"(value/",1000^logK_y2_whole,").toFixed(",nfrac_y2,") + '",str_unit_y2,"'",
-						");",
-					"}"
+			index = 2
+			,gridIndex = 2
+			,show = TRUE
+			,axisLabel = list(
+				formatter = htmlwidgets::JS(paste0(''
+					,'function(value, index){'
+						,"if (index == 0 || index == 1){return '';}"
+						,"return("
+							,"(value/",1000^logK_y2_whole,").toFixed(",nfrac_y2,") + '",str_unit_y2,"'"
+						,');'
+					,'}'
 				))
 			),
-			splitLine = list(
+			,splitLine = list(
 				lineStyle = list(
 					type = 'dashed'
 				)
 			)
 		) %>%
 		echarts4r::e_x_axis(
-			index = 2,
-			gridIndex = 2,
-			show = FALSE,
-			min = min_x_scatter,
-			interval = ntvl_x_scatter
+			index = 2
+			,gridIndex = 2
+			,show = FALSE
+			,min = min_x_scatter
+			,interval = ntvl_x_scatter
 		) %>%
 
 		#800. Add styles
@@ -380,53 +379,53 @@ echarts4r_JointPlots <- function(x, y,
 		#[IMPORTANT!!!]
 		#[1] Place the primary axes at the last of the statements to prevent them being overwritten by different grids
 		echarts4r::e_y_axis(
-			index = 0,
-			gridIndex = 0,
-			name = yname,
-			min = min_y_scatter,
-			interval = ntvl_y_scatter,
-			show = TRUE,
-			axisLabel = list(
-				rotate = 90,
-				formatter = htmlwidgets::JS(paste0(
-					"function(value, index){",
-						"return(",
-							"(value/",1000^logK_y0_whole,").toFixed(",nfrac_y0,") + '",str_unit_y0,"'",
-						");",
-					"}"
+			index = 0
+			,gridIndex = 0
+			,name = yname
+			,min = min_y_scatter
+			,interval = ntvl_y_scatter
+			,show = TRUE
+			,axisLabel = list(
+				rotate = 90
+				,formatter = htmlwidgets::JS(paste0(''
+					,'function(value, index){'
+						,'return('
+							,"(value/",1000^logK_y0_whole,").toFixed(",nfrac_y0,") + '",str_unit_y0,"'"
+						,');'
+					,'}'
 				))
-			),
-			splitLine = list(
+			)
+			,splitLine = list(
 				lineStyle = list(
 					type = 'dashed'
 				)
-			),
-			nameGap = 20,
-			nameLocation = "center"
+			)
+			,nameGap = 20
+			,nameLocation = 'center'
 		) %>%
 		echarts4r::e_x_axis(
-			index = 0,
-			gridIndex = 0,
-			name = xname,
-			min = min_x_scatter,
-			interval = ntvl_x_scatter,
-			show = TRUE,
-			axisLabel = list(
-				formatter = htmlwidgets::JS(paste0(
-					"function(value, index){",
-						"return(",
-							"(value/",1000^logK_x0_whole,").toFixed(",nfrac_x0,") + '",str_unit_x0,"'",
-						");",
-					"}"
+			index = 0
+			,gridIndex = 0
+			,name = xname
+			,min = min_x_scatter
+			,interval = ntvl_x_scatter
+			,show = TRUE
+			,axisLabel = list(
+				formatter = htmlwidgets::JS(paste0(''
+					,'function(value, index){'
+						,'return('
+							,"(value/",1000^logK_x0_whole,").toFixed(",nfrac_x0,") + '",str_unit_x0,"'"
+						,');'
+					,'}'
 				))
-			),
-			splitLine = list(
+			)
+			,splitLine = list(
 				lineStyle = list(
 					type = 'dashed'
 				)
-			),
-			nameGap = 18,
-			nameLocation = "center"
+			)
+			,nameGap = 18
+			,nameLocation = 'center'
 		) %>%
 
 		#990. Gadgets
@@ -440,9 +439,9 @@ echarts4r_JointPlots <- function(x, y,
 		# ) %>%
 		echarts4r::e_show_loading() %>%
 		echarts4r::e_tooltip(
-			trigger = "item",
-			axisPointer = list(
-				type = "cross"
+			trigger = 'item'
+			,axisPointer = list(
+				type = 'cross'
 			)
 		)
 
@@ -470,16 +469,16 @@ echarts4r_JointPlots <- function(x, y,
 if (FALSE){
 	#Real case test
 	if (TRUE){
-		lst_pkg <- c( "tmcn" , "dplyr" , "echarts4r" , "htmlwidgets" ,
-			"shiny" , "shinydashboard" , "shinydashboardPlus"
+		lst_pkg <- c( 'tmcn' , 'dplyr' , 'echarts4r' , 'htmlwidgets' ,
+			'shiny' , 'shinydashboard' , 'shinydashboardPlus'
 		)
 
 		suppressPackageStartupMessages(
 			sapply(lst_pkg, function(x){library(x,character.only = TRUE)})
 		)
-		tmcn::setchs(rev=F)
-		omniR <- "D:\\R\\omniR"
-		source("D:\\R\\Project\\myApp\\Func\\UI\\theme_color_sets.r")
+		# tmcn::setchs(rev=F)
+		omniR <- 'D:\\R\\omniR'
+		source('D:\\R\\Project\\myApp\\Func\\UI\\theme_color_sets.r')
 
 		# Create the [echarts4r] object
 		ech_JointPlots <- echarts4r_JointPlots(
@@ -487,14 +486,14 @@ if (FALSE){
 			USArrests$Rape,
 			xname = 'UrbanPop',
 			yname = 'Rape',
-			breaks = "Sturges",
+			breaks = 'Sturges',
 			colorset = myApp_themecolorset$s08$p[[length(myApp_themecolorset$s08$p)]],
 			samples = NULL
 		)
 
 		test_df <- openxlsx::readWorkbook(
-			"D:\\R\\Project\\myApp\\Data\\TestData.xlsx",
-			sheet = "Dual",
+			'D:\\R\\Project\\myApp\\Data\\TestData.xlsx',
+			sheet = 'Dual',
 			detectDates = TRUE,
 			fillMergedCells = TRUE
 		)
@@ -506,7 +505,7 @@ if (FALSE){
 			xname = 'a_aum_T1',
 			yname = 'a_aum_T2',
 			title = 'Joint Plots',
-			breaks = "Scott",
+			breaks = 'Scott',
 			colorset = c('red','green'),
 			samples = NULL
 		)

@@ -17,44 +17,44 @@ def get_values(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the values of the provided [values] (by regarding them as variable names) from the closest   #
-#   | call stack, which could possibly be [global], if they are defined more than once in different frames                              #
+#   |This function is intended to retrieve the values of the provided <values> (by regarding them as variable names) from the closest   #
+#   | call stack, which could possibly be <global>, if they are defined more than once in different frames                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Map the values of variables as they are provided [character strings]                                                           #
+#   |[1] Map the values of variables as they are provided <character strings>                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |arg         :   Any positional arguments that represent [variable names] for search                                                #
-#   |                [IMPORTANT] Function will NOT validate whether these values can act as [variable name] by syntax                   #
-#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as [variable names] from the frames #
-#   |                [True        ] <Default> Keep the input values as output if they cannot be identified as [variables]               #
-#   |                [False       ]           Output [None] for those which cannot be identified as [variables]                         #
+#   |arg         :   Any positional arguments that represent <variable names> for search                                                #
+#   |                [IMPORTANT] Function will NOT validate whether these values can act as <variable name> by syntax                   #
+#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as <variable names> from the frames #
+#   |                [True        ] <Default> Keep the input values as output if they cannot be identified as <variables>               #
+#   |                [False       ]           Output <None> for those which cannot be identified as <variables>                         #
 #   |instance    :   Instance of which to identify the object, or callable if we need to find one                                       #
 #   |                [<see def.>  ] <Default> Search for all objects                                                                    #
 #   |                [instance    ]           Anyone that can be used in function <isinstance>                                          #
 #   |                [callable    ]           Search for callable, as this is actually not an instance                                  #
 #   |scope       :   Which scope to search for the variables in the frames along the call stacks                                        #
-#   |                IMPORTANT: This must be provided a sequence or a single string, indicating the search order of the scopes          #
-#   |                [see def.    ] <Default> Search for the variables in <f_locals> and then <f_globals> until the last try            #
+#   |                [IMPORTANT] This must be provided a sequence or a single string, indicating the search order of the scopes         #
+#   |                [<see def.>  ] <Default> Search for the variables in <f_locals> and then <f_globals> until the last try            #
 #   |                [f_locals    ]           Only search for the variables in <f_locals> of every frame along the call stacks          #
 #   |                [f_globals   ]           Only search for the variables in <f_globals> of every frame along the call stacks         #
-#   |kw          :   Various named parameters, whose [names] are used as names in output, while their [values] will be used to search as#
-#   |                 [variable names] within all frames along the call stacks                                                          #
+#   |kw          :   Various named parameters, whose <names> are used as names in output, while their <values> will be used to search as#
+#   |                 <variable names> within all frames along the call stacks                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
-#   |                [1] If [kw] is provided with at least one element, return a [dict], with:                                          #
-#   |                    [names ] [str('.arg' + pos. num)] for [positional arguments] and [keys] for [kw]                               #
+#   |                [1] If <kw> is provided with at least one element, return a <dict>, with:                                          #
+#   |                    [names ] <str('.arg' + pos. num)> for <positional arguments> and <keys> for <kw>                               #
 #   |                    [values] when NOT found:                                                                                       #
-#   |                             [None          ] if [inplace==False]                                                                  #
-#   |                             [input values  ] if [inplace==True]                                                                   #
+#   |                             [None          ] if <inplace==False>                                                                  #
+#   |                             [input values  ] if <inplace==True>                                                                   #
 #   |                [2] If there is only one positional argument provided, return the value assigned to it if any                      #
-#   |                [3] In other cases (i.e. multiple positional arguments), return a [tuple] with values in the same order as provided#
+#   |                [3] In other cases (i.e. multiple positional arguments), return a <tuple> with values in the same order as provided#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,7 +65,7 @@ def get_values(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210731        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Change the return value from [list] to [tuple] for case [3] in the [Return Values] to simplify the usage                #
+#   | Log  |[1] Change the return value from <list> to <tuple> for case <3> in the <Return Values> to simplify the usage                #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230815        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #

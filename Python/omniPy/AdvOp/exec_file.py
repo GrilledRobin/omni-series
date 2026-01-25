@@ -3,26 +3,32 @@
 
 import sys
 
-def exec_file( filepath, globals=None, locals=None ) -> 'Call another script within dedicated scope':
-    #000.   Info.
+def exec_file( filepath, globals=None, locals=None ):
+    #000. Info.
     """
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to call another script within the dedicated scope, resembling [execfile] before Python v3.0 at large     #
-#   |[IMPORTANT] The called script can be a simple process instead of a function definition; hence we do not have to [import] anything  #
-#   |             from inside it                                                                                                        #
-#   |[Quote]     https://stackoverflow.com/questions/436198/what-is-an-alternative-to-execfile-in-python-3                              #
+#   |This function is intended to call another script within the dedicated scope, resembling <execfile> before Python v3.0 at large     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Concept (at answer #21 and updated at #75):                                                                                        #
+#   |IMPORTANT                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |The called script can be a simple process instead of a function definition; hence we do not have to <import> anything from inside  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/436198/what-is-an-alternative-to-execfile-in-python-3                                      #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Concept (at answer #21 and updated at #75)]                                                                                       #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Uses binary reading to avoid encoding issues                                                                                   #
 #   |[2] Guaranteed to close the file (Python3.x warns about this)                                                                      #
-#   |[3] Defines __main__, some scripts depend on this to check if they are loaded as a module or not for eg. if __name__ == "__main__" #
-#   |[4] Setting __file__ is nicer for exception messages; some scripts use __file__ to get the paths of other files related to them    #
-#   |[5] Takes optional globals & locals arguments, modifying them in-place as execfile does - so you can access any variables defined  #
-#   |     by reading back the variables after running                                                                                   #
+#   |[3] Defines <__main__>, some scripts depend on this to check if they are loaded as a module, eg. <if __name__ == '__main__': ...>  #
+#   |[4] Setting <__file__> is nicer for exception messages; some scripts use <__file__> to get the paths of other files related to them#
+#   |[5] Takes optional <globals> and <locals> arguments, modifying them in-place as execfile does, so one can access any variables     #
+#   |     defined by reloading the variables after running                                                                              #
 #   |[6] Unlike Python2's execfile this does not modify the current namespace by default. For that you have to explicitly pass in       #
-#   |     globals() & locals()                                                                                                          #
+#   |     <globals=globals()> or <locals=locals()>                                                                                      #
 #   |[7] As indicated at floor #21, it takes the globals and locals from the caller                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -30,10 +36,10 @@ def exec_file( filepath, globals=None, locals=None ) -> 'Call another script wit
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |filepath   :   The full path of the script to be called on harddisk, including the file extension                                  #
-#   |               [IMPORTANT] Make sure the script is encoded as [utf-8] as always, even if it is not required here                   #
-#   |globals    :   Whether to take global environment when calling the script; check document for the same argument of [exec]          #
+#   |               [IMPORTANT] Make sure the script is encoded as <utf-8> as always, even if it is not required here                   #
+#   |globals    :   Whether to take global environment when calling the script; check document for the same argument of <exec>          #
 #   |               [None     ]<Default> Directly take the same global environment as the caller program                                #
-#   |locals     :   Whether to take local environment when calling the script; check document for the same argument of [exec]           #
+#   |locals     :   Whether to take local environment when calling the script; check document for the same argument of <exec>           #
 #   |               [None     ]<Default> Directly take the same local environment as the caller program                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #

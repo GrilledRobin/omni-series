@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import pandas as pd
 from win32com.shell import shell, shellcon
 from pywintypes import com_error
@@ -12,13 +11,13 @@ def winKnownFolders(
     ,dwFlags = shellcon.KF_FLAG_DEFAULT
     ,hToken = None
     ,**kw
-) -> 'Get the [Known Folders] for all users or current user on Windows OS':
+) -> str | tuple | dict:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to retrieve the special folders called [Known Folders] on Windows OS, derived from [KnownFolderID]       #
+#   |This function is intended to retrieve the special folders called <Known Folders> on Windows OS, derived from <KnownFolderID>       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -33,28 +32,28 @@ def winKnownFolders(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |arg         :   Any positional arguments that represent [special folder names] for search in Windows Registry                      #
-#   |inplace     :   Whether to keep the output the same as the input values if any cannot be found as [special folder names]           #
+#   |*arg        :   Any positional arguments that represent <special folder names> for search in Windows Registry                      #
+#   |inplace     :   <bool> Whether to keep the output the same as the input values if any cannot be found as <special folder names>    #
 #   |                 [True        ] <Default> Keep the input values as output if they cannot be found                                  #
-#   |                 [False       ]           Output [None] for those which cannot be found                                            #
-#   |dwFlags     :   DWARD flags that specify special retrieval options                                                                 #
+#   |                 [False       ]           Output <None> as placeholder for those which cannot be found                             #
+#   |dwFlags     :   <int > DWARD flags that specify special retrieval options                                                          #
 #   |                 [<see def.>  ] <Default> No special retrieval options                                                             #
-#   |                 [int         ]           See constants <shellcon.KF_FLAG_*>                                                       #
-#   |hToken      :   Access Token (as a HANDLE) that represents a particular user, [None] means current user                            #
+#   |                 [<int>       ]           See constants <shellcon.KF_FLAG_*>                                                       #
+#   |hToken      :   <int > Access Token (as a <HANDLE>) that represents a particular user, <None> means current user                   #
 #   |                 [None        ] <Default> Requests Known Folders for current user                                                  #
 #   |                 [WIN HANDLE  ]           Access token for any requested user                                                      #
-#   |kw          :   Various named parameters, whose [names] are used as names in output, while their [values] will be used to search   #
-#   |                 as [special folder names]                                                                                         #
+#   |**kw        :   Various named parameters, whose <names> are used as names in output, while their <values> will be used to search   #
+#   |                 as <special folder names>                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<Various>   :   This function output different values in below convention:                                                         #
-#   |                [1] If [kw] is provided with at least one element, return a [dict], with:                                          #
-#   |                    [names ] [str('.arg' + pos. num)] for [positional arguments] and [keys] for [kw]                               #
-#   |                    [values] absolute paths to the [names], or [None] if not available                                             #
+#   |                [1] If <**kw> is provided with at least one element, return a <dict>, with:                                        #
+#   |                    [names ] <str('.arg' + pos. num)> for <positional arguments> and <keys> for <**kw>                             #
+#   |                    [values] absolute paths to the <names>, or <None> if not available                                             #
 #   |                [2] If there is only one positional argument provided, return the value assigned to it if any                      #
-#   |                [3] In other cases (i.e. many positional arguments), return a [tuple] with values in the same order as provided    #
-#   |                [4] If neither <args> nor <kw> is provided, return the full result of Known Folders in the same format as [1]      #
+#   |                [3] In other cases (i.e. many positional arguments), return a <tuple> with values in the same order as provided    #
+#   |                [4] If neither <*args> nor <**kw> is provided, return the full result of Known Folders in the same format as <1>   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -71,19 +70,12 @@ def winKnownFolders(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pandas, win32com, pywintypes                                                                                              #
+#   |   |pandas, win32com, pywintypes                                                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
     if inplace is None: inplace = True

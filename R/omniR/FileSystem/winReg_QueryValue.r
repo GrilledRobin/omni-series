@@ -1,21 +1,21 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to query the value of [val_name] within the [key] of Windows Registry.                                   #
+#   |This function is intended to query the value of <val_name> within the <key> of Windows Registry.                                   #
 #   |It is useful to search for the installation path of any specific software on current Windows OS                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |key         :   Full valid path for Windows Registry within which to query the value                                               #
-#   |val_name    :   Name of the sub-key within current [key], for which to query the value                                             #
-#   |                 [<missing>   ] <Default> Retrieve the [Default Value] of current [key], as indicated [(Default)] in Registry      #
-#   |                 [<str>       ]           Provide a sub-key for query                                                              #
+#   |key         :   <chr> Full valid path for Windows Registry within which to query the value                                         #
+#   |val_name    :   <chr> Name of the sub-key within current <key>, for which to query the value                                       #
+#   |                 [<missing>   ] <Default> Retrieve the <Default Value> of current <key>, as indicated <(Default)> in Registry      #
+#   |                 [<chr>       ]           Provide a sub-key for query                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<str>       :   Character vector as query result                                                                                   #
+#   |<chr>       :   Character vector as query result                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

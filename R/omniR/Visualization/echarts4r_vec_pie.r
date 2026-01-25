@@ -1,48 +1,48 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create a character vector that represents a series of [echarts4r] widgets that can be rendered by     #
-#   | [shinyApp], via vectorized calculation process, which enables the vectorized charting by groups in a data.frame                   #
+#   |This function is intended to create a character vector that represents a series of <echarts4r> widgets that can be rendered by     #
+#   | <shinyApp>, via vectorized calculation process, which enables the vectorized charting by groups in a <data.frame>                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as [shQuote] is #
-#   | called to convert these strings into HTML or JS scripts for at least once                                                         #
+#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as <shQuote> is #
+#   | called to convert these strings into HTML or <JS> scripts for at least once                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://echarts.apache.org/zh/option.html#series-pie                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] This can be useful if one needs to render charts within [DT::datatable]                                                        #
+#   |[1] This can be useful if one needs to render charts within <DT::datatable>                                                        #
 #   |[2] Draw charts for groups of keys split into several categories, such as distribution of Product Holdings of customer AUM         #
-#   |[3] Draw charts within [echarts:tooltip] for another vectorized chart series                                                       #
+#   |[3] Draw charts within <echarts:tooltip> for another vectorized chart series                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |vec_value   :   Numeric vector to be used as [values] to draw the charts                                                           #
+#   |vec_value   :   Numeric vector to be used as <values> to draw the charts                                                           #
 #   |vec_cat     :   Vector by which to slice the pie                                                                                   #
-#   |sortBy      :   Character vector to determine how to display the slices in specific order                                          #
-#   |                 [input       ] <Default> The order follows the input sequence of [vec_cat]                                        #
-#   |                 [category    ]           Function sorts the input data by [vec_cat] in ASCENDING order and then draw the chart    #
-#   |                 [value       ]           Function sorts the input data by [vec_value] in DESCENDING order and then draw the chart #
-#   |html_id     :   Character vector of the html [id]s of each chart widget respectively, for reactive programming purpose             #
-#   |                 [NULL        ] <Default> Chart ID will be generated randomly by [echarts4r]                                       #
+#   |sortBy      :   Character vector to determine how to display the bars in specific order                                            #
+#   |                 [input       ] <Default> The order follows the input sequence of <vec_cat>                                        #
+#   |                 [category    ]           Function sorts the input data by <vec_cat> in ASCENDING order and then draw the chart    #
+#   |                 [value       ]           Function sorts the input data by <vec_value> in DESCENDING order and then draw the chart #
+#   |html_id     :   Character vector of the html <id>s of each chart widget respectively, for reactive programming purpose             #
+#   |                 [NULL        ] <Default> Chart ID will be generated randomly by <echarts4r>                                       #
 #   |height      :   Integer of the chart height                                                                                        #
-#   |                 [540         ] <Default>                                                                                          #
+#   |                 [int <540>   ] <Default> Use this size                                                                            #
 #   |width       :   Integer of the chart width                                                                                         #
-#   |                 [960         ] <Default>                                                                                          #
-#   |sliceColor  :   Character as the CSS color of the slices in current chart                                                          #
+#   |                 [int <960>   ] <Default> Use this size                                                                            #
+#   |sliceColor  :   Character as the <CSS> color of the slices in current chart                                                        #
 #   |                 [NULL        ] <Default> Use the default color from the default theme, changing in gradient against bg-color      #
 #   |                 [rgba()      ]           Can be provided in CSS syntax for the first slice, changing in gradient against bg-color #
-#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
+#   |                 [<vec>       ]           Character vector in the same length as <vec_cat> representing color codes, to differ the #
 #   |                                           colors of slices one-by-one                                                             #
 #   |roseType    :   Logical or character vector of whether or how to display the pie in rose type                                      #
-#   |                Quote: https://echarts.apache.org/zh/option.html#series-pie.roseType                                               #
 #   |                 [FALSE       ] <Default> Display the chart in normal pie form                                                     #
+#   |                  Quote: https://echarts.apache.org/zh/option.html#series-pie.roseType                                             #
 #   |avoidLabelOverlap : Whether to avoid the overlap of the labels of slices                                                           #
 #   |                 [FALSE       ] <Default> Allow overlap of the data labels, as all labels are displayed in the center of the chart #
 #   |                 [TRUE        ]           Move the labels given any are overlapped                                                 #
@@ -52,51 +52,48 @@
 #   |label_pos   :   Character value that indicates the position of the labels of the slices                                            #
 #   |                 [center      ] <Default> Display the label at the center of the ring                                              #
 #   |rad_inner   :   Character or numeric vector as the radius of the inner circle of the pie                                           #
-#   |                 [0           ] <Default> Draw a classic pie instead of a ring chart                                               #
+#   |                 [int <0>     ] <Default> Draw a classic pie instead of a ring chart                                               #
 #   |rad_outer   :   Character or numeric vector as the radius of the outer circle of the pie                                           #
 #   |                 [75%         ] <Default> Default proportion to the smaller among the rects of the container for the chart         #
 #   |title       :   Character as the title of current chart, taking the first value if the vector contains multiple values             #
 #   |                 [Pie         ] <Default> Name all charts with this one                                                            #
 #   |titleSize   :   Integer of the font size of the chart title                                                                        #
-#   |                 [18          ] <Default> Common font size                                                                         #
-#   |theme       :   The pre-defined themes                                                                                             #
-#   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
+#   |                 [int <18>    ] <Default> Common font size                                                                         #
+#   |theme       :   <chr> The pre-defined themes                                                                                       #
+#   |                 [BlackGold   ] <Default> Modified <MS PBI Innovation> theme with specific <black> and <gold> colors               #
 #   |transparent :   Whether to set the background as transparent                                                                       #
 #   |                 [TRUE        ] <Default> Set the alpha of background color as 0                                                   #
 #   |                 [FALSE       ]           Use the theme color                                                                      #
-#   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
-#   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
-#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
-#   |                 [14          ] <Default> Common font size                                                                         #
-#   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
-#   |                 chart respectively                                                                                                #
-#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |fontFamily  :   Character vector of font family to be translated to <CSS> syntax                                                   #
+#   |                 [<see def.>  ] <Default> See function definition                                                                  #
+#   |fontSize    :   Any vector that can be translated by <htmltools::validateCssUnit>. It is highly recommended to provide integer or  #
+#   |                 float numbers, since <echarts::textStyle.fontSize> cannot properly resolve other inputs in nested charts          #
+#   |                 [int <14>    ] <Default> Common font size                                                                         #
+#   |jsFmtFloat  :   Character vector of the <JS> methods applied to <JS:Float> values (which means <vec_value> for this function) of   #
+#   |                 each chart respectively                                                                                           #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 2, separated by comma              #
-#   |fmtLabel    :   Character as the formatter to tweak the [label] for the highlighted categories of current chart                    #
-#   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
-#   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
+#   |                  Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                 #
+#   |fmtLabel    :   Character as the formatter to tweak the <label> for the highlighted categories of current chart                    #
+#   |                 [NULL        ] <Default> Use the default <formatter>, see function definition                                     #
+#   |as.tooltip  :   Whether to convert the chart into the <JS> function as formatter of the tooltip of a hosting chart, i.e. this chart#
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
-#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in <DT::datatable>            #
 #   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
 #   |                 nested HTML tags                                                                                                  #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
-#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                 [FALSE       ] <Default> Only create a vector of complete <JS> functions, to represent single object inside each  #
 #   |                                           <echarts:tooltip> respectively                                                          #
 #   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<various>   :   The result is determined by below arguments                                                                        #
-#   |                [1] [as.tooltip = FALSE]                                                                                           #
-#   |                    A vector of HTML widgets represented as character strings                                                      #
-#   |                [2] [as.tooltip = TRUE], the output further depends on the argument [as.parts]                                     #
-#   |                    [1] [as.parts = FALSE]                                                                                         #
-#   |                        A vector of JS functions to be invoked inside the <tooltip> of anther <echarts> object                     #
-#   |                    [2] [as.parts = TRUE]                                                                                          #
-#   |                        A data.frame with two columns [js_func] and [html_tags] for customization of HTML scripts                  #
+#   |                [<as.tooltip = FALSE>] A vector of HTML widgets represented as character strings                                   #
+#   |                [<as.tooltip = TRUE> ] The output further depends on the argument <as.parts>                                       #
+#   |                    [FALSE] A vector of <JS> functions to be invoked inside the <tooltip> of anther <echarts> object               #
+#   |                    [TRUE ] A <data.frame> with two columns <js_func> and <html_tags> for customization of HTML scripts            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -107,31 +104,36 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220411        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [container] to enable user defined HTML tag container as future compatibility                  #
+#   | Log  |[1] Introduce a new argument <container> to enable user defined HTML tag container as future compatibility                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220413        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
-#   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   | Log  |[1] Introduce a new argument <as.parts> to indicate whether to transform the input vector into separate parts of HTML       #
+#   |      |     widgets, as components to be combined into one <echarts:tooltip>, see <Visualization$echarts4r.merge.tooltips>         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
-#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   | Log  |[1] It is tested that <echarts::textStyle.fontSize> cannot resolve text input, such as <'14px'>, within the nested charts,  #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text <fontSize> for any <CSS> codes to #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221211        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Leverage the default behavior of [match.arg] to simplify the function definition                                        #
+#   | Log  |[1] Leverage the default behavior of <match.arg> to simplify the function definition                                        #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221221        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Enable multiple provision of most of the arguments (but only the first provision is accepted), to ensure more           #
 #   |      |     flexibility of customization for each along the vectorized charts                                                      #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260124        | Version | 1.60        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <rvest> to parse attributes, e.g. <id>, from any HTML texts                                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -142,15 +144,15 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr                                                                      #
+#   |   |magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, rvest                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Styles                                                                                                                   #
+#   |   |Styles                                                                                                                         #
 #   |   |   |themeColors                                                                                                                #
 #   |   |   |rgba2rgb                                                                                                                   #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Visualization                                                                                                            #
+#   |   |Visualization                                                                                                                  #
 #   |   |   |as.character.htmlwidget                                                                                                    #
 #   |   |   |echarts4r.as.tooltip                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -158,7 +160,7 @@
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr
+	magrittr, rlang, echarts4r, htmlwidgets, htmltools, dplyr, rvest
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -434,21 +436,23 @@ echarts4r_vec_pie <- function(
 		#900. Convert to character vector
 		as.character.htmlwidget()
 
-	#583. Search for the HTML ID
-	vfy_html_id <- stringr::str_extract_all(ch_html, '(?<=<div\\sid=("|\'))(.+?)(?=\\1)')[[1]][[1]]
-
 	#589. Overwrite the original rect
-	ch_html %<>%
-		#920. Setup the shape of the canvas
-		{gsub(
-			paste0('(?<=<div\\sid=("|\')',vfy_html_id,'\\1\\sstyle=("|\'))width:(\\d+(%|px));\\s*height:(\\d+(%|px));')
-			,paste0(''
-				,'width:',width,'px !important;'
-				,'height:',height,'px !important;'
-			)
-			,.
-			,perl = T
-		)}
+	ch_div <- rvest::read_html(ch_html) |> rvest::html_element('div')
+	attrs_div <- ch_div |> rvest::html_attrs()
+	attrs_div[['style']] <- attrs_div[['style']] |>
+		stringr::str_replace_all(c(
+			'width:(\\d+(%|px));' = paste0('width:',width,'px !important;')
+			,'height:(\\d+(%|px));' = paste0('height:',height,'px !important;')
+		))
+	vfy_html_id <- attrs_div[['id']]
+
+	ch_div_upd <- paste0(
+		'<div '
+		,paste0(names(attrs_div), '=', sQuote(attrs_div, q = '\''), collapse = ' ')
+		,'>'
+	)
+
+	ch_html %<>% stringr::str_replace_all('^<div.+?>', ch_div_upd)
 
 	#590. Directly return if no need to convert it to tooltip
 	if (!as.tooltip) return(ch_html)
@@ -511,6 +515,19 @@ if (FALSE){
 					,fmtLabel = NULL
 					,as.tooltip = TRUE
 				)
+				,ech_pie2 = echarts4r_vec_pie(
+					points
+					,vec_cat = period
+					,sortBy = 'input'
+					#20220413 It is tested that if we manually set [html_id], the chart may not display when hovering over,
+					#          hence we should never (or under certain condition?) set it
+					# ,html_id = paste0('test_tt_', dplyr::last(dplyr::row_number()))
+					,title = 'Distribution by Period'
+					,theme = uRV$theme
+					# ,jsFmtFloat = 'toFixed(4)'
+					,fmtLabel = NULL
+					,as.tooltip = FALSE
+				)
 				,.groups = 'keep'
 			) %>%
 			dplyr::ungroup() %>%
@@ -521,7 +538,7 @@ if (FALSE){
 					,score
 					,symColor = uRV$coltheme[['color']][['chart-sym-light']]
 					,theme = uRV$theme
-					,fmtTTSym = ech_pie
+					# ,fmtTTSym = ech_pie
 				)
 				,score_text = echarts4r_vec_text(
 					score
@@ -532,9 +549,9 @@ if (FALSE){
 			)
 
 		#200. Create a [DT::datatable]
-		cols <- c('opponent', 'score', 'ech_score', 'score_text')
+		cols <- c('opponent', 'score', 'ech_score', 'score_text', 'ech_pie2')
 		dt_scoring <- DT::datatable(
-			ch_scoring %>% dplyr::select(tidyselect::all_of(cols))
+			ch_scoring %>% dplyr::select(dplyr::all_of(cols))
 			#Only determine the columns to be displayed, rather than the columns to extract from the input data
 			,colnames = cols
 			,width = '100%'

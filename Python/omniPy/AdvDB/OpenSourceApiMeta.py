@@ -16,7 +16,7 @@ class OpenSourceApiMeta(type):
 #   |This Class is intended to unify the APIs to communicate with various open sources, e.g. FTP, File System and DB Engines to <pull>  #
 #   | data or <push> data in simplified and standardized manner                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Reference:                                                                                                                         #
+#   |REFERENCE:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |Metaclass example: https://www.pythontutorial.net/python-oop/python-metaclass-example/                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#

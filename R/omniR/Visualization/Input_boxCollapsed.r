@@ -1,25 +1,30 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create an invisible [input] widget to monitor the expanded/collapsed status of [shiny::box] and       #
-#   | [shinydashboardPlus::boxPlus]                                                                                                     #
-#   |Quote: https://stackoverflow.com/questions/45462614/how-to-see-if-a-shiny-dashboard-box-is-collapsed-from-the-server-side          #
-#   |IMPORTANT!!!                                                                                                                       #
-#   |It MUST be called AFTER the UI which triggers the JS function created by it!                                                       #
+#   |This function is intended to create an invisible <input> widget to monitor the expanded/collapsed status of <shiny::box> and       #
+#   | <shinydashboardPlus::boxPlus>.                                                                                                    #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[QUOTE]                                                                                                                            #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://stackoverflow.com/questions/45462614/how-to-see-if-a-shiny-dashboard-box-is-collapsed-from-the-server-side             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[IMPORTANT]                                                                                                                        #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] It MUST be called AFTER the UI which triggers the <JS> function created by it!                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inputId    :   The ID of the input widget that triggers [shiny] event                                                              #
-#   |                Enclose it by [shiny::NS] to create session-specific ID when creating a Module                                     #
-#   |boxId      :   The ID of the box/boxPlus for which to monitor the status                                                           #
-#   |                Enclose it by [shiny::NS] to create session-specific ID when creating a Module                                     #
+#   |inputId    :   The ID of the input widget that triggers <shiny> event.                                                             #
+#   |                Enclose it by <shiny::NS> to create session-specific ID when creating a Module                                     #
+#   |boxId      :   The ID of the box/boxPlus for which to monitor the status.                                                          #
+#   |                Enclose it by <shiny::NS> to create session-specific ID when creating a Module                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[boolean]  :   Whether the dedicated box/boxPlus is collapsed                                                                      #
-#   |                [TRUE]  Collapsed                                                                                                  #
+#   |<logical>  :   Whether the dedicated box/boxPlus is collapsed                                                                      #
+#   |                [TRUE ] Collapsed                                                                                                  #
 #   |                [FALSE] Expanded                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #

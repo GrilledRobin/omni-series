@@ -12,23 +12,23 @@ def calcWoE( inDAT , dependent , response , event = 1 ) -> pd.DataFrame:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the Weight of Evidence for the variable [response] in terms of [dependent] variable in the  #
-#   | provided pd.DataFrame.                                                                                                            #
+#   |This function is intended to calculate the Weight of Evidence for the variable <response> in terms of <dependent> variable in the  #
+#   | provided <pd.DataFrame>.                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |inDAT      :   The input pd.DataFrame for the calculation.                                                                         #
+#   |inDAT      :   The input <pd.DataFrame> for the calculation.                                                                       #
 #   |dependent  :   The dependent variable in the procided dataset                                                                      #
 #   |response   :   The independent variable, or the response variable, in the procided dataset                                         #
 #   |event      :   The value that represents the Event                                                                                 #
-#   |               DEFAULT : [1]                                                                                                       #
+#   |               [int <1>    ]<Default> Use this value as <Positive> for the calculation                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[outDAT]   :   [pd.DataFrame]The dataset which denotes a new dataset that contains unique values of [dependent] as well as their   #
-#   |                respective WoE to the [event] at the variable of [response].                                                       #
+#   |[outDAT]   :   <pd.DataFrame>The dataset which denotes a new dataset that contains unique values of <dependent> as well as their   #
+#   |                respective WoE to the <event> at the variable of <response>.                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

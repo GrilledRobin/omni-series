@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import numpy as np
 from copy import deepcopy
 from collections.abc import Iterable
 
-def gcdExtInteger(a, b):
+def gcdExtInteger(a, b) -> np.array:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the extended Greatest Common Divisor (GCD), a.k.a. Highest Common Factor (HCF) of two       #
-#   | integers using Euclidean Algorithm, together with integers <x> and <y> such that: ax + by = gcd(a,b)                              #
+#   | integers using Euclidean Algorithm, together with integers <x> and <y> such that <ax + by = gcd(a,b)>                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://www.geeksforgeeks.org/euclidean-algorithms-basic-and-extended/                                                         #
 #   |[2] https://www.rookieslab.com/posts/extended-euclid-algorithm-to-find-gcd-bezouts-coefficients-python-cpp-code                    #
@@ -26,7 +27,7 @@ def gcdExtInteger(a, b):
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[tuple]     :   3-tuple of : (GCD of the inputs, x, y)                                                                             #
+#   |<np.array>  :   Array of 3 sub-arrays (GCD of the inputs, x, y)                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -48,19 +49,12 @@ def gcdExtInteger(a, b):
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent packages                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys                                                                                                                            #
+#   |   |copy, collections                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001.   Import necessary functions for processing.
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer
     a_iterable = isinstance(a, Iterable)

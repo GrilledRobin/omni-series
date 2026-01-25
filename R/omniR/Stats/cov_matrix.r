@@ -1,47 +1,50 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the Covariance Matrix for each column in the matrix to all other columns                    #
+#   |This function is intended to calculate the Covariance Matrix for each column in the matrix to all other columns.                   #
 #   |This function calculates much faster than the internal function [cov()]                                                            #
-#   |Quote: https://blog.csdn.net/lph188/article/details/84501481                                                                       #
-#   |Quick solution is as below:                                                                                                        #
-#   |n <- nrow(x)                                                                                                                       #
-#   |#Below function [diag(1,100000)] will consume 74.5GB RAM! Thus it cannot be applied to mass calculation.                           #
-#   |mx <- diag(1,n) - matrix(1,n,n) / n                                                                                                #
-#   |cov <- t(x) %*% mx %*% x)/(n-1)                                                                                                    #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://blog.csdn.net/lph188/article/details/84501481                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Quick solution]                                                                                                                   #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |<n <- nrow(x)>                                                                                                                     #
+#   |<#Below function [diag(1,100000)] will consume 74.5GB RAM! Thus it cannot be applied to mass calculation.>                         #
+#   |<mx <- diag(1,n) - matrix(1,n,n) / n>                                                                                              #
+#   |<cov <- t(x) %*% mx %*% x)/(n-1)>                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x,y        :   The input matrices for which the calculation is to be taken upon the columns                                        #
-#   |dim        :   On which dimension is the calculation requested                                                                     #
-#   |               [row] Calculate the distance between each row in [x] to that in [y]                                                 #
-#   |               [col] Calculate the distance between each column in [x] to that in [y]                                              #
-#   |               [Default] [col] (covariance is usually calculated for models that are based upon dimensions)                        #
+#   |x,y        :   <Matrix> The input matrices for which the calculation is to be taken upon the columns                               #
+#   |dim        :   <chr   > On which dimension is the calculation requested                                                            #
+#   |               [col    ]<Default> Calculate the distance between each column in <x> to that in <y>                                 #
+#   |               [row    ]          Calculate the distance between each row in <x> to that in <y>                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [K*M] matrix, where [K] is equal to the number of columns of [x], while [M] is the number of columns of [y]     #
-#   |               Each [k,m] represents the covariance of [k]th column in [x] to [m]th column in [y]                                  #
+#   |<Matrix>   :   The <K*M> matrix, where <K> is equal to the number of columns of <x>, while <M> is the number of columns of <y>     #
+#   |               Each <[k,m]> represents the covariance of <k>th column in <x> to <m>th column in <y>                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   | Date |    20200522        | Version | 1.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Introduce the [eigenMapMatMult] method from [MatrixMultiplication.cpp] C++ function to replace [crossprod] and [tcrossprod] #
-#   |      | functions from R base; which dramatically increase the efficiency by almost 20 times!                                      #
-#   |      |Quote: https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                   #
-#   |      |Note:                                                                                                                       #
-#   |      | [1] You have to install the package [Rcpp] to enable dynamic compilation of [CPP] code                                     #
-#   |      | [2] You also have to [Rcpp::sourceCpp] the dependent [CPP] code to introduce the C++ functions to R                        #
-#   |      | [3] Use [Rfast::transpose] to transpose the corresponding matrix before multiplication in order to get the same result as  #
-#   |      |      [crossprod] or [tcrossprod] respectively                                                                              #
+#   | Log  |[1] Introduce the <eigenMapMatMult> method from <MatrixMultiplication.cpp> (<C++>) function to replace <crossprod> and      #
+#   |      | <tcrossprod> functions from <R> base; which dramatically increase the efficiency by almost 20 times!                       #
+#   |      |[2] https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                      #
+#   |      |[3] You have to install the package <Rcpp> to enable dynamic compilation of <C++> code                                      #
+#   |      |[4] You also have to <Rcpp::sourceCpp> the dependent <C++> code to introduce the <C++> functions to <R>                     #
+#   |      |[5] Use <Rfast::transpose> to transpose the corresponding matrix before multiplication in order to get the same result as   #
+#   |      |      <crossprod> or <tcrossprod> respectively                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -56,10 +59,10 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Stats                                                                                                                    #
-#   |   |   |eigenMapMatMult       (See function definition in [MatrixMultiplication.cpp])                                              #
+#   |   |Stats                                                                                                                          #
+#   |   |   |eigenMapMatMult       (See function definition in <MatrixMultiplication.cpp>)                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |match.arg.x                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#

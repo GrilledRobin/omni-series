@@ -5,14 +5,14 @@ import sys
 from typing import Any
 
 def gen_locals( frame = None, scope : str = 'f_locals', **kw ) -> Any:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to create or assign values to multiple variables at the same time within current frame/environment       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Test the internal scripts for a function with many arguments by assigning values to them respectively to act like variables    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,11 +26,11 @@ def gen_locals( frame = None, scope : str = 'f_locals', **kw ) -> Any:
 #   |scope       :   Which scope to place the variables in the provided <frame>                                                         #
 #   |                [f_locals    ] <Default> Create the variables in <f_locals> of the <frame>                                         #
 #   |                [f_globals   ]           Create the variables in <f_globals> of the <frame>                                        #
-#   |kw          :   Various named parameters, whose [names] will be used to create variables while [values] will be assigned to them   #
+#   |kw          :   Various named parameters, whose <names> will be used to create variables while <values> will be assigned to them   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[NULL]      :   This function does not return values                                                                               #
+#   |<NULL>      :   This function does not return values                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -41,7 +41,7 @@ def gen_locals( frame = None, scope : str = 'f_locals', **kw ) -> Any:
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210319        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the dependency of the module [inspect] as its result is not the expected one                                     #
+#   | Log  |[1] Remove the dependency of the module <inspect> as its result is not the expected one                                     #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20240203        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
@@ -63,14 +63,6 @@ def gen_locals( frame = None, scope : str = 'f_locals', **kw ) -> Any:
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = 'ERROR: [' + LfuncName + ']Process failed due to errors!'
 
     #500. Determine the frame in which to place the new variables
     #[1] How to find the lower layer among the [call stacks] is demonstrated below:

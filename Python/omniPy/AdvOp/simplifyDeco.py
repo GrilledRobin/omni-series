@@ -15,13 +15,13 @@ def simplifyDeco(
 #   |This function is intended to decorate the dedicated decorator so that the wrapped decorator can be called in several conventional  #
 #   | ways. See the [Full Test Program] section for the detailed usage                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |The decorated decorator can be called in below ways, given the signature of <deco> as: deco(fn, *args, **kw)                       #
+#   |[The decorated decorator can be called in below ways, given the signature of <deco> as: deco(fn, *args, **kw)]                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] @deco              #If there is no <*args> and the necessary <kw> have default values or being handled                         #
-#   |[2] @deco()            #If there is no <*args> and the necessary <kw> have default values or being handled                         #
-#   |[3] @deco(*args, **kw) #Normal way of a parametric decorator invocation                                                            #
+#   |[1] <@deco              #If there is no *args and the necessary **kw have default values or being handled>                         #
+#   |[2] <@deco()            #If there is no *args and the necessary **kw have default values or being handled>                         #
+#   |[3] <@deco(*args, **kw) #Normal way of a parametric decorator invocation>                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote:                                                                                                                             #
+#   |QUOTE:                                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://stackoverflow.com/questions/653368/how-to-create-a-decorator-that-can-be-used-either-with-or-without-parameters        #
 #---------------------------------------------------------------------------------------------------------------------------------------#

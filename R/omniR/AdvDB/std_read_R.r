@@ -1,21 +1,27 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
+#   |This function acts as a <helper> one to standardize the reading of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [...] that have no negative impact to current function call        #
+#   |[1] Signature of this function is expanded from <load>, see its documents for detailed argument list                               #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] We could pass various parameters into one single expression <...> that have no negative impact to current function call        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |infile        :   The name (as character string) of the file or data frame to read into RAM                                        #
-#   |key           :   The name of the data.frame stored in the RData to read into RAM                                                  #
+#   |key           :   The name of the <data.frame> stored in the RData to read into RAM                                                #
 #   |funcConv      :   Callable to mutate the loaded dataframe                                                                          #
 #   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
-#   |                   [callable    ]           Callable that takes only one positional argument with data.frame type                  #
+#   |                   [callable    ]           Callable that takes only one positional argument with <data.frame> type                #
 #   |usecols       :   <chr     > Character vector naming the columns to be kept during loading, actually it is done after loading the  #
 #   |                   entire file                                                                                                     #
 #   |                   [<see def.>  ] <Default> Keep all columns of <key>                                                              #
@@ -138,7 +144,7 @@ myfunc <- deco$wrap(function(
 	#750. Filter the columns
 	rstOut <- myenv[[key]]
 	if (has_usecols) {
-		rstOut %<>% dplyr::select(tidyselect::any_of(usecols))
+		rstOut %<>% dplyr::select(dplyr::any_of(usecols))
 	}
 
 	#900. Clear the temporary environment

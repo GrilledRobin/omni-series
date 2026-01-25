@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, os, re, winreg
+import os, re, winreg
+from typing import Any
 
-def winReg_QueryValue( key, val_name = None ) -> 'Get the value of [val_name] within the [key] of Windows Registry':
+def winReg_QueryValue( key, val_name = None ) -> Any:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to query the value of [val_name] within the [key] of Windows Registry.                                   #
+#   |This function is intended to query the value of <val_name> within the <key> of Windows Registry.                                   #
 #   |It is useful to search for the installation path of any specific software on current Windows OS                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |key         :   Full valid path for Windows Registry within which to query the value                                               #
-#   |val_name    :   Name of the sub-key within current [key], for which to query the value                                             #
-#   |                 [None        ] <Default> Retrieve the [Default Value] of current [key], as indicated [(Default)] in Registry      #
+#   |key         :   <str> Full valid path for Windows Registry within which to query the value                                         #
+#   |val_name    :   <str> Name of the sub-key within current <key>, for which to query the value                                       #
+#   |                 [None        ] <Default> Retrieve the <Default Value> of current <key>, as indicated <(Default)> in Registry      #
 #   |                 [<str>       ]           Provide a sub-key for query                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<various>   :   The search result in various types with respect of the Windows Registry. [None] is returned if not found           #
+#   |<various>   :   The search result in various types with respect of the Windows Registry. <None> is returned if not found           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -40,19 +41,12 @@ def winReg_QueryValue( key, val_name = None ) -> 'Get the value of [val_name] wi
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, os, re, winreg                                                                                                            #
+#   |   |os, re, winreg, typing                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
     if len(key) == 0: return(None)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 from omniPy.AdvOp import rgetattr
 
 def rsetattr(
@@ -11,20 +10,20 @@ def rsetattr(
     ,*default
     ,args : dict = {}
     ,sep : str = '.'
-) -> 'Set the leaf attribute of object in recursion':
+):
     #000.   Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to set the leaf attribute of the object in recursion, in case the provided attributes are nested; when   #
-#   | nested attribute is a [callable], also enable the requestor to provide arguments for it to call                                   #
+#   | nested attribute is a <callable>, also enable the requestor to provide arguments for it to call                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Provide a nested string of attributes for the object and try to set the value for the deepest attribute                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote:                                                                                                                             #
+#   |QUOTE:                                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-subobjects-chained-properties                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -34,21 +33,21 @@ def rsetattr(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |obj        :   Any object to obtain the attributes                                                                                 #
 #   |attr       :   (Possibly nested) attributes to retrieve                                                                            #
-#   |               IMPORTANT: When any sub-attributes are [callable], for instance [aaa.bbb(arg).ccc] is to be obtained, DO NOT        #
-#   |                           provide the call, but provide [aaa.bbb.ccc] instead; the function handles such case via [args]          #
+#   |               [IMPORTANT] When any sub-attributes are <callable>, for instance <aaa.bbb(arg).ccc> is to be obtained, DO NOT       #
+#   |                           provide the call, but provide <aaa.bbb.ccc> instead; the function handles such case via <args>          #
 #   |val        :   Any object to assign to the attribute                                                                               #
-#   |default    :   [Optional] positional argument, in place of the default value in case the dedicated attribute is not obtainable     #
-#   |               IMPORTANT: It represents the same argument in the native function [getattr()]                                       #
-#   |args       :   A nested dict for any [callable] sub-attribute to call, see examples for the usage                                  #
+#   |default    :   <Optional> positional argument, in place of the default value in case the dedicated attribute is not obtainable     #
+#   |               [IMPORTANT] It represents the same argument in the native function <getattr()>                                      #
+#   |args       :   A nested dict for any <callable> sub-attribute to call, see examples for the usage                                  #
 #   |               [<see def.> ] <Default> Do not have to call any sub-attribute                                                       #
-#   |               [dict       ]           See arguments for function [omniPy.AdvOp.rgetattr]                                          #
-#   |sep        :   Separator to scan for sub-attributes from within [attr]                                                             #
+#   |               [dict       ]           See arguments for function <AdvOp.rgetattr>                                                 #
+#   |sep        :   Separator to scan for sub-attributes from within <attr>                                                             #
 #   |               [<see def.> ] <Default> See function definition                                                                     #
 #   |               [<str>      ]           Single character to be used for separation                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<obj>      :   Return code from the [setattr] process                                                                              #
+#   |<obj>      :   Return code from the <setattr> process                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,19 +64,14 @@ def rsetattr(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys                                                                                                                            #
+#   |   |<None>                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |rgetattr                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Parameter buffer
 

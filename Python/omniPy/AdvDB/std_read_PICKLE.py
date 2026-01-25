@@ -25,6 +25,14 @@ def std_read_PICKLE(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function acts as a [helper] one to standardize the reading of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <pd.read_pickle>, see its documents for detailed argument list                     #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |CONCLUSION                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Retain the signatures of all ancestor functions for easy program design                                                        #

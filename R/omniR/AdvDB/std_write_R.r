@@ -1,11 +1,17 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function acts as a [helper] one to standardize the writing of files or data frames with different processing arguments        #
+#   |This function acts as a <helper> one to standardize the writing of files or data frames with different processing arguments        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] We could pass various parameters into one single expression [kw] that have no negative impact to current function call         #
+#   |[1] Signature of this function is expanded from <save>, see its documents for detailed argument list                               #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below way      #
+#   |    [1] Type <args(func)> in the console to see its full argument list expanded from those retained from the ancestors             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] We could pass various parameters into one single expression <...> that have no negative impact to current function call        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -16,7 +22,7 @@
 #   |outfile       :   PathLike object indicating the full path of the exported data file                                               #
 #   |funcConv      :   Function to mutate the input data frame before exporting it                                                      #
 #   |                   [<see def.>  ] <Default> Do not apply further process upon the data                                             #
-#   |                   [function    ]           Function that takes only one positional argument with data.frame type                  #
+#   |                   [function    ]           Function that takes only one positional argument with <data.frame> type                #
 #   |list          :   The same argument in the ancestor function, which is a placeholder in this one, omitted and overwritten as       #
 #   |                   <indat> is of different input type so it no longer takes effect                                                 #
 #   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
@@ -174,7 +180,7 @@ if (FALSE){
 				,'bbb' = bbb
 			)
 			,outf
-			,funcConv = function(x){x %>% dplyr::select(-tidyselect::any_of('b'))}
+			,funcConv = function(x){x %>% dplyr::select(-dplyr::any_of('b'))}
 		)
 
 		#300. Verify the written data

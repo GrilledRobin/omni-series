@@ -4,40 +4,38 @@
 import numpy as np
 import sys, warnings
 
-def cov_matrix( x , y = None , rowvar = False ) -> 'Covariance between each column in a matrix to all others':
-    #000.   Info.
+def cov_matrix( x , y = None , rowvar = False ) -> np.matrix:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to calculate the Covariance Matrix for each column in the matrix to all other columns                    #
-#   |This function calculates much faster than the internal function [np.cov()]                                                         #
-#   |Quote: https://blog.csdn.net/lph188/article/details/84501481                                                                       #
-#   |Quick solution is as below:                                                                                                        #
-#   |n <- nrow(x)                                                                                                                       #
-#   |#Below function [diag(1,100000)] will consume 74.5GB RAM! Thus it cannot be applied to mass calculation.                           #
-#   |mx <- diag(1,n) - matrix(1,n,n) / n                                                                                                #
-#   |cov <- t(x) %*% mx %*% x)/(n-1)                                                                                                    #
+#   |This function is intended to calculate the Covariance Matrix for each column in the matrix to all other columns.                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Difference between this function, [np.cov] and R:                                                                                  #
-#   |[1] This function is able to be applied to two different matrices, while [np.cov] can only be applied to a single matrix           #
-#   |[2] This function is slightly slower than [np.cov] on large matrix                                                                 #
-#   |[3] Both functions in Python are twice faster than R with much less CPU effort (only when Rcpp is applied for calculation based on #
-#   |     C++ optmization)                                                                                                              #
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://blog.csdn.net/lph188/article/details/84501481                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Difference between this function, <np.cov> and <R>]                                                                               #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] This function is able to be applied to two different matrices, while <np.cov> can only be applied to a single matrix           #
+#   |[2] This function is slightly slower than <np.cov> on large matrix                                                                 #
+#   |[3] Both functions in <Python> are twice faster than <R> with much less CPU effort even when <Rcpp> is applied for calculation     #
+#   |     based on <C++> optmization.                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x,y        :   The input matrices for which the calculation is to be taken upon the columns                                        #
-#   |rowvar     :   Whether the requested calculation is applied to each row to all others (Compatible to [numpy])                      #
-#   |               [False]<Default> Calculate the distance between each column in [x] to that in [y]                                   #
-#   |               [True]           Calculate the distance between each row in [x] to that in [y]                                      #
+#   |x,y        :   <np.matrix> The input matrices for which the calculation is to be taken upon the columns                            #
+#   |rowvar     :   <bool     > Whether the requested calculation is applied to each row to all others (Compatible to <numpy>)          #
+#   |               [False]<Default> Calculate the distance between each column in <x> to that in <y>                                   #
+#   |               [True ]          Calculate the distance between each row in <x> to that in <y>                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [K*M] matrix, where [K] is equal to the number of columns of [x], while [M] is the number of columns of [y]     #
-#   |               Each [k,m] represents the covariance of [k]th column in [x] to [m]th column in [y]                                  #
+#   |[matrix]   :   The <K*M> matrix, where <K> is equal to the number of columns of <x>, while <M> is the number of columns of <y>     #
+#   |               Each <[k,m]> represents the covariance of <k>th column in <x> to <m>th column in <y>                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -61,14 +59,12 @@ def cov_matrix( x , y = None , rowvar = False ) -> 'Covariance between each colu
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001.   Import necessary functions for processing.
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( x , ( np.ndarray , np.matrix ) ):
         raise TypeError( '[' + LfuncName +  '][x] should be of the type [np.matrix]! Type of input value is [{0}]'.format( type(x) ) )
     chkNaN_x = min( x[np.isnan(x)].shape ) != 0
@@ -84,30 +80,30 @@ def cov_matrix( x , y = None , rowvar = False ) -> 'Covariance between each colu
     else:
         f_mean = np.mean
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #050.   Transpose [x] if it is requested for calculation based on [row]s.
+    #050. Transpose [x] if it is requested for calculation based on [row]s.
     if isinstance( x , ( np.ndarray ) ): x = np.asmatrix(x)
     if rowvar: x = x.T
 
-    #100.   Reshape [x].
+    #100. Reshape [x].
     x = x.astype(np.float64)
     n = x.shape[0]
     x -= f_mean(x, axis = 0)
 
-    #300.   Further handle [y] if it is provided.
+    #300. Further handle [y] if it is provided.
     if y is None: y = x
     elif y is x: pass
     else:
-        #050.   Transpose [x] if it is requested for calculation based on [row]s.
+        #050. Transpose [x] if it is requested for calculation based on [row]s.
         if isinstance( y , ( np.ndarray ) ): y = np.asmatrix(y)
         if rowvar: y = y.T
 
-        #100.   Reshape [y].
+        #100. Reshape [y].
         y = y.astype(np.float64)
         y -= f_mean(y, axis = 0)
 
-    #900.   Output.
+    #900. Output.
     return( np.dot(x.T, y) / (n - 1) )
 #End cov_matrix
 

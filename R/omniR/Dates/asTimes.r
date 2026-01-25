@@ -1,22 +1,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert any type of input values into valid time (with class as [Period], see [lubridate])            #
+#   |This function is intended to convert any type of input values into valid time (with class as <Period>, see <lubridate>)            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |indate      :   Date-like values, can be list/vector of date values, character strings, integers or date column of a data frame    #
-#   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
-#   |                 [ <vec>      ] <Default> Try to match these formats for any input strings, see function definition                #
-#   |origin      :   Datetime-like scalar, as origin, to convert the values in the class of [POSIXct]                                   #
-#   |                See official document of [lubridate::make_datetime]                                                                #
-#   |                 [ 1960-01-01 ] <Default> Also the default origin of SAS for easy conversion                                       #
+#   |fmt         :   Alternative format to be passed to function <strptime> when the input is a character string                        #
+#   |                 [<see def.>  ] <Default> Try to match these formats for any input strings, see function definition                #
+#   |origin      :   Datetime-like scalar, as origin, to convert the values in the class of <POSIXct>.                                  #
+#   |                See official document of <lubridate::make_datetime>                                                                #
+#   |                 [<see def.>  ] <Default> Also the default origin of SAS for easy conversion                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ vec   ]   :   The mapped result stored in a vector (or data.frame if the input is table-like)                                    #
+#   |<vec>       :   The mapped result stored in a vector (or <data.frame> if the input is table-like)                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -57,7 +57,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#

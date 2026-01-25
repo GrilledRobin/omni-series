@@ -34,14 +34,18 @@ from .rgetattr import rgetattr
 from .rsetattr import rsetattr
 from .tryProc import tryProc
 from .pandasParseIndexer import pandasParseIndexer
-from .xwDfToRange import xwDfToRange
-from .xwRangeAsGroup import xwRangeAsGroup
-from .xwGroupForDf import xwGroupForDf
 
 from .strNestedParser import strNestedParser
+from .strNestedParser2 import strNestedParser2
 from .locSubstr import locSubstr
 from .strBalancedGroup import strBalancedGroup
 from .strBalancedGroupEval import strBalancedGroupEval
+from .strIsEnclosed import strIsEnclosed
+
+# Below functions depend on <.Styles>, the modules inside which depend on <strNestedParser>
+from .xwDfToRange import xwDfToRange
+from .xwRangeAsGroup import xwRangeAsGroup
+from .xwGroupForDf import xwGroupForDf
 
 from .vecStack import vecStack
 from .vecUnstack import vecUnstack
@@ -63,8 +67,8 @@ __all__ = [
     , 'pandasPivot'
     , 'snippetimer', 'rgetattr' , 'rsetattr' , 'simplifyDeco' , 'tryProc', 'nameArgsByFormals', 'ExpandSignature'
     , 'pandasParseIndexer'
+    , 'strNestedParser', 'strNestedParser2', 'locSubstr', 'strBalancedGroup', 'strBalancedGroupEval', 'strIsEnclosed'
     , 'xwDfToRange', 'xwRangeAsGroup', 'xwGroupForDf'
-    , 'strNestedParser', 'locSubstr' , 'strBalancedGroup' , 'strBalancedGroupEval'
     , 'thisShell', 'thisFunction', 'ls_frame'
     , 'vecStack', 'vecUnstack'
     , 'SingletonMeta'

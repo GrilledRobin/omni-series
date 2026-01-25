@@ -80,7 +80,7 @@ def writeSASdat(
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #   |dt_map      :   Mapping table to define the format for the SAS datetime values                                                     #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
-#   |nlsMap      :   Mapping table to call SAS in native environment, see the directory <sasHome\nls>                                   #
+#   |nlsMap      :   Mapping table to call SAS in native environment, see the directory <sasHome/nls>                                   #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
 #   |encoding    :   Encoding of these items: SAS NLS configuration, output SAS dataset, SAS script, log message from command console   #
 #   |                [ <see def.> ] <Default> See definition of the function                                                            #
@@ -94,7 +94,7 @@ def writeSASdat(
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<int>       :   Integer return code from the communication with Windows Command Console during SAS programm execution              #
-#   |                [0           ] Execution successful                                                                                #
+#   |                [int <0>     ] Execution successful                                                                                #
 #   |                [non-0 int   ] Failure                                                                                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
@@ -115,13 +115,13 @@ def writeSASdat(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvDB                                                                                                                   #
+#   |   |AdvDB                                                                                                                          #
 #   |   |   |inferContents                                                                                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |apply_MapVal                                                                                                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.FileSystem                                                                                                              #
+#   |   |FileSystem                                                                                                                     #
 #   |   |   |winReg_getInfByStrPattern                                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''

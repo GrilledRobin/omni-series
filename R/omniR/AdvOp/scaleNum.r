@@ -3,17 +3,21 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to scale the provided numbers to their closest exponents in terms of certain base, where the numeric     #
 #   | part no longer than 4 characters.                                                                                                 #
-#   |IMPORTANT: [NULL/NA/Inf/-Inf] values will be eliminated from input, hence please clean up the input BEFORE calling this function,  #
-#   |            otherwise the output length is possibly not the same as input.                                                         #
-#   |Example:                                                                                                                           #
-#   |[1]: f(2097152,1024) = 2.00M                                                                                                       #
-#   |[2]: f(30120,1000) = 30.1K                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |IMPORTANT                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 作图时坐标轴刻度需要统一数量级，如都以[万]作为单位标注刻度                                                                     #
-#   |[2] 统计数据中多项指标数量级不同，需分别显示其最接近的数量级：某城市人口k万，GDP共m亿，道路n条；则三个数需分别按其最接近的数量级进 #
-#   |    行显示                                                                                                                         #
+#   |[1] <NULL/NA/Inf/-Inf> values will be eliminated from input, hence please clean up the input BEFORE calling this function,         #
+#   |     otherwise the output length is possibly not the same as input.                                                                #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SIMPLE EXAMPLE                                                                                                                     #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] <f(2097152,1024) == 2.00M>                                                                                                     #
+#   |[2] <f(30120,1000) == 30.1K>                                                                                                       #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIO                                                                                                                           #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Unify the scale of different charts                                                                                            #
+#   |[2] Display different scales for corresponding KPIs in the same chart or presentation                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -21,31 +25,32 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |inNum      :   The vector/list of numerics to scale respectively                                                                   #
 #   |ScaleBase  :   The base to which to scale the numbers with exponent                                                                #
-#   |                [Default: 1000] Use 1000 to scale the numbers                                                                      #
+#   |                [int <1000>     ] <default> Use 1000 to scale the numbers                                                          #
 #   |map_units  :   The mapping dictionary (as a named vector) to append to the scaled numbers as suffix                                #
 #   |unify      :   Unify the entire list of numbers into the same scale                                                                #
-#   |                [NULL]<Default> Do not unify the numbers while leave them to scale respectively                                    #
-#   |                [(char)] Single character selected from the values in [map_units], to scale all the numbers in this unit           #
-#   |                [(function name)] Function, such as [min/max/median], to scale the numbers into the same one as directed           #
-#   |                IMPORTANT: A function is always applied to the ABSOLUTE values of the given numbers during scaling.                #
-#   |scientific :   The same parameter for the function [format]. Please check R document for more information                          #
-#   |...        :   Additional arguments to the function [unify], such as [na.rm = T]. Please check R document for more information     #
+#   |                [NULL           ] <Default> Do not unify the numbers while leave them to scale respectively                        #
+#   |                [<chr>          ]           Single character selected from the values in [map_units], to scale all the numbers in  #
+#   |                                             this unit                                                                             #
+#   |                [(function name)]           Function, such as <min/max/median>, to scale the numbers into the same one as directed #
+#   |                                            [IMPORTANT] A function is always applied to the ABSOLUTE values of the given numbers   #
+#   |                                                         during scaling.                                                           #
+#   |scientific :   The same parameter for the function <format>. Please check R document for more information                          #
+#   |...        :   Additional arguments to the function <unify>, such as <na.rm = T>. Please check R document for more information     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[list]     :   A list with 2 elements as below:                                                                                    #
-#   |[$values]  :   The vector/list of formatted numbers in the same length as the input vector/list                                    #
-#   |                [characters of formatted numbers]                                                                                  #
-#   |                IMPORTANT: Its length is less than the input if there is [NULL/NA/Inf/-Inf] value as provided.                     #
-#   |[$parts]   :   A data.frame that stores all the attributes to format each number                                                   #
-#   |                [$k_idx] Index of the number among the input list                                                                  #
-#   |                [$k_exp] Integer part of the exponent                                                                              #
-#   |                [$f_sgn] Sign of the input values, with '-' prefixing the output result if it is negative                          #
-#   |                [$a_val] Actual (probably scaled) number used for formatting                                                       #
-#   |                [$k_dgt] Number of significant digits to display, including decimals                                               #
-#   |                [$k_dec] Decimal length of the scaled number                                                                       #
-#   |                [$f_sci] Whether this number is applied with scientific formatting                                                 #
-#   |                [$c_sfx] suffix to the scaled number                                                                               #
+#   |<list>     :   A list with 2 elements as below:                                                                                    #
+#   |               <$values>  :   The vector/list of formatted numbers in the same length as the input vector/list                     #
+#   |                              [IMPORTANT] Its length is less than the input if there is <NULL/NA/Inf/-Inf> value as provided.      #
+#   |               <$parts>   :   A data.frame that stores all the attributes to format each number                                    #
+#   |                              [$k_idx] Index of the number among the input list                                                    #
+#   |                              [$k_exp] Integer part of the exponent                                                                #
+#   |                              [$f_sgn] Sign of the input values, with <'-'> prefixing the output result if it is negative          #
+#   |                              [$a_val] Actual (probably scaled) number used for formatting                                         #
+#   |                              [$k_dgt] Number of significant digits to display, including decimals                                 #
+#   |                              [$k_dec] Decimal length of the scaled number                                                         #
+#   |                              [$f_sci] Whether this number is applied with scientific formatting                                   #
+#   |                              [$c_sfx] suffix to the scaled number                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -61,8 +66,8 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200304        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Correct the display when the scale has different length than 1000, such as '万'                                         #
-#   |      |[2] Set the default value for [scientific] as TRUE, compromising most of the requirements                                   #
+#   | Log  |[1] Correct the display when the scale has different length than 1000, such as <'\u4e07'> (Chinese 'wan')                   #
+#   |      |[2] Set the default value for <scientific> as TRUE, compromising most of the requirements                                   #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230522        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
@@ -313,4 +318,10 @@ if (FALSE){
 		View(fmterrc$parts)
 
 	}
+
+	if (FALSE){'
+		[1] 作图时坐标轴刻度需要统一数量级，如都以[万]作为单位标注刻度
+		[2] 统计数据中多项指标数量级不同，需分别显示其最接近的数量级：某城市人口k万，GDP共m亿，道路n条；则三个数需分别按其最接近的
+			数量级进行显示
+	'}
 }

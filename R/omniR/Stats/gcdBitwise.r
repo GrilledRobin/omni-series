@@ -3,12 +3,14 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the Greatest Common Divisor (GCD), a.k.a. Highest Common Factor (HCF) of two integers,      #
 #   | using Stein's Algorithm.                                                                                                          #
+#   |This is only a demonstration of bitwise calculation, and is much slower than <Stats$gcd> using Euclidean Algorithm                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |IMPORTANT                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<R 4.1.1> Integer is 32bit, hence all integers larger than <2^32 - 1> are coerced to NA during bitwise operation                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |This is only a demonstration of bitwise calculation, and is much slower than <omniR$Stats$gcd> using Euclidean Algorithm           #
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://www.geeksforgeeks.org/steins-algorithm-for-finding-gcd/                                                                #
 #   |[2] https://reddit.com/r/3blue1brown/comments/yn6wfo/divide_a_whole_number_by_2_until_it_reaches_an/                               #
 #   |[3] https://www.pythonfixing.com/2022/11/fixed-numpy-int-bit-length.html                                                           #
@@ -24,7 +26,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[int]       :   Element-wise GCD of the inputs                                                                                     #
+#   |<int>       :   Element-wise GCD of the inputs                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

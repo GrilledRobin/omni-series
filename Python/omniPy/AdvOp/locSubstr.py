@@ -7,13 +7,13 @@ def locSubstr(
     regexp
     ,txt
     ,overlap = False
-) -> 'Get the start and end of substrings matching [regexp] in the provided [txt], with or without overlapping':
-    #000.   Info.
+) -> list:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to get the start and end of substrings matching [regexp] in the provided [txt], with or without          #
+#   |This function is intended to get the start and end of substrings matching <regexp> in the provided <txt>, with or without          #
 #   | overlapping                                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[QUOTE]                                                                                                                            #
@@ -26,13 +26,13 @@ def locSubstr(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |regexp     :   Regular expression used to search for substrings                                                                    #
 #   |txt        :   Character string from which to extract the substrings                                                               #
-#   |overlap    :   Whether to conduct the search in an overlapping mode, as it is always non-overlapping in the official package [re]  #
-#   |               [False      ] <Default> Conduct non-overlapping search, following the logic in the official package [re]            #
+#   |overlap    :   Whether to conduct the search in an overlapping mode, as it is always non-overlapping in the official package <re>  #
+#   |               [False      ] <Default> Conduct non-overlapping search, following the logic in the official package <re>            #
 #   |               [True       ]           Search for all possible matches one character next to another from left to right            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<list>     :   List of 2-element tuples, indicating [start, end] of each match of [regexp], or an empty list if nothing is found   #
+#   |<list>     :   List of 2-element tuples, indicating <[start, end]> of each match of <regexp>, or an empty list if nothing is found #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,9 +65,9 @@ def locSubstr(
 
     #012. Parameter buffer
     if not isinstance( regexp , str ):
-        raise TypeError('[' + LfuncName + '][regexp]:[{0}] must be provided a character string!'.format( type(regexp) ))
+        raise TypeError(f'[{LfuncName}][regexp]:[{type(regexp)}] must be provided a character string!')
     if not isinstance( txt , str ):
-        raise TypeError('[' + LfuncName + '][txt]:[{0}] must be provided a character string!'.format( type(txt) ))
+        raise TypeError(f'[{LfuncName}][txt]:[{type(txt)}] must be provided a character string!')
 
     #050. Local parameters
 
@@ -94,8 +94,10 @@ if __name__=='__main__':
 
     #200. Test output with [overlap==False]
     print(locSubstr('afa', teststr))
+    # [(1, 4), (5, 8), (11, 14), (18, 21)]
 
     #300. Test output with [overlap==True]
     print(locSubstr('afa', teststr, overlap = True))
+    # [(1, 4), (3, 6), (5, 8), (11, 14), (18, 21)]
 #-Notes- -End-
 '''

@@ -400,7 +400,7 @@ UM_custPortAdj_svr <- function(input,output,session
 	dtsrc <- CustData$CustRate_Prod %>%
 		dplyr::left_join(
 			CustData$Prod_Acct %>%
-				dplyr::select(nc_cifno,ProdCode,tidyselect::starts_with('c_ccy_'))
+				dplyr::select(nc_cifno,ProdCode,dplyr::starts_with('c_ccy_'))
 			,by = c(
 				'ProdCode' = 'ProdCode'
 				,'c_ccy_CN' = 'c_ccy_CN'
@@ -478,7 +478,7 @@ UM_custPortAdj_svr <- function(input,output,session
 				dtsrc_ProdSel <- dtsrc_ProdSel %>%
 					dplyr::left_join(chk_state, suffix = c('', '.sel')) %>%
 					dplyr::mutate(F_Selected = ifelse(is.na(state_load),F,T)) %>%
-					dplyr::select(-state_load, -tidyselect::ends_with('.sel'))
+					dplyr::select(-state_load, -dplyr::ends_with('.sel'))
 			)
 		}
 	nrow_dtsrc_ProdSel <- nrow(dtsrc_ProdSel)
@@ -792,7 +792,7 @@ UM_custPortAdj_svr <- function(input,output,session
 					dplyr::inner_join(
 						uRV$dt_draw %>%
 							dplyr::filter(F_Selected == T) %>%
-							dplyr::select(ProdCode,tidyselect::starts_with('c_ccy_'))
+							dplyr::select(ProdCode,dplyr::starts_with('c_ccy_'))
 						,by = c(
 							'ProdCode' = 'ProdCode'
 							,'c_ccy_CN' = 'c_ccy_CN'
@@ -804,7 +804,7 @@ UM_custPortAdj_svr <- function(input,output,session
 				#200. Export the selection result for all languages
 				uRV$PortAdj_Selected <- uRV$dt_draw %>%
 					dplyr::filter(F_Selected == T) %>%
-					dplyr::select(ProdType_Seq,ProdType_EN,tidyselect::starts_with('ProdCcy_')) %>%
+					dplyr::select(ProdType_Seq,ProdType_EN,dplyr::starts_with('ProdCcy_')) %>%
 					dplyr::arrange(ProdType_Seq,ProdType_EN)
 
 				#500. Combine the customer holding to the extra products as indicated
@@ -820,7 +820,7 @@ UM_custPortAdj_svr <- function(input,output,session
 						)
 						,suffix = c('', '.chk')
 					) %>%
-					dplyr::select(-tidyselect::ends_with('.chk')) %>%
+					dplyr::select(-dplyr::ends_with('.chk')) %>%
 					#We have to create below two fields at first,
 					# for we have no source fields for the [union]ed table [uRV$df_mrgTo_ProdAcct].
 					dplyr::mutate(
@@ -846,7 +846,7 @@ UM_custPortAdj_svr <- function(input,output,session
 
 				#700. Adjust the product balance at initialization & update on charting base
 				uRV$Prod_Adjusted <- uRV$df_ProdAdj %>%
-					dplyr::select(ProdType_Seq,ProdType_EN,bal_bcy,tidyselect::starts_with('ProdCcy_')) %>%
+					dplyr::select(ProdType_Seq,ProdType_EN,bal_bcy,dplyr::starts_with('ProdCcy_')) %>%
 					dplyr::rename(bal_new = bal_bcy) %>%
 					#This condition ensures the changes are made upon the most basic product - CASA
 					dplyr::mutate(
@@ -971,7 +971,7 @@ UM_custPortAdj_svr <- function(input,output,session
 				#300. Prepare the advice as text messages
 				#310. Prepare the wording for other products than funds
 				uRV$df_adv_src_oth <- uRV$ch_base %>%
-					dplyr::select(ProdCode,tidyselect::starts_with('c_ccy_'),tidyselect::starts_with('ProdCcy_'),bal_bcy,bal_new) %>%
+					dplyr::select(ProdCode,dplyr::starts_with('c_ccy_'),dplyr::starts_with('ProdCcy_'),bal_bcy,bal_new) %>%
 					dplyr::mutate(bal_chg = bal_new - bal_bcy) %>%
 					dplyr::mutate(direction = ifelse(bal_chg >= -0.0000001, 1, -1)) %>%
 					dplyr::select(-bal_bcy,-bal_new) %>%
@@ -1010,7 +1010,7 @@ UM_custPortAdj_svr <- function(input,output,session
 				#340. Prepare the wording for funds
 				uRV$df_adv_txt_fund <- uRV$ch_base %>%
 					dplyr::filter(ProdType_EN == 'Fund') %>%
-					dplyr::select(ProdCode,tidyselect::starts_with('c_ccy_'),tidyselect::starts_with('ProdCcy_'),bal_bcy,bal_new) %>%
+					dplyr::select(ProdCode,dplyr::starts_with('c_ccy_'),dplyr::starts_with('ProdCcy_'),bal_bcy,bal_new) %>%
 					dplyr::mutate(bal_chg = bal_new - bal_bcy) %>%
 					dplyr::mutate(direction = ifelse(bal_chg >= -0.0000001, 1, -1)) %>%
 					dplyr::select(-bal_bcy,-bal_new) %>%

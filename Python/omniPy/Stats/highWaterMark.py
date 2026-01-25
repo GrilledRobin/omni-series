@@ -19,29 +19,30 @@ def highWaterMark(
 #   |This function is intended to calculate the high water mark (HWM) in a convolutional way, by interpolating the vortex and the       #
 #   | historically accumulated HWM result if any, to save the system calculation effort                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Customer campaigns sometimes entitle the customers with game points in the method of HWM, i.e. only entitle them with the      #
 #   |     additional points on top of their historically gained ones. Meanwhile, there could be manual payment that differs the         #
-#   |     should-be results to encourage the customers to participate in a more proactive way (often higher than the entitlement at a   #
-#   |     certain payment cycle), but they need to invest more in the future to gain more points that can cover these extra ones        #
+#   |     should-be results to encourage the customers to participate in a more proactive way, often higher than the entitlement at a   #
+#   |     certain payment cycle; but they need to invest more in the future to gain more points that can cover these extra ones         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |mark        :   Water mark at each each certain period of observation. It will be used for calculation of cumulative maximum       #
-#   |vortex      :   Vortex that affects each <mark> along the period. Non-NULL values among it will directly replace <mark> if         #
-#   |                 <benchmark> is NOT provided. When <benchmark> is provided, its values before the last non-NULL one will overwrite #
-#   |                 the calculation result, including <vortex>, even if any among them is NULL. See details in the example            #
+#   |mark        :   <pd.Series> Water mark at each each certain period of observation. It will be used for calculation of cumulative   #
+#   |                 maximum                                                                                                           #
+#   |vortex      :   <pd.Series> Vortex that affects each <mark> along the period. Non-NULL values among it will directly replace       #
+#   |                 <mark> if <benchmark> is NOT provided. When <benchmark> is provided, its values before the last non-NULL one will #
+#   |                 overwrite the calculation result, including <vortex>, even if any among them is NULL. See details in the example  #
 #   |                [None            ] <Default> No vortex is in effect                                                                #
 #   |                [pd.Series       ]           A pd.Series with the same index as <mark>                                             #
-#   |benchmark   :   Benchmark representing the final water mark in the history, ignoring <vortex> as it is designed to consume its     #
-#   |                 effect. Only the values TILL the last non-NULL one will be honored. E.g. the first 3 values of the data in        #
-#   |                 pd.Series([0,nan,1,nan]) will be honored, i.e. including those NULL values within the valid period; while these 3 #
-#   |                 values are retained in the calculation result, regardless of <vortex>                                             #
+#   |benchmark   :   <pd.Series> Benchmark representing the final water mark in the history, ignoring <vortex> as it is designed to     #
+#   |                 consume its effect. Only the values TILL the last non-NULL one will be honored. E.g. the first 3 values of the    #
+#   |                 data in <pd.Series([0,nan,1,nan])> will be honored, i.e. including those NULL values within the valid period;     #
+#   |                 while these 3 values are retained in the calculation result, regardless of <vortex>                               #
 #   |                [None            ] <Default> No benchmark is in effect                                                             #
-#   |                [pd.Series       ]           A pd.Series with the same index as <mark>                                             #
+#   |                [pd.Series       ]           A <pd.Series> with the same index as <mark>                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#

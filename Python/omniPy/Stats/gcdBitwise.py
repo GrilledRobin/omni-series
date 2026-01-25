@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import numpy as np
 from copy import deepcopy
 from collections.abc import Iterable
@@ -14,8 +13,10 @@ def gcdBitwise( a , b ) -> int:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the Greatest Common Divisor (GCD), a.k.a. Highest Common Factor (HCF) of two integers,      #
 #   | using Stein's Algorithm.                                                                                                          #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |This is only a demonstration of bitwise calculation, and is much slower than <numpy.gcd> using Euclidean Algorithm                 #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://www.geeksforgeeks.org/steins-algorithm-for-finding-gcd/                                                                #
 #   |[2] https://reddit.com/r/3blue1brown/comments/yn6wfo/divide_a_whole_number_by_2_until_it_reaches_an/                               #
 #   |[3] https://www.pythonfixing.com/2022/11/fixed-numpy-int-bit-length.html                                                           #
@@ -31,7 +32,7 @@ def gcdBitwise( a , b ) -> int:
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[int]       :   Element-wise GCD of the inputs                                                                                     #
+#   |<int>       :   Element-wise GCD of the inputs                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -53,19 +54,12 @@ def gcdBitwise( a , b ) -> int:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent packages                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, numpy, copy, collections                                                                                                  #
+#   |   |numpy, copy, collections                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001.   Import necessary functions for processing.
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer
     a_iterable = isinstance(a, Iterable)

@@ -41,13 +41,22 @@ def loadSASdat(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to load the SAS dataset by [pyreadstat.read_sas7bdat], while converting all date-like columns into       #
-#   | corresponding [datetime] values in Python, i.e. [dt.date], [dt.datetime] or [dt.time], and change the column type into [object]   #
+#   |This function is intended to load the SAS dataset by <pyreadstat.read_sas7bdat>, while converting all date-like columns into       #
+#   | corresponding <datetime> values in Python, i.e. <dt.date>, <dt.datetime> or <dt.time>, and change the column type into <object>   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is able to:                                                                                                          #
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <pyreadstat.read_sas7bdat>, see its documents for detailed argument list           #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Functionality]                                                                                                                    #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Read SAS dataset in different encoding                                                                                         #
 #   |[2] Eliminate the error reading of variable names when they have LABELS in SAS dataset, esp. when the LABEL contains MBCS/DBCS     #
-#   |[3] Convert the date-like values into [pandas], esp. for those beyond the limits of [pd.Timestamp]                                 #
+#   |[3] Convert the date-like values into <pandas>, esp. for those beyond the limits of <pd.Timestamp>                                 #
 #   |[4] Ignore case during the column name filtration (as what SAS does)                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -57,7 +66,7 @@ def loadSASdat(
 #   |inFile        :   The name (as character string) of the file to read into RAM, superseding <filename_path>                         #
 #   |                   [<see def.>  ] <Default> None input will lead to exception                                                      #
 #   |*pos          :   Various positional arguments to expand from its ancestor; see its official document                              #
-#   |dt_map        :   Mapping table to convert the SAS datetime values into [datetime]                                                 #
+#   |dt_map        :   Mapping table to convert the SAS datetime values into <datetime>                                                 #
 #   |                   [ <dict>     ] <Default> Check the function definition for details                                              #
 #   |filename_path :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inFile> so it no  #
 #   |                   longer takes effect                                                                                             #
@@ -72,7 +81,7 @@ def loadSASdat(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[<tuple>]     :   A tuple of two elements in the same sequence as below (see official document for [pyreadstat.read_sas7bdat]):    #
+#   |[<tuple>]     :   A tuple of two elements in the same sequence as below (see official document for <pyreadstat.read_sas7bdat>):    #
 #   |                  [pd.DataFrame] The data frame corresponding to the input SAS dataset                                             #
 #   |                  [meta        ] pyr.metadata_container                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -85,8 +94,8 @@ def loadSASdat(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210307        | Version | 1.01        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Replace the core function of [pd.read_sas] with a more convenient one [pyreadstat.read_sas7bdat]                        #
-#   |      |[2] Add function to handle the SAS datetime values as the default parameters of [pyreadstat.read_sas7bdat] leave them       #
+#   | Log  |[1] Replace the core function of <pd.read_sas> with a more convenient one <pyreadstat.read_sas7bdat>                        #
+#   |      |[2] Add function to handle the SAS datetime values as the default parameters of <pyreadstat.read_sas7bdat> leave them       #
 #   |      |     unevaluated during import due to no appropriate mapping                                                                #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -180,7 +189,7 @@ def loadSASdat(
     #[3] When we use the unified API to load these datasets, we should be able to unify the column selection
     #[4] This would provide flexibility
     #310. Split the kwargs
-    usecols = eSig.getParam('usecols', pos_in, kw_in)
+    usecols = eSig.getParam('usecols', pos_in, kw_in, inc_default = True)
 
     #350. Modify the <usecols> argument
     if usecols is not None:

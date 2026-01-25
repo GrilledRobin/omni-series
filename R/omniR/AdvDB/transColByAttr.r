@@ -1,8 +1,8 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to translate the column names, as well as one of their attributes (such as 'label'), to those in the     #
-#   | Model [table], given their requested attribute (for this case, 'label') are well mapped by the provided list                      #
+#   |This function is intended to translate the column names, as well as one of their attributes (such as <'label'>), to those in the   #
+#   | Model <table>, given their requested attribute (for this case, <'label'>) are well mapped by the provided list.                   #
 #   |This is useful before binding rows of different data frames, by translating their columns to the same names.                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
@@ -10,21 +10,21 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |tbl          :   The table for which the columns are to be translated                                                              #
-#   |Model_tbl    :   The table with columns in terms of which the columns in [tbl] are to be renamed                                   #
-#   |                 [NULL            ] <Default> If there is no model table provided, only [req.attr] of the columns will be replaced #
-#   |                 [data.frame      ]           The columns with their respective attribute [req.attr] are modeled for translation   #
-#   |req.attr     :   The attribute of the columns to be used for translation in [tbl], and to be modeled in [Model_tbl]                #
-#   |                 [label           ] <Default> Try to access the attribute by [attr(,'label')]                                      #
-#   |                 [<chr. string>   ]           Single string of characters as attribute of the columns in both [obj] and [Model_tbl]#
-#   |map.attr     :   The mapping list/vector to be used for translation; [name] represents the [req.attr] in [tbl] as to be translated,#
-#   |                  while [value] represents the [req.attr] in [Model_tbl] used for translation                                      #
-#   |                 [NULL            ] <Default> No translation is requested. Return the copy of [tbl] with a warning                 #
+#   |Model_tbl    :   The table with columns in terms of which the columns in <tbl> are to be renamed                                   #
+#   |                 [NULL            ] <Default> If there is no model table provided, only <req.attr> of the columns will be replaced #
+#   |                 [data.frame      ]           The columns with their respective attribute <req.attr> are modeled for translation   #
+#   |req.attr     :   The attribute of the columns to be used for translation in <tbl>, and to be modeled in <Model_tbl>                #
+#   |                 [label           ] <Default> Try to access the attribute by <attr(,'label')>                                      #
+#   |                 [<chr. string>   ]           Single string of characters as attribute of the columns in both <obj> and <Model_tbl>#
+#   |map.attr     :   The mapping list/vector to be used for translation; <name> represents the <req.attr> in <tbl> as to be translated,#
+#   |                  while <value> represents the <req.attr> in <Model_tbl> used for translation                                      #
+#   |                 [NULL            ] <Default> No translation is requested. Return the copy of <tbl> with a warning                 #
 #   |                 [<list/vec>      ]           Named list/vector in above definition                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[data.frame] :   The data frame within which the requested columns are renamed to those in [Model_tbl], together with the values   #
-#   |                  of their respective [req.attr]                                                                                   #
+#   |[data.frame] :   The data frame within which the requested columns are renamed to those in <Model_tbl>, together with the values   #
+#   |                  of their respective <req.attr>                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -45,7 +45,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |getNameByAttr                                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 

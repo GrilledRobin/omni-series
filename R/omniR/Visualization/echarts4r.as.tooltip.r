@@ -1,14 +1,14 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to Convert the [echarts4r] widget into a JS function for <echarts.tooltip.formatter>, so that this       #
-#   | widget can be rendered within the tooltip of an [echarts] object inside an HTML                                                   #
+#   |This function is intended to Convert the <echarts4r> widget into a <JS> function for <echarts.tooltip.formatter>, so that this     #
+#   | widget can be rendered within the tooltip of an <echarts> object inside an HTML                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Due to character manipulation, one MUST place such remarks [/*EndFunc*/] right before the end of the function definition for any   #
-#   | options that support function callback, such as [formatter] and [position], inside the echarts4r widget                           #
-#   |[20220215] This restriction is removed by introducing new functions, to ensure a better flexibility of programming                 #
+#   |[1] Due to character manipulation, one MUST place such remarks </*EndFunc*/> right before the end of the function definition for   #
+#   |     any options that support function callback, such as <formatter> and <position>, inside the <echarts4r> widget                 #
+#   |[2] <20220215> This restriction is removed by introducing new functions, to ensure a better flexibility of programming             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -18,27 +18,28 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |widget      :   The HTML widget to be converted, currently must be either a vector of [echarts4r] widget or characters translated  #
-#   |                 by [as.character.htmlwidget] from [echarts4r] widgets                                                             #
+#   |widget      :   The HTML widget to be converted, currently must be either a vector of <echarts4r> widget or characters translated  #
+#   |                 by <as.character.htmlwidget> from <echarts4r> widgets                                                             #
 #   |                 [NULL        ] <Default> Return a character vector in the length of 0                                             #
-#   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
-#   |                 nested HTML tags                                                                                                  #
+#   |container   :   <function> Function that takes a single argument of character vector and returns a character vector indicating a   #
+#   |                 series of nested HTML tags                                                                                        #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
-#   |ech_name    :   Name of the global [echart] object upon which to dispatch actions via external JS                                  #
-#   |                 [ttChart     ] <Default> One can change it to any valid JS variable name                                          #
-#   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
+#   |ech_name    :   <chr     > Name of the global <echart> object upon which to dispatch actions via external <JS>                     #
+#   |                 [ttChart     ] <Default> One can change it to any valid <JS> variable name                                        #
+#   |as.parts    :   <logical > Whether to convert the input into several parts that can be combined into customized HTML scripts       #
 #   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
 #   |                                           <echarts:tooltip> respectively                                                          #
 #   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<various>   :   The output depends on the argument [as.parts]                                                                      #
-#   |                 [FALSE       ] <Default> Character vector in the same length as [widget], representing JS function to be invoked  #
-#   |                 [TRUE        ]           data.frame with two columns: [js_func] and [html_tags], in the same length as [widget],  #
-#   |                                           representing the function to create <echarts> object and the HTML tags that contain the #
-#   |                                           object respectively. This is useful if one needs to combine multiple charts into one    #
-#   |                                           tooltip of a separate <echarts> chart in a vectorized manner.                           #
+#   |<various>   :   The output depends on the argument <as.parts>                                                                      #
+#   |                 [FALSE       ] <Default> <chr       > Character vector in the same length as <widget>, representing <JS> function #
+#   |                                           to be invoked                                                                           #
+#   |                 [TRUE        ]           <data.frame> with two columns as <js_func> and <html_tags>, in the same length as        #
+#   |                                           <widget>, representing the function to create <echarts> object and the HTML tags that   #
+#   |                                           contain the object respectively. This is useful if one needs to combine multiple charts #
+#   |                                           into one tooltip of a separate <echarts> chart in a vectorized manner.                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -49,36 +50,36 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211223        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [container] to allow containing the chart with other HTML tags                                 #
-#   |      |[2] Introduce a new argument [ech_name] to allow dispatching actions upon the named chart via JS                            #
+#   | Log  |[1] Introduce a new argument <container> to allow containing the chart with other HTML tags                                 #
+#   |      |[2] Introduce a new argument <ech_name> to allow dispatching actions upon the named chart via <JS>                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220215        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce new functions [strBalancedGroup] and [re.escape] to eliminate the unnecessary convention to define any JS     #
+#   | Log  |[1] Introduce new functions <strBalancedGroup> and <re.escape> to eliminate the unnecessary convention to define any <JS>   #
 #   |      |     functions, to ensure a better flexibility of programming                                                               #
-#   |      |[2] Known limitations: If there are any unmatched braces, either left or right ones, inside the JS functions of the         #
-#   |      |     provided characterized html widgets (esp. when they are within JS character strings), this function fails to recognize #
-#   |      |     the entire input string; hence the result is unexpected                                                                #
+#   |      |[2] Known limitations: If there are any unmatched braces, either left or right ones, inside the <JS> functions of the       #
+#   |      |     provided characterized html widgets (esp. when they are within <JS> character strings), this function fails to         #
+#   |      |     recognize the entire input string; hence the result is unexpected                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220219        | Version | 1.21        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce the function [stringr::str_replace_all] to conduct multiple replacements, instead of using a single large     #
-#   |      |     size of RegEx in [gsub], as the size of RegEx may exceed the maximum                                                   #
+#   | Log  |[1] Introduce the function <stringr::str_replace_all> to conduct multiple replacements, instead of using a single large     #
+#   |      |     size of RegEx in <gsub>, as the size of RegEx may exceed the maximum                                                   #
 #   |      |[2] Known limitations: The size of each RegEx may still exceed the maximum when data for a single chart is extremely large  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220411        | Version | 1.22        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Corrected the conversion from JSON by setting [simplifyVector = FALSE], to avoid coercion of JS arrays into vectors,    #
+#   | Log  |[1] Corrected the conversion from <JSON> by setting <simplifyVector = FALSE>, to avoid coercion of <JS> arrays into vectors,#
 #   |      |     when they only have one element respectively                                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220413        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a new argument [as.parts] to indicate whether to transform the input vector into separate parts of HTML       #
-#   |      |     widgets, as components to be combined into one [echarts:tooltip], see [omniR$Visualization$echarts4r.merge.tooltips]   #
+#   | Log  |[1] Introduce a new argument <as.parts> to indicate whether to transform the input vector into separate parts of HTML       #
+#   |      |     widgets, as components to be combined into one <echarts:tooltip>, see <Visualization$echarts4r.merge.tooltips>         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221117        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -89,7 +90,12 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221221        | Version | 2.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Ensure the JS simple function call like [new echarts.graphic.LinearGradient(...)] to be parsed correctly                #
+#   | Log  |[1] Ensure the <JS> simple function call like <new echarts.graphic.LinearGradient(...)> to be parsed correctly              #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260121        | Version | 2.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Update the function as the definition of <strBalancedGroup> is changed                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -100,23 +106,23 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |jsonlite, htmlwidgets, stringr, rlang, dplyr                                                                                   #
+#   |   |magrittr, rlang, jsonlite, htmlwidgets, stringr, dplyr, rvest                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |getListNames                                                                                                               #
 #   |   |   |re.escape                                                                                                                  #
 #   |   |   |strBalancedGroup                                                                                                           #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Visualization                                                                                                            #
+#   |   |Visualization                                                                                                                  #
 #   |   |   |as.character.htmlwidget                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
 #001. Append the list of required packages to the global environment
 #Below expression is used for easy copy-paste from raw text strings instead of quoted ones.
 lst_pkg <- deparse(substitute(c(
-	jsonlite, htmlwidgets, stringr
+	magrittr, rlang, jsonlite, htmlwidgets, stringr, dplyr, rvest
 )))
 #Quote: https://www.regular-expressions.info/posixbrackets.html?wlr=1
 lst_pkg <- paste0(lst_pkg, collapse = '')
@@ -125,8 +131,8 @@ lst_pkg <- gsub('^c\\((.+)\\)', '\\1', lst_pkg, perl = T)
 lst_pkg <- unlist(strsplit(lst_pkg, ',', perl = T))
 options( omniR.req.pkg = base::union(getOption('omniR.req.pkg'), lst_pkg) )
 
-#Enable big-bang <!!!> operator
-library(rlang)
+#Enable pipe operators
+library(magrittr)
 
 echarts4r.as.tooltip <- function(
 	widget = NULL
@@ -168,52 +174,34 @@ echarts4r.as.tooltip <- function(
 		}
 
 		#300. Retrieve the <division> and the <script> tags respectively
+		tag_parsed <- rvest::read_html(v_chr)
+
 		#310. Identify the <script> tag
 		#[ASSUMPTION]
 		#[1] For vectorized process, below function only generates one single vector
 		#[2] For [echarts4r] results, this vector only contains one <script> tag
-		v_script <- strBalancedGroup(
-			v_chr
-			,lBound = '<script.*?>'
-			,rBound = '</script>'
-			,rx = TRUE
-			,include = TRUE
-		)[[1]]
+		v_script <- tag_parsed |> rvest::html_element('script') |> rvest::html_text()
 
 		#330. Identify the <div> tag, which exists just before the <script> tag, as indicated by the source code of [echarts4r]
-		#331. Remove the <script> tag from the source string, and leave the <div> tags for searching
-		rx_rem_scr <- rep_along(v_script, '')
-		names(rx_rem_scr) <- re.escape(v_script)
-		v_divs <- stringr::str_replace_all(v_chr, rx_rem_scr)
-
-		#335. Extract the balanced group of <div> tags
-		div_all <- strBalancedGroup(
-			v_divs
-			,lBound = '<div.*?>'
-			,rBound = '</div>'
-			,rx = TRUE
-			,include = TRUE
-		)[[1]]
-
-		#339. Only need the <div> tag that is just followed by above <script> tag
-		usr_div <- stringr::str_extract_all(v_chr, paste0(div_all, '(?=\\s*', re.escape(v_script), ')')) %>%
-			{gsub('"','\'', .)} %>%
-			{gsub('\\\\\'','\'', .)}
+		ch_div <- tag_parsed |> rvest::html_element('div')
+		attrs_div <- ch_div |> rvest::html_attrs()
+		html_id <- attrs_div[['id']]
+		usr_div <- paste0(
+			'<div '
+			,paste0(
+				names(attrs_div)
+				,'='
+				,attrs_div |> stringr::str_replace_all(c('"' = '\'', '\\\\\'' = '\'')) |> sQuote(q = "'")
+				,collapse = ' '
+			)
+			,'>'
+			,ch_div |> rvest::html_text()
+			,'</div>'
+		)
 
 		#350. Identify the JSON data, which we will transform to create HTML tags at later steps
-		json_pre <- strBalancedGroup(
-			v_chr
-			,lBound = '<script.*?>'
-			,rBound = '</script>'
-			,rx = TRUE
-			,include = FALSE
-		)[[1]]
-		json_scr <- jsonlite::fromJSON(json_pre, simplifyVector = FALSE)
+		json_scr <- jsonlite::fromJSON(v_script, simplifyVector = FALSE)
 		json_opts <- json_scr$x$opts
-
-		#400. Retrieve the HTML ID of the widget
-		# html_id <- gsub('^.+\\bid=("|\')(.+?)\\1.+$', '\\2', usr_div, perl = T)
-		html_id <- stringr::str_extract_all(usr_div, '(?<=<div\\sid=("|\'))(.+?)(?=\\1)')[[1]][[1]]
 
 		#500. Convert the {options} part in the <script> tag into JSON that can be recognized by JS
 		name_opts <- c(getListNames(json_opts), 'value')
@@ -231,8 +219,7 @@ echarts4r.as.tooltip <- function(
 		#710. Extract all balanced groups of contents embraced by braces [{}]
 		braces_opts <- strBalancedGroup(
 			char_opts
-			,lBound = '{'
-			,rBound = '}'
+			,enclosers = c('{' = '}')
 			,rx = FALSE
 			,include = TRUE
 		)[[1]]
@@ -256,8 +243,7 @@ echarts4r.as.tooltip <- function(
 		#810. Extract all balanced groups of contents embraced by round parentheses [()]
 		paren_opts <- strBalancedGroup(
 			char_opts
-			,lBound = '('
-			,rBound = ')'
+			,enclosers = c('(' = ')')
 			,rx = FALSE
 			,include = TRUE
 		)[[1]]

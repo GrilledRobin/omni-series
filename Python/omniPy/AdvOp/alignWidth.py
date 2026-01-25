@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 from wcwidth import wcswidth
 
 def alignWidth(
@@ -36,7 +35,7 @@ def alignWidth(
 #   |                [single space    ] <Default> Use a single space to fill the string representation                                  #
 #   |                [<str>           ]           Any string to fill the extra blanks                                                   #
 #   |align       :   How to align the input string, see official: https://docs.python.org/3/library/string.html#formatspec              #
-#   |                [<               ] <Default> Align the strings on the left side of the output                                      #
+#   |                [&lt;            ] <Default> Align the strings on the left side of the output                                      #
 #   |                [<see doc>       ]           See above official document for <f-string>                                            #
 #   |width       :   Width of the output string representation                                                                          #
 #   |                [None            ] <Default> Output the same width as the longest displayed string in <*objects>                   #
@@ -45,9 +44,9 @@ def alignWidth(
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |tuple[str]  :   Differentiate when <*objects> is provided on different purposes                                                    #
-#   |                [1] <None> when len<objects> == 0                                                                                  #
-#   |                [2] <str> when len<objects> == 1                                                                                   #
-#   |                [3] <tuple[str]> when len<output> == len<objects>, this is the most common usage                                   #
+#   |                [1] <None> when len(<objects>) == 0                                                                                #
+#   |                [2] <str> when len(<objects>) == 1                                                                                 #
+#   |                [3] <tuple[str]> when len(<output>) == len(<objects>), this is the most common usage                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -64,17 +63,12 @@ def alignWidth(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, wcwidth                                                                                                                   #
+#   |   |wcwidth                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
     if len(objects) == 0:

@@ -37,18 +37,18 @@ class DataIO():
 #   |   |   |apiSfxPull        :   <str     > Suffix of the puller API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
-#   |   |   |apiPullHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPullHdl        :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
-#   |   |   |apiPullYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the pulled data for each API                     #
+#   |   |   |apiPullYldHdl     :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the yielded data during <pull>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <pull> for each API      #
-#   |   |   |apiPullSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the yielded data during <pull> for each API      #
+#   |   |   |apiPullSendHdl    :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the `send()` data during <pull>                                                             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <pull> for each API     #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the `send()` data during <pull> for each API     #
 #   |   |   |apiPkgPush        :   <str     > Name of the package from which to obtain the API function to push the data                #
 #   |   |   |                      [omniPy.AdvDB        ]<Default> Obtain the API from the dedicated package                            #
 #   |   |   |                      [<str>               ]          Package name valid for function <AdvOp.importByStr>                  #
@@ -58,18 +58,18 @@ class DataIO():
 #   |   |   |apiSfxPush        :   <str     > Suffix of the pusher API name to search                                                   #
 #   |   |   |                      [<empty>             ]<Default> No specific suffix, be careful to use this setting                   #
 #   |   |   |                      [<str>               ]          Set a proper suffix to validate the search                           #
-#   |   |   |apiPushHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPushHdl        :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
-#   |   |   |apiPushYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the pushed data for each API                     #
+#   |   |   |apiPushYldHdl     :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the yielded data during <push>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <push> for each API      #
-#   |   |   |apiPushSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the yielded data during <push> for each API      #
+#   |   |   |apiPushSendHdl    :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the `send()` data during <push>                                                             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <push> for each API     #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the `send()` data during <push> for each API     #
 #   |   |   |argsPull          :   <dict    > Collection of keyword arguments set as default for <pull> methods when instantiating the  #
 #   |   |   |                       class; <key> is the available API name, <value> is the kwargs for its <pull> method                 #
 #   |   |   |                      [<see def.>          ]<Default> Pull SAS datasets with encoding <GB18030> as maximum compatibility   #
@@ -134,30 +134,30 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |apiPullHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |apiPullHdl        :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pulled data for each API                     #
-#   |   |   |apiPullYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the pulled data for each API                     #
+#   |   |   |apiPullYldHdl     :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the yielded data during <pull>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <pull> for each API      #
-#   |   |   |apiPullSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the yielded data during <pull> for each API      #
+#   |   |   |apiPullSendHdl    :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the `send()` data during <pull>                                                             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <pull> for each API     #
-#   |   |   |apiPushHdl        :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the `send()` data during <pull> for each API     #
+#   |   |   |apiPushHdl        :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the data pulled at once                                                                     #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the pushed data for each API                     #
-#   |   |   |apiPushYldHdl     :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the pushed data for each API                     #
+#   |   |   |apiPushYldHdl     :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the yielded data during <push>                                                              #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the yielded data during <push> for each API      #
-#   |   |   |apiPushSendHdl    :   dict[api:<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the yielded data during <push> for each API      #
+#   |   |   |apiPushSendHdl    :   dict[api,<callable>] Dict of functions bound to APIs, each with only one argument as handler to      #
 #   |   |   |                       process the `send()` data during <push>                                                             #
 #   |   |   |                      [<see def.>          ]<Default> No handler is used to modify the default one during initialization   #
-#   |   |   |                      [dict[api:<callable>]]          Function to process the `send()` data during <push> for each API     #
+#   |   |   |                      [dict[api,<callable>]]          Function to process the `send()` data during <push> for each API     #
 #   |   |   |argsPull          :   <dict    > kwargs for the <pull> method diferred for all APIs as default arguments at initilization  #
 #   |   |   |argsPush          :   <dict    > kwargs for the <push> method diferred for all APIs as default arguments at initilization  #
 #   |   |   |kw                :   <dict    > Additional keyword arguments. Not in use, but with compatibility of unified process       #
@@ -275,7 +275,7 @@ class DataIO():
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This property is to retrieve all the available <push> and <push> methods regardless of API names                       #
+#   |   |   |   |This property is to retrieve all the available <pull> and <push> methods regardless of API names                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -290,7 +290,7 @@ class DataIO():
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |   |This property is to retrieve all in-RAM <push> and <push> methods regardless of API names                              #
+#   |   |   |   |This property is to retrieve all in-RAM <pull> and <push> methods regardless of API names                              #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -329,7 +329,7 @@ class DataIO():
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |<dict>            :   dict[<API> : bool]                                                                                   #
+#   |   |   |<dict>            :   dict[API, bool]                                                                                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |[active]                                                                                                                       #

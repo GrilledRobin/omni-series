@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import ctypes
 from ctypes.wintypes import HWND, DWORD
 
-def isWindowCloaked(hwnd) -> 'Verify whether a window is [Cloaked] by its handle':
+def isWindowCloaked(hwnd) -> bool:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to verify whether the provided handle of a specific window has the property DWMWA_CLOAKED set as         #
-#   | non-zero value as retrieved by [DwmGetWindowAttribute]                                                                            #
+#   |This function is intended to verify whether the provided handle of a specific window has the property <DWMWA_CLOAKED> set as       #
+#   | non-zero value as retrieved by <DwmGetWindowAttribute>                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   | https://stackoverflow.com/questions/61865399/win32gui-shows-some-windows-that-are-not-open                                        #
-#   | https://stackoverflow.com/questions/64586371/filtering-background-processes-pywin32                                               #
+#   |[1] https://stackoverflow.com/questions/61865399/win32gui-shows-some-windows-that-are-not-open                                     #
+#   |[2] https://stackoverflow.com/questions/64586371/filtering-background-processes-pywin32                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |hwnd        :   Handle of the window to investigate. A handle can be retrieved by [win32gui.EnumWindows]                           #
+#   |hwnd        :   Handle of the window to investigate. A handle can be retrieved by <win32gui.EnumWindows>                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -46,19 +45,12 @@ def isWindowCloaked(hwnd) -> 'Verify whether a window is [Cloaked] by its handle
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, ctypes                                                                                                                    #
+#   |   |ctypes                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
 

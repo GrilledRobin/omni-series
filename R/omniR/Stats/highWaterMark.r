@@ -4,7 +4,7 @@
 #   |This function is intended to calculate the high water mark (HWM) in a convolutional way, by interpolating the vortex and the       #
 #   | historically accumulated HWM result if any, to save the system calculation effort                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Customer campaigns sometimes entitle the customers with game points in the method of HWM, i.e. only entitle them with the      #
 #   |     additional points on top of their historically gained ones. Meanwhile, there could be manual payment that differs the         #
@@ -15,22 +15,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |mark        :   Water mark at each each certain period of observation. It will be used for calculation of cumulative maximum       #
-#   |vortex      :   Vortex that affects each <mark> along the period. Non-NA values among it will directly replace <mark> if           #
-#   |                 <benchmark> is NOT provided. When <benchmark> is provided, its values before the last non-NA one will overwrite   #
-#   |                 the calculation result, including <vortex>, even if any among them is NA. See details in the example              #
+#   |mark        :   <num> Water mark at each each certain period of observation. It will be used for calculation of cumulative maximum #
+#   |vortex      :   <num> Vortex that affects each <mark> along the period. Non-<NA> values among it will directly replace <mark> if   #
+#   |                 <benchmark> is NOT provided. When <benchmark> is provided, its values before the last non-<NA> one will overwrite #
+#   |                 the calculation result, including <vortex>, even if any among them is <NA>. See details in the example            #
 #   |                [NULL            ] <Default> No vortex is in effect                                                                #
-#   |                [num. vec.       ]           A numeric vector with the same length as <mark>                                       #
-#   |benchmark   :   Benchmark representing the final water mark in the history, ignoring <vortex> as it is designed to consume its     #
-#   |                 effect. Only the values TILL the last non-NA one will be honored. E.g. the first 3 values of the data in          #
-#   |                 C(0,NA,1,NA) will be honored, i.e. including those NA values within the valid period; while these 3               #
-#   |                 values are retained in the calculation result, regardless of <vortex>                                             #
+#   |                [<num>           ]           A numeric vector with the same length as <mark>                                       #
+#   |benchmark   :   <num> Benchmark representing the final water mark in the history, ignoring <vortex> as it is designed to consume   #
+#   |                 its effect. Only the values TILL the last non-<NA> one will be honored. E.g. the first 3 values of the data in    #
+#   |                 <c(0,NA,1,NA)> will be honored, i.e. including those <NA> values within the valid period; while these 3 values    #
+#   |                 are retained in the calculation result, regardless of <vortex>                                                    #
 #   |                [NULL            ] <Default> No benchmark is in effect                                                             #
-#   |                [num. vec.       ]           A numeric vector with the same length as <mark>                                       #
+#   |                [<num>           ]           A numeric vector with the same length as <mark>                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>       :   The residue of water mark on top of historical HWM at each observation period                                      #
+#   |<num>       :   The residue of water mark on top of historical HWM at each observation period                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

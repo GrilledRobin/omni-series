@@ -3,14 +3,13 @@
 
 import sys, re
 import numpy as np
-from copy import deepcopy
 from collections.abc import Iterable
 from omniPy.AdvOp import get_values
 
 #How to annotate numpy
 # https://geek-docs.com/numpy/numpy-ask-answer/417_numpy_specific_type_annotation_for_numpy_ndarray_using_mypy.html#:~:text=numpy%20ndar
 def rotateSpheroid(
-    X : float | np.ndarray[float], Y : float | np.ndarray[float], Z : float | np.ndarray[float]
+    X : float | Iterable[float], Y : float | Iterable[float], Z : float | Iterable[float]
     ,rotX : float = 0.0, rotY : float = 0.0, rotZ : float = 0.0
     ,moveX : float = 0.0, moveY : float = 0.0, moveZ : float = 0.0
     ,scaleX : float = 1.0, scaleY : float = 1.0, scaleZ : float = 1.0
@@ -29,14 +28,14 @@ def rotateSpheroid(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[ASSUMPTION]                                                                                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] The spheroid has the center as [0,0,0] and a standard form as [X^2 + Y^2 + Z^2 == 1]                                           #
-#   |[2] Direct3D and the plugin Element3D (from Video Copilot) for Adobe After Effects, as well as many other 3D modeling environments,#
-#   |     use the <left-handed cartesian coordinates> to draw 3D objects.                                                               #
-#   |    https://baike.baidu.com/item/%E5%B7%A6%E6%89%8B%E5%9D%90%E6%A0%87%E7%B3%BB/9171764?fr=ge_ala                                   #
-#   |[3] Adobe After Effects draw video clips with <right-handed cartesian coordinates>                                                 #
+#   |[1] The spheroid has the center as <[0,0,0]> and a standard form as <X^2 + Y^2 + Z^2 == 1>                                         #
+#   |[2] <Direct3D> and the plugin <Element 3D> (from <Video Copilot>) for <Adobe\u00AE After Effects>, as well as many other 3D        #
+#   |     modeling environments, use the <left-handed cartesian coordinates> to draw 3D objects.                                        #
+#   |    Quote: https://baike.baidu.com/item/%E5%B7%A6%E6%89%8B%E5%9D%90%E6%A0%87%E7%B3%BB/9171764?fr=ge_ala                            #
+#   |[3] <Adobe\u00AE After Effects> draw video clips with <right-handed cartesian coordinates>                                         #
 #   |[4] The only factor that impacts the result is whether the point itself moves or the axes rotate                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Reference]                                                                                                                        #
+#   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Rotation on spheroid: https://wenku.baidu.com/view/8be9144b1db91a37f111f18583d049649b660e83.html?_wkts_=1728186022243          #
 #   |[2] Rotation on ellipse: https://blog.csdn.net/u014779685/article/details/136454696                                                #
@@ -45,38 +44,38 @@ def rotateSpheroid(
 #   |[5] Rotation on Left-handed system: https://blog.csdn.net/qq_20828983/article/details/81481437                                     #
 #   |[6] DCM is the same of Left/Right, only different on the positive directions: https://zhuanlan.zhihu.com/p/677674288               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Calculate the new position of a point when only rotating it along the spheroidal surface in a 3D system                        #
-#   |[2] Attach the <light source> to the E3D objects in Adobe After Effects, to simulate a rotating Sun around the planet              #
+#   |[2] Attach the <light source> to the E3D objects in <Adobe\u00AE After Effects>, to simulate a rotating Sun around the planet      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |X,Y,Z        :   Coordinate on 3D axes on the surface of a unit sphere                                                             #
-#   |rotX,Y,Z     :   Arcs to rotate the axes                                                                                           #
+#   |rotX,Y,Z     :   <float> Arcs to rotate the axes                                                                                   #
 #   |                 [0.0            ]  <Default> Do not rotate the vector                                                             #
-#   |moveX,Y,Z    :   Values as coordinate to shift the vector                                                                          #
+#   |moveX,Y,Z    :   <float> Values as coordinate to shift the vector                                                                  #
 #   |                 [0.0            ]  <Default> Do not shift the vector                                                              #
-#   |scaleX,Y,Z   :   Multipliers to scale the axes                                                                                     #
+#   |scaleX,Y,Z   :   <float> Multipliers to scale the axes                                                                             #
 #   |                 [1.0            ]  <Default> Do not scale the axes                                                                #
-#   |rotSeq       :   Sequence of the rotation on axes, currently only support <extrinsic> rotations, see official document of the      #
-#   |                  Python method <scipy.spatial.transform.Rotation.from_euler>                                                      #
-#   |                 [IMPORTANT] Different sequences result in different new positions                                                 #
+#   |rotSeq       :   <str  > Sequence of the rotation on axes, currently only support <extrinsic> rotations, see official document of  #
+#   |                  the <Python> method <scipy.spatial.transform.Rotation.from_euler>                                                #
 #   |                 [xyz            ]  <Default> Rotate X axis, then Y, then Z                                                        #
-#   |                 [Perm<x,y,z>    ]            Other permutations of the 3 axis names                                               #
-#   |tolSurface   :   Tolerance when verifying whether the provided coordinates represents a point on the dedicated spheroid            #
+#   |                 [Perm(<x,y,z>)  ]            Other permutations of the 3 axis names                                               #
+#   |                  [IMPORTANT] Different sequences result in different new positions                                                #
+#   |tolSurface   :   <float> Tolerance when verifying whether the provided coordinates represents a point on the dedicated spheroid    #
 #   |                 [<see def.>     ]  <Default> Use the generally sufficient tolerance level                                         #
-#   |moveOf       :   Whether to move the point (holding the axes static) or rotate the axes (holding the position of the point)        #
-#   |                 [A<xis>         ]  <Default> Rotate the axes by holding the position of the provided point                        #
-#   |                 [P<oint>        ]            Move the point by holding the axes static                                            #
-#   |invRotX,Y,Z  :   If True then the inverse of the rotation(s) is applied to the input vectors. Default is False.                    #
+#   |moveOf       :   <str  > Whether to move the point (holding the axes static) or rotate the axes (holding the position of the point)#
+#   |                 [A/Axis         ]  <Default> Rotate the axes by holding the position of the provided point                        #
+#   |                 [P/Point        ]            Move the point by holding the axes static                                            #
+#   |invRotX,Y,Z  :   <bool > If True then the inverse of the rotation(s) is applied to the input vectors. Default is False.            #
 #   |                 [FALSE          ]  <Default> Rotate in the classic way                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<matrix>     :   matrix [N,3] where N is the number of elements in the provided vectors X, Y and Z                                 #
+#   |<np.ndarray> :   Array of <[N,3]> where <N> is the number of elements in the provided vectors <X>, <Y> and <Z>                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -87,7 +86,12 @@ def rotateSpheroid(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20241009        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Corrected the logic by <Reference [6]>                                                                                  #
+#   | Log  |[1] Corrected the logic by <Reference 6>                                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251118        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Eliminated <deepcopy> to reduce memory usage                                                                            #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -98,7 +102,7 @@ def rotateSpheroid(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, re, numpy, copy, collections                                                                                              #
+#   |   |sys, re, numpy, collections                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -106,8 +110,6 @@ def rotateSpheroid(
 #   |   |   |get_values                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.
@@ -126,17 +128,17 @@ def rotateSpheroid(
 
     #050. Ensure the inputs are converted into arrays
     if isinstance(X, Iterable):
-        newX0 = np.array(deepcopy(X), dtype = np.float64)
+        newX0 = np.array(X, dtype = np.float64)
     else:
-        newX0 = np.array([deepcopy(X)], dtype = np.float64)
+        newX0 = np.array([X], dtype = np.float64)
     if isinstance(Y, Iterable):
-        newY0 = np.array(deepcopy(Y), dtype = np.float64)
+        newY0 = np.array(Y, dtype = np.float64)
     else:
-        newY0 = np.array([deepcopy(Y)], dtype = np.float64)
+        newY0 = np.array([Y], dtype = np.float64)
     if isinstance(Z, Iterable):
-        newZ0 = np.array(deepcopy(Z), dtype = np.float64)
+        newZ0 = np.array(Z, dtype = np.float64)
     else:
-        newZ0 = np.array([deepcopy(Z)], dtype = np.float64)
+        newZ0 = np.array([Z], dtype = np.float64)
 
     #070. Standardize the [moveOf]
     #071. Combine all patterns into one, using [|] to minimize the system effort during matching
@@ -215,20 +217,20 @@ def rotateSpheroid(
 
     #495. Transpose the matrices if only the dedicated point on the provided (X,Y,Z) is to move
     if moveOf == 'Point':
-        rotMatX = deepcopy(rotMatX.T)
-        rotMatY = deepcopy(rotMatY.T)
-        rotMatZ = deepcopy(rotMatZ.T)
+        rotMatX = rotMatX.T
+        rotMatY = rotMatY.T
+        rotMatZ = rotMatZ.T
 
     #497. Make an inverse rotation on the dedicated axes as required
     #[ASSUMPTION]
     #[1] This is inspired by the different behavior in <VideoCopilot Element 3D> plugin for Adobe After Effects,
     #     where the rotation around Y axis is inverse to the classic algorithm
     if invRotX:
-        rotMatX = deepcopy(rotMatX.T)
+        rotMatX = rotMatX.T
     if invRotY:
-        rotMatY = deepcopy(rotMatY.T)
+        rotMatY = rotMatY.T
     if invRotZ:
-        rotMatZ = deepcopy(rotMatZ.T)
+        rotMatZ = rotMatZ.T
 
     #600. Matrix to scale the axes
     scaleMat = np.array([
@@ -239,10 +241,10 @@ def rotateSpheroid(
     ])
 
     #800. Rotation from different sequence of directions
-    posNew = deepcopy(posOrg)
+    posNew = posOrg
     for ax in seqAxis:
         mat = get_values(f'rotMat{ax}', instance = np.ndarray, scope = 'f_locals')
-        posNew = deepcopy(posNew.dot(mat))
+        posNew = posNew.dot(mat)
 
     #900. Calculation under different coordinate systems
     #[ASSUMPTION]

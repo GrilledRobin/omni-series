@@ -7,9 +7,10 @@
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
 #100.   Import the local modules.
-from .genPerfData import genPerfData
+# from .genPerfData import genPerfData
 from .countEvent import countEvent
 from .catVarEncoder import catVarEncoder
+from .progressiveMean import progressiveMean
 from .calcWoE import calcWoE
 from .calcIV import calcIV
 from .chisq_SingleVar import chisq_SingleVar
@@ -25,7 +26,8 @@ from .highWaterMark import highWaterMark
 
 #200.   Define available resources.
 __all__ = [
-    'genPerfData' , 'countEvent' , 'catVarEncoder'
+    'countEvent' , 'catVarEncoder'
+    , 'progressiveMean'
     , 'calcWoE' , 'calcIV' , 'chisq_SingleVar'
     , 'calcKS'
     , 'rotateSpheroid'

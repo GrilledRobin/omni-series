@@ -14,36 +14,36 @@ def pandasParseIndexer(
     ,logname : str = 'getIndexer'
     ,coerce : bool = True
 ) -> List[int]:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to get the actual list of (integer) indexers for the provided pd.Index, by parsing the various inputs    #
+#   |This function is intended to get the actual list of (integer) indexers for the provided <pd.Index>, by parsing the various inputs  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Enable the program to parse various inputs, such as: name list, slices or boolean list, to subset the provided pd.Index        #
-#   |[2] Now only supports positional parse for integer index, i.e. When providing [2] for [pd.Index([1,2,3])] one will get [2] which   #
-#   |     is the position of [3] in the index                                                                                           #
+#   |[1] Enable the program to parse various inputs, such as: name list, slices or boolean list, to subset the provided <pd.Index>      #
+#   |[2] Now only supports positional parse for integer index, i.e. When providing <[2]> for <pd.Index([1,2,3])> one will get <[2]>     #
+#   |     which is the position of <[3]> in the index                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |idx         :   pd.Index, or pd.MultiIndex for identifying the indexers for later subset in other processes                        #
+#   |idx         :   <pd.Index>, or <pd.MultiIndex> for identifying the indexers for later subset in other processes                    #
 #   |indexer     :   Various inputs to be parsed, currently supports below types:                                                       #
-#   |                [True        ] <Default> Export [df.index] to the left of the data range                                           #
-#   |                [False       ]           Do not export [df.index]                                                                  #
-#   |idxall      :   When matching the provision of [indexer], generate a full indexer for the provided pd.Index                        #
-#   |                [.all.       ] <Default> When [indexer=='.all.'], generate a full indexer                                          #
-#   |                [<str>       ]           Provide a unique value that is non-existing in [idx]                                      #
-#   |logname     :   String indicating the environment in which the error message is raised, when the [indexer] is not accepted         #
+#   |                [True        ] <Default> Export <df.index> to the left of the data range                                           #
+#   |                [False       ]           Do not export <df.index>                                                                  #
+#   |idxall      :   When matching the provision of <indexer>, generate a full indexer for the provided pd.Index                        #
+#   |                [.all.       ] <Default> When <indexer=='.all.'>, generate a full indexer                                          #
+#   |                [<str>       ]           Provide a unique value that is non-existing in <idx>                                      #
+#   |logname     :   String indicating the environment in which the error message is raised, when the <indexer> is not accepted         #
 #   |                [getIndexer  ] <Default> Write it to the error message when the parsing fails                                      #
 #   |                [<str>       ]           Other identifier to be printed in the debug mode                                          #
-#   |coerce      :   Whether to ignore the indexers that are beyond [range(len[idx])]                                                   #
-#   |                [True        ] <Default> Drop the indexers that are beyond [range(len[idx])] without issuing error messages        #
-#   |                [False       ]           Issue an error message when any among the indexers are beyond [range(len[idx])]           #
+#   |coerce      :   Whether to ignore the indexers that are beyond <range(len[idx])>                                                   #
+#   |                [True        ] <Default> Drop the indexers that are beyond <range(len[idx])> without issuing error messages        #
+#   |                [False       ]           Issue an error message when any among the indexers are beyond <range(len[idx])>           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -58,7 +58,7 @@ def pandasParseIndexer(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230216        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when the type of input data is [np.integer] instead of [int]                                                #
+#   | Log  |[1] Fixed a bug when the type of input data is <np.integer> instead of <int>                                                #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20231205        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #

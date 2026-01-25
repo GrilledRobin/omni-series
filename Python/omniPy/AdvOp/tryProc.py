@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time, traceback
-from functools import wraps
-from omniPy.AdvOp import simplifyDeco
+from omniPy.AdvOp import simplifyDeco, ExpandSignature
 
 @simplifyDeco
 def tryProc(
@@ -19,12 +18,12 @@ def tryProc(
 #   |This function is intended to act as a decorator factory to create decorator of any function, so that the decorated function is     #
 #   | always being called with tries of certain times until it still fails                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] If one tries to overwrite some file using a function, while the file to be overwritten is locked by unknown reason, this       #
 #   |     decorator provides an n-time re-try for the process not to be aborted immediately                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote:                                                                                                                             #
+#   |QUOTE:                                                                                                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] http://www.pythontutorial.net/advanced-python/python-decurator-arguments/                                                      #
 #   |[2] https://stackoverflow.com/questions/5481623/python-dynamically-add-decorator-to-class-methods-by-decorating-class              #
@@ -34,16 +33,16 @@ def tryProc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |fn          :   The callable to be decorated                                                                                       #
-#   |times       :   How many times to try the decorated process                                                                        #
-#   |                 [1           ] <Default> Call the function once                                                                   #
-#   |                 [<int>       ]           Call the function by <n> times                                                           #
-#   |interval    :   <float> number of seconds to sleep before the next trials to be called, given the first call fails                 #
-#   |                 [<0.0>       ] <Default> Does not sleep between each two calls                                                    #
+#   |fn                :   <callable> The callable to be decorated                                                                      #
+#   |times             :   <int     > How many times to try the decorated process                                                       #
+#   |                       [1           ] <Default> Call the function once                                                             #
+#   |                       [<int>       ]           Call the function by <n> times                                                     #
+#   |interval          :   <float   > number of seconds to sleep before the next trials to be called, given the first call fails        #
+#   |                       [<0.0>       ] <Default> Does not sleep between each two calls                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<callable>  :   Return the decorated callable                                                                                      #
+#   |<callable>        :   Return the decorated callable                                                                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -66,6 +65,11 @@ def tryProc(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Collect tracebacks and exceptions for all failures, for logging and handling purposes                                   #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251118        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <functools.wraps> with <ExpandSignature> to enable further chaining of decoration                               #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -75,35 +79,34 @@ def tryProc(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |time, functools                                                                                                                #
+#   |   |time, traceback                                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
 #   |   |   |simplifyDeco                                                                                                               #
+#   |   |   |ExpandSignature                                                                                                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #010. Check parameters.
 
     #012. Parameter buffer
 
     #500. Create the decorator
-    @wraps(fn)
+    @(eSig := ExpandSignature(fn))
     def wrapper(*pos, **kw):
         #010. Prepare the collection of tracebacks
-        tbs = [f'[{fn.__name__}] failed for {str(times)} times! Program terminated!']
+        tbs = [f'[{eSig.src.__name__}] failed for {str(times)} times! Program terminated!']
         errors = []
 
         #100. Try the function for certain times
         for k in range(times):
-            print(f'[{fn.__name__}] try the process, counting: {str(k)}')
+            print(f'[{eSig.src.__name__}] try the process, counting: {str(k)}')
             try:
-                rstOut = fn(*pos, **kw)
+                rstOut = eSig.src(*pos, **kw)
                 return(rstOut)
             except Exception as e:
                 tbs.append('\n'.join([
-                    f'[{fn.__name__}]<Failure {str(k)}>'
+                    f'[{eSig.src.__name__}]<Failure {str(k)}>'
                     ,traceback.format_exc()
                 ]))
                 errors.append(e)
@@ -120,6 +123,7 @@ def tryProc(
             ,errors
         )
 
+    wrapper.__name__ = eSig.src.__name__
     return(wrapper)
 #End tryProc
 
@@ -139,6 +143,9 @@ if __name__=='__main__':
     def testfunc(x,y):
         return(x/y)
 
+    help(testfunc)
+    # testfunc(x, y)
+
     #200. Test valid numbers
     testfunc(4,2)
     # [testfunc] try the process, counting: 0
@@ -153,6 +160,9 @@ if __name__=='__main__':
     def testfunc2(x,y):
         return(x/y)
 
+    help(testfunc2)
+    # testfunc2(x, y)
+
     testfunc2(4,0)
     # RuntimeError: [testfunc2] failed for 1 times! Program terminated!
 
@@ -160,6 +170,9 @@ if __name__=='__main__':
     @tryProc()
     def testfunc3(x,y):
         return(x/y)
+
+    help(testfunc3)
+    # testfunc3(x, y)
 
     testfunc3(4,0)
     # RuntimeError: [testfunc3] failed for 1 times! Program terminated!

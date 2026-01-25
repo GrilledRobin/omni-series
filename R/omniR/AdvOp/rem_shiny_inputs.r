@@ -1,28 +1,26 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to remove the [input] elements from the environment with the provided [id] as clean-up of the remnants   #
-#   | of the obselete call of a [shiny module]                                                                                          #
+#   |This function is intended to remove the <input> elements from the environment with the provided <id> as clean-up of the remnants   #
+#   | of the obselete call of a <shiny module>                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |900.   Quotes & Conclusion:                                                                                                        #
+#   |[Quotes & Conclusion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote: (Below article describes how to clean the inputs and this function is extracted from it)                                    #
-#   | https://roh.engineering/post/shiny-add-removing-modules-dynamically/                                                              #
-#   |Quote: (Below article shows a full test program of this function)                                                                  #
-#   | https://appsilon.com/how-to-safely-remove-a-dynamic-shiny-module/                                                                 #
+#   |How to clean the inputs: https://roh.engineering/post/shiny-add-removing-modules-dynamically/                                      #
+#   |Full test program of this function: https://appsilon.com/how-to-safely-remove-a-dynamic-shiny-module/                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |id            :   The id of the [shiny module] from which to remove the [input] elements                                           #
-#   |                   IMPORTANT: This must be provided with a namespaced id, otherwise there could be unexpected elements removed!    #
-#   |.input        :   The list of [input]s from which to identify the elements to be removed, usually provided as [input]              #
-#   |                   IMPORTANT: This must be provided as an [object] instead of a [character string]!                                #
+#   |id            :   The id of the <shiny module> from which to remove the <input> elements                                           #
+#   |                  [IMPORTANT] This must be provided with a namespaced id, otherwise there could be unexpected elements removed!    #
+#   |.input        :   The list of <input>s from which to identify the elements to be removed, usually provided as <input>              #
+#   |                  [IMPORTANT] This must be provided as an <object> instead of a <character string>!                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[NULL]     :   (This function does not return values)                                                                              #
+#   |<NULL>     :   (This function does not return values)                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -33,8 +31,8 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200510        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add a parameter [session] to indicate that the clean-up is to be conducted within a namespace                           #
-#   |      |[2] Replace [remove(i)] with [remove(session$ns(i))] to remove values for namespaced inputs                                 #
+#   | Log  |[1] Add a parameter <session> to indicate that the clean-up is to be conducted within a namespace                           #
+#   |      |[2] Replace <remove(i)> with <remove(session$ns(i))> to remove values for namespaced inputs                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #

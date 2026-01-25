@@ -13,7 +13,7 @@ def clicks(
     *pos
     ,offset = (0,0)
     ,interval = 1
-) -> 'Simulate the mouse clicks on various positions on the computer screen, with offset when necessary':
+):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -23,14 +23,14 @@ def clicks(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   | https://www.programcreek.com/python/example/104592/win32api.mouse_event                                                           #
+#   |[1] https://www.programcreek.com/python/example/104592/win32api.mouse_event                                                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |pos         :   Various positions provided as [Iterable] with each set as a [tuple(x,y)], i.e. [(1,1),(500,500)]                   #
-#   |offset      :   Offset all positions from this provided coordinate, which is provided a tuple (x,y)                                #
+#   |*pos        :   Various positions provided as <Iterable> with each set as a <tuple(x,y)>, i.e. <[(1,1),(500,500)]>                 #
+#   |offset      :   <tuple> Offset all positions from this provided coordinate, which is provided a tuple <(x,y)>                      #
 #   |                 [(0,0)       ] <Default> Do not offset, but set all positions as the absolute coordinates of current screen       #
 #   |                 [<tuple>     ]           Offset from this coordinate                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -60,8 +60,6 @@ def clicks(
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001. Import necessary functions for processing.
-
     #010. Check parameters.
     #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
@@ -70,10 +68,10 @@ def clicks(
     #012. Handle the parameter buffer.
     chkpos = all([ isinstance(p, tuple) for p in pos ])
     if not chkpos:
-        raise TypeError('[' + LfuncName + ']All input coordinates must be [tuple]!')
+        raise TypeError(f'[{LfuncName}]All input coordinates must be [tuple]!')
     chkoffset = isinstance(offset, tuple)
     if not chkoffset:
-        raise TypeError('[' + LfuncName + '][offset] must be [tuple]!')
+        raise TypeError(f'[{LfuncName}][offset] must be [tuple]!')
 
     #050. Local parameters
     pos_int = [ tuple(map(sum, zip(offset, p))) for p in pos ]

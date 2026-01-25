@@ -29,35 +29,35 @@ def intnx(
         for s in signature(UserCalendar).parameters.values()
         if s.name not in ['dateBgn', 'dateEnd', 'clnBgn', 'clnEnd']
     }
-) -> 'Increments a date, time, or datetime value by a given time interval, and returns the same type':
+) -> dt.date | dt.datetime | dt.time | Iterable[dt.date | dt.datetime | dt.time]:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to resemble the same one in SAS to increment a date, time, datetime value, or an Iterable of the         #
+#   |This function is intended to resemble the same one in <SAS> to increment a date, time, datetime value, or an Iterable of the       #
 #   | previous, by a given time interval                                                                                                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Although this function supports [e.apply(f,...)] or [map(f,e)] methods to apply to an Iterable, it is strongly recommended    #
-#   |      to call it directly by [f(e,...)] as it internally uses Table Join processes to facilitate bulk data massage                 #
-#   |[02] Similar to above, it is strongly recommended to pass an existing [User Calendar] to the argument [cal] if one insists to call #
-#   |      it by means of [e.apply(f,...)] or [map(f,e)], to minimize the system calculation effort                                     #
+#   |[01] Although this function supports <e.apply(f,...)> or <map(f,e)> methods to apply to an Iterable, it is strongly recommended    #
+#   |      to call it directly by <f(e,...)> as it internally uses Table Join processes to facilitate bulk data massage                 #
+#   |[02] Similar to above, it is strongly recommended to pass an existing <User Calendar> to the argument <cal> if one insists to call #
+#   |      it by means of <e.apply(f,...)> or <map(f,e)>, to minimize the system calculation effort                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[FEATURE]                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Support different types of [indate], i.e. pd.DataFrame, pd.Series, strings indicating dates, dt.date, dt.datetime, dt.time    #
-#   |[02] Does not support [.starting-point] in [interval] as that in SAS, as it is useless and ambiguous under most circumstances      #
+#   |[01] Support different types of <indate>, i.e. strings indicating dates, dt.date, dt.datetime, dt.time, or Iterable of them        #
+#   |[02] Does not support <.starting-point> in <interval> as that in <SAS>, as it is useless and ambiguous under most circumstances    #
 #   |[03] Support the increment by Calendar Days, Working Days, or Trade Days                                                           #
-#   |[04] Returned data type is the same as [indate] if [type(indate)==pd.DataFrame or pd.Series]                                       #
-#   |[05] Value type as output is determined by the [interval]                                                                          #
-#   |[06] Holidays will be shifted to their respective Previous Work/Trade Days for calculation, given [daytype != C]. Therefore, the   #
-#   |      returned value for holidays could be [pd.NaT] if the incremented value is less than 1 day                                    #
-#   |[07] [WEEKDAY] as [interval] has different definition to that in SAS, see below definition of [omniPy.Dates.getDateIntervals]      #
-#   |[08] [WEEK] starts with Sunday=0 and ends with Saturday=6, to align that in SAS                                                    #
-#   |[09] Apply this function to a Public Holiday with [increment==0] and [daytype in [W,T]] will result in [pd.NaT], as its [Previous] #
-#   |      work/trade day and [Next] work/trade both result in [0] of incremental to it, which is ambiguous and thus it is removed      #
+#   |[04] Returned data type is the same as <indate>                                                                                    #
+#   |[05] Value type as output is determined by the <interval>                                                                          #
+#   |[06] Holidays will be shifted to their respective Previous Work/Trade Days for calculation, given <daytype != 'C'>. Therefore, the #
+#   |      returned value for holidays could be <pd.NaT> if the incremented value is less than 1 day                                    #
+#   |[07] <WEEKDAY> as <interval> has different definition to that in <SAS>, see below definition of <Dates.getDateIntervals>           #
+#   |[08] <WEEK> starts with Sunday=0 and ends with Saturday=6, to align that in SAS                                                    #
+#   |[09] Apply this function to a Public Holiday with <increment==0> and <daytype in [W,T]> will result in <pd.NaT>, as its <Previous> #
+#   |      work/trade day and <Next> work/trade both result in <0> of incremental to it, which is ambiguous and thus it is removed      #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -65,39 +65,38 @@ def intnx(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |interval    :   Character string as a time interval such as WEEK, SEMIYEAR, QTR, or HOUR, case insensitive. It has no default      #
 #   |                 value, while the functions raises error if it is NOT provided.                                                    #
-#   |                See definition of [omniPy.Dates.getDateIntervals] for accepted values                                              #
-#   |indate      :   Date-like values, will be converted by [asDates], [asDatetimes] or [asTimes] as per request                        #
-#   |increment   :   An integer to increment the [indate], float value is converted to integer by: int(abs(i)) * np.sign(i)             #
-#   |                 [0           ] <Default> Return the same values                                                                   #
-#   |                 [<Numeric>   ]           Unify the incremental for all element in [indate]. It will be converted to [int]         #
-#   |                 [<Iterable>  ]           Iterable in the same shape as [indate] to differentiate incrementals for each element    #
+#   |                See definition of <Dates.getDateIntervals> for accepted values                                                     #
+#   |indate      :   Date-like values, will be converted by <asDates>, <asDatetimes> or <asTimes> as per request                        #
+#   |increment   :   An integer to increment the <indate>, float value is converted to integer by: <int(abs(i)) * np.sign(i)>           #
+#   |                 [int <0>     ] <Default> Return the same values                                                                   #
+#   |                 [<Numeric>   ]           Unify the incremental for all element in <indate>. It will be converted to <int>         #
+#   |                 [<Iterable>  ]           Iterable in the same shape as <indate> to differentiate incrementals for each element    #
 #   |alignment   :   controls the position of dates/times within the interval, case insensitive                                         #
-#   |                 [BEGINNING|B ] <Default> Align the values to the beginning of current interval after the increment                #
-#   |                 [MIDDLE   |M ]           Align the values to the mean of beginning and ending of current interval after the       #
+#   |                 [BEGINNING/B ] <Default> Align the values to the beginning of current interval after the increment                #
+#   |                 [MIDDLE   /M ]           Align the values to the mean of beginning and ending of current interval after the       #
 #   |                                           increment                                                                               #
-#   |                 [END      |E ]           Align the values to the ending of current interval after the increment                   #
-#   |                 [SAME     |S ]           Align the values to the same position of current interval after the increment            #
+#   |                 [END      /E ]           Align the values to the ending of current interval after the increment                   #
+#   |                 [SAME     /S ]           Align the values to the same position of current interval after the increment            #
 #   |daytype     :   Type of days for the calculation                                                                                   #
 #   |                 [C           ] <Default> Calendar Days                                                                            #
 #   |                 [W           ]           Working Days                                                                             #
 #   |                 [T           ]           Trading Days                                                                             #
-#   |cal         :   pd.DataFrame that is usually created by [omniPy.Dates.intCalendar] object as the essential during the calculation  #
-#   |                 [<None>      ] <Default> Function calls [intCalendar] with the arguments [**kw_cal]                               #
-#   |kw_d        :   Arguments for function [omniPy.Dates.asDates] to convert the [indate] where necessary                              #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDates]                                                  #
-#   |kw_dt       :   Arguments for function [omniPy.Dates.asDatetimes] to convert the [indate] where necessary                          #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDatetimes]                                              #
-#   |kw_t        :   Arguments for function [omniPy.Dates.asTimes] to convert the [indate] where necessary                              #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asTimes]                                                  #
-#   |kw_cal      :   Arguments for instantiating the class [omniPy.Dates.UserCalendar] if [cal] is NOT provided                         #
-#   |                 [<Default>   ] <Default> Use the default arguments for [UserCalendar]                                             #
+#   |cal         :   <pd.DataFrame> that is usually created by <Dates.intCalendar> object as the essential during the calculation       #
+#   |                 [<None>      ] <Default> Function calls <intCalendar> with the arguments <**kw_cal>                               #
+#   |kw_d        :   Arguments for function <Dates.asDates> to convert the <indate> where necessary                                     #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDates>                                                  #
+#   |kw_dt       :   Arguments for function <Dates.asDatetimes> to convert the <indate> where necessary                                 #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDatetimes>                                              #
+#   |kw_t        :   Arguments for function <Dates.asTimes> to convert the <indate> where necessary                                     #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asTimes>                                                  #
+#   |kw_cal      :   Arguments for instantiating the class <Dates.UserCalendar> if <cal> is NOT provided                                #
+#   |                 [<Default>   ] <Default> Use the default arguments for <UserCalendar>                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<various>   :   The return value depends on the input arguments                                                                    #
-#   |                [1] When [indate] is pd.DataFrame or pd.Series, return the same type with [dtypes==object]                         #
-#   |                [2] When [indate] is provided a [str], return a [dt] object as indicated by [interval]                             #
-#   |                [3] When [indate] is an [Iterable] except [str], return a [list] of elements as indicated by [interval]            #
+#   |                [1] When <indate> is Iterable, return the same type with <dtypes==object> where applicable                         #
+#   |                [2] When <indate> is provided a scalar, return a <dt> object as indicated by <interval>                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -108,27 +107,27 @@ def intnx(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210817        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new type [dtt] to calculate the incrementals for [datetime] by [dtsecond], [dtminiute] or [dthour], to resemble the #
-#   |      |     same function for [datetime] in SAS. See definition in [omniPy.Dates.getDateIntervals]                                 #
+#   | Log  |[1] Add new type <dtt> to calculate the incrementals for <datetime> by <dtsecond>, <dtminiute> or <dthour>, to resemble the #
+#   |      |     same function for <datetime> in <SAS>. See definition in <Dates.getDateIntervals>                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210821        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Eliminate all [pd.DataFrame.merge] operations and the most of [.apply] methods to improve the overall efficiency, now   #
+#   | Log  |[1] Eliminate all <pd.DataFrame.merge> operations and the most of <.apply> methods to improve the overall efficiency, now   #
 #   |      |     use indexing of data frames and the time expense reduced by 90%. Below is the testing result:                          #
-#   |      |    [CPU: FX6300 3.5GHz 3 Physical Cores 6 Logical Cores]                                                                   #
-#   |      |    [date     ] 1.1s on average for 10K values                                                                              #
-#   |      |    [datetime ] 5.7s on average for 10K values                                                                              #
+#   |      |[2] <CPU      > FX6300 3.5GHz 3 Physical Cores 6 Logical Cores                                                              #
+#   |      |[3] <date     > 1.1s on average for 100K values                                                                             #
+#   |      |[4] <datetime > 5.7s on average for 100K values                                                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210912        | Version | 4.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Correct the behavior when [interval] indicates [t] if the incremented result is in another day                          #
+#   | Log  |[1] Correct the behavior when <interval> indicates <t> if the incremented result is in another day                          #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210919        | Version | 5.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [intCalendar] to create interval-bound calendar for interval-related functions                     #
+#   | Log  |[1] Introduce a function <intCalendar> to create interval-bound calendar for interval-related functions                     #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210922        | Version | 5.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -143,24 +142,24 @@ def intnx(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211120        | Version | 6.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
+#   | Log  |[1] Fixed a bug: <multiple> is not implemented when <dtt> is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211204        | Version | 6.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   | Log  |[1] Unify the effect of <col_rowidx> and <col_period> when <span==1>, hence <col_rowidx> is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20220214        | Version | 6.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug: [intnx('day', '20211231', 1, daytype = 'w')] returns [NaT]. This was due to the calendar span is not set   #
+#   | Log  |[1] Fixed a bug: <intnx('day', '20211231', 1, daytype = 'w')> returns <NaT>. This was due to the calendar span is not set   #
 #   |      |     enough for calculation                                                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230302        | Version | 7.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] [dt<interval>] now return the same results as the same function does in SAS                                             #
-#   |      |[2] Slightly improve the efficiency, use [.mul(-1).floordiv(1).mul(-1)] to resemble [np.ceil] behavior                      #
+#   | Log  |[1] <dt[interval]> now return the same results as the same function does in <SAS>                                           #
+#   |      |[2] Slightly improve the efficiency, use <.mul(-1).floordiv(1).mul(-1)> to resemble <np.ceil> behavior                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230610        | Version | 7.10        | Updater/Creator | Lu Robin Bin                                                #
@@ -190,13 +189,13 @@ def intnx(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20231102        | Version | 7.60        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove dependency on [ObsDates] as it is too slow                                                                       #
+#   | Log  |[1] Remove dependency on <ObsDates> as it is too slow                                                                       #
 #   |      |[2] Reduce time expense by 20% for large dataframe, e.g. 1 million records                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20231107        | Version | 7.70        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when converting the result into datetime.datetime                                                           #
+#   | Log  |[1] Fixed a bug when converting the result into <dt.datetime>                                                               #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -211,12 +210,12 @@ def intnx(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #   |   |   |thisFunction                                                                                                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |intCalendar                                                                                                                #
 #   |   |   |getDateIntervals                                                                                                           #
 #   |   |   |asDates                                                                                                                    #
@@ -225,8 +224,6 @@ def intnx(
 #   |   |   |UserCalendar                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.

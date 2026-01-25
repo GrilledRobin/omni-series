@@ -4,7 +4,7 @@
 #   |This function is intended to unstack (i.e. fold) the provided dataframe to the same type and shape of the model object, following  #
 #   | the convention of <vecStack> as a reverse process                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] When any function is designed to unanimously handle <vector>, <data.frame> and scalar value (or list of such), use             #
 #   |     <vecStack> to unify the input data and hence the internal process, and then this function to create output in the same type   #
@@ -14,7 +14,7 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |df          :   data.frame to unstack                                                                                              #
+#   |df          :   <data.frame> to unstack                                                                                            #
 #   |idRow       :   Name of the column indicating the row (axis-0) position of the values to export                                    #
 #   |                 [<vecStack>  ] <Default> See documents of the captioned function                                                  #
 #   |idCol       :   Name of the column indicating the column (axis-1) position of the values to export                                 #
@@ -55,7 +55,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #

@@ -22,7 +22,7 @@ def nameArgsByFormals(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to try to assign proper names for the parameters provided BEFORE calling a function                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Coerce the POSITIONAL_OR_KEYWORD arguments provided for the dynamic call to functions                                          #
 #   |[2] Remove the name of the keyword provision of a positional argument and place it at the correct position as final input          #
@@ -39,7 +39,7 @@ def nameArgsByFormals(
 #   |                [<see def.>  ] <Default> Empty tuple for processing                                                                #
 #   |kw_         :   <dict     >Keyword parameters to be transformed for the call to <func>                                             #
 #   |                [<see def.>  ] <Default> Empty dict for processing                                                                 #
-#   |coerce_     :   Whether to try to remove excessive arguments silently (This is the only naming convention accepted by Python and R)#
+#   |coerce_     :   Whether to try to remove excessive arguments silently (the only naming convention accepted by both Python and R)   #
 #   |                [True        ] <Default> Remove excessive arguments                                                                #
 #   |                [False       ]           Raise exceptions under certain situations                                                 #
 #   |strict_     :   Whether to allow less inputs than those arguments without defaults                                                 #
@@ -48,7 +48,7 @@ def nameArgsByFormals(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[tuple]     :   tuple[tuple, dict] of (preferably keyword) parameters for a correct syntax in the future function call. If <*pos>  #
+#   |<tuple>     :   <tuple[tuple, dict]> of (preferably keyword) parameters for a correct syntax in the future function call. If <*pos>#
 #   |                 or <**kw> exists in the signature of <func>, extra positional/keyword parameters are also included                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #

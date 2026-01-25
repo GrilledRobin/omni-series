@@ -1,24 +1,22 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to return a string of CSS style to draw a gradient background from bottom to top for any container       #
+#   |This function is intended to return a string of <CSS> style to draw a gradient background from bottom to top for any container     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |color_btm  :   The color code to draw at the bottom of the container                                                               #
-#   |                It can be provided as below types of vector:                                                                       #
-#   |                [#FFFFFF         ] The HEX value of the RGB color                                                                  #
-#   |                [grDevices::rgb()] The RGB matrix translated by the [rgb] function                                                 #
-#   |color_top  :   The color code to draw at the top of the container                                                                  #
-#   |                It can be provided as below types of vector:                                                                       #
-#   |                [#FFFFFF         ] The HEX value of the RGB color                                                                  #
-#   |                [grDevices::rgb()] The RGB matrix translated by the [rgb] function                                                 #
+#   |color_btm  :   The color code to draw at the bottom of the container. It can be provided as below types of vector:                 #
+#   |                [#FFFFFF           ] The HEX value of the RGB color                                                                #
+#   |                [<grDevices::rgb()>] The RGB matrix translated by the <rgb> function                                               #
+#   |color_top  :   The color code to draw at the top of the container. It can be provided as below types of vector:                    #
+#   |                [#FFFFFF           ] The HEX value of the RGB color                                                                #
+#   |                [<grDevices::rgb()>] The RGB matrix translated by the <rgb> function                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[vector]   :   A character vector of CSS                                                                                           #
+#   |<chr>      :   A character vector of <CSS>                                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

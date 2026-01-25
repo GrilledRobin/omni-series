@@ -2,23 +2,27 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to search for the available data.frames within the required environment/frame                            #
-#   |IMPORTANT: If two frames are at the same level, it is literally NOT available to access the internal elements from one another;    #
-#   |            the same situation happens when user needs to access the internal elements within its subordinate environments.        #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |IMPORTANT:                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] If two frames are at the same level, it is literally NOT available to access the internal elements from one another; the same  #
+#   |     situation happens when user needs to access the internal elements within its subordinate environments.                        #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |nframe     :   The identity of frame(s) within which to retrieve the available names of data.frames                                #
-#   |                [NULL]<Default> Retrieve names of data.frames from all parent frames to the one of this function                   #
-#   |                [(int)] Retrieve names of data.frame in the provided frame, which MUST be less than the one of this function       #
-#   |                IMPORTANT: Negative integers indicate a backward search of frames, which will plus [-1] during function execution. #
+#   |nframe     :   <int> The identity of frame(s) within which to retrieve the available names of <data.frame>s                        #
+#   |                [NULL ]<Default> Retrieve names of <data.frame>s from all parent frames to the one of this function                #
+#   |                [<int>]          Retrieve names in the provided frame, which SHOULD be less than the one of this function          #
+#   |                                 IMPORTANT: Negative integers indicate a backward search of frames, which will plus <-1> during    #
+#   |                                             function execution.                                                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[out_rst]  :   A list that stores the names of the available data.frames as found in each dedicated frame                          #
-#   |                [names(out_rst)] 'Frame_<k>' represents the <k>th frame                                                            #
-#   |                [(values)]       Vectors of names of the data.frames                                                               #
+#   |<list>     :   A list that stores the names of the available <data.frame>s as found in each dedicated frame                        #
+#   |                [names(out_rst)] <Frame_<k>> represents the <k>th frame                                                            #
+#   |                [(values)      ] Vectors of names of the <data.frame>s                                                             #
 #   |                IMPORTANT: It is improper to return a table, otherwise the result is unpredictable in a recursive search.          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #

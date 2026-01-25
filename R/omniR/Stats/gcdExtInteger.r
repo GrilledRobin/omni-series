@@ -2,7 +2,9 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the extended Greatest Common Divisor (GCD), a.k.a. Highest Common Factor (HCF) of two       #
-#   | integers using Euclidean Algorithm, together with integers <x> and <y> such that: ax + by = gcd(a,b)                              #
+#   | integers using Euclidean Algorithm, together with integers <x> and <y> such that <ax + by = gcd(a,b)>                             #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |QUOTE                                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] https://www.geeksforgeeks.org/euclidean-algorithms-basic-and-extended/                                                         #
 #   |[2] https://www.rookieslab.com/posts/extended-euclid-algorithm-to-find-gcd-bezouts-coefficients-python-cpp-code                    #
@@ -15,7 +17,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]    :   n * (Element-wise GCD of the inputs, x, y)                                                                         #
+#   |<Matrix>    :   n * (Element-wise GCD of the inputs, x, y)                                                                         #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

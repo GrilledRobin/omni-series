@@ -2,27 +2,27 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to extend the base R function [match.arg] by mutating the input argument with a customized function      #
-#   | before matching it to the [choices]                                                                                               #
+#   | before matching it to the <choices>                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Use it for argument verification inside a function, when a mutation of the argument is required before [match.arg]             #
+#   |[1] Use it for argument verification inside a function, when a mutation of the argument is required before <match.arg>             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |arg          :   A Character vector (of length one unless several.ok is TRUE) or NULL, see [match.arg]                             #
-#   |choices      :   A character vector of candidate values, see [match.arg]                                                           #
-#   |arg.func     :   Function to be applied to [arg] as the first (and only) argument before matching it to [choices]                  #
-#   |                 [f<x>==x        ]  <Default> Do not mutate [arg]                                                                  #
-#   |choices.func :   Function to be applied to [choices] as the first (and only) argument before matching it for [arg]                 #
-#   |                 [f<x>==x        ]  <Default> Do not mutate [choices]                                                              #
-#   |...          :   Any other arguments that are required by [match.arg]                                                              #
+#   |arg          :   A Character vector (of length one unless <several.ok> is TRUE) or NULL, see <match.arg>                           #
+#   |choices      :   A character vector of candidate values, see <match.arg>                                                           #
+#   |arg.func     :   Function to be applied to <arg> as the first (and only) argument before matching it to <choices>                  #
+#   |                 [f<x>==x        ]  <Default> Do not mutate <arg>                                                                  #
+#   |choices.func :   Function to be applied to <choices> as the first (and only) argument before matching it for <arg>                 #
+#   |                 [f<x>==x        ]  <Default> Do not mutate <choices>                                                              #
+#   |...          :   Any other arguments that are required by <match.arg>                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<vec>        :   Same result as returned by [match.arg], see official document                                                     #
+#   |<vec>        :   Same result as returned by <match.arg>, see official document                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#

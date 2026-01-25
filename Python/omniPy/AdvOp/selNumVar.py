@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-def selNumVar( inDAT ) -> 'Select all numeric field names from the provided dataset and create a list of them':
-    #000.   Info.
-    """
+import sys
+import pandas as pd
+
+def selNumVar( inDAT ) -> list:
+    #000. Info.
+    '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -17,7 +20,7 @@ def selNumVar( inDAT ) -> 'Select all numeric field names from the provided data
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[varlist]  :   [list]The list of selected field names                                                                              #
+#   |<list>     :   The list of selected field names                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -38,40 +41,31 @@ def selNumVar( inDAT ) -> 'Select all numeric field names from the provided data
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
-    """
+    '''
 
-    #001.   Import necessary functions for processing.
-    #from imp import find_module
-    import pandas as pd
-    import sys
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
-    __Err : str = "ERROR: [" + LfuncName + "]Process failed due to errors!"
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( inDAT , pd.DataFrame ):
-        raise TypeError( '[' + LfuncName +  ']Parameter [inDAT] should be of the type [pd.DataFrame]! Type of input value is [{0}]'.format( type(inDAT) ) )
+        raise TypeError(f'[{LfuncName}]Parameter [inDAT] should be of the type [pd.DataFrame]! Given [{type(inDAT)}]')
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #100.   Retrieve the names of all numeric variables.
-    #See official document: http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.select_dtypes.html#pandas.DataFrame.select_dtypes
+    #100. Retrieve the names of all numeric variables.
+    #See official document: http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.select_dtypes.html
     varlist : list = inDAT.select_dtypes( include = [ 'number' ] ).columns.tolist()
 
-    #800.   Purge the memory usage.
-    LfuncName , __Err = None , None
-
-    #900.   Output.
+    #900. Output.
     return( varlist )
 #End selNumVar
 
-"""
+'''
 #-Notes- -Begin-
 #Full Test Program[1]:
-if __name__=="__main__":
+if __name__=='__main__':
     #010.   Create envionment.
     import pandas as pd
     import numpy as np
@@ -87,4 +81,4 @@ if __name__=="__main__":
     #200.   Retrieve the list of Categorical Field Names.
     numvar : list = selNumVar( testNaN )
 #-Notes- -End-
-"""
+'''

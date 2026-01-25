@@ -21,28 +21,28 @@ def wrapAsGroupedFunc(
 #   |This function is intended to wrap the provided function with extra argument, so that it can be impplemented in <pd.GroupBy.agg> and#
 #   | <pd.pivot_table> to facilitate multi-variable aggregation in a multi-dimensional process                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] The most popular usage is to enable Weighted Average calculation in a pivot table, see the examples for detailed usage         #
 #   |[2] Extensive usage can be Conditional Aggregation using extra dimensions as companion input, e.g. resemble SUMIF in a pivot table #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Concept:                                                                                                                           #
+#   |CONCEPT:                                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] In order to make it available as a customized aggregation function in <pd.GroupBy.agg> or <pd.pivot_table>, you (previously)   #
 #   |     need to define the function in below fashion                                                                                  #
-#   |    [a] Setup a positional argument annotated as <pd.Series | pd.Index> at the very first position                                 #
-#   |    [b] Make a <df.reindex> to slice the <df> before calculation                                                                   #
-#   |    [c] During the call of <pd.GroupBy.agg> or <pd.pivot_table>, make it a partial function with all other arguments provided as   #
+#   |    [1] Setup a positional argument annotated as <pd.Series> or <pd.Index> at the very first position                              #
+#   |    [2] Make a <df.reindex> to slice the <df> before calculation                                                                   #
+#   |    [3] During the call of <pd.GroupBy.agg> or <pd.pivot_table>, make it a partial function with all other arguments provided as   #
 #   |         the dedicated values                                                                                                      #
-#   |    [d] The return value must be a single scalar, repensenting a single cell in the pivot table                                    #
+#   |    [4] The return value must be a single scalar, repensenting a single cell in the pivot table                                    #
 #   |[2] Now we wrap these functionalities for you, so that you do not need to think of the mechanism to realize it                     #
 #   |[3] Your focus can be set on realizing the complex aggregation on an intact dataframe, so that the wrapper applies it to every     #
 #   |     slice of the same dataframe given various grouping conditions                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Important:                                                                                                                         #
+#   |IMPORTANT:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Despite of its definition, the wrapper is NOT a decorator, but a high order function                                           #
-#   |[2] The wrapper extends the entire signature of <fn>, so it is far beyond "decorating" it                                          #
+#   |[2] The wrapper extends the entire signature of <fn>, so it is far beyond <decorating> it                                          #
 #   |[3] This is proven by that it should be called every time by providing different arguments to enable different functionalities,    #
 #   |     which are extended from the wrapped function                                                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -132,7 +132,7 @@ def wrapAsGroupedFunc(
         #     positional arguments in terms of Python syntax; so we only obtain the first input among <VAR_POSITIONAL>
         #[4] If it still cannot be located, an exception will be raised
         if _wagf_df_ in eSig.args_src:
-            _wagf_df_in_ = eSig.getParam(_wagf_df_, pos_in, kw_in)
+            _wagf_df_in_ = eSig.getParam(_wagf_df_, pos_in, kw_in, inc_default = True)
         elif _wagf_df_ in kw:
             _wagf_df_in_ = kw.get(_wagf_df_)
         elif len(sig_vp) > 0:

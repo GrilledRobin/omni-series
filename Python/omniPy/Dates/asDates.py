@@ -16,51 +16,57 @@ def asDates(
     , fmt : Iterable = ['%Y%m%d', '%Y-%m-%d', '%Y/%m/%d']
     , origin = dt.date(1960,1,1)
     , unit : str = 'days'
-) -> 'Translate date-like values into dates in the type of [datetime.date]':
-    #000.   Info.
+) -> dt.date | Iterable[dt.date]:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to convert any type of input values into valid dates (with type as [datetime.date])                      #
-#   |[IMPORTANT] When the input is an empty [pd.Series] or [pd.DataFrame], make sure to use either of below forms to assign the         #
-#   |             column(s) in the type of [dt.date] to ensure a dedicated result, i.e. below methods create the columns in the same    #
-#   |             [dtype] as [object] no matter the input is empty or not:                                                              #
-#   |            [1] [pd.Series.apply(asDates).astype('object')] or [pd.DataFrame.map(asDates).astype('object')]                        #
-#   |            [2] [asDates(pd.Series)] or [asDates(pd.DataFrame)]                                                                    #
+#   |This function is intended to convert any type of input values into valid dates (with type as <datetime.date>)                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[NOTE]                                                                                                                             #
+#   |IMPORTANT                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<strftime> on Windows OS is different from that on Mac OS at syntax <%-m> and the likes:                                           #
-#   |[1] On Win OS, use <%#m> to remove leading zeros (however, when using <strptime> this syntax still fails)                          #
-#   |[2] On Mac OS, use <%-m> to remove leading zeros (not tested when using <strptime>)                                                #
-#   |[3] Quote: https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0                                       #
-#   |[4] Quote: https://msdn.microsoft.com/en-us/library/fe06s4ak.aspx                                                                  #
+#   |[1] When the input is an empty <pd.Series> or <pd.DataFrame>, make sure to use either of below forms to assign the column(s) in the#
+#   |     type of <dt.date> to ensure a dedicated result, i.e. below methods create the columns in the same <dtype> as <object> no      #
+#   |     matter the input is empty or not                                                                                              #
+#   |    [1] <asDates(pd.Series)> (preferred for high efficiency)                                                                       #
+#   |    [2] <asDates(pd.DataFrame)> (preferred for high efficiency)                                                                    #
+#   |    [3] <pd.Series.apply(asDates).astype('object')>                                                                                #
+#   |    [4] <pd.DataFrame.map(asDates).astype('object')>                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[EFFICIENCY]                                                                                                                       #
+#   |NOTE                                                                                                                               #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Time comparison of various functions to a pd.Series                                                                            #
-#   |    Quote: https://stackoverflow.com/questions/49371629                                                                            #
-#   |[2] How to cast types of elements in a pd.Series                                                                                   #
-#   |    Quote: https://note.nkmk.me/en/python-pandas-dtype-astype/                                                                     #
+#   |[1] <strftime> on Windows OS is different from that on Mac OS at syntax <%-m> and the likes:                                       #
+#   |    [1] On Win OS, use <%#m> to remove leading zeros (however, when using <strptime> this syntax still fails)                      #
+#   |    [2] On Mac OS, use <%-m> to remove leading zeros (not tested when using <strptime>)                                            #
+#   |    [3] Quote: https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0                                   #
+#   |    [4] Quote: https://msdn.microsoft.com/en-us/library/fe06s4ak.aspx                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |EFFICIENCY                                                                                                                         #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Time comparison of various functions to a <pd.Series>: https://stackoverflow.com/questions/49371629                            #
+#   |[2] How to cast types of elements in a <pd.Series>: https://note.nkmk.me/en/python-pandas-dtype-astype/                            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |indate      :   Date-like values, can be list/tuple of date values, character strings, integers or date column of a data frame     #
-#   |fmt         :   Alternative format to be passed to function [strptime] when the input is a character string                        #
-#   |                 [ <list>     ] <Default> Try to match these formats for any input strings, see function definition                #
-#   |origin      :   Date-like scalar, as origin, to convert the values in the type of [int], [float], [np.integer] or [np.floating]    #
-#   |                See official document of [pd.to_datetime]                                                                          #
-#   |                 [ 1960-01-01 ] <Default> Also the default origin of SAS for easy conversion                                       #
-#   |unit        :   Unit by which to convert the values in the type of [int], [float], [np.integer] or [np.floating]                   #
-#   |                See official document of [datetime.timedelta]                                                                      #
+#   |indate      :   Date-like values, can be Iterable of date values, character strings, integers or date column of a data frame       #
+#   |fmt         :   Alternative format to be passed to function <strptime> when the input is a character string                        #
+#   |                 [<see def.>  ] <Default> Try to match these formats for any input strings, see function definition                #
+#   |origin      :   Date-like scalar, as origin, to convert the values in the type of <int>, <float>, <np.integer> or <np.floating>.   #
+#   |                See official document of <pd.to_datetime>                                                                          #
+#   |                 [<see def.>  ] <Default> Also the default origin of SAS for easy conversion                                       #
+#   |unit        :   <str> Unit by which to convert the values in the type of <int>, <float>, <np.integer> or <np.floating>.            #
+#   |                See official document of <datetime.timedelta>                                                                      #
 #   |                 [ days       ] <Default> Also the default unit of SAS date storage for easy conversion                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[ list  ]   :   The mapped result stored in a list (not a tuple as a tuple cannot be added as a column in a data frame if needed)  #
+#   |<Any>       :   The mapped result either in below types                                                                            #
+#   |                [<pandas.NaT>             ] Given that <indate> is provided as a single scalar and cannot be parsed to a date      #
+#   |                [<datetime.date>          ] Given that <indate> is provided as a single scalar                                     #
+#   |                [<Iterable[datetime.date]>] Given that <indate> is provided as the same type of Iterable of scalars                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -71,24 +77,24 @@ def asDates(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210307        | Version | 1.01        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add the date conversion method from SAS to Python, esp. for the package [pyreadstat]                                    #
-#   |      |    [IMPORTANT] Since the lower and upper bounds as nanoseconds for [pd.Timestamp] is too small, we have to seek for other  #
-#   |      |                 solutions to coerce the date-like values and store them in [pd.Series] or [pd.DataFrame]                   #
+#   | Log  |[1] Add the date conversion method from SAS to Python, esp. for the package <pyreadstat>                                    #
+#   |      |[2] Since the lower and upper bounds as nanoseconds for <pd.Timestamp> is too small, we have to seek for other solutions to #
+#   |      |     coerce the date-like values and store them in <pd.Series> or <pd.DataFrame>                                            #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210619        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce [Iterable] to support more iterable input types for the arguments                                             #
+#   | Log  |[1] Introduce <Iterable> to support more iterable input types for the arguments                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210816        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Add new argument [asnat] to indicate whether to accept invalid input values                                             #
+#   | Log  |[1] Add new argument <asnat> to indicate whether to accept invalid input values                                             #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210909        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Remove the argument [asnat] as the function no longer raise errors for invalid inputs, but output [pd.NaT]              #
+#   | Log  |[1] Remove the argument <asnat> as the function no longer raise errors for invalid inputs, but output <pd.NaT>              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230815        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
@@ -133,14 +139,12 @@ def asDates(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |thisFunction                                                                                                               #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
 
     #010. Check parameters.
     #011. Prepare log text.

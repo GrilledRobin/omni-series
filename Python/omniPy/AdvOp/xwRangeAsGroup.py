@@ -24,9 +24,9 @@ def xwRangeAsGroup(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to add group and outline on either/both axes of the given [xw.Range]                                     #
+#   |This function is intended to add group and outline on either/both axes of the given <xw.Range>                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Add groups to the details of a pivot-table-like range in MS EXCEL                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -36,27 +36,27 @@ def xwRangeAsGroup(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |rng         :   EXCEL range object, in which to pour the data                                                                      #
 #   |method      :   Whether to group or ungroup current range, case sensitive                                                          #
-#   |                [IMPORTANT   ] [Group()] method automatically chooses the proper level according to the [Range] size; [Ungroup()]  #
+#   |                [IMPORTANT   ] <Group()> method automatically chooses the proper level according to the <Range> size; <Ungroup()>  #
 #   |                                method removes the smallest group one at a time, which indicates one has to call this method for   #
-#   |                                enough times to remove all groups on the same [axis] of the same [Range]                           #
+#   |                                enough times to remove all groups on the same <axis> of the same <Range>                           #
 #   |                [Group       ] <Default> Add group for current range                                                               #
 #   |                [Ungroup     ]           Remove group for current range                                                            #
-#   |                [<dict>      ]           Dict-like, indicating on which [axis] to call the method                                  #
-#   |                [<Iterable>  ]           2-item Iterable indicating the method for [axis-0,axis-1] respectively                    #
+#   |                [<dict>      ]           Dict-like, indicating on which <axis> to call the method                                  #
+#   |                [<Iterable>  ]           2-item Iterable indicating the method for <[axis-0,axis-1]> respectively                  #
 #   |axis        :   Axis along which to add the group and outline                                                                      #
 #   |                [None        ] <Default> Add group along both axes                                                                 #
-#   |                [0           ]           Add group along axis-0, i.e. rows                                                         #
-#   |                [1           ]           Add group along axis-1, i.e. columns                                                      #
+#   |                [int <0>     ]           Add group along axis-0, i.e. rows                                                         #
+#   |                [int <1>     ]           Add group along axis-1, i.e. columns                                                      #
 #   |posOutline  :   Position of the outline                                                                                            #
-#   |                [IMPORTANT   ] If multiple times of [posOutline] are set for the same [axis] in the same [Sheet], only the last    #
+#   |                [IMPORTANT   ] If multiple times of <posOutline> are set for the same <axis> in the same <Sheet>, only the last    #
 #   |                                one takes effect                                                                                   #
-#   |                [before      ] <Default> Display the outline above the range and/or left to it, as determined by [axis]            #
-#   |                [after       ]           Display the outline below the range and/or right to it, as determined by [axis]           #
-#   |                [<dict>      ]           Dict-like, indicating on which [axis] to display the outline(s)                           #
-#   |                [<Iterable>  ]           2-item Iterable indicating the outline positions on [axis-0,axis-1] respectively          #
+#   |                [before      ] <Default> Display the outline above the range and/or left to it, as determined by <axis>            #
+#   |                [after       ]           Display the outline below the range and/or right to it, as determined by <axis>           #
+#   |                [<dict>      ]           Dict-like, indicating on which <axis> to display the outline(s)                           #
+#   |                [<Iterable>  ]           2-item Iterable indicating the outline positions on <[axis-0,axis-1]> respectively        #
 #   |autoStyles  :   Logical value indicating whether to allow automatic styles                                                         #
 #   |                [False       ] <Default> Default settings for MS EXCEL                                                             #
-#   |                [True        ]           See official documents for MS VBA [Sheet.Outline.AutomaticStyles]                         #
+#   |                [True        ]           See official documents for MS VBA <Sheet.Outline.AutomaticStyles>                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#

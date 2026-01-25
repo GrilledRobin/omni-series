@@ -43,7 +43,7 @@ def xwDfToRange(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to export the data frame to the specified xw.Range with certain theme                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Setup universal styles when exporting multiple data frames into EXCEL                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -52,101 +52,96 @@ def xwDfToRange(
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |rng         :   EXCEL range object, in which to pour the data                                                                      #
-#   |df          :   Data frame to be output to [rng], from which also to extract sub-ranges for styling                                #
-#   |index       :   Logical value indicating whether to export [df.index] as well                                                      #
-#   |                [True        ] <Default> Export [df.index] to the left of the data range                                           #
-#   |                [False       ]           Do not export [df.index]                                                                  #
-#   |index_name  :   Logical value indicating whether to keep [df.index.names] during export                                            #
-#   |                [True        ] <Default> Export [df.index.names] to the bottom of the box, given a [box] is to be written          #
-#   |                [False       ]           Do not export [df.index.names]                                                            #
-#   |header      :   Logical value indicating whether to export [df.columns] as well                                                    #
-#   |                [True        ] <Default> Export [df.columns] to the upper side of the data range                                   #
-#   |                [False       ]           Do not export [df.columns]                                                                #
-#   |mergeIdx    :   Various value indicating whether to merge vertically adjacent cells with the same values in [df.index], or such    #
-#   |                 cells in any provided [levels] of [df.index]                                                                      #
-#   |                [True        ] <Default> Merge cells on all levels other than [levels[-1]] in [df.index], indicating a pivot table #
+#   |df          :   Data frame to be output to <rng>, from which also to extract sub-ranges for styling                                #
+#   |index       :   Logical value indicating whether to export <df.index> as well                                                      #
+#   |                [True        ] <Default> Export <df.index> to the left of the data range                                           #
+#   |                [False       ]           Do not export <df.index>                                                                  #
+#   |index_name  :   Logical value indicating whether to keep <df.index.names> during export                                            #
+#   |                [True        ] <Default> Export <df.index.names> to the bottom of the box, given a <box> is to be written          #
+#   |                [False       ]           Do not export <df.index.names>                                                            #
+#   |header      :   Logical value indicating whether to export <df.columns> as well                                                    #
+#   |                [True        ] <Default> Export <df.columns> to the upper side of the data range                                   #
+#   |                [False       ]           Do not export <df.columns>                                                                #
+#   |mergeIdx    :   Various value indicating whether to merge vertically adjacent cells with the same values in <df.index>, or such    #
+#   |                 cells in any provided <levels> of <df.index>                                                                      #
+#   |                [True        ] <Default> Merge cells on all levels other than <levels[-1]> in <df.index>, indicating a pivot table #
 #   |                [False       ]           Do not merge the adjacent cells                                                           #
 #   |                [<int>       ]           Merge cells on the dedicated level id                                                     #
 #   |                [<str>       ]           Merge cells on the dedicated level name                                                   #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
-#   |mergeHdr    :   Various value indicating whether to merge horizontally adjacent cells with the same values in [df.columns], or such#
-#   |                 cells in any provided [levels] of [df.columns]                                                                    #
-#   |                [True        ] <Default> Merge cells on all levels other than [levels[-1]] in [df.columns], indicating a pivot     #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
+#   |mergeHdr    :   Various value indicating whether to merge horizontally adjacent cells with the same values in <df.columns>, or such#
+#   |                 cells in any provided <levels> of <df.columns>                                                                    #
+#   |                [True        ] <Default> Merge cells on all levels other than <levels[-1]> in <df.columns>, indicating a pivot     #
 #   |                                          table                                                                                    #
 #   |                [False       ]           Do not merge the adjacent cells                                                           #
 #   |                [<int>       ]           Merge cells on the dedicated level id                                                     #
 #   |                [<str>       ]           Merge cells on the dedicated level name                                                   #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
 #   |stripe      :   Logical value indicating whether to create stripes on data rows, resembling the empirical EXCEL styles             #
-#   |                [True        ] <Default> Create stripes on data rows, as well as df.index.get_level_values(-1) if [index=True]     #
+#   |                [True        ] <Default> Create stripes on data rows, as well as <df.index.get_level_values(-1)> if <index=True>   #
 #   |                [False       ]           Do not create stripes                                                                     #
-#   |theme       :   Theme of styles for the exported range, see details in [Styles.theme_xwtable]                                      #
+#   |theme       :   Theme of styles for the exported range, see details in <Styles.theme_xwtable>                                      #
 #   |                [BlackGold   ] <Default> Default theme                                                                             #
 #   |                [<str>       ]           Other predefined theme name                                                               #
 #   |fmtIdx      :   List of dicts, in which the items represent various value indicating which items to be patched on index:           #
-#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
-#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
-#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                 <[{'slicer':[],'attrs':{}},...]>, where <'slicer'> is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while <'attrs'> is a dict of arguments to the function <AdvOp.rsetattr>, see                            #
+#   |                 the function <Styles.theme_xwtable> for its usage. Possible values for <'slicer'> are as below:                   #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
-#   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
-#   |                                          pd.MultiIndex                                                                            #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
+#   |                [<str>       ]           Index of rows to be formatted, must be at least one <tuple> enclosed by a <list> for an   #
+#   |                                          object <pd.MultiIndex>                                                                   #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
 #   |fmtRow      :   List of dicts, in which the items represent various value indicating which rows to be patched by what formats:     #
-#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
-#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
-#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                 <[{'slicer':[],'attrs':{}},...]>, where <'slicer'> is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while <'attrs'> is a dict of arguments to the function <AdvOp.rsetattr>, see                            #
+#   |                 the function <Styles.theme_xwtable> for its usage. Possible values for <'slicer'> are as below:                   #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
-#   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
-#   |                                          pd.MultiIndex                                                                            #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
+#   |                [<str>       ]           Index of rows to be formatted, must be at least one <tuple> enclosed by a <list> for an   #
+#   |                                          object <pd.MultiIndex>                                                                   #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
 #   |fmtHdr      :   List of dicts, in which the items represent various value indicating which items to be patched on column names:    #
-#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
-#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
-#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                 <[{'slicer':[],'attrs':{}},...]>, where <'slicer'> is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the column while <'attrs'> is a dict of arguments to the function <AdvOp.rsetattr>, see                           #
+#   |                 the function <Styles.theme_xwtable> for its usage. Possible values for <'slicer'> are as below:                   #
 #   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
-#   |                [<str>       ]           Index of columns to be formatted, must be at least one tuple enclosed by a list for a     #
-#   |                                          pd.MultiIndex                                                                            #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
+#   |                [<str>       ]           Index of columns to be formatted, must be at least one <tuple> enclosed by a <list> for an#
+#   |                                          object <pd.MultiIndex>                                                                   #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
 #   |fmtCol      :   List of dicts, in which the items represent various value indicating which columns to be patched by what formats:  #
-#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, column name, or Iterable of the previous) to #
-#   |                 the column while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                             #
-#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
-#   |                [IMPORTANT   ] The formatting applied to columns is later than that applied to rows, hence overwrites it anyway    #
-#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                 <[{'slicer':[],'attrs':{}},...]>, where <'slicer'> is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the column while <'attrs'> is a dict of arguments to the function <AdvOp.rsetattr>, see                           #
+#   |                 the function <Styles.theme_xwtable> for its usage. Possible values for <'slicer'> are as below:                   #
 #   |                [<int>       ]           Number of columns counting from 0 to be formatted                                         #
-#   |                [<str>       ]           Index of columns to be formatted, must be at least one tuple enclosed by a list for a     #
-#   |                                          pd.MultiIndex                                                                            #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
+#   |                [<str>       ]           Index of columns to be formatted, must be at least one <tuple> enclosed by a <list> for an#
+#   |                                          object <pd.MultiIndex>                                                                   #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
+#   |                [IMPORTANT   ] The formatting applied to columns is later than that applied to rows, hence overwrites it anyway    #
 #   |fmtCell     :   List of dicts, in which the items represent various value indicating which cells to be patched:                    #
-#   |                 List[{'slicer':[],'attrs':{}},...], where 'slicer' is a slicer (int, index name, or Iterable of the previous) to  #
-#   |                 the index while 'attrs' is a dict of arguments to the function [AdvOp.rsetattr], see                              #
-#   |                 the function [Styles.theme_xwtable] for its usage                                                                 #
-#   |                Possible values for 'slicer' are as below:                                                                         #
+#   |                 <[{'slicer':[],'attrs':{}},...]>, where <'slicer'> is a slicer (int, index name, or Iterable of the previous) to  #
+#   |                 the index while <'attrs'> is a dict of arguments to the function <AdvOp.rsetattr>, see                            #
+#   |                 the function <Styles.theme_xwtable> for its usage. Possible values for <'slicer'> are as below:                   #
 #   |                [<int>       ]           Number of rows counting from 0 to be formatted                                            #
-#   |                [<str>       ]           Index of rows to be formatted, must be at least one tuple enclosed by a list for a        #
-#   |                                          pd.MultiIndex                                                                            #
-#   |                [Iterable    ]           Accept either Iterable[int] or Iterable[names], where [names] indicate the names of the   #
-#   |                                          pd.Index                                                                                 #
-#   |asformatter :   Logical value indicating whether to act as a formatter function for xw.Range. One needs to call [functools.partial]#
-#   |                 to set the parameters other than [rng] and [df] in order to use it in such case                                   #
-#   |                [False       ] <Default> Call this function to export [df] to the predefined [rng] directly                        #
+#   |                [<str>       ]           Index of rows to be formatted, must be at least one <tuple> enclosed by a <list> for an   #
+#   |                                          object <pd.MultiIndex>                                                                   #
+#   |                [Iterable    ]           Accept either <Iterable[int]> or <Iterable[names]>, where <[names]> indicate the names of #
+#   |                                          the <pd.Index>                                                                           #
+#   |asformatter :   Logical value indicating whether to act as a formatter function for xw.Range. One needs to call <functools.partial>#
+#   |                 to set the parameters other than <rng> and <df> in order to use it in such case                                   #
+#   |                [False       ] <Default> Call this function to export <df> to the predefined <rng> directly                        #
 #   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
 #   |formatOnly  :   Logical value indicating whether only to set the format to the give range while not pouring the data               #
-#   |                [IMPORTANT   ] This argument only works when [asformatter = False]                                                 #
+#   |                [IMPORTANT   ] This argument only works when <asformatter = False>                                                 #
 #   |                [False       ] <Default> Pour data into the range after formatting                                                 #
-#   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
-#   |idxall      :   When matching the provision of [indexer], generate a full indexer for the provided pd.Index                        #
-#   |                [.all.       ] <Default> When [indexer=='.all.'], generate a full indexer                                          #
-#   |                [<str>       ]           Provide a unique value that is non-existing in [df.index] and [df.columns]                #
+#   |                [True        ]           Only format the predefined <rng> without exporting the data of <df>                       #
+#   |idxall      :   When matching the provision of <indexer>, generate a full indexer for the provided <pd.Index>                      #
+#   |                [.all.       ] <Default> When <indexer=='.all.'>, generate a full indexer                                          #
+#   |                [<str>       ]           Provide a unique value that is non-existing in <df.index> and <df.columns>                #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -168,17 +163,17 @@ def xwDfToRange(
 #   | Date |    20221104        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Now use EXCEL COM API to set the zebra stripes as conditional formatting, ignoring hidden rows as special effect        #
-#   |      |[2] Convert the number-like character columns into [text] format to align the input                                         #
+#   |      |[2] Convert the number-like character columns into <text> format to align the input                                         #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221105        | Version | 1.30        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce function [pandasParseIndexer] to parse the indexers                                                           #
+#   | Log  |[1] Introduce function <pandasParseIndexer> to parse the indexers                                                           #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221107        | Version | 1.40        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when merging indexes with special values, such as [True]                                                    #
+#   | Log  |[1] Fixed a bug when merging indexes with special values, such as <True>                                                    #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230111        | Version | 1.50        | Updater/Creator | Lu Robin Bin                                                #
@@ -189,7 +184,7 @@ def xwDfToRange(
 #   | Date |    20230218        | Version | 1.60        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Ensure the zebra stripe benchmark range do not contain NA values (unless all cells and indices on a single row are NA)  #
-#   |      |[2] Introduce boolean argument [formatOnly] to handle different scenarios when [asformatter == False]                       #
+#   |      |[2] Introduce boolean argument <formatOnly> to handle different scenarios when <asformatter == False>                       #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230228        | Version | 1.70        | Updater/Creator | Lu Robin Bin                                                #

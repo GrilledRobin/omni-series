@@ -15,7 +15,7 @@ def inferContents(
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to translate the attributes of all columns in the provided data frame into the syntax that can be        #
-#   | used to convert the data across platforms, e.g. <data frame> -> <CSV> -> <SAS>                                                    #
+#   | used to convert the data across platforms, e.g. <data frame> to <CSV> to <SAS>                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -34,12 +34,12 @@ def inferContents(
 #   |                |FORMAT          |str        | Format name in SAS syntax                                                           #
 #   |                |TYPE            |int        | Variable type, 1 for numeric, 2 for character                                       #
 #   |                |LENGTH          |int        | Variable length of the actual storage in SAS dataset                                #
-#   |                |FORMATL         |int        | Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>                 #
-#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
-#   |                |                |           |              precision is always kept maximum during conversion                     #
-#   |                |FORMATD         |int        | Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>                #
-#   |                |                |           | [IMPORTANT] This value is only the display length in the converted data, the storage#
-#   |                |                |           |              precision is always kept maximum during conversion                     #
+#   |                |FORMATL         |int        | Format length in SAS syntax, i.e. <w> in the definition <FORMATw.d>.                #
+#   |                |                |           | This value is only the display length in the converted data, the storage precision  #
+#   |                |                |           |  is always kept maximum during conversion                                           #
+#   |                |FORMATD         |int        | Format decimal in SAS syntax, i.e. <d> in the definition <FORMATw.d>.               #
+#   |                |                |           | This value is only the display length in the converted data, the storage precision  #
+#   |                |                |           |  is always kept maximum during conversion                                           #
 #   |                |----------------+-----------+-------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #

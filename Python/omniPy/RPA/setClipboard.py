@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 #We have to import [pywintypes] to activate the DLL required by [pywin32]
 #It is weird but works!
 #Quote: (#12) https://stackoverflow.com/questions/3956178/cant-load-pywin32-library-win32gui
 import pywintypes
 import win32clipboard as clip
 
-def setClipboard(txt) -> 'Send the text to the system clipboard':
+def setClipboard(txt):
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -18,7 +17,7 @@ def setClipboard(txt) -> 'Send the text to the system clipboard':
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[REFERENCE]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   | https://www.programcreek.com/python/example/54910/win32clipboard.OpenClipboard                                                    #
+#   |[1] https://www.programcreek.com/python/example/54910/win32clipboard.OpenClipboard                                                 #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -45,19 +44,12 @@ def setClipboard(txt) -> 'Send the text to the system clipboard':
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |sys, pywintypes, win32clipboard                                                                                                #
+#   |   |pywintypes, win32clipboard                                                                                                     #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
-
-    #001. Import necessary functions for processing.
-
-    #010. Check parameters.
-    #011. Prepare log text.
-    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
-    LfuncName : str = sys._getframe().f_code.co_name
 
     #012. Handle the parameter buffer.
 

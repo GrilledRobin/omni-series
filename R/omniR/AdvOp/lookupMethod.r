@@ -5,7 +5,7 @@
 #   | of name, and escalate it into a separate callable with <self> as the first positional argument, for further binding to an         #
 #   | instance as a method. Meanwhile, it enables to call the further bound method by ignoring excessive parameters.                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Dynamically lookup the method for an instance, basically for R6 Class                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -14,10 +14,10 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |apiCls            :   <str     > Class/owner name of the method to lookup and bind                                                 #
-#   |                      [None                ]<Default> System would raise exception if it is not provided                           #
+#   |                      [NULL                ]<Default> System would raise exception if it is not provided                           #
 #   |                      [str                 ]          Any string that is legal to form attribute names of a class                  #
 #   |apiPkg            :   <str     > Package name in which to lookup the dedicated callable                                            #
-#   |                      [None                ]<Default> System would search the callable from current session                        #
+#   |                      [NULL                ]<Default> System would search the callable from current session                        #
 #   |                      [str                 ]          System would search the callable from within the package                     #
 #   |apiPfx            :   <str     > Prefix of the pattern to search for the name of the callable: <apiPfx> + <apiCls> + <apiSfx>      #
 #   |                      [<empty str>         ]<Default> No specific prefix                                                           #
@@ -26,25 +26,25 @@
 #   |                      [<empty str>         ]<Default> No specific suffix                                                           #
 #   |                      [str                 ]          Set a proper suffix to validate the search                                   #
 #   |lsOpt             :   <dict    > Additional options for <ls_frame> given <apiPkg> is not provided, for search in current session   #
-#   |                      [<empty dict>        ]<Default> No additional options, see function definition for details                   #
-#   |                      [dict                ]          See <AdvOp.ls_frame> for additional options                                  #
-#   |attr_handler      :   <obj     > Attribute name to get from the bound instance, to mutate the result returned from the method call #
+#   |                      [<empty list>        ]<Default> No additional options, see function definition for details                   #
+#   |                      [list                ]          See <AdvOp.ls_frame> for additional options                                  #
+#   |attr_handler      :   <obj     > Attribute symbol to get from the bound instance, to mutate the result returned from the call      #
 #   |                      [<missing>           ]<Default> No need to mutate the result from the newly bound method                     #
 #   |                      [<bound object>      ]          Existing attribute to handle the result from the newly bound method          #
-#   |attr_kwInit       :   <obj     > Attribute name to get from the bound instance, to initialize the keyword arguments of the newly   #
+#   |attr_kwInit       :   <obj     > Attribute symbol to get from the bound instance, to initialize the keyword arguments of the newly #
 #   |                       bound method at the binding stage                                                                           #
 #   |                      [<missing>           ]<Default> No need to adjust the default keyword arguments of the newly bound method    #
 #   |                      [<bound object>      ]          Existing attribute to initialize the keyword arguments of the newly bound    #
 #   |                                                       method                                                                      #
-#   |attr_assign       :   <obj     > Attribute name to get from the bound instance, to assign the result from the newly bound method   #
+#   |attr_assign       :   <obj     > Attribute symbol to get from the bound instance, to assign the result from the newly bound method #
 #   |                      [<missing>           ]<Default> No need to store the result of the newly bound method to another attribute   #
 #   |                      [<bound object>      ]          Existing attribute to store the result from the newly bound method           #
 #   |attr_return       :   <obj     > Attribute name to get from the bound instance, to return from the newly bound method              #
 #   |                      [<missing>           ]<Default> Only return the result from the newly bound method                           #
 #   |                      [<bound object>      ]          Only return the value of the dedicated attribute, similar to <property>      #
 #   |coerce_           :   <bool    > Whether to raise exception if the dedicated callable is not found                                 #
-#   |                      [True                ]<Default> Return <None> if the callable is not found                                   #
-#   |                      [False               ]          Raise exception if the callable is not found                                 #
+#   |                      [TRUE                ]<Default> Return <NULL> if the callable is not found                                   #
+#   |                      [FALSE               ]          Raise exception if the callable is not found                                 #
 #   |envir             :   <env     > The environment within which to invoke the call of the dedicated function                         #
 #   |                      [<see def.>          ]<Default> Set the environment of the function found to the default one (as an instance #
 #   |                                                       of R6 Class                                                                 #

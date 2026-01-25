@@ -32,6 +32,14 @@ def kfFunc_ts_roll(
 #   |This function is intended to standardize the generation of KPI datasets by minimize the calculation effort and consumption of      #
 #   | system resources                                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Signature Expansion]                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Signature of this function is expanded from <kfCore_ts_agg>, see its documents for detailed argument list                      #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[TERMINOLOGY]                                                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Naming: <K>PI <F>actory <FUNC>tion for <T>ime <S>eries by <ROLL>ing period algorithm                                           #
@@ -57,7 +65,7 @@ def kfFunc_ts_roll(
 #   |                   follow the syntax of this function during input                                                                 #
 #   |                  [None            ] <Default> Function will raise error if it is NOT provided                                     #
 #   |kDays         :   Positive number of days to roll back from <inDate>                                                               #
-#   |                  [0               ] <Default> Function will raise error if it is NOT positive                                     #
+#   |                  [int <0>         ] <Default> Function will raise error if it is NOT positive                                     #
 #   |dateBgn       :   The same argument in the ancestor function, which is a placeholder in this one, superseded by <inDate> so it no  #
 #   |                   longer takes effect                                                                                             #
 #   |                   [IMPORTANT] We always have to define such argument if it is also in the ancestor function, and if we need to    #
@@ -148,11 +156,11 @@ def kfFunc_ts_roll(
     pos_in, kw_in = eSig.insParams(args_dummy, pos, kw)
 
     #330. Retrieve the environment from the reshaped input
-    fDebug = eSig.getParam('fDebug', pos_in, kw_in)
-    kw_d = eSig.getParam('kw_d', pos_in, kw_in)
-    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in)
-    calcInd = eSig.getParam('calcInd', pos_in, kw_in)
-    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in)
+    fDebug = eSig.getParam('fDebug', pos_in, kw_in, inc_default = True)
+    kw_d = eSig.getParam('kw_d', pos_in, kw_in, inc_default = True)
+    kw_cal = eSig.getParam('kw_cal', pos_in, kw_in, inc_default = True)
+    calcInd = eSig.getParam('calcInd', pos_in, kw_in, inc_default = True)
+    genPHMul = eSig.getParam('genPHMul', pos_in, kw_in, inc_default = True)
 
     #350. Ending date
     dateEnd_d = asDates(inDate, **kw_d)

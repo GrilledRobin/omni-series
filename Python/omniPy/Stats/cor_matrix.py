@@ -5,36 +5,39 @@ import numpy as np
 import sys, warnings
 from omniPy.Stats import cov_matrix
 
-def cor_matrix( x , y = None , rowvar = False ) -> 'Correlation Coefficient between each column in a matrix to all others':
-    #000.   Info.
+def cor_matrix( x , y = None , rowvar = False ) -> np.matrix:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the Correlation Coefficient Matrix for each column in the matrix to all other columns       #
-#   |Quote: https://blog.csdn.net/lph188/article/details/84501481                                                                       #
-#   |Formula of [pearson correlation coefficient] is as below:                                                                          #
-#   |COR(X,Y) = COV(X,Y) / ( STD(X) * STD(Y) )                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Difference between this function, [np.corrcoef] and R:                                                                             #
-#   |[1] This function is able to be applied to two different matrices, while [np.corrcoef] can only be applied to a single matrix      #
-#   |[2] This function is slightly slower than [np.corrcoef] on large matrix                                                            #
-#   |[3] Both functions in Python are slightly faster than R with much less CPU effort (only when Rcpp is applied for calculation based #
-#   |     on C++ optmization), and much faster than base function [cor] in R                                                            #
+#   |QUOTE                                                                                                                              #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] https://blog.csdn.net/lph188/article/details/84501481                                                                          #
+#   |[2] Formula of <pearson correlation coefficient> is as: <COR(X,Y) = COV(X,Y) / ( STD(X) * STD(Y) )>                                #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[Difference between this function, <np.corrcoef> and <R>]                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] This function is able to be applied to two different matrices, while <np.corrcoef> can only be applied to a single matrix      #
+#   |[2] This function is slightly slower than <np.corrcoef> on large matrix                                                            #
+#   |[3] Both functions in <Python> are slightly faster than <R> with much less CPU effort even when <Rcpp> is applied for calculation  #
+#   |     based on <C++> optmization, and much faster than base function <cor> in <R>                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |x,y        :   The input matrices for which the calculation is to be taken upon the columns                                        #
-#   |rowvar     :   Whether the requested calculation is applied to each row to all others (Compatible to [numpy])                      #
-#   |               [False]<Default> Calculate the distance between each column in [x] to that in [y]                                   #
-#   |               [True]           Calculate the distance between each row in [x] to that in [y]                                      #
+#   |x,y        :   <np.matrix> The input matrices for which the calculation is to be taken upon the columns                            #
+#   |rowvar     :   <bool     > Whether the requested calculation is applied to each row to all others (Compatible to <numpy>)          #
+#   |               [False]<Default> Calculate the distance between each column in <x> to that in <y>                                   #
+#   |               [True ]          Calculate the distance between each row in <x> to that in <y>                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [K*M] matrix, where [K] is equal to the number of columns of [x], while [M] is the number of columns of [y]     #
-#   |               Each [k,m] represents the Correlation Coefficient of [k]th column in [x] to [m]th column in [y]                     #
+#   |<np.matrix>:   The <K*M> matrix, where <K> is equal to the number of columns of <x>, while <M> is the number of columns of <y>.    #
+#   |               Each <[k,m]> represents the Correlation Coefficient of <k>th column in <x> to <m>th column in <y>                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -55,20 +58,18 @@ def cor_matrix( x , y = None , rowvar = False ) -> 'Correlation Coefficient betw
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Stats                                                                                                                   #
+#   |   |Stats                                                                                                                          #
 #   |   |   |cov_matrix                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001.   Import necessary functions for processing.
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( x , ( np.ndarray , np.matrix ) ):
         raise TypeError( '[' + LfuncName +  '][x] should be of the type [np.matrix]! Type of input value is [{0}]'.format( type(x) ) )
     chkNaN_x = min( x[np.isnan(x)].shape ) != 0
@@ -84,32 +85,32 @@ def cor_matrix( x , y = None , rowvar = False ) -> 'Correlation Coefficient betw
     else:
         f_std = np.std
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #050.   Transpose [x] if it is requested for calculation based on [row]s.
+    #050. Transpose [x] if it is requested for calculation based on [row]s.
     if isinstance( x , ( np.ndarray ) ): x = np.asmatrix(x)
     if rowvar: x = x.T
 
-    #100.   Reshape [x].
+    #100. Reshape [x].
     x = x.astype(np.float64)
 
-    #300.   Further handle [y] if it is provided.
+    #300. Further handle [y] if it is provided.
     if y is None: y = x
     elif y is x: pass
     else:
-        #050.   Transpose [x] if it is requested for calculation based on [row]s.
+        #050. Transpose [x] if it is requested for calculation based on [row]s.
         if isinstance( y , ( np.ndarray ) ): y = np.asmatrix(y)
         if rowvar: y = y.T
 
-        #100.   Reshape [y].
+        #100. Reshape [y].
         y = y.astype(np.float64)
 
-    #500.   Calculate the Standard Deviation of both [x] and [y].
+    #500. Calculate the Standard Deviation of both [x] and [y].
     std_x = np.asmatrix( f_std( x , axis = 0 , ddof = 1 ) )
     if y is x: std_y = std_x
     else: std_y = np.asmatrix( f_std( y , axis = 0 , ddof = 1 ) )
 
-    #900.   Output.
+    #900. Output.
     return( cov_matrix(x, y) / np.dot( std_x.T , std_y ) )
 #End cor_matrix
 

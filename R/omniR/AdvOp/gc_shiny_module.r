@@ -1,47 +1,39 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to clean-up the remnants of the obselete call of a [shiny module], so called Garbage Collection          #
+#   |This function is intended to clean-up the remnants of the obsolete call of a <shiny module>, so called Garbage Collection          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |100.   Operation:                                                                                                                  #
+#   |OPERATION                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Remove the [UI]s from the list of containers as provided                                                                       #
-#   |[2] Remove the [input] elements from the namespaced [module ID] as provided                                                        #
-#   |[3] Destroy the [observers] named in certain convention, preferrably prefixed by the namespaced [module ID]                        #
+#   |[1] Remove the <UI>s from the list of containers as provided                                                                       #
+#   |[2] Remove the <input> elements from the namespaced <module ID> as provided                                                        #
+#   |[3] Destroy the <observers> named in certain convention, preferably prefixed by the namespaced <module ID>                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |500.   Scenarios:                                                                                                                  #
+#   |[Quotes & Conclusion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 某个module在当前app中被反复调用（通常为变换参数后重新调用）；如查看不同数据的summary                                           #
-#   |[2] 同一个module在当前app中的不同区域分别调用；如封装好的作图组件在不同页面作不同的图                                              #
-#   |[3] 防止页面刷新后原先module中的observers仍然有效运行                                                                              #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |900.   Quotes & Conclusion:                                                                                                        #
-#   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Quote: (Below article describes how to clean the inputs)                                                                           #
-#   | https://roh.engineering/post/shiny-add-removing-modules-dynamically/                                                              #
-#   |Quote: (Below article shows a full test program of this function)                                                                  #
-#   | https://appsilon.com/how-to-safely-remove-a-dynamic-shiny-module/                                                                 #
+#   |How to clean the inputs: https://roh.engineering/post/shiny-add-removing-modules-dynamically/                                      #
+#   |Full test program of this function: https://appsilon.com/how-to-safely-remove-a-dynamic-shiny-module/                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |module_id     :   The namespaced ID of the module, for which to clean-up the remnants                                              #
-#   |.input        :   The list of [input]s from which to identify the elements to be removed, usually provided as [input]              #
-#   |                   IMPORTANT: This must be provided as an [object] instead of a [character string]!                                #
-#   |session       :   The session in which to conduct the clean-up, usually provided as current [session]                              #
-#   |                   IMPORTANT: This must be provided as a [session object] instead of a [character string]!                         #
-#   |UI_Selectors  :   The list of selectors from which to remove [UI]s                                                                 #
-#   |                   [1] The selectors are available for [shiny::removeUI]. See documents for parameter convention.                  #
-#   |                   [2] Each of the selector names will be prefixed by: ['#' + module_id] when [UI_namespaced==T]                   #
-#   |                   [3] [NULL] is the default value of the parameter                                                                #
-#   |UI_namespaced :   Whether or not is the [UI_Selectors] namespaced, useful for when the [UI] is created in the caller app           #
-#   |                   [TRUE ]<default> Consider the [UI_Selectors] are namespaced when trying removal                                 #
-#   |                   [FALSE]          Consider the [UI_Selectors] are not namespaced when trying removal                             #
-#   |observer_pfx  :   The naming prefix of the [observer]s to be destroyed                                                             #
-#   |                   [1] Naming convention of observers is: [ session$userData[[paste(ns(observer_pfx),'name',sep='_')]] ]           #
-#   |                   [2] Following above naming convention, ensure the [observer]s in the [module] are stored in [session$userData]  #
-#   |                   [3] 'uObs' is the default value of the parameter, representing: User-defined Observer                           #
+#   |.input        :   The list of <input>s from which to identify the elements to be removed, usually provided as <input>              #
+#   |                   [IMPORTANT] This must be provided as an <object> instead of a <character string>!                               #
+#   |session       :   The session in which to conduct the clean-up, usually provided as current <session>                              #
+#   |                   [IMPORTANT] This must be provided as a <session object> instead of a <character string>!                        #
+#   |UI_Selectors  :   The list of selectors from which to remove <UI>s                                                                 #
+#   |                   [1] The selectors are available for <shiny::removeUI>. See documents for parameter convention.                  #
+#   |                   [2] Each of the selector names will be prefixed by: <'#' + module_id> when <UI_namespaced==T>                   #
+#   |                   [3] <NULL> is the default value of the parameter                                                                #
+#   |UI_namespaced :   Whether or not is the <UI_Selectors> namespaced, useful for when the <UI> is created in the caller app           #
+#   |                   [TRUE ]<default> Consider the <UI_Selectors> are namespaced when trying removal                                 #
+#   |                   [FALSE]          Consider the <UI_Selectors> are not namespaced when trying removal                             #
+#   |observer_pfx  :   The naming prefix of the <observer>s to be destroyed                                                             #
+#   |                   [1] Naming convention of observers is: <session$userData[[paste(ns(observer_pfx),'name',sep='_')]]>             #
+#   |                   [2] Following above naming convention, ensure the <observer>s in the <module> are stored in <session$userData>  #
+#   |                   [3] <'uObs'> is the default value of the parameter, representing User-defined Observer                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -66,7 +58,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |Directory: [omniR$AdvOp]                                                                                                       #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |rem_shiny_inputs                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -118,7 +110,7 @@ gc_shiny_module <- function(module_id, .input, session, UI_Selectors = NULL, UI_
 	# print(names_usrData)
 	# print(obs_pfx)
 
-	#770. Try to destroy the obsersers as matching the naming convention
+	#770. Try to destroy the observers as matching the naming convention
 	#Keep silent when the object is NOT an observer, or the observer can no longer be destroyed
 	lapply(names_usrData[grep(paste0('^', obs_pfx), names_usrData, perl = T)], function(m) {
 		try(session$userData[[m]]$destroy(), silent = T)
@@ -209,4 +201,10 @@ if (FALSE){
 
 		shinyApp(ui = ui, server = server)
 	}
+
+	if (FALSE) {'
+		[1] 某个module在当前app中被反复调用（通常为变换参数后重新调用）；如查看不同数据的summary
+		[2] 同一个module在当前app中的不同区域分别调用；如封装好的作图组件在不同页面作不同的图
+		[3] 防止页面刷新后原先module中的observers仍然有效运行
+	'}
 }

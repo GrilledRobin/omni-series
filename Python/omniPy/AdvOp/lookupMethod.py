@@ -30,7 +30,7 @@ def lookupMethod(
 #   | of name, and escalate it into a separate callable with <self> as the first positional argument, for further binding to an         #
 #   | instance as a method. Meanwhile, it enables to call the further bound method by ignoring excessive parameters.                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Dynamically lookup the method for an instance                                                                                  #
 #   |[2] Prepare descriptor to enable dynamic method lookup                                                                             #
@@ -75,7 +75,7 @@ def lookupMethod(
 #   |attr_return       :   <str     > Attribute name to get from the bound instance, to return from the newly bound method              #
 #   |                      [None                ]<Default> Only return the result from the newly bound method                           #
 #   |                      [str                 ]          Only return the value of the dedicated attribute, similar to <property>      #
-#   |coerce_            :   <bool    > Whether to raise exception if the dedicated callable is not found                                #
+#   |coerce_           :   <bool    > Whether to raise exception if the dedicated callable is not found                                 #
 #   |                      [True                ]<Default> Return <None> if the callable is not found                                   #
 #   |                      [False               ]          Raise exception if the callable is not found                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -115,6 +115,11 @@ def lookupMethod(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce argument <attr_hdl_send> to enable modification upon `send()` messages where applicable                       #
 #   |      |[2] Now supports `send()` operations for generator, async generator and iterable coroutine                                  #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251116        | Version | 4.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Now mutate <received_msg> right when it is received, instead of when it is NOT None                                     #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -617,15 +622,15 @@ def lookupMethod(
                                 targets = [Name('received_msg', ctx=ast.Store())]
                                 ,value = ast.Yield(value = Name('val_mutate'))
                             )
-
+                        ] + stmt_mut_send + [
                             # if received_msg is not None:
-                            ,ast.If(
+                            ast.If(
                                 test = ast.Compare(
-                                    left = Name('received_msg')
+                                    left = Name('val_mut_send')
                                     ,ops = [ast.IsNot()]
                                     ,comparators = [Const(None)]
                                 )
-                                ,body = stmt_mut_send + [
+                                ,body = [
                                     # inner_value = inner_gen.send(received_msg)
                                     ast.Assign(
                                         targets = [Name('val_inner', ctx=ast.Store())]

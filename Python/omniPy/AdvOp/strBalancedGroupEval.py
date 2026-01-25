@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 from typing import Any
 from omniPy.AdvOp import get_values, strNestedParser, ExpandSignature
 
@@ -23,9 +24,17 @@ def strBalancedGroupEval(
 #   | Group in Regular Expression (while NOT using that in RegExp as it would fail in many cases), and then replace their respective    #
 #   | positions with their parsed values in current environment, i.e. treat them as variables in current session                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |[Signature Expansion]                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Resolve the jinja-like expression such as: f<g<a>>, when [a] is a variable, [g<a>] is another, and so forth                    #
+#   |[1] Signature of this function is expanded from <strNestedParser>, see its documents for detailed argument list                    #
+#   |[2] With the Signature Expansion functionality, one can obtain the correct signature of this function at runtime in below ways     #
+#   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors              #
+#   |    [2] Type <print(func.__doc__)> in the console to see its full documents including the docstring brought from the ancestors     #
+#   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                                  #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |SCENARIOS                                                                                                                          #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] Resolve the jinja-like expression such as: <f{g{a}}>, when <a> is a variable, <g{a}> is another, and so forth                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -37,8 +46,8 @@ def strBalancedGroupEval(
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<str>             :   The character string with possible replacement at the positions regarding Balanced Group Expressions         #
-#   |                      [1] Expressions such as : f<g<a>>, will be evaluated in recursion                                            #
-#   |                      [2] Given that any expression, such as: <a>, is not a known variable in current session, it will be treated  #
+#   |                      [1] Expressions such as : <f{g{a}}>, will be evaluated in recursion                                          #
+#   |                      [2] Given that any expression, such as: <{a}>, is not a known variable in current session, it will be treated#
 #   |                           as plain text with the bounds removed in the output result                                              #
 #   |                      [3] The whole concatenated substring between the boundaries (exclusive of them) is stripped for object lookup#
 #   |                      [4] When the whole string is enclosed by the bounds and its evaluation is successful, the return value       #
@@ -84,7 +93,7 @@ def strBalancedGroupEval(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Dependent Modules                                                                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |typing                                                                                                                         #
+#   |   |sys, typing                                                                                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -95,15 +104,26 @@ def strBalancedGroupEval(
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
+    #010. Check parameters.
+    #011. Prepare log text.
+    #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
+    LfuncName : str = sys._getframe().f_code.co_name
+
     #012. Parameter buffer
 
     #050. Local parameters
     args_share = {'include' : False}
     eSig.vfyConflict(args_share)
-    pos_out, kw_out = eSig.insParams(args_share, pos, kw)
+    pos_in, kw_in = eSig.insParams(args_share, pos, kw)
+
+    #060. Ensure no extra effort
+    meta_ = eSig.getParam('meta_', pos_in, kw_in, inc_default = True)
+    if meta_:
+        print(f'[{LfuncName}]<meta_> is set as False as this function does not require extra effort.')
+    pos_out, kw_out = eSig.updParams({'meta_' : False}, pos_in, kw_in)
 
     #100. Parse the nested structure out of the input string
-    nest_struct = eSig.src(*pos_out, **kw_out)
+    nest_struct = eSig.src(*pos_out, **kw_out)['RESULT']
 
     #200. Define helper functions
     #210. Function to join the nested structures into strings respectively, then evaluate the strings into new ones, with recursion

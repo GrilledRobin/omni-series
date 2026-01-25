@@ -2,7 +2,7 @@
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to translate the attributes of all columns in the provided data frame into the syntax that can be        #
-#   | used to convert the data across platforms, e.g. <data frame> -> <CSV> -> <SAS>                                                    #
+#   | used to convert the data across platforms, e.g. <data frame> to <CSV> to <SAS>                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -47,7 +47,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |getDtypes                                                                                                                  #
 #   |   |   |apply_MapVal                                                                                                               #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -127,7 +127,7 @@ inferContents <- function(
 	#     within the same column
 	#Quote: https://www.listendata.com/2016/12/sas-length-of-numeric-variables.html
 	dfsub_str <- inDat %>%
-		dplyr::select(tidyselect::all_of(col_name[col_format == '$'])) %>%
+		dplyr::select(dplyr::all_of(col_name[col_format == '$'])) %>%
 		dplyr::mutate_all(as.character) %>%
 		#Quote: https://tidyr.tidyverse.org/reference/replace_na.html
 		dplyr::mutate_if(~any(is.na(.)), ~tidyr::replace_na(., '')) %>%

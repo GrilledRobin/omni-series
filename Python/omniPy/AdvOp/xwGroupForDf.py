@@ -41,42 +41,42 @@ def xwGroupForDf(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to add groups and outlines during the export of a pivot table to EXCEL                                   #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] Often work together with [pandasPivot] and [xwDfToRange] to create EXCEL report with fancy effects                             #
+#   |[1] Often work together with <pandasPivot> and <xwDfToRange> to create EXCEL report with fancy effects                             #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |rng         :   EXCEL range object, in which to pour the data                                                                      #
-#   |df          :   Data frame to be output to [rng], from which also to extract sub-ranges for styling                                #
-#   |index       :   Logical value indicating whether to export [df.index] as well                                                      #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
-#   |index_name  :   Logical value indicating whether to keep [df.index.names] during export                                            #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
-#   |header      :   Logical value indicating whether to export [df.columns] as well                                                    #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
-#   |mergeIdx    :   Various value indicating whether to merge vertically adjacent cells with the same values in [df.index], or such    #
-#   |                 cells in any provided [levels] of [df.index]                                                                      #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
-#   |mergeHdr    :   Various value indicating whether to merge horizontally adjacent cells with the same values in [df.columns], or such#
-#   |                 cells in any provided [levels] of [df.columns]                                                                    #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
-#   |kw_pvtLike  :   Keyword arguments from [pandasPivot] to calculate the groupers                                                     #
-#   |                [<see def.>  ] <Default> See definition of [pandasPivot]                                                           #
-#   |kw_asGroup  :   Keyword arguments from [xwRangeAsGroup] to determine the attributes of the groupers                                #
-#   |                [<see def.>  ] <Default> See definition of [xwRangeAsGroup]                                                        #
-#   |asformatter :   Logical value indicating whether to act as a formatter function for xw.Range. One needs to call [functools.partial]#
-#   |                 to set the parameters other than [rng] and [df] in order to use it in such case                                   #
-#   |                [False       ] <Default> Call this function to export [df] to the predefined [rng] directly                        #
-#   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
+#   |df          :   Data frame to be output to <rng>, from which also to extract sub-ranges for styling                                #
+#   |index       :   Logical value indicating whether to export <df.index> as well                                                      #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
+#   |index_name  :   Logical value indicating whether to keep <df.index.names> during export                                            #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
+#   |header      :   Logical value indicating whether to export <df.columns> as well                                                    #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
+#   |mergeIdx    :   Various value indicating whether to merge vertically adjacent cells with the same values in <df.index>, or such    #
+#   |                 cells in any provided <levels> of <df.index>                                                                      #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
+#   |mergeHdr    :   Various value indicating whether to merge horizontally adjacent cells with the same values in <df.columns>, or such#
+#   |                 cells in any provided <levels> of <df.columns>                                                                    #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
+#   |kw_pvtLike  :   Keyword arguments from <pandasPivot> to calculate the groupers                                                     #
+#   |                [<see def.>  ] <Default> See definition of <pandasPivot>                                                           #
+#   |kw_asGroup  :   Keyword arguments from <xwRangeAsGroup> to determine the attributes of the groupers                                #
+#   |                [<see def.>  ] <Default> See definition of <xwRangeAsGroup>                                                        #
+#   |asformatter :   Logical value indicating whether to act as a formatter function for xw.Range. One needs to call <functools.partial>#
+#   |                 to set the parameters other than <rng> and <df> in order to use it in such case                                   #
+#   |                [False       ] <Default> Call this function to export <df> to the predefined <rng> directly                        #
+#   |                [True        ]           Only format the predefined <rng> without exporting the data of <df>                       #
 #   |formatOnly  :   Logical value indicating whether only to set the format to the give range while not pouring the data               #
-#   |                [IMPORTANT   ] This argument only works when [asformatter = False]                                                 #
+#   |                [IMPORTANT   ] This argument only works when <asformatter = False>                                                 #
 #   |                [False       ] <Default> Pour data into the range after formatting                                                 #
-#   |                [True        ]           Only format the predefined [rng] without exporting the data of [df]                       #
-#   |idxall      :   When matching the provision of [indexer], generate a full indexer for the provided pd.Index                        #
-#   |                [<see def.>  ] <Default> See definition of [xwDfToRange]                                                           #
+#   |                [True        ]           Only format the predefined <rng> without exporting the data of <df>                       #
+#   |idxall      :   When matching the provision of <indexer>, generate a full indexer for the provided pd.Index                        #
+#   |                [<see def.>  ] <Default> See definition of <xwDfToRange>                                                           #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
@@ -116,7 +116,7 @@ def xwGroupForDf(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |modifyDict                                                                                                                 #
 #   |   |   |pandasParseIndexer                                                                                                         #
 #   |   |   |pandasPivot                                                                                                                #

@@ -8,17 +8,18 @@
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |x,y        :   The input matrices for which the calculation is to be taken upon the columns                                        #
-#   |adj        :   Whether to adjust the input matrix by deducting the means of the respective columns before calculation              #
+#   |adj        :   <logical> Whether to adjust the input matrix by deducting the means of the respective columns before calculation    #
+#   |               [FALSE  ]<Default> Keep the original input                                                                          #
+#   |               [TRUE   ]          Adjust the center of the vectors to 0                                                            #
 #   |                Check the blog for reason: https://blog.csdn.net/ifnoelse/article/details/7766123                                  #
-#   |dim        :   On which dimension is the calculation requested                                                                     #
-#   |               [row] Calculate the distance between each row in [x] to that in [y]                                                 #
-#   |               [col] Calculate the distance between each column in [x] to that in [y]                                              #
-#   |               [Default] [col] (similarity is usually calculated for models that are based upon dimensions)                        #
+#   |dim        :   <chr    > On which dimension is the calculation requested                                                           #
+#   |               [col    ]<Default> Calculate the distance between each column in <x> to that in <y>                                 #
+#   |               [row    ]          Calculate the distance between each row in <x> to that in <y>                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [K*M] matrix, where [K] is equal to the number of columns of [x], while [M] is the number of columns of [y]     #
-#   |               Each [k,m] represents the similarity of [k]th column in [x] to [m]th column in [y]                                  #
+#   |<Matrix>   :   The <K*M> matrix, where <K> is equal to the number of columns of <x>, while <M> is the number of columns of <y>     #
+#   |               Each <[k,m]> represents the similarity of <k>th column in <x> to <m>th column in <y>                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -30,39 +31,38 @@
 #   | Date |    20200508        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Extend the calculation to two different matrices with the same number of rows but different number of columns, indicating   #
-#   |      | the similarity of each column in matrix [x] to all columns in matrix [y] respectively.                                     #
-#   |      |The original function with only one argument [x] becomes a special case to current version, where [x] == [y].               #
+#   |      | the similarity of each column in matrix <x> to all columns in matrix <y> respectively.                                     #
+#   |      |The original function with only one argument <x> becomes a special case to current version, where <x == y>.                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200517        | Version | 2.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Introduce the [rep_row] and [colsums] methods from [Rfast] package to increase the speed significantly                      #
-#   |      |There is NOT an efficient replacement of [crossprod] in [Rfast] hence the overall speed is only increased a bit.            #
-#   |      |A bug of [Rfast::mat.mult] is detected when it is applied to x[M*K] and y[K*N]. The result shows:                           #
-#   |      | [1] Output a matrix as o[K*N], rather than o[M*N], when M>N; which means the rest piece of input data is lost              #
-#   |      | [2] Memory error and cause RScript to collapse, when M<N                                                                   #
+#   | Log  |[1] Introduce the <rep_row> and <colsums> methods from <Rfast> package to increase the speed significantly                  #
+#   |      |[2] There is NOT an efficient replacement of <crossprod> in <Rfast> hence the overall speed is only increased a bit.        #
+#   |      |[3] A bug of <Rfast::mat.mult> is detected when it is applied to <x[M*K]> and <y[K*N]>. The result shows:                   #
+#   |      |[4] Output a matrix as <o[K*N]>, rather than <o[M*N]>, when M&gt;N; which means the rest piece of input data is lost        #
+#   |      |[5] Memory error and cause RScript to collapse, when M&lt;N                                                                 #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20200518        | Version | 3.00        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |Introduce the [eigenMapMatMult] method from [MatrixMultiplication.cpp] C++ function to replace [crossprod] and [tcrossprod] #
-#   |      | functions from R base; which dramatically increase the efficiency by almost 10 times!                                      #
-#   |      |Quote: https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                   #
-#   |      |Note:                                                                                                                       #
-#   |      | [1] You have to install the package [Rcpp] to enable dynamic compilation of [CPP] code                                     #
-#   |      | [2] You also have to [Rcpp::sourceCpp] the dependent [CPP] code to introduce the C++ functions to R                        #
-#   |      | [3] Use [Rfast::transpose] to transpose the corresponding matrix before multiplication in order to get the same result as  #
-#   |      |      [crossprod] or [tcrossprod] respectively                                                                              #
+#   | Log  |[1] Introduce the <eigenMapMatMult> method from <MatrixMultiplication.cpp> (<C++>) function to replace <crossprod> and      #
+#   |      | <tcrossprod> functions from <R> base; which dramatically increase the efficiency by almost 20 times!                       #
+#   |      |[2] https://stackoverflow.com/questions/35923787/fast-large-matrix-multiplication-in-r                                      #
+#   |      |[3] You have to install the package <Rcpp> to enable dynamic compilation of <C++> code                                      #
+#   |      |[4] You also have to <Rcpp::sourceCpp> the dependent <C++> code to introduce the <C++> functions to <R>                     #
+#   |      |[5] Use <Rfast::transpose> to transpose the corresponding matrix before multiplication in order to get the same result as   #
+#   |      |      <crossprod> or <tcrossprod> respectively                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230114        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce a function [match.arg.x] to enable matching args after mutation, e.g. case-insensitive match                  #
+#   | Log  |[1] Introduce a function <match.arg.x> to enable matching args after mutation, e.g. case-insensitive match                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20240613        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Introduce cache for the compiled DLL to expose C++ functions across R sessions                                          #
+#   | Log  |[1] Introduce cache for the compiled DLL to expose <C++> functions across <R> sessions                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -78,7 +78,7 @@
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |   |Stats                                                                                                                          #
-#   |   |   |eigenMapMatMult       (See function definition in [MatrixMultiplication.cpp])                                              #
+#   |   |   |eigenMapMatMult       (See function definition in <MatrixMultiplication.cpp>)                                              #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
 #   |   |AdvOp                                                                                                                          #
 #   |   |   |match.arg.x                                                                                                                #

@@ -30,12 +30,12 @@ def parseDatName(
 #   |This function is intended to parse the input string by the provided mapping dictionary, esp. for the provided [dates], to generate #
 #   | the full paths of the files as indicated in the input string                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Generate a list of file full paths in terms of the provided naming convention and date series, also check their existence if   #
 #   |     requested                                                                                                                     #
 #   |[2] Translate the string patterns in all cells of a provided data frame by the provided [dict_map], resembling the similar         #
-#   |     function as [omniPy.AdvOp.apply_MapVal]                                                                                       #
+#   |     function as <AdvOp.apply_MapVal>                                                                                              #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -44,13 +44,13 @@ def parseDatName(
 #   |datPtn      :   The naming pattern of the data files, either located on the harddisk or in RAM of current session                  #
 #   |                [ <str>          ]           Single string that represent the naming convention of a series of data files          #
 #   |                [ <Iterable>     ]           Iterable of <str> in the same convention as above                                     #
-#   |parseCol    :   The column(s) to be parsed if [datPtn] is provided a [pd.DataFrame]                                                #
-#   |                [None            ] <Default> Parse all columns for [datPtn] where applicable                                       #
-#   |dates       :   Date series that is used to substitute the corresponding naming patterns in [datPtn] to generate valid data paths  #
-#   |                [ <date>         ]           Any value that can be parsed by the default arguments of [Dates.asDates]              #
-#   |outDTfmt    :   Format of dates as string to be used for substitution. Its [keys] should exist in the [values] of [dict_map]       #
+#   |parseCol    :   The column(s) to be parsed if <datPtn> is provided a <pd.DataFrame>                                                #
+#   |                [None            ] <Default> Parse all columns for <datPtn> where applicable                                       #
+#   |dates       :   Date series that is used to substitute the corresponding naming patterns in <datPtn> to generate valid data paths  #
+#   |                [ <date>         ]           Any value that can be parsed by the default arguments of <Dates.asDates>              #
+#   |outDTfmt    :   Format of dates as string to be used for substitution. Its <keys> should exist in the <values> of <dict_map>       #
 #   |                [ <dict>         ] <Default> See the function definition as the default argument of usage                          #
-#   |inRAM       :   Whether the [datPtn] that corresponds to the full paths of data files indicates they are in RAM of current session #
+#   |inRAM       :   Whether the <datPtn> that corresponds to the full paths of data files indicates they are in RAM of current session #
 #   |                [False           ] <Default> Indicates that the data files are stored on harddisk                                  #
 #   |                [True            ]           Indicates that the data files are stored in RAM of current session                    #
 #   |                [ <Iterable>     ]           Iterable of <bool> in the same convention as above                                    #
@@ -58,34 +58,33 @@ def parseDatName(
 #   |                [True            ] <Default> Try to locate the parsed data paths                                                   #
 #   |                [False           ]           Do not check the existence of the parsed data paths                                   #
 #   |                [ <str>          ]           Try to locate the parsed data paths by appending the requested naming suffix, see     #
-#   |                                              the output naming convention as in [Return values]                                   #
-#   |dict_map    :   Same argument as in [AdvOp.apply_MapVal]                                                                           #
-#   |                [{}              ] <Default> Indicates that [datPtn] does not require translation by pattern                       #
+#   |                                              the output naming convention as in <Return values>                                   #
+#   |dict_map    :   Same argument as in <AdvOp.apply_MapVal>                                                                           #
+#   |                [{}              ] <Default> Indicates that <datPtn> does not require translation by pattern                       #
 #   |exist_Opt   :   Named arguments for the function <std_read_RAM> to search for objects in current session                           #
 #   |                [<see def.>      ] <Default> Only try to obtain object in current session without directions                       #
 #   |                [Iterable        ]           Iterable of <dict> or <string> that can be parsed into <dict>, matching the length of #
 #   |                                              <parseCol> or having the same index as it                                            #
-#   |kw          :   Various named parameters for [AdvOp.apply_MapVal] during import; see its official document                         #
+#   |kw          :   Various named parameters for <AdvOp.apply_MapVal> during import; see its official document                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values.                                                                                                              #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |df          :   [pd.DataFrame] with below set of columns:                                                                          #
-#   |                [1] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add two columns with the translated paths as:  #
-#   |                    ['datPtn'] and ['datPtn.Parsed']                                                                               #
-#   |                [2] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the translated paths as:           #
-#   |                    [datPtn.names] and [ c + '.Parsed' for c in datPtn.names ]                                                     #
-#   |                [3] When [dates] is provided, add one column created by [Date.asDates] as:                                         #
-#   |                    ['dates'] <dtype: object> with values in the class as <datetime.date>                                          #
-#   |                [4] When [datPtn] is a string or [datPtn] is an unnamed [Iterable], add one column with the indicator as:          #
-#   |                    ['datPtn.inRAM']                                                                                               #
-#   |                [5] When [datPtn] is a named [Iterable] or a [pd.DataFrame], add column(s) with the indicator(s) as:               #
-#   |                    [ c + '.inRAM' for c in datPtn.names ]                                                                         #
-#   |                [6] When [datPtn] is a string or [datPtn] is an unnamed [Iterable] and [chkExist!=False], add one column as:       #
-#   |                    ['datPtn.' + ( 'chkExist' if chkExist or <str> )]                                                              #
-#   |                [7] When [datPtn] is a named [Iterable] or a [pd.DataFrame] and [chkExist!=False], add column(s) as:               #
-#   |                    [ c + '.' + ( 'chkExist' if chkExist or <str> ) for c in datPtn.names ]                                        #
-#   |                [8] When [datPtn] is a named [Iterable] or a [pd.DataFrame] there is a column [dates] in it, rename it as:         #
-#   |                    ['dates.original']  (to differ from ['dates'] that is created in this function)                                #
+#   |                [1] When <datPtn> is a string or <datPtn> is an unnamed <Iterable>, add two columns with the translated paths as   #
+#   |                    these names of <'datPtn'> and <'datPtn.Parsed'>                                                                #
+#   |                [2] When <datPtn> is a named <Iterable> or a <pd.DataFrame>, add columns with the translated paths as:             #
+#   |                    <datPtn.names> and <[ c + '.Parsed' for c in datPtn.names ]>                                                   #
+#   |                [3] When <dates> is provided, add one column created by <Date.asDates> as:                                         #
+#   |                    <['dates'] (dtype - object)> with values in the class as <datetime.date>                                       #
+#   |                [4] When <datPtn> is a string or <datPtn> is an unnamed <Iterable>, add one column <'datPtn.inRAM'>                #
+#   |                [5] When <datPtn> is a named <Iterable> or a <pd.DataFrame>, add column(s) with the indicator(s) as:               #
+#   |                    (a list of) <[ c + '.inRAM' for c in datPtn.names ]>                                                           #
+#   |                [6] When <datPtn> is a string or <datPtn> is an unnamed <Iterable> and <chkExist!=False>, add one column as:       #
+#   |                    (a string of) <'datPtn.' + ( 'chkExist' if chkExist or str )>                                                  #
+#   |                [7] When <datPtn> is a named <Iterable> or a <pd.DataFrame> and <chkExist!=False>, add column(s) as:               #
+#   |                    (a list of) <[ c + '.' + ( 'chkExist' if chkExist or str ) for c in datPtn.names ]>                            #
+#   |                [8] When <datPtn> is a named <Iterable> or a <pd.DataFrame> there is a column <dates> in it, rename it as:         #
+#   |                    <'dates.original'>  (to differ from <'dates'> that is created in this function)                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -96,14 +95,14 @@ def parseDatName(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210614        | Version | 1.01        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug when the input [datPtn] has zero length                                                                     #
+#   | Log  |[1] Fixed a bug when the input <datPtn> has zero length                                                                     #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20210828        | Version | 1.02        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Reset the index of input data frame anyway, as there may be cartesian join between it and the date values and we should #
 #   |      |     therefore ensure a consistent output                                                                                   #
-#   |      |[2] Change the way to assign list of values to a subset of data frame, to facilitate the syntax of [pandas >= 1.2.1]        #
+#   |      |[2] Change the way to assign list of values to a subset of data frame, to facilitate the syntax of <pandas GE 1.2.1>        #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211228        | Version | 1.03        | Updater/Creator | Lu Robin Bin                                                #

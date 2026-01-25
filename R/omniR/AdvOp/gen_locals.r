@@ -3,17 +3,17 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to create or assign values to multiple variables at the same time within current frame/environment       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] 当一个function有很多参数且用户需要调试它的[部分]功能时，可用此function以[等价于调用它的方式]对它的参数一次性赋值，参见示例     #
+#   |[1] Test the internal scripts for a function with many arguments by assigning values to them respectively to act like variables    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |...        :   Various named parameters, whose [names] will be used to create variables while [values] will be assigned to them    #
+#   |...        :   Various named parameters, whose <names> will be used to create variables while <values> will be assigned to them    #
 #   |frame      :   <frame> object in which to create the variables                                                                     #
-#   |               [see def.   ] <Default> Create the variables in the caller frame                                                    #
+#   |               [<see def.> ] <Default> Create the variables in the caller frame                                                    #
 #   |               [frame      ]           Dedicated <frame> in which to create the variables                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
@@ -32,6 +32,11 @@
 #   | Log  |[1] Introduce argument <frame> to enable subtle control on the destination of created variables                             #
 #   |      |[2] In <R == 4.1.1>, <rlang::flatten_if> issues warning message even if the argument <predicate> returns FALSE, hence we set#
 #   |      |     the verification ahead of it to suppress the warning                                                                   #
+#   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260125        | Version | 1.20        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Replace <rlang::flatten_if> with <purrr::list_flatten> as the former has been deprecated since <rlang==1.1.0>           #
 #   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
@@ -73,7 +78,7 @@ gen_locals <- function(..., frame = sys.frame()){
 	if (length(dots) == 1 && rlang::is_bare_list(dots[[1]])) {
 		dots <- dots[[1]]
 	}
-	if (is_flattenable(dots)) dots <- rlang::flatten_if(dots, is_flattenable)
+	if (is_flattenable(dots)) dots <- purrr::list_flatten(dots)
 	dots <- purrr::discard(dots, is.null)
 	in_names <- names(dots)
 
@@ -164,4 +169,8 @@ if (FALSE){
 		typeof(fImp.opt)
 
 	}
+
+	if (FALSE) {'
+		[1] 当一个function有很多参数且用户需要调试它的[部分]功能时，可用此function以[等价于调用它的方式]对它的参数一次性赋值，参见示例
+	'}
 }

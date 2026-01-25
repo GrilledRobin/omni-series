@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import types
-from typing import Optional
-from omniPy.AdvOp import lookupMethod
+from omniPy.AdvOp import lookupMethod, ExpandSignature
+
+eSig = ExpandSignature(lookupMethod)
 
 class DynMethodLookup:
     #000. Info.
@@ -13,7 +14,7 @@ class DynMethodLookup:
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This Descriptor is intended to unify the dynamic lookup of APIs in any dedicated class                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] Enable dynamic method lookup in a dynamically created class                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -26,10 +27,19 @@ class DynMethodLookup:
 #   |   |   |001.   Introduction.                                                                                                       #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |   |The constructor to initialize the arguments for dynamic method lookup                                                  #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[Signature Expansion]                                                                                                  #
+#   |   |   |   |-----------------------------------------------------------------------------------------------------------------------#
+#   |   |   |   |[1] Signature of this function is expanded from <lookupMethod>, see its documents for detailed argument list           #
+#   |   |   |   |[2] With the Signature Expansion functionality, one can obtain the correct signature at runtime in below ways          #
+#   |   |   |   |    [1] Type <help(func)> in the console to see its full documents including the docstring brought from the ancestors  #
+#   |   |   |   |    [2] Type <print(func.__doc__)> in the console for the similar result as above                                      #
+#   |   |   |   |    [3] Type <print(inspect.signature(func).parameters)> in the console to see its full signature                      #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |100.   Parameters.                                                                                                         #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
-#   |   |   |**kw              :   All the arguments are from <AdvOp.lookupMethod>, please check its document                           #
+#   |   |   |*pos              :   All the arguments are from its ancestor, please check its document                                   #
+#   |   |   |**kw              :   All the arguments are from its ancestor, please check its document                                   #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -98,6 +108,11 @@ class DynMethodLookup:
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20251116        | Version | 2.00        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Introduce <ExpandSignature> to expand the signature with those of the ancestor functions for easy program design        #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -120,34 +135,23 @@ class DynMethodLookup:
     '''
 
     #010. Constructor
-    def __init__(
-        self
-        ,apiCls : str = None
-        ,apiPkg : Optional[str] = None
-        ,apiPfx : str = ''
-        ,apiSfx : str = ''
-        ,lsOpt : dict = {}
-        ,attr_handler : Optional[str] = None
-        ,attr_hdl_yield : Optional[str] = None
-        ,attr_hdl_send : Optional[str] = None
-        ,attr_kwInit : Optional[str] = None
-        ,attr_assign : Optional[str] = None
-        ,attr_return : Optional[str] = None
-        ,coerce_ : bool = True
-    ):
-        #100. Assign values to local variables
-        self.apiCls = apiCls
-        self.apiPkg = apiPkg
-        self.apiPfx = apiPfx
-        self.apiSfx = apiSfx
-        self.lsOpt = lsOpt
-        self.attr_handler = attr_handler
-        self.attr_hdl_yield = attr_hdl_yield
-        self.attr_hdl_send = attr_hdl_send
-        self.attr_kwInit = attr_kwInit
-        self.attr_assign = attr_assign
-        self.attr_return = attr_return
-        self.coerce_ = coerce_
+    #[ASSUMPTION]
+    #[1] We cannot define <eSig> inside the body of class definition, as in such case it is created after the initialization of
+    #     the class; while we need it to be called at the initialization
+
+    @eSig
+    def __init__(self, *pos, **kw) -> None:
+        #100. Verify arguments passed at runtime
+        self.eSig = eSig
+        args_share = {}
+        eSig.vfyConflict(args_share)
+
+        #300. Reshape the parameters passed for the call
+        pos_int, kw_int = self.eSig.insParams(args_share, pos, kw)
+
+        #900. Assign values to local variables
+        self.pos_ = pos_int
+        self.kw_ = kw_int
 
     #100. Assign attribute name
     def __set_name__(self, owner, name):
@@ -156,21 +160,19 @@ class DynMethodLookup:
 
     #300. Define non-data part of the descriptor
     def __get__(self, instance, objtype = None):
-        #100. Search for the method on the fly
-        func_ = lookupMethod(
-            apiCls = self.apiCls or self._dfl_public_name_
-            ,apiPkg = self.apiPkg
-            ,apiPfx = self.apiPfx
-            ,apiSfx = self.apiSfx
-            ,lsOpt = self.lsOpt
-            ,attr_handler = self.attr_handler
-            ,attr_hdl_yield = self.attr_hdl_yield
-            ,attr_hdl_send = self.attr_hdl_send
-            ,attr_kwInit = self.attr_kwInit
-            ,attr_assign = self.attr_assign
-            ,attr_return = self.attr_return
-            ,coerce_ = self.coerce_
-        )
+        #100. Mutate the necessary inputs
+        #[ASSUMPTION]
+        #[1] There is no such attribute as <self._dfl_public_name_> at initialization
+        #[2] Therefore we have to retrieve its value at runtime
+        args_mutate = {
+            'apiCls' : self.eSig.getParam('apiCls', self.pos_, self.kw_, inc_default = True) or self._dfl_public_name_
+        }
+
+        #200. Update the parameters
+        pos_out, kw_out = self.eSig.updParams(args_mutate, self.pos_, self.kw_)
+
+        #700. Search for the method on the fly
+        func_ = self.eSig.src(*pos_out, **kw_out)
 
         #900. Export
         #[ASSUMPTION]
@@ -188,7 +190,7 @@ class DynMethodLookup:
 
     #500. Ensure it is a read-only data descriptor
     def __set__(self, instance, value):
-        apiCls = self.apiCls or self._dfl_public_name_
+        apiCls = self.eSig.getParam('apiCls', self.pos_, self.kw_, inc_default = True) or self._dfl_public_name_
         raise AttributeError(f'[{instance.__class__.__name__}]Attribute [{apiCls}] is read-only!')
 #End DynMethodLookup
 
@@ -198,7 +200,7 @@ class DynMethodLookup:
 if __name__=='__main__':
     #010. Create envionment.
     import sys
-    import types
+    import inspect
     from typing import Optional
     dir_omniPy : str = r'D:\Python\ '.strip()
     if dir_omniPy not in sys.path:
@@ -242,5 +244,9 @@ if __name__=='__main__':
     #360. Try to assign the API with another object
     testadd2.api001 = 111
     # AttributeError: [MyClass2]Attribute [api001] is read-only!
+
+    #400. Verify the signature of the initialization method
+    print(inspect.signature(DynMethodLookup))
+    # The result varies when the signature of <lookupMethod> changes
 #-Notes- -End-
 '''

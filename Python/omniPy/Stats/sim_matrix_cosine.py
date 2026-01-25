@@ -4,39 +4,42 @@
 import numpy as np
 import sys, warnings
 
-def sim_matrix_cosine( x , y = None , rowvar = False , adj = False ) -> 'Cosine Similarity between each column in a matrix to all others':
-    #000.   Info.
+def sim_matrix_cosine( x , y = None , rowvar = False , adj = False ) -> np.matrix:
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |This function is intended to calculate the Cosine Similarity for each column in the matrix to all other columns                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Difference between this function, [sklearn.metrics.pairwise.cosine_similarity] and R:                                              #
-#   |[1] This function is able to be applied to two different matrices, while [sklearn.metrics.pairwise.cosine_similarity] can only be  #
+#   |[Difference between this function, <sklearn.metrics.pairwise.cosine_similarity> and <R>]                                           #
+#   |-----------------------------------------------------------------------------------------------------------------------------------#
+#   |[1] This function is able to be applied to two different matrices, while <sklearn.metrics.pairwise.cosine_similarity> can only be  #
 #   |     applied to a single matrix                                                                                                    #
-#   |[2] This function is slightly slower than [sklearn.metrics.pairwise.cosine_similarity] on large matrix                             #
-#   |[3] This function can calculate based on columns, while [sklearn.metrics.pairwise.cosine_similarity] can only be applied on rows   #
+#   |[2] This function is slightly slower than <sklearn.metrics.pairwise.cosine_similarity> on large matrix                             #
+#   |[3] This function can calculate based on columns, while <sklearn.metrics.pairwise.cosine_similarity> can only be applied on rows   #
 #   |[4] This function can adjust the center of the vectors to 0 (a.k.a. adjusted cosine similarity), while                             #
-#   |     [sklearn.metrics.pairwise.cosine_similarity] will not make such adjustment                                                    #
-#   |[5] Both functions in Python are slightly faster than R with much less CPU effort (only when Rcpp is applied for calculation based #
-#   |     on C++ optmization)                                                                                                           #
+#   |     <sklearn.metrics.pairwise.cosine_similarity> will not make such adjustment                                                    #
+#   |[5] Both functions in <Python> are slightly faster than <R> with much less CPU effort even when <Rcpp> is applied for calculation  #
+#   |     based on <C++> optmization.                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |x,y        :   The input matrices for which the calculation is to be taken upon the columns                                        #
-#   |rowvar     :   Whether the requested calculation is applied to each row to all others (Compatible to [numpy])                      #
-#   |               [False]<Default> Calculate the distance between each column in [x] to that in [y]                                   #
-#   |               [True]           Calculate the distance between each row in [x] to that in [y]                                      #
-#   |adj        :   Whether to adjust the input matrix by deducting the means of the respective columns before calculation              #
+#   |rowvar     :   <bool> Whether the requested calculation is applied to each row to all others (Compatible to <numpy>)               #
+#   |               [False]<Default> Calculate the distance between each column in <x> to that in <y>                                   #
+#   |               [True ]          Calculate the distance between each row in <x> to that in <y>                                      #
+#   |adj        :   <bool> Whether to adjust the input matrix by deducting the means of the respective columns before calculation       #
+#   |               [False]<Default> Keep the original input                                                                            #
+#   |               [True ]          Adjust the center of the vectors to 0                                                              #
 #   |                Check the blog for reason: https://blog.csdn.net/ifnoelse/article/details/7766123                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[matrix]   :   The [K*M] matrix, where [K] is equal to the number of columns of [x], while [M] is the number of columns of [y]     #
-#   |               Each [k,m] represents the similarity of [k]th column in [x] to [m]th column in [y]                                  #
+#   |<np.matrix>:   The <K*M> matrix, where <K> is equal to the number of columns of <x>, while <M> is the number of columns of <y>     #
+#   |               Each <[k,m]> represents the similarity of <k>th column in <x> to <m>th column in <y>                                #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -60,57 +63,55 @@ def sim_matrix_cosine( x , y = None , rowvar = False , adj = False ) -> 'Cosine 
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''
 
-    #001.   Import necessary functions for processing.
-
-    #010.   Check parameters.
-    #011.   Prepare log text.
+    #010. Check parameters.
+    #011. Prepare log text.
     #python 动态获取当前运行的类名和函数名的方法: https://www.cnblogs.com/paranoia/p/6196859.html
     LfuncName : str = sys._getframe().f_code.co_name
 
-    #012.   Handle the parameter buffer.
+    #012. Handle the parameter buffer.
     if not isinstance( x , ( np.ndarray , np.matrix ) ):
-        raise TypeError( '[' + LfuncName +  '][x] should be of the type [np.matrix]! Type of input value is [{0}]'.format( type(x) ) )
+        raise TypeError(f'[{LfuncName}][x] should be of the type [np.matrix]! Given [{type(x)}]')
     chkNaN_x = min( x[np.isnan(x)].shape ) != 0
     chkNaN_y = False
     if y is not None:
         if not isinstance( y , ( np.ndarray , np.matrix ) ):
-            raise TypeError( '[' + LfuncName +  '][y] should be of the type [np.matrix]! Type of input value is [{0}]'.format( type(y) ) )
+            raise TypeError(f'[{LfuncName}][y] should be of the type [np.matrix]! Given [{type(y)}]')
         chkNaN_y = min( y[np.isnan(y)].shape ) != 0
     chkNaN = chkNaN_x | chkNaN_y
     if chkNaN:
-        warnings.warn( '[' + LfuncName +  ']NaN values are found, [np.nanmean] is used instead! Result may be unexpected!' )
+        warnings.warn(f'[{LfuncName}]NaN values are found, [np.nanmean] is used instead! Result may be unexpected!' )
         f_mean = np.nanmean
     else:
         f_mean = np.mean
 
-    #013.   Define the local environment.
+    #013. Define the local environment.
 
-    #050.   Transpose [x] if it is requested for calculation based on [row]s.
+    #050. Transpose [x] if it is requested for calculation based on [row]s.
     if isinstance( x , ( np.ndarray ) ): x = np.asmatrix(x)
     if rowvar: x = x.T
 
-    #100.   Reshape [x].
+    #100. Reshape [x].
     x = x.astype(np.float64)
     if adj: x -= f_mean(x, axis = 0)
 
-    #300.   Further handle [y] if it is provided.
+    #300. Further handle [y] if it is provided.
     if y is None: y = x
     elif y is x: pass
     else:
-        #050.   Transpose [x] if it is requested for calculation based on [row]s.
+        #050. Transpose [x] if it is requested for calculation based on [row]s.
         if isinstance( y , ( np.ndarray ) ): y = np.asmatrix(y)
         if rowvar: y = y.T
 
-        #100.   Reshape [y].
+        #100. Reshape [y].
         y = y.astype(np.float64)
         if adj: y -= f_mean(y, axis = 0)
 
-    #500.   Calculate the Norms by columns of both [x] and [y].
+    #500. Calculate the Norms by columns of both [x] and [y].
     norm_x = np.sqrt( np.asmatrix( np.sum( np.square(x) , axis = 0 ) ) )
     if y is x: norm_y = norm_x
     else: norm_y = np.sqrt( np.asmatrix( np.sum( np.square(y) , axis = 0 ) ) )
 
-    #900.   Output.
+    #900. Output.
     return( np.dot(x.T, y) / np.dot( norm_x.T , norm_y ) )
 #End sim_matrix_cosine
 
@@ -194,7 +195,12 @@ if __name__=='__main__':
     all_data_top_1k = all_data.merge( top_1k_songs , on = 'song_id' , suffixes = ( '' , '' ) )
 
     top_1k_wide_src = all_data_top_1k[['user','song_id','plays']].drop_duplicates()
-    top_1k_wide = pd.pivot_table( top_1k_wide_src , values = 'plays' , index = ['user'] , columns = ['song_id'] , aggfunc = sum , fill_value = 0 ).reset_index()
+    top_1k_wide = (
+        pd.pivot_table(
+            top_1k_wide_src , values = 'plays' , index = ['user'] , columns = ['song_id'] , aggfunc = sum , fill_value = 0
+        )
+        .reset_index()
+    )
 
     colnames = top_1k_wide.head(1).drop( keyvar , axis = 1 ).columns.values
     ratings = np.asmatrix( top_1k_wide.drop( keyvar , axis = 1 ) )

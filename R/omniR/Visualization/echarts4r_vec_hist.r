@@ -1,58 +1,57 @@
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to create a character vector that represents a series of [echarts4r] widgets that can be rendered by     #
-#   | [shinyApp], via vectorized calculation process, which enables the vectorized charting by groups in a data.frame                   #
+#   |This function is intended to create a character vector that represents a series of <echarts4r> widgets that can be rendered by     #
+#   | <shinyApp>, via vectorized calculation process, which enables the vectorized charting by groups in a <data.frame>                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as [shQuote] is #
-#   | called to convert these strings into HTML or JS scripts for at least once                                                         #
+#   |It is always recommended to use single quotes, instead of double quotes, during the character string manipulation, as <shQuote> is #
+#   | called to convert these strings into HTML or <JS> scripts for at least once                                                       #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Quote]                                                                                                                            #
+#   |[QUOTE]                                                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[01] https://echarts.apache.org/zh/index.html                                                                                      #
 #   |[10] Different gradient colors of different bars: https://blog.csdn.net/kimbing/article/details/109769527                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[Scenarios]                                                                                                                        #
+#   |[SCENARIOS]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[1] This can be useful if one needs to render charts within [DT::datatable]                                                        #
+#   |[1] This can be useful if one needs to render charts within <DT::datatable>                                                        #
 #   |[2] Draw charts for groups of keys distributed by several categories, such as customer number distribution by AUM category         #
-#   |[3] Draw charts within [echarts:tooltip] for another vectorized chart series                                                       #
+#   |[3] Draw charts within <echarts:tooltip> for another vectorized chart series                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |vec_value   :   Numeric vector to be used as [values] to draw the charts                                                           #
-#   |html_id     :   Character vector of the html [id]s of each chart widget respectively, for reactive programming purpose             #
-#   |                 [NULL        ] <Default> Chart ID will be generated randomly by [echarts4r]                                       #
+#   |vec_value   :   Numeric vector to be used as <values> to draw the charts                                                           #
+#   |html_id     :   Character vector of the html <id>s of each chart widget respectively, for reactive programming purpose             #
+#   |                 [NULL        ] <Default> Chart ID will be generated randomly by <echarts4r>                                       #
 #   |height      :   Integer of the chart height                                                                                        #
-#   |                 [540         ] <Default>                                                                                          #
+#   |                 [int <540>   ] <Default> Use this size                                                                            #
 #   |width       :   Integer of the chart width                                                                                         #
-#   |                 [960         ] <Default>                                                                                          #
+#   |                 [int <960>   ] <Default> Use this size                                                                            #
 #   |barWidth    :   Value of the bar width, can be integer or percentage; only the first is taken if multiple values are provided      #
-#   |                Quote: https://echarts.apache.org/zh/option.html#series-bar.barWidth                                               #
 #   |                 [NULL        ] <Default> Adaptive to the chart                                                                    #
 #   |                 [<int>       ]           Absolute pixels as width                                                                 #
 #   |                 [<chr>       ]           Character string as percent, representing the proportion of automatic width              #
-#   |barColor    :   Character as the CSS color of the bars in current chart (there is no negative frequency count for histogram)       #
+#   |                  Quote: https://echarts.apache.org/zh/option.html#series-bar.barWidth                                             #
+#   |barColor    :   Character as the <CSS> color of the bars in current chart (there is no negative frequency count for histogram)     #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax for all the bars, or the tallest one if [gradient=all]     #
-#   |                 [<vec>       ]           Character vector in the same length as [vec_cat] representing color codes, to differ the #
+#   |                 [rgba()      ]           Can be provided in <CSS> syntax for all the bars, or the tallest one if <gradient=all>   #
+#   |                 [<vec>       ]           Character vector in the same length as <vec_cat> representing color codes, to differ the #
 #   |                                           colors of bars one-by-one                                                               #
 #   |gradient    :   Whether to draw the bar with gradient color effect                                                                 #
-#   |                 [TRUE|all    ] <Default> Draw the bar with gradient color effect. In such case, [barColor] plays as the color on  #
+#   |                 [TRUE|all    ] <Default> Draw the bar with gradient color effect. In such case, <barColor> plays as the color on  #
 #   |                                           the top of the longest bar and fades gradually to the closest to bg-color               #
-#   |                 [FALSE|none  ]           Draw the bar with the provided color [barColor]                                          #
-#   |                 [respective  ]           Draw the bar with gradient color effect. In such case, [barColor] plays as the color on  #
+#   |                 [FALSE|none  ]           Draw the bar with the provided color <barColor>                                          #
+#   |                 [respective  ]           Draw the bar with gradient color effect. In such case, <barColor> plays as the color on  #
 #   |                                           the top of each bar and fades gradually to the closest to bg-color                      #
 #   |disp_name   :   Character as the name showing in the tooltip on the bar                                                            #
 #   |                 [Value       ] <Default> Value of current data point                                                              #
 #   |breaks      :   Method to bin the input data, see official document for <hist>                                                     #
 #   |                 [Sturges     ] <Default> see official document for <hist>                                                         #
-#   |include.lowest                                                                                                                     #
-#   |            :   Whether to include the lowest value for the first or last break, see official document for <hist>                  #
+#   |include.lowest: Whether to include the lowest value for the first or last break, see official document for <hist>                  #
 #   |                 [TRUE        ] <Default> see official document for <hist>                                                         #
 #   |                 [FALSE       ]           see official document for <hist>                                                         #
 #   |right       :   Whether to draw the histogram with right-closed intervals, see official document for <hist>                        #
@@ -61,57 +60,54 @@
 #   |density     :   Whether to add a density curve for the histogram                                                                   #
 #   |                 [FALSE       ] <Default> Only draw the chart with columns                                                         #
 #   |                 [TRUE        ]           Add a density curve to the column chart                                                  #
-#   |lineColor   :   Character as the CSS color of the density curve in current chart                                                   #
+#   |lineColor   :   Character as the <CSS> color of the density curve in current chart                                                 #
 #   |                 [NULL        ] <Default> Use the default color from the default theme                                             #
-#   |                 [rgba()      ]           Can be provided in CSS syntax                                                            #
+#   |                 [rgba()      ]           Can be provided in <CSS> syntax                                                          #
 #   |title       :   Character as the title of current chart, taking the first value if the vector contains multiple values             #
 #   |                 [Pie         ] <Default> Name all charts with this one                                                            #
 #   |titleSize   :   Integer of the font size of the chart title                                                                        #
-#   |                 [18          ] <Default> Common font size                                                                         #
-#   |theme       :   The pre-defined themes                                                                                             #
-#   |                 [BlackGold   ] <Default> Modified [MS PBI Innovation] theme with specific [black] and [gold] colors               #
+#   |                 [int <18>    ] <Default> Common font size                                                                         #
+#   |theme       :   <chr> The pre-defined themes                                                                                       #
+#   |                 [BlackGold   ] <Default> Modified <MS PBI Innovation> theme with specific <black> and <gold> colors               #
 #   |transparent :   Whether to set the background as transparent                                                                       #
 #   |                 [TRUE        ] <Default> Set the alpha of background color as 0                                                   #
 #   |                 [FALSE       ]           Use the theme color                                                                      #
 #   |fontFamily  :   Character vector of font family to be translated to CSS syntax                                                     #
-#   |                 [<vector>    ] <Default> See function definition                                                                  #
-#   |fontSize    :   Any vector that can be translated by [htmltools::validateCssUnit]. It is highly recommended to provide integer or  #
-#   |                 float numbers, since [echarts::textStyle.fontSize] cannot properly resolve other inputs in nested charts          #
-#   |                 [14          ] <Default> Common font size                                                                         #
-#   |jsFmtFloat  :   Character vector of the JS methods applied to JS:Float values (which means [vec_value] for this function) of each  #
-#   |                 chart respectively                                                                                                #
-#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                 [<see def.>  ] <Default> See function definition                                                                  #
+#   |fontSize    :   Any vector that can be translated by <htmltools::validateCssUnit>. It is highly recommended to provide integer or  #
+#   |                 float numbers, since <echarts::textStyle.fontSize> cannot properly resolve other inputs in nested charts          #
+#   |                 [int <14>    ] <Default> Common font size                                                                         #
+#   |jsFmtFloat  :   Character vector of the <JS> methods applied to <JS:Float> values (which means <vec_value> for this function) of   #
+#   |                 each chart respectively                                                                                           #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 2, separated by comma              #
-#   |jsFmtFreq   :   Character vector of the JS methods applied to JS:Float values of frequency count of each chart respectively        #
-#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                  Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                 #
+#   |jsFmtFreq   :   Character vector of the <JS> methods applied to <JS:Float> values of frequency count of each chart respectively    #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 0, separated by comma              #
-#   |jsFmtDens   :   Character vector of the JS methods applied to JS:Float values of density of each chart respectively                #
-#   |                 Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                  #
+#   |                  Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                 #
+#   |jsFmtDens   :   Character vector of the <JS> methods applied to <JS:Float> values of density of each chart respectively            #
 #   |                 [<see def.>  ] <Default> Format all values into numbers with fixed decimals as 6, separated by comma if any       #
-#   |fmtTTbar    :   Character as the formatter to tweak the [tooltip] for when mouse hovering on the bars of current chart             #
-#   |                 [NULL        ] <Default> Use the default [formatter], see function definition                                     #
-#   |as.tooltip  :   Whether to convert the chart into the JS function as formatter of the tooltip of a hosting chart, i.e. this chart  #
+#   |                  Quote: https://www.techonthenet.com/js/number_tolocalestring.php                                                 #
+#   |fmtTTbar    :   Character as the formatter to tweak the <tooltip> for when mouse hovering on the bars of current chart             #
+#   |                 [NULL        ] <Default> Use the default <formatter>, see function definition                                     #
+#   |as.tooltip  :   Whether to convert the chart into the <JS> function as formatter of the tooltip of a hosting chart, i.e. this chart#
 #   |                 will become an html element inside the tooltip of another chart                                                   #
 #   |                 [TRUE        ] <Default> Convert as tooltip, as this is the most common usage of vectorized charts                #
-#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in [DT::datatable]            #
+#   |                 [FALSE       ]           Output as characterized widget, useful for inline charting in <DT::datatable>            #
 #   |container   :   Function that takes a single argument of character vector and returns a character vector indicating a series of    #
 #   |                 nested HTML tags                                                                                                  #
 #   |                 [<func>      ] <Default> Directly return the input vector without any mutation                                    #
 #   |as.parts    :   Whether to convert the input into several parts that can be combined into customized HTML scripts                  #
-#   |                 [FALSE       ] <Default> Only create a vector of complete JS functions, to represent single object inside each    #
+#   |                 [FALSE       ] <Default> Only create a vector of complete <JS> functions, to represent single object inside each  #
 #   |                                           <echarts:tooltip> respectively                                                          #
 #   |                 [TRUE        ]           Output separate parts that can be combined with customization from outside this function #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |<various>   :   The result is determined by below arguments                                                                        #
-#   |                [1] [as.tooltip = FALSE]                                                                                           #
-#   |                    A vector of HTML widgets represented as character strings                                                      #
-#   |                [2] [as.tooltip = TRUE], the output further depends on the argument [as.parts]                                     #
-#   |                    [1] [as.parts = FALSE]                                                                                         #
-#   |                        A vector of JS functions to be invoked inside the <tooltip> of anther <echarts> object                     #
-#   |                    [2] [as.parts = TRUE]                                                                                          #
-#   |                        A data.frame with two columns [js_func] and [html_tags] for customization of HTML scripts                  #
+#   |                [<as.tooltip = FALSE>] A vector of HTML widgets represented as character strings                                   #
+#   |                [<as.tooltip = TRUE> ] The output further depends on the argument <as.parts>                                       #
+#   |                    [FALSE] A vector of <JS> functions to be invoked inside the <tooltip> of anther <echarts> object               #
+#   |                    [TRUE ] A <data.frame> with two columns <js_func> and <html_tags> for customization of HTML scripts            #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -122,8 +118,8 @@
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20221117        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] It is tested that [echarts::textStyle.fontSize] cannot resolve text input, such as '14px', within the nested charts,    #
-#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text [fontSize] for any CSS codes to   #
+#   | Log  |[1] It is tested that <echarts::textStyle.fontSize> cannot resolve text input, such as <'14px'>, within the nested charts,  #
+#   |      |     hence we suppress the text input from the beginning. Meanwhile, keep the parsed text <fontSize> for any CSS codes to   #
 #   |      |     retain the compatibility.                                                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
@@ -145,11 +141,11 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent functions                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Styles                                                                                                                   #
+#   |   |Styles                                                                                                                         #
 #   |   |   |themeColors                                                                                                                #
 #   |   |   |alphaToHex                                                                                                                 #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$Visualization                                                                                                            #
+#   |   |Visualization                                                                                                                  #
 #   |   |   |echarts4r_vec_bar                                                                                                          #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -524,7 +520,7 @@ if (FALSE){
 		#200. Create a [DT::datatable]
 		cols <- c('Species', 'avg_Sepal', 'avg_Sepal_text', 'ech_hist2')
 		dt_iris <- DT::datatable(
-			ch_iris %>% dplyr::select(tidyselect::all_of(cols))
+			ch_iris %>% dplyr::select(dplyr::all_of(cols))
 			#Only determine the columns to be displayed, rather than the columns to extract from the input data
 			,colnames = cols
 			,width = '100%'

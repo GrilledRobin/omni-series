@@ -9,7 +9,7 @@
 #   |[1] All input values must be in the same class, otherwise the result is unexpected                                                 #
 #   |[2] If the input is a data.frame, class of all columns must be the same as well                                                    #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] When any function is designed to unanimously handle <vector>, <data.frame> and scalar value (or list of such), use             #
 #   |     this function to unify the input data and hence the internal process                                                          #
@@ -54,7 +54,7 @@
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniR$AdvOp                                                                                                                    #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |isDF                                                                                                                       #
 #   |   |   |isVEC                                                                                                                      #
 #---------------------------------------------------------------------------------------------------------------------------------------#

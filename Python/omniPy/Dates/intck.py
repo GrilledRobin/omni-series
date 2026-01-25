@@ -27,33 +27,33 @@ def intck(
         for s in signature(UserCalendar).parameters.values()
         if s.name not in ['dateBgn', 'dateEnd', 'clnBgn', 'clnEnd']
     }
-) -> 'Calculates the number of interval periods between a date, time, or datetime value to another':
+) -> float | Iterable[float]:
     #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
-#   |This function is intended to resemble the same one in SAS to return the number of interval boundaries of a given kind that lie     #
+#   |This function is intended to resemble the same one in <SAS> to return the number of interval boundaries of a given kind that lie   #
 #   | between two dates, times, or datetime values                                                                                      #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[IMPORTANT]                                                                                                                        #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Although this function supports [e.apply(f,...)] or [map(f,e)] methods to apply to an Iterable, it is strongly recommended    #
-#   |      to call it directly by [f(e,...)] as it internally uses Table Join processes to facilitate bulk data massage                 #
-#   |[02] Similar to above, it is strongly recommended to pass an existing [User Calendar] to the argument [cal] if one insists to call #
-#   |      it by means of [e.apply(f,...)] or [map(f,e)], to minimize the system calculation effort                                     #
-#   |[03] To align the behavior of the same function in [R], we ignore the [pd.index] of both inputs during the calculation by          #
-#   |      regarding them as pairwise, then determine the [index] and [columns] by that of [M] if [M] is a [pd.DataFrame] or            #
-#   |      [pd.Series], otherwise by that of [N] if still applicable. (M.shape is always equal to N.shape, or N.shape == 1)             #
+#   |[01] Although this function supports <e.apply(f,...)> or <map(f,e)> methods to apply to an Iterable, it is strongly recommended    #
+#   |      to call it directly by <f(e,...)> as it internally uses Table Join processes to facilitate bulk data massage                 #
+#   |[02] Similar to above, it is strongly recommended to pass an existing <User Calendar> to the argument <cal> if one insists to call #
+#   |      it by means of <e.apply(f,...)> or <map(f,e)>, to minimize the system calculation effort                                     #
+#   |[03] To align the behavior of the same function in <R>, we ignore the <pd.index> of both inputs during the calculation by          #
+#   |      regarding them as pairwise, then determine the <index> and <columns> by that of <M> if <M> is a <pd.DataFrame> or <pd.Series>#
+#   |      , otherwise by that of <N> if still applicable. (<M.shape> is always equal to <N.shape>, or <N.shape == 1>)                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[FEATURE]                                                                                                                          #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |[01] Support different types of [date_*], i.e. pd.DataFrame, pd.Series, strings indicating dates, dt.date, dt.datetime, dt.time    #
-#   |[02] Does not support [.starting-point] in [interval] as that in SAS, as it is useless and ambiguous under most circumstances      #
-#   |[03] Calculate on [DISCRETE] method, in spite of that in SAS, as there are other simpler ways to calculate on [CONTINUOUS] method  #
+#   |[01] Support different types of <date_*>, i.e. strings indicating dates, dt.date, dt.datetime, dt.time, or Iterable of them        #
+#   |[02] Does not support <.starting-point> in <interval> as that in <SAS>, as it is useless and ambiguous under most circumstances    #
+#   |[03] Calculate on <DISCRETE> method, in spite of that in <SAS>, as there are other simpler ways to calculate on <CONTINUOUS> method#
 #   |[04] Support the increment by Calendar Days, Working Days, or Trade Days                                                           #
-#   |[05] [WEEKDAY] as [interval] has different definition to that in SAS, see below definition of [omniPy.Dates.getDateIntervals]      #
-#   |[06] [WEEK] starts with Sunday=0 and ends with Saturday=6, to align that in SAS                                                    #
+#   |[05] <WEEKDAY> as <interval> has different definition to that in <SAS>, see below definition of <Dates.getDateIntervals>           #
+#   |[06] <WEEK> starts with Sunday=0 and ends with Saturday=6, to align that in <SAS>                                                  #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #200.   Glossary.                                                                                                                       #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -61,34 +61,33 @@ def intck(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |interval    :   Character string as a time interval such as WEEK, SEMIYEAR, QTR, or HOUR, case insensitive. It has no default      #
 #   |                 value, while the functions raises error if it is NOT provided.                                                    #
-#   |                See definition of [omniPy.Dates.getDateIntervals] for accepted values                                              #
-#   |date_bgn    :   Date-like values, will be converted by [asDates], [asDatetimes] or [asTimes] as per request                        #
-#   |date_end    :   Date-like values, will be converted by [asDates], [asDatetimes] or [asTimes] as per request                        #
+#   |                See definition of <Dates.getDateIntervals> for accepted values                                                     #
+#   |date_bgn    :   Date-like values, will be converted by <asDates>, <asDatetimes> or <asTimes> as per request                        #
+#   |date_end    :   Date-like values, will be converted by <asDates>, <asDatetimes> or <asTimes> as per request                        #
 #   |daytype     :   Type of days for the calculation                                                                                   #
 #   |                 [C           ] <Default> Calendar Days                                                                            #
 #   |                 [W           ]           Working Days                                                                             #
 #   |                 [T           ]           Trading Days                                                                             #
-#   |cal         :   pd.DataFrame that is usually created by [omniPy.Dates.intCalendar] object as the essential during the calculation  #
-#   |                 [<None>      ] <Default> Function calls [intCalendar] with the arguments [**kw_cal]                               #
-#   |kw_d        :   Arguments for function [omniPy.Dates.asDates] to convert the [indate] where necessary                              #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDates]                                                  #
-#   |kw_dt       :   Arguments for function [omniPy.Dates.asDatetimes] to convert the [indate] where necessary                          #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asDatetimes]                                              #
-#   |kw_t        :   Arguments for function [omniPy.Dates.asTimes] to convert the [indate] where necessary                              #
-#   |                 [<Default>   ] <Default> Use the default arguments for [asTimes]                                                  #
-#   |kw_cal      :   Arguments for instantiating the class [omniPy.Dates.UserCalendar] if [cal] is NOT provided                         #
-#   |                 [<Default>   ] <Default> Use the default arguments for [UserCalendar]                                             #
+#   |cal         :   <pd.DataFrame> that is usually created by <Dates.intCalendar> object as the essential during the calculation       #
+#   |                 [<None>      ] <Default> Function calls <intCalendar> with the arguments <**kw_cal>                               #
+#   |kw_d        :   Arguments for function <Dates.asDates> to convert <date_bgn> and <date_end> where necessary                        #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDates>                                                  #
+#   |kw_dt       :   Arguments for function <Dates.asDatetimes> to convert <date_bgn> and <date_end> where necessary                    #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asDatetimes>                                              #
+#   |kw_t        :   Arguments for function <Dates.asTimes> to convert <date_bgn> and <date_end> where necessary                        #
+#   |                 [<Default>   ] <Default> Use the default arguments for <asTimes>                                                  #
+#   |kw_cal      :   Arguments for instantiating the class <Dates.UserCalendar> if <cal> is NOT provided                                #
+#   |                 [<Default>   ] <Default> Use the default arguments for <UserCalendar>                                             #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |900.   Return Values by position.                                                                                                  #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |<various>   :   The return type depends on the input arguments, while each returned value is [float], for [np.nan] could exist     #
-#   |                [1] For case of pairs as (M,1):                                                                                    #
-#   |                    [1] If [M] is pd.DataFrame or pd.Series, return the same type as [M]                                           #
-#   |                    [2] When [M] is provided a [str], return a single integer, or np.NaN where applicable                          #
-#   |                    [3] When [M] is an [Iterable] except [str], return a [list] of integers or np.NaN                              #
-#   |                [2] For case of pairs as (M,N), [M.shape] must be the same as [N.shape] :                                          #
-#   |                    [1] If either is pd.DataFrame or pd.Series, return the same type as it                                         #
-#   |                    [2] Return a [list] in other cases                                                                             #
+#   |<various>   :   The return type depends on the input arguments, while each returned value is <float>, for <np.nan> could exist     #
+#   |                [1] For case of pairs as <(M,1)>:                                                                                  #
+#   |                    [1] If <M> is <Iterable>, return the same type as <M>                                                          #
+#   |                    [2] When <M> is provided a single scalar, return a single integer, or <np.NaN> where applicable                #
+#   |                [2] For case of pairs as <(M,N)>, <M.shape> must be the same as <N.shape>:                                         #
+#   |                    [1] If either is <Iterable>, return the same type as it                                                        #
+#   |                    [2] Return an integer in other cases                                                                           #
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #300.   Update log.                                                                                                                     #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -109,12 +108,12 @@ def intck(
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211120        | Version | 3.10        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Fixed a bug: [multiple] is not implemented when [dtt] is triggered                                                      #
+#   | Log  |[1] Fixed a bug: <multiple> is not implemented when <dtt> is triggered                                                      #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20211204        | Version | 3.20        | Updater/Creator | Lu Robin Bin                                                #
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
-#   | Log  |[1] Unify the effect of [col_rowidx] and [col_period] when [span]==1, hence [col_rowidx] is no longer used                  #
+#   | Log  |[1] Unify the effect of <col_rowidx> and <col_period> when <span==1>, hence <col_rowidx> is no longer used                  #
 #   |______|____________________________________________________________________________________________________________________________#
 #   |___________________________________________________________________________________________________________________________________#
 #   | Date |    20230610        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
@@ -149,12 +148,12 @@ def intck(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #   |   |   |vecUnstack                                                                                                                 #
 #   |   |   |thisFunction                                                                                                               #
 #   |   |-------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.Dates                                                                                                                   #
+#   |   |Dates                                                                                                                          #
 #   |   |   |intCalendar                                                                                                                #
 #   |   |   |getDateIntervals                                                                                                           #
 #   |   |   |asDates                                                                                                                    #

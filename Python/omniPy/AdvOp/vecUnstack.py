@@ -18,7 +18,7 @@ def vecUnstack(
     ,modelObj : Any = None
     ,funcConv : callable = lambda x: x
 ) -> Any:
-    #000.   Info.
+    #000. Info.
     '''
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #100.   Introduction.                                                                                                                   #
@@ -26,7 +26,7 @@ def vecUnstack(
 #   |This function is intended to unstack (i.e. fold) the provided dataframe to the same type and shape of the model object, following  #
 #   | the convention of <vecStack> as a reverse process                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |Scenarios:                                                                                                                         #
+#   |SCENARIOS:                                                                                                                         #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |[1] When any function is designed to unanimously handle <pd.Series>, <pd.DataFrame> and scalar value (or iterable of such), use    #
 #   |     <vecStack> to unify the input data and hence the internal process, and then this function to create output in the same type   #
@@ -36,7 +36,7 @@ def vecUnstack(
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #   |100.   Parameters.                                                                                                                 #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |df          :   pd.DataFrame to unstack                                                                                            #
+#   |df          :   <pd.DataFrame> to unstack                                                                                          #
 #   |idRow       :   Name of the column indicating the row (axis-0) position of the values to export                                    #
 #   |                 [<vecStack>  ] <Default> See documents of the captioned function                                                  #
 #   |idCol       :   Name of the column indicating the column (axis-1) position of the values to export                                 #
@@ -88,7 +88,7 @@ def vecUnstack(
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
 #   |300.   Dependent user-defined functions                                                                                            #
 #   |-----------------------------------------------------------------------------------------------------------------------------------#
-#   |   |omniPy.AdvOp                                                                                                                   #
+#   |   |AdvOp                                                                                                                          #
 #   |   |   |vecStack                                                                                                                   #
 #---------------------------------------------------------------------------------------------------------------------------------------#
     '''

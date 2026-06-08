@@ -12,6 +12,7 @@ from .countEvent import countEvent
 from .catVarEncoder import catVarEncoder
 from .progressiveMean import progressiveMean
 from .arrayIntersections import arrayIntersections
+from .arrayDerivatives import arrayDerivatives
 from .calcWoE import calcWoE
 from .calcIV import calcIV
 from .chisq_SingleVar import chisq_SingleVar
@@ -29,11 +30,11 @@ from .highWaterMark import highWaterMark
 __all__ = [
     'countEvent' , 'catVarEncoder'
     , 'progressiveMean'
-    , 'arrayIntersections'
+    , 'arrayIntersections' , 'arrayDerivatives'
     , 'calcWoE' , 'calcIV' , 'chisq_SingleVar'
     , 'calcKS'
     , 'rotateSpheroid'
     , 'cov_matrix' , 'cor_matrix' , 'sim_matrix_cosine' , 'userBasedCF'
-    , 'gcdBitwise', 'gcdExtInteger'
+    , 'gcdBitwise' , 'gcdExtInteger'
     , 'highWaterMark'
 ]

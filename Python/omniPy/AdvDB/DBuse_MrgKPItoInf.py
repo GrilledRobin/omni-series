@@ -230,6 +230,11 @@ def DBuse_MrgKPItoInf(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Introduce function <validateDMCol> to unify the validation of related columns                                           #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260608        | Version | 3.30        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug during <os.path.join> within <pd.Series>                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -314,6 +319,14 @@ def DBuse_MrgKPItoInf(
         #Presume the input is a dict, see official document of [pandas.core.groupby.DataFrameGroupBy.aggregate]
         dict_agg = values_fn
 
+    #080. Function to join the paths out of pd.Series
+    def h_joinPath(srs : pd.Series):
+        vfy_srs = srs.apply(pd.isnull)
+        if vfy_srs.all():
+            return('')
+        else:
+            return(os.path.join(*srs.str.strip()))
+
     #099. Debug mode
     if fDebug:
         print(f'[{LfuncName}]Debug mode...')
@@ -326,8 +339,11 @@ def DBuse_MrgKPItoInf(
 
     #100. Translate the configurations once required
     #110. Define the full path of data files
-    KPICfg = inKPICfg.assign(
-        C_KPI_FULL_PATH = inKPICfg.apply( lambda x: os.path.join(x['C_LIB_PATH'], x['C_KPI_FILE_NAME']), axis = 1 )
+    KPICfg = (
+        inKPICfg
+        .assign(**{
+            'C_KPI_FULL_PATH' : lambda x: x[['C_LIB_PATH','C_KPI_FILE_NAME']].apply(h_joinPath, axis = 1)
+        })
     )
 
     #150. Map any dynamic values in the data file paths

@@ -211,6 +211,11 @@ def DBuse_SetKPItoInf(
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |[1] Fixed a bug when multiple KPIs are stored in one data file                                                              #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260608        | Version | 3.40        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug during <os.path.join> within <pd.Series>                                                                    #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -311,6 +316,14 @@ def DBuse_SetKPItoInf(
         ,'F' : 'outer'
     }
 
+    #080. Function to join the paths out of pd.Series
+    def h_joinPath(srs : pd.Series):
+        vfy_srs = srs.apply(pd.isnull)
+        if vfy_srs.all():
+            return('')
+        else:
+            return(os.path.join(*srs.str.strip()))
+
     #099. Debug mode
     if fDebug:
         print(f'[{LfuncName}]Debug mode...')
@@ -323,8 +336,11 @@ def DBuse_SetKPItoInf(
 
     #100. Translate the configurations once required
     #110. Define the full path of data files
-    KPICfg = inKPICfg.assign(
-        C_KPI_FULL_PATH = inKPICfg.apply( lambda x: os.path.join(x['C_LIB_PATH'], x['C_KPI_FILE_NAME']), axis = 1 )
+    KPICfg = (
+        inKPICfg
+        .assign(**{
+            'C_KPI_FULL_PATH' : lambda x: x[['C_LIB_PATH','C_KPI_FILE_NAME']].apply(h_joinPath, axis = 1)
+        })
     )
 
     #150. Map any dynamic values in the data file paths

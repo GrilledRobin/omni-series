@@ -339,7 +339,7 @@ class DocStringParser:
 #   |   |   |key_strong        :   <bool    > Whether the `key` is highlighted in bold                                                  #
 #   |   |   |                      [True                ]<Default> Consider the `key` is rendered as bold text                          #
 #   |   |   |connect           :   <str     > The connector of `key` and `val` in the output result                                     #
-#   |   |   |                      [`:`                   ]<Default> A single colon indicating the output is a `dict`                   #
+#   |   |   |                      [`:`                 ]<Default> A single colon indicating the output is a `dict`                     #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
 #   |   |   |900.   Return Values by position.                                                                                          #
 #   |   |   |---------------------------------------------------------------------------------------------------------------------------#
@@ -578,6 +578,11 @@ class DocStringParser:
 #   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
 #   | Log  |Version 1.                                                                                                                  #
 #   |______|____________________________________________________________________________________________________________________________#
+#   |___________________________________________________________________________________________________________________________________#
+#   | Date |    20260715        | Version | 1.10        | Updater/Creator | Lu Robin Bin                                                #
+#   |______|____________________|_________|_____________|_________________|_____________________________________________________________#
+#   | Log  |[1] Fixed a bug of displaying <dunder methods> and <Varient Args>                                                           #
+#   |______|____________________________________________________________________________________________________________________________#
 #---------------------------------------------------------------------------------------------------------------------------------------#
 #400.   User Manual.                                                                                                                    #
 #---------------------------------------------------------------------------------------------------------------------------------------#
@@ -612,7 +617,8 @@ class DocStringParser:
     RE_DICT = re.compile(r'^\s*(.+?)\s*:\s+(.+)$')
     RE_FIELD = re.compile(r'^\s*\[\s*(.+?)\s*\]\s*(<default>)?\s*(.+)$', flags = re.I)
     RE_UPPER = re.compile(r'^([A-Z][A-Z0-9 _\-\&\.,]*):?$')
-    RE_PYVAR = re.compile(r'(\b_+[a-z\d]\w*\b)', flags = re.I)
+    RE_PYVAR = re.compile(r'\b(_+\w+)\b', flags = re.I)
+    PYVARIANTARGS = re.compile(r'((\*{1,2})[a-z]\w+)(?!.+\2)', flags = re.I)
     PARENS = {
         '(' : ')', '{' : '}', '[' : ']', '<' : '>'
         , '\uff08' : '\uff09', '\u3010' : '\u3011', '\uff5b' : '\uff5d', '\u300a' : '\u300b'
@@ -719,7 +725,12 @@ class DocStringParser:
         if pyvar := self.RE_PYVAR.findall(rst):
             for v in pyvar:
                 if not any([v in m for m in triangles]):
-                    rst = rst.replace(v, v.replace('_', r'\_'))
+                    # rst = rst.replace(v, v.replace('_', r'\_'))
+                    rst = rst.replace(v, f'{list(by_.keys())[0]}{v}{list(by_.values())[0]}')
+        if pyvarargs := self.PYVARIANTARGS.findall(rst):
+            for v in pyvarargs:
+                if not any([v[0] in m for m in triangles]):
+                    rst = rst.replace(v[0], v[0].replace(v[1], f'{list(by_.keys())[0]}{v[1]}{list(by_.values())[0]}'))
         return(rst)
 
     #350. Standardize the output format for point / dict / field
@@ -736,7 +747,7 @@ class DocStringParser:
         if type_ in ('MD'):
             key_out = (
                 ('**' if key_strong else '')
-                + self._transTriangles(re.sub(r'\*', r'\\*', key))
+                + self._transTriangles(key)
                 + ('**' if key_strong else '')
             )
             val_out = self._transTriangles(val or '')
@@ -744,7 +755,7 @@ class DocStringParser:
         elif type_ in ('HTML'):
             key_out = (
                 ('<strong>' if key_strong else '')
-                + self._transTriangles(re.sub(r'\*', r'\\*', key), by_ = {'<code>' : '</code>'})
+                + self._transTriangles(key, by_ = {'<code>' : '</code>'})
                 + ('</strong>' if key_strong else '')
             )
             #[ASSUMPTION]
@@ -1397,6 +1408,9 @@ class DocStringParser:
 
     #810. Fall back to direct HTML output if there is difficulty in render Markdown
     def render_html(self) -> str:
+        #100. Local parameters
+        by_ = {'<code>' : '</code>'}
+
         #500. Activate the generators
         #510. Generator to prepare the corrected taglists for point / dict / field
         gen_free_pdf = mdListToHTML(indPerLvl = 4)
@@ -1452,14 +1466,14 @@ class DocStringParser:
             if (it.type_ == 'header_ordered') and (it.ordered_title):
                 marks = self._headingMarks(it.indent, type_ = 'HTML')
                 prefix = self._nbspPrefix(it.indent)
-                out_lines.append(f'<h{marks}>{prefix}{self._transTriangles(it.ordered_title)}</h{marks}>')
+                out_lines.append(f'<h{marks}>{prefix}{self._transTriangles(it.ordered_title, by_ = by_)}</h{marks}>')
                 i += 1
                 continue
 
             if (it.type_ == 'header_paragraph') and (it.paragraph_title):
                 marks = self._headingMarks(it.indent, type_ = 'HTML')
                 prefix = self._nbspPrefix(it.indent)
-                out_lines.append(f'<h{marks}>{prefix}{self._transTriangles(it.paragraph_title)}</h{marks}>')
+                out_lines.append(f'<h{marks}>{prefix}{self._transTriangles(it.paragraph_title, by_ = by_)}</h{marks}>')
                 i += 1
                 continue
 
@@ -1575,7 +1589,7 @@ class DocStringParser:
 '''
 if __name__ == '__main__':
     import sys
-    import os, re
+    import os
     import markdown
     from mdx_gfm import GithubFlavoredMarkdownExtension
     dir_omniPy : str = r'D:\Python\ '.strip()

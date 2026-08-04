@@ -6,6 +6,8 @@
 #print( 'Importing [' + os.path.dirname( os.path.abspath(__file__) ) + ']' )
 
 #100.   Import the local modules.
+from .CSSKeyframes import CSSKeyframes
+from .OSThemesCSS import OSThemesCSS
 from .theme_xwtable import theme_xwtable
 from .strToUnicode import strToUnicode
 from .unicodeToStr import unicodeToStr
@@ -20,7 +22,7 @@ from .strNestedRenderer import strNestedRenderer
 
 #200.   Define available resources.
 __all__ = [
-    'theme_xwtable'
+    'CSSKeyframes', 'OSThemesCSS', 'theme_xwtable'
     , 'strToUnicode', 'unicodeToStr'
     , 'TxtConverterReqMsg'
     , 'mdListToHTML', 'txtTagToHTML'

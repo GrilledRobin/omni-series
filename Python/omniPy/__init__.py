@@ -13,6 +13,7 @@ from . import FileSystem
 from . import RPA
 from . import Stats
 from . import Styles
+from . import ShinyApp
 
 #200.   Define available resources.
 __all__ = []
@@ -23,3 +24,4 @@ __all__.extend(FileSystem.__all__)
 __all__.extend(RPA.__all__)
 __all__.extend(Stats.__all__)
 __all__.extend(Styles.__all__)
+__all__.extend(ShinyApp.__all__)
